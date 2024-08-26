@@ -32,7 +32,7 @@ import Image from "next/image"
 import Link from "next/link"
 import React, { useEffect, useState } from 'react'
 import Card from '../components/ui/card'
-import cliktp from '../public/cliktp.gif'
+import cliktp from '../public/CLIKTP.gif'
 import main from '../public/glitchKTP.gif'
 
 
