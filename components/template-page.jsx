@@ -170,7 +170,7 @@ developing tech skills and professionalism while fostering strong friendships an
                   <h3 className="text-xl font-bold font-['Source Sans Pro']">Leadership</h3>
                   <p className="text-[#6B6B6B] font-['Source Sans Pro']">
                     We empower our members to take on leadership roles and develop their skills to make a positive
-                    impact. Members have the opprotunity to join Comittee's and/or be involved in the Executive Board! 
+                    impact. Members have the opprotunity to join Comittee&apos;s and/or be involved in the Executive Board! 
                   </p>
                 </div>
                 <div className="rounded-lg bg-[#E0E0E0] p-6 text-left shadow-sm">
