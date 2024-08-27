@@ -33,6 +33,7 @@ import Link from "next/link"
 import React, { useEffect, useState } from 'react'
 import Card from '../components/ui/card'
 import cliktp from '../public/CLIKTP.gif'
+import danny from '../public/danny.jpg'
 import main from '../public/glitchKTP.gif'
 
 
@@ -210,10 +211,10 @@ developing tech skills and professionalism while fostering strong friendships an
                 linkedinUrl="https://www.linkedin.com/in/ryan-majd/"
                 otherUrl='https://theryanmajd.github.io/my-website/'/>
                 <Card
-                name="Allison Gay"
-                title="VP of Marketing"
-                bio="Coming Soon..."
-                avatarSrc=""
+                name="Alli Gay"
+                title="VP of Marketing & Engagement"
+                bio="Alli is a Data Science major at UGA. She is also involved in UGA’s Club Cross Country/Track team and Delta Zeta Sorority. She loves to run, be outside, paint, and listen to music."
+                avatarSrc='https://media.licdn.com/dms/image/v2/D4E03AQEzztv79fuz9Q/profile-displayphoto-shrink_400_400/profile-displayphoto-shrink_400_400/0/1718232447287?e=1730332800&v=beta&t=usHHkhXAbXFyeLZTMbIWuvc-NfAY4S5gQbhEDeNV1go'
                 fallbackInitials="AG"
                 instagramUrl="https://www.instagram.com/allisonngayy/"
                 linkedinUrl="https://www.linkedin.com/in/allison-gay-8956a7296/"
@@ -221,11 +222,49 @@ developing tech skills and professionalism while fostering strong friendships an
                 <Card
                 name="Daniel Rifai"
                 title="VP of Finance"
-                bio="Coming Soon..."
-                avatarSrc=""
+                bio="Daniel Rifai is a third year Computer Science and Finance major. He enjoys the outdoors, sports, film, and card games."
+                avatarSrc="https://cdn.discordapp.com/attachments/360893298535301120/1278068833596473477/danny.jpg?ex=66cf75db&is=66ce245b&hm=0cf549b0711c432683b3fdff355d652a49bbd3f1ca05adc854589d53dc72c2f4&"
                 fallbackInitials="DR"
                 instagramUrl="https://www.instagram.com/dannyr_04/"
                 linkedinUrl="https://www.linkedin.com/in/daniel-rifai-19226a292/"
+                />
+                <Card
+                name="Ajeetha Murugappan"
+                title="VP of Marketing"
+                bio="Ajeetha is a sophomore Computer Science major and Business minor. She enjoys golfing, going to concerts, and long walks!"
+                avatarSrc="https://media.licdn.com/dms/image/v2/D4E03AQGS0GtQcy4ShQ/profile-displayphoto-shrink_400_400/profile-displayphoto-shrink_400_400/0/1718231630511?e=1730332800&v=beta&t=sAl6PGeC5yP0mP6xPbCd2k0JJP-dy6si2ZzpowMToSo"
+                fallbackInitials="AM"
+                instagramUrl="https://www.instagram.com/ajeetha.05/"
+                linkedinUrl="https://www.linkedin.com/in/ajeetha-murugappan-43b6a01b5/"
+                />
+                <Card
+                name="Stephen Sulimani"
+                title="VP of External Affairs"
+                bio="Stephen is a senior Computer Science major from New York City. He is interested in FinTech and enjoys playing tennis and working on personal hobby projects."
+                avatarSrc="https://media.licdn.com/dms/image/v2/D4E35AQHFpcqBpsT7TA/profile-framedphoto-shrink_400_400/profile-framedphoto-shrink_400_400/0/1707000458264?e=1725390000&v=beta&t=TPRmGOkvbY7yBLNbYMF8onzVGAZbVHgUDGYyc-oks9k"
+                fallbackInitials="SS"
+                instagramUrl="https://www.instagram.com/stephensulimani/"
+                linkedinUrl="https://www.linkedin.com/in/stephensulimani/"
+                />
+
+                <Card
+                name="Ethan Ogle"
+                title="VP of Finance"
+                bio="ACM Co-President at UGA"
+                avatarSrc="https://media.licdn.com/dms/image/v2/D5603AQHqWZeFsNVeeg/profile-displayphoto-shrink_400_400/profile-displayphoto-shrink_400_400/0/1693154853310?e=1730332800&v=beta&t=zSsRpSmx31johKeRBPYk-jg2iuYM5vTWY6-3rllGuZk"
+                fallbackInitials="EO"
+                instagramUrl="https://www.instagram.com/etho_ogle/"
+                linkedinUrl="https://www.linkedin.com/in/ethan-ogle/"
+                />
+
+                <Card
+                name="Ali (Batu) Ozdener"
+                title="VP of Engagement & Membership"
+                bio="UGAHacks X Director"
+                avatarSrc="https://media.licdn.com/dms/image/v2/D5603AQFDwfK73RSQrQ/profile-displayphoto-shrink_400_400/profile-displayphoto-shrink_400_400/0/1682561017605?e=1730332800&v=beta&t=KP1dZJkBYzWYQxHHn4WkSACFcCfOceX2I3uTw3uQsyM"
+                fallbackInitials="ABO"
+                instagramUrl="https://www.instagram.com/alibatuozdener/"
+                linkedinUrl="https://www.linkedin.com/in/alibatuozdener/"
                 />
                 
               </div>
