@@ -30,6 +30,7 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import Image from "next/image"
 import Link from "next/link"
+import { useRouter } from 'next/router'
 import React, { useEffect, useState } from 'react'
 import Card from '../components/ui/card'
 import cliktp from '../public/CLIKTP.gif'
@@ -37,8 +38,15 @@ import danny from '../public/danny.jpg'
 import main from '../public/glitchKTP.gif'
 
 
+
 export default function TemplatePage() {
+  // const router = useRouter();
+
+  // const rushPageClick = () => {
+  //   router.push('/rush');
+  // };
   const [mobile, setMobile] = useState(false);
+  const testUrl = "https://cdn.discordapp.com/attachments/360893298535301120/1278068833596473477/danny.jpg?ex=66d5649b&is=66d4131b&hm=e742c66c6192083e0b4c4c27b4a04c094cb8447c229d3aabe640a193b655c074&";
 
    useEffect(() => {
      // Update the mobile state based on window width
@@ -101,7 +109,7 @@ export default function TemplatePage() {
                   students through leadership, networking, and friendships.
                 </p>
                 <div className="flex flex-col gap-2 min-[400px]:flex-row">
-                  <Link href="#rush">
+                  <Link href="/rush">
                   <Button
     className="hover:animate-pulse bg-[#052039] hover:bg-[#2463EB] font-['Source Sans Pro'] text-white"
   >
@@ -223,7 +231,7 @@ developing tech skills and professionalism while fostering strong friendships an
                 name="Daniel Rifai"
                 title="VP of Finance"
                 bio="Daniel Rifai is a third year Computer Science and Finance major. He enjoys the outdoors, sports, film, and card games."
-                avatarSrc="https://cdn.discordapp.com/attachments/360893298535301120/1278068833596473477/danny.jpg?ex=66cf75db&is=66ce245b&hm=0cf549b0711c432683b3fdff355d652a49bbd3f1ca05adc854589d53dc72c2f4&"
+                avatarSrc={testUrl}
                 fallbackInitials="DR"
                 instagramUrl="https://www.instagram.com/dannyr_04/"
                 linkedinUrl="https://www.linkedin.com/in/daniel-rifai-19226a292/"
@@ -238,6 +246,16 @@ developing tech skills and professionalism while fostering strong friendships an
                 linkedinUrl="https://www.linkedin.com/in/ajeetha-murugappan-43b6a01b5/"
                 />
                 <Card
+                name="Hayden Crane"
+                title="VP of Internal Affairs"
+                bio="Hayden oversees internal operations and ensures smooth communication among members. A third-year computer science major, Hayden is passionate about technology, leadership, and fostering a supportive KTP community."
+                avatarSrc="https://media.licdn.com/dms/image/v2/D4E35AQH2xFkhT20omA/profile-framedphoto-shrink_800_800/profile-framedphoto-shrink_800_800/0/1722539871137?e=1725818400&v=beta&t=u25MCVxWjnSV9dem1H6-QoGycFymiHlQ8gj636YQrdQ"
+                fallbackInitials="HC"
+                instagramUrl="https://www.instagram.com/haydencranee/"
+                linkedinUrl="https://www.linkedin.com/in/hayden-crane-compsci/"
+                />
+
+                <Card
                 name="Stephen Sulimani"
                 title="VP of External Affairs"
                 bio="Stephen is a senior Computer Science major from New York City. He is interested in FinTech and enjoys playing tennis and working on personal hobby projects."
@@ -250,7 +268,7 @@ developing tech skills and professionalism while fostering strong friendships an
                 <Card
                 name="Ethan Ogle"
                 title="VP of Finance"
-                bio="ACM Co-President at UGA"
+                bio="Junior at the University of Georgia pursuing degrees in Computer Science and Applied Mathematics, currently serving as a Cloud SWE Intern at Altagrove, Co-President of ACM, and Technical Organizer for UGAHacks."
                 avatarSrc="https://media.licdn.com/dms/image/v2/D5603AQHqWZeFsNVeeg/profile-displayphoto-shrink_400_400/profile-displayphoto-shrink_400_400/0/1693154853310?e=1730332800&v=beta&t=zSsRpSmx31johKeRBPYk-jg2iuYM5vTWY6-3rllGuZk"
                 fallbackInitials="EO"
                 instagramUrl="https://www.instagram.com/etho_ogle/"
@@ -258,13 +276,23 @@ developing tech skills and professionalism while fostering strong friendships an
                 />
 
                 <Card
-                name="Ali (Batu) Ozdener"
-                title="VP of Engagement & Membership"
-                bio="UGAHacks X Director"
-                avatarSrc="https://media.licdn.com/dms/image/v2/D5603AQFDwfK73RSQrQ/profile-displayphoto-shrink_400_400/profile-displayphoto-shrink_400_400/0/1682561017605?e=1730332800&v=beta&t=KP1dZJkBYzWYQxHHn4WkSACFcCfOceX2I3uTw3uQsyM"
-                fallbackInitials="ABO"
-                instagramUrl="https://www.instagram.com/alibatuozdener/"
-                linkedinUrl="https://www.linkedin.com/in/alibatuozdener/"
+                name="Jiya Patel"
+                title="VP of Membership"
+                bio="Jiya Patel is a recent graduate with a degree in computer science from UGA and is currently doing a master's in Cybersecurity. She is involved in UGAHacks and GDG. In her free time she enjoys painting, shopping, working out and watching Netflix."
+                avatarSrc="https://media.licdn.com/dms/image/v2/D5603AQEYGMu6d0exbA/profile-displayphoto-shrink_400_400/profile-displayphoto-shrink_400_400/0/1666407166627?e=1730937600&v=beta&t=UEbLQIfJIco6cWcjid7CKi_XsnDiHhF2hi0Ty5zGvvI"
+                fallbackInitials="JP"
+                instagramUrl="https://www.instagram.com/jiyanpatel31/"
+                linkedinUrl="https://www.linkedin.com/in/jiya-patel-422615228/"
+                />
+
+                <Card
+                name="Khushi Bhatamrekar"
+                title="VP of Membership"
+                bio="Khushi Bhatamrekar is a senior studying Computer Science and Cognitive Science at UGA. She is a part of UGAHacks, GDG and enjoys dancing, running, and spending time with her friends"
+                avatarSrc="https://media.licdn.com/dms/image/v2/D5603AQG5ipGZ3Y-8Pw/profile-displayphoto-shrink_100_100/profile-displayphoto-shrink_100_100/0/1664424890997?e=1730937600&v=beta&t=Op2hyWI-XmIrF_qatv4VCQN-YkSVCLTYVnVmrJj3JJw"
+                fallbackInitials="KB"
+                instagramUrl="https://www.instagram.com/khuxhix/"
+                linkedinUrl="https://www.linkedin.com/in/khushibhat/"
                 />
                 
               </div>
