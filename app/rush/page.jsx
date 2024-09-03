@@ -69,6 +69,12 @@ export default function Page() {
                       <p className="text-[#6B6B6B] md:text-xl font-['Source Sans Pro']">
                         Our <Link className=" text-blue-500" href="https://forms.gle/RryVY362iana9ekU6" target="_blank">form</Link> for KTP Fall Rush 2024 (Required)
                       </p>
+                      <p className="text-[#6B6B6B] md:text-xl font-['Source Sans Pro']">
+                      Check out the <Link className=" text-blue-500" href="https://groupme.com/join_group/100592857/PWjF5nZz" target="_blank">GroupMe</Link> for instant updates on Rush
+                      </p>
+                      <p className="text-[#6B6B6B] md:text-xl font-['Source Sans Pro']">
+                      Create a <Link className=" text-blue-500" href="https://epichire.com/clubs/125/invite?code=2qyrXs" target="_blank">EpicHire Account</Link> to join our Organization!
+                      </p>
                     </div>
                   </div>
                 </div>
