@@ -46,8 +46,6 @@ export default function TemplatePage() {
   //   router.push('/rush');
   // };
   const [mobile, setMobile] = useState(false);
-  const testUrl = "https://cdn.discordapp.com/attachments/360893298535301120/1278068833596473477/danny.jpg?ex=66d5649b&is=66d4131b&hm=e742c66c6192083e0b4c4c27b4a04c094cb8447c229d3aabe640a193b655c074&";
-
    useEffect(() => {
      // Update the mobile state based on window width
      const updateMobile = () => setMobile(window.innerWidth < 599);
@@ -231,7 +229,7 @@ developing tech skills and professionalism while fostering strong friendships an
                 name="Daniel Rifai"
                 title="VP of Finance"
                 bio="Daniel Rifai is a third year Computer Science and Finance major. He enjoys the outdoors, sports, film, and card games."
-                avatarSrc={testUrl}
+                avatarSrc={danny.src}
                 fallbackInitials="DR"
                 instagramUrl="https://www.instagram.com/dannyr_04/"
                 linkedinUrl="https://www.linkedin.com/in/daniel-rifai-19226a292/"
@@ -249,7 +247,7 @@ developing tech skills and professionalism while fostering strong friendships an
                 name="Hayden Crane"
                 title="VP of Internal Affairs"
                 bio="Hayden oversees internal operations and ensures smooth communication among members. A third-year computer science major, Hayden is passionate about technology, leadership, and fostering a supportive KTP community."
-                avatarSrc="https://media.licdn.com/dms/image/v2/D4E35AQH2xFkhT20omA/profile-framedphoto-shrink_800_800/profile-framedphoto-shrink_800_800/0/1722539871137?e=1725818400&v=beta&t=u25MCVxWjnSV9dem1H6-QoGycFymiHlQ8gj636YQrdQ"
+                avatarSrc="https://media.licdn.com/dms/image/v2/D4E03AQFdds5Gx6N5bg/profile-displayphoto-shrink_800_800/profile-displayphoto-shrink_800_800/0/1715812712782?e=1730937600&v=beta&t=7o0K4cpdYHzvWZzqGHedQhJ09ijk8H4v4WSbxLaf1cU"
                 fallbackInitials="HC"
                 instagramUrl="https://www.instagram.com/haydencranee/"
                 linkedinUrl="https://www.linkedin.com/in/hayden-crane-compsci/"
