@@ -6,7 +6,7 @@ import { Textarea } from "@/components/ui/textarea"
 import Image from "next/image"
 import Link from "next/link"
 import React from 'react'
-import rushImg from '../../public/rush.jpg'
+import rushImg from '../../public/rush.png'
 // import cliktp from '../public/CLIKTP.gif'
 
 

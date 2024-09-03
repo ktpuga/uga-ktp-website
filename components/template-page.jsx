@@ -116,13 +116,13 @@ export default function TemplatePage() {
     Fall Rush 2024
   </Button>
                   </Link>
-                  <Link
+                  {/* <Link
                     href="https://uga.campuslabs.com/engage/organization/ktp"
                     target="_Blank"
                     className="hover:animate-pulse hover:bg-[#2463EB] inline-flex items-center justify-center rounded-md border border-input bg-[#F0F0F0] px-4 py-2 text-sm font-medium shadow-sm transition-colors hover:bg-[#fff] hover:text-[#333333] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 font-['Source Sans Pro']"
                     prefetch={false}>
                     Involvement Network
-                  </Link>
+                  </Link> */}
                 </div>
               </div>
               <div className="flex items-center justify-center">
