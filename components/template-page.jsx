@@ -276,8 +276,18 @@ developing tech skills and professionalism while fostering strong friendships an
                 />
 
                 <Card
+                name="Manya Vikram"
+                title="VP of Professional Development"
+                bio="empty"
+                avatarSrc={images['manya.jpeg'].default.src}
+                fallbackInitials="MV"
+                instagramUrl="https://www.instagram.com/manya.vv/"
+                linkedinUrl="https://www.linkedin.com/in/manya-vikram-bb0652220/"
+                />
+
+                <Card
                 name="Ethan Ogle"
-                title="VP of Finance"
+                title="VP of Technical Development"
                 bio="Junior at the University of Georgia pursuing degrees in Computer Science and Applied Mathematics, currently serving as a Cloud SWE Intern at Altagrove, Co-President of ACM, and Technical Organizer for UGAHacks."
                 avatarSrc={images['ethan.jpeg'].default.src}
                 fallbackInitials="EO"
