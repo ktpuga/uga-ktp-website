@@ -3,32 +3,25 @@ import React from 'react';
 
 const Card = ({ name, title, bio, avatarSrc, fallbackInitials, instagramUrl, linkedinUrl, otherUrl }) => {
   return (
-    <div className="rounded-lg bg-[#F0F0F0] p-6 text-left shadow-sm">
-      <div className="flex items-center gap-4">
-      <Avatar>                     
-        <AvatarImage src={avatarSrc} alt={`${name} Avatar`}/>
+    <div className="rounded-lg bg-[#F0F0F0] p-4 text-center shadow-sm w-45 h-45 flex flex-col items-center justify-center">
+      <Avatar className="w-16 h-16 mb-2">                     
+        {/* embedded bio for SEO purposes */}
+        <AvatarImage src={avatarSrc} alt={`${name} Avatar, bio: ${bio}`} /> 
         <AvatarFallback>{fallbackInitials}</AvatarFallback>
-    </Avatar>
-        <div>
-          <h3 className="text-lg font-bold font-['Source Sans Pro']">{name}</h3>
-          <p className="text-[#6B6B6B] font-['Source Sans Pro']">{title}</p>
-        </div>
-      </div>
-      <p className="text-[#6B6B6B] mt-4 font-['Source Sans Pro']">
-        {bio}
-      </p>
-      <div className="flex gap-4 mt-4">
+      </Avatar>
+      <h3 className="text-md font-bold font-['Source Sans Pro']">{name}</h3>
+      <p className="text-[#6B6B6B] text-sm font-['Source Sans Pro']">{title}</p>
+      <div className="flex gap-2 mt-2">
         {otherUrl && 
-        <a href={otherUrl} className="text-[#6B6B6B] hover:text-[#0000F0]" target="_blank" rel="noopener noreferrer">
-        <HomeIcon className="h-6 w-6" />
-      </a>
-      }
-      
+          <a href={otherUrl} className="text-[#6B6B6B] hover:text-[#0000F0]" target="_blank" rel="noopener noreferrer">
+            <HomeIcon className="h-5 w-5" />
+          </a>
+        }
         <a href={instagramUrl} className="text-[#6B6B6B] hover:text-[#0000F0]" target="_blank" rel="noopener noreferrer">
-          <InstagramIcon className="h-6 w-6" />
+          <InstagramIcon className="h-5 w-5" />
         </a>
         <a href={linkedinUrl} className="text-[#6B6B6B] hover:text-[#0000F0]" target="_blank" rel="noopener noreferrer">
-          <LinkedinIcon className="h-6 w-6" />
+          <LinkedinIcon className="h-5 w-5" />
         </a>
       </div>
     </div>

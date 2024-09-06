@@ -34,12 +34,15 @@ import { useRouter } from 'next/router'
 import React, { useEffect, useState } from 'react'
 import Card from '../components/ui/card'
 import cliktp from '../public/CLIKTP.gif'
-import danny from '../public/danny.jpg'
 import main from '../public/glitchKTP.gif'
-
-
+function importAll(r) {
+  let images = {};
+   r.keys().forEach((item, index) => { images[item.replace('./', '')] = r(item); });
+  return images
+ }
 
 export default function TemplatePage() {
+  const images = importAll(require.context('../public/leadership/', false, /\.(png|jpe?g|svg)$/));
   // const router = useRouter();
 
   // const rushPageClick = () => {
@@ -206,7 +209,7 @@ developing tech skills and professionalism while fostering strong friendships an
               <p className="text-[#6B6B6B] md:text-xl font-['Source Sans Pro']">
                 Our dedicated executive board members are the driving force behind ΚΘΠ.
               </p>
-              <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3">
+              <div className="grid grid-cols-2 gap-6 text-sm sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
               <Card
                 name="Ryan Majd"
                 title="President"
@@ -220,7 +223,7 @@ developing tech skills and professionalism while fostering strong friendships an
                 name="Alli Gay"
                 title="VP of Marketing & Engagement"
                 bio="Alli is a Data Science major at UGA. She is also involved in UGA’s Club Cross Country/Track team and Delta Zeta Sorority. She loves to run, be outside, paint, and listen to music."
-                avatarSrc='https://media.licdn.com/dms/image/v2/D4E03AQEzztv79fuz9Q/profile-displayphoto-shrink_400_400/profile-displayphoto-shrink_400_400/0/1718232447287?e=1730332800&v=beta&t=usHHkhXAbXFyeLZTMbIWuvc-NfAY4S5gQbhEDeNV1go'
+                avatarSrc={images['alli.jpeg'].default.src}
                 fallbackInitials="AG"
                 instagramUrl="https://www.instagram.com/allisonngayy/"
                 linkedinUrl="https://www.linkedin.com/in/allison-gay-8956a7296/"
@@ -229,7 +232,7 @@ developing tech skills and professionalism while fostering strong friendships an
                 name="Daniel Rifai"
                 title="VP of Finance"
                 bio="Daniel Rifai is a third year Computer Science and Finance major. He enjoys the outdoors, sports, film, and card games."
-                avatarSrc={danny.src}
+                avatarSrc={images['danny.jpg'].default.src}
                 fallbackInitials="DR"
                 instagramUrl="https://www.instagram.com/dannyr_04/"
                 linkedinUrl="https://www.linkedin.com/in/daniel-rifai-19226a292/"
@@ -238,7 +241,7 @@ developing tech skills and professionalism while fostering strong friendships an
                 name="Ajeetha Murugappan"
                 title="VP of Marketing"
                 bio="Ajeetha is a sophomore Computer Science major and Business minor. She enjoys golfing, going to concerts, and long walks!"
-                avatarSrc="https://media.licdn.com/dms/image/v2/D4E03AQGS0GtQcy4ShQ/profile-displayphoto-shrink_400_400/profile-displayphoto-shrink_400_400/0/1718231630511?e=1730332800&v=beta&t=sAl6PGeC5yP0mP6xPbCd2k0JJP-dy6si2ZzpowMToSo"
+                avatarSrc={images['ajeetha.jpeg'].default.src}
                 fallbackInitials="AM"
                 instagramUrl="https://www.instagram.com/ajeetha.05/"
                 linkedinUrl="https://www.linkedin.com/in/ajeetha-murugappan-43b6a01b5/"
@@ -247,17 +250,26 @@ developing tech skills and professionalism while fostering strong friendships an
                 name="Hayden Crane"
                 title="VP of Internal Affairs"
                 bio="Hayden oversees internal operations and ensures smooth communication among members. A third-year computer science major, Hayden is passionate about technology, leadership, and fostering a supportive KTP community."
-                avatarSrc="https://media.licdn.com/dms/image/v2/D4E03AQFdds5Gx6N5bg/profile-displayphoto-shrink_800_800/profile-displayphoto-shrink_800_800/0/1715812712782?e=1730937600&v=beta&t=7o0K4cpdYHzvWZzqGHedQhJ09ijk8H4v4WSbxLaf1cU"
+                avatarSrc={images['hayden.jpeg'].default.src}
                 fallbackInitials="HC"
                 instagramUrl="https://www.instagram.com/haydencranee/"
                 linkedinUrl="https://www.linkedin.com/in/hayden-crane-compsci/"
+                />
+                <Card
+                name="Siya Sharma"
+                title="VP of Engagement"
+                bio="empty"
+                avatarSrc={images['siya.jpeg'].default.src}
+                fallbackInitials="SS"
+                instagramUrl="https://www.instagram.com/siyasharma.03/"
+                linkedinUrl="https://www.linkedin.com/in/siya-sharma-ss2025/"
                 />
 
                 <Card
                 name="Stephen Sulimani"
                 title="VP of External Affairs"
                 bio="Stephen is a senior Computer Science major from New York City. He is interested in FinTech and enjoys playing tennis and working on personal hobby projects."
-                avatarSrc="https://media.licdn.com/dms/image/v2/D4E35AQHFpcqBpsT7TA/profile-framedphoto-shrink_400_400/profile-framedphoto-shrink_400_400/0/1707000458264?e=1725390000&v=beta&t=TPRmGOkvbY7yBLNbYMF8onzVGAZbVHgUDGYyc-oks9k"
+                avatarSrc={images['stephen.jpeg'].default.src}
                 fallbackInitials="SS"
                 instagramUrl="https://www.instagram.com/stephensulimani/"
                 linkedinUrl="https://www.linkedin.com/in/stephensulimani/"
@@ -267,7 +279,7 @@ developing tech skills and professionalism while fostering strong friendships an
                 name="Ethan Ogle"
                 title="VP of Finance"
                 bio="Junior at the University of Georgia pursuing degrees in Computer Science and Applied Mathematics, currently serving as a Cloud SWE Intern at Altagrove, Co-President of ACM, and Technical Organizer for UGAHacks."
-                avatarSrc="https://media.licdn.com/dms/image/v2/D5603AQHqWZeFsNVeeg/profile-displayphoto-shrink_400_400/profile-displayphoto-shrink_400_400/0/1693154853310?e=1730332800&v=beta&t=zSsRpSmx31johKeRBPYk-jg2iuYM5vTWY6-3rllGuZk"
+                avatarSrc={images['ethan.jpeg'].default.src}
                 fallbackInitials="EO"
                 instagramUrl="https://www.instagram.com/etho_ogle/"
                 linkedinUrl="https://www.linkedin.com/in/ethan-ogle/"
@@ -277,7 +289,7 @@ developing tech skills and professionalism while fostering strong friendships an
                 name="Jiya Patel"
                 title="VP of Membership"
                 bio="Jiya Patel is a recent graduate with a degree in computer science from UGA and is currently doing a master's in Cybersecurity. She is involved in UGAHacks and GDG. In her free time she enjoys painting, shopping, working out and watching Netflix."
-                avatarSrc="https://media.licdn.com/dms/image/v2/D5603AQEYGMu6d0exbA/profile-displayphoto-shrink_400_400/profile-displayphoto-shrink_400_400/0/1666407166627?e=1730937600&v=beta&t=UEbLQIfJIco6cWcjid7CKi_XsnDiHhF2hi0Ty5zGvvI"
+                avatarSrc={images['jiya.jpeg'].default.src}
                 fallbackInitials="JP"
                 instagramUrl="https://www.instagram.com/jiyanpatel31/"
                 linkedinUrl="https://www.linkedin.com/in/jiya-patel-422615228/"
@@ -287,10 +299,20 @@ developing tech skills and professionalism while fostering strong friendships an
                 name="Khushi Bhatamrekar"
                 title="VP of Membership"
                 bio="Khushi Bhatamrekar is a senior studying Computer Science and Cognitive Science at UGA. She is a part of UGAHacks, GDG and enjoys dancing, running, and spending time with her friends"
-                avatarSrc="https://media.licdn.com/dms/image/v2/D5603AQG5ipGZ3Y-8Pw/profile-displayphoto-shrink_100_100/profile-displayphoto-shrink_100_100/0/1664424890997?e=1730937600&v=beta&t=Op2hyWI-XmIrF_qatv4VCQN-YkSVCLTYVnVmrJj3JJw"
+                avatarSrc={images['khushi.jpeg'].default.src}
                 fallbackInitials="KB"
                 instagramUrl="https://www.instagram.com/khuxhix/"
                 linkedinUrl="https://www.linkedin.com/in/khushibhat/"
+                />
+
+                <Card
+                name="Gargee Jamadagni"
+                title="VP of Operations"
+                bio="empty"
+                avatarSrc={images['gargee.jpeg'].default.src}
+                fallbackInitials="GJ"
+                instagramUrl="https://www.instagram.com/gargee.jam/"
+                linkedinUrl="https://www.linkedin.com/in/gargeejamadagni/"
                 />
                 
               </div>
