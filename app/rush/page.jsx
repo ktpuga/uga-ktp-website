@@ -39,13 +39,15 @@ export default function Page() {
   <div className="container mx-auto px-4 md:px-6">
     <div className="gap-6 md:gap-10 text-center">
       <div className="space-y-4 animate-fade-in-right">
-        <h1 className="hover:animate-bounce text-3xl font-bold tracking-tighter md:text-4xl lg:text-5xl font-['Source Sans Pro']">
-          Fall 2024 Rush
+        <Link href="https://calendly.com/hmc93124-uga/ktp-rush-interview?month=2024-09&date=2024-09-13">
+        <h1 className="hover:animate-bounce text-3xl font-bold text-blue-600 underline tracking-tighter md:text-4xl lg:text-5xl font-['Source Sans Pro']">
+          Fall 2024 Rush Interviews
         </h1>
-        <p className="text-[#6B6B6B] md:text-xl font-['Source Sans Pro']">
+        </Link>
+        {/* <p className="text-[#6B6B6B] md:text-xl font-['Source Sans Pro']">
           Our first week consists of 2 information sessions to tell you more about our mission. You only have to attend 1 of these; they will have the same information!
-        </p>
-        <Image src={rushImg} unoptimized className="mx-auto w-1/2" />
+        </p> */}
+        {/* <Image src={rushImg} unoptimized className="mx-auto w-1/2" /> */}
         <div className="flex flex-col gap-2 min-[400px]:flex-row justify-center">
          
         </div>

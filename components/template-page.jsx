@@ -81,7 +81,7 @@ export default function TemplatePage() {
         
         </Link>
         <nav className="ml-auto flex gap-4 sm:gap-6">
-        <Link className="text-sm font-medium hover:text-blue-600 hover:animate-pulsetransition-colors" href="#rush">
+        <Link className="text-sm font-medium hover:text-blue-600 hover:animate-pulsetransition-colors" href="/rush">
             Rush
           </Link>
           <Link className="text-sm font-medium hover:text-blue-600 hover:animate-pulse transition-colors" href="#about">
