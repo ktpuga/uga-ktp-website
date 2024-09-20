@@ -52,12 +52,23 @@ module.exports = {
       "transform": "rotate(360deg)"
     }
   },
+  'fade-in-bottom': {
+    '0%': {
+      opacity: '0',
+      transform: 'translateY(20px)',
+    },
+    '100%': {
+    opacity: '1',
+    transform: 'translateY(0)',
+    }
+  },
         
       },
       animation: {
         'fade-in-right': 'fade-in-right 0.6s ease-in-out',
         'fade-in-left': 'fade-in-left 0.6s ease-in-out',
         'fade-in-top': 'fade-in-top 0.6s ease-in-out',
+        'fade-in-bottom': 'fade-in-bottom 0.6 ease-in-out',
         "rotate-360": "rotate-360 1s linear",
       },
     },

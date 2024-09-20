@@ -38,12 +38,15 @@ export default function Page() {
             <section className="bg-[#F0F0F0] mx-auto py-12 md:py-20 flex flex-col items-center justify-center">
   <div className="container mx-auto px-4 md:px-6">
     <div className="gap-6 md:gap-10 text-center">
-      <div className="space-y-4 animate-fade-in-right">
-        <Link href="https://calendly.com/hmc93124-uga/ktp-rush-interview?month=2024-09&date=2024-09-13">
-        <h1 className="hover:animate-bounce text-3xl font-bold text-blue-600 underline tracking-tighter md:text-4xl lg:text-5xl font-['Source Sans Pro']">
-          Fall 2024 Rush Interviews
+      <div className="space-y-4 ">
+        
+        <h1 className="animate-fade-in-right text-3xl font-bold text-blue-600 tracking-tighter md:text-4xl lg:text-5xl font-['Source Sans Pro']">
+          Spring 2025 Rush
         </h1>
-        </Link>
+        <p className="animate-pulse text-[#6B6B6B] md:text-xl font-['Source Sans Pro']">
+          Coming Soon
+        </p>
+    
         {/* <p className="text-[#6B6B6B] md:text-xl font-['Source Sans Pro']">
           Our first week consists of 2 information sessions to tell you more about our mission. You only have to attend 1 of these; they will have the same information!
         </p> */}
@@ -65,7 +68,48 @@ export default function Page() {
                     <div className="flex items-center justify-center">
                     </div>
                     <div className="space-y-4 animate-fade-in-left">
-                      <h2
+
+                    <h2
+  className="text-3xl font-bold tracking-tighter md:text-4xl font-['Source Sans Pro']">
+  ΚΘΠ
+</h2>
+
+{/* <p className="text-[#6B6B6B] md:text-xl font-['Source Sans Pro']">
+  Our <Link className=" text-blue-500" href="https://forms.gle/RryVY362iana9ekU6" target="_blank">form</Link> for KTP Fall Rush 2024 (Required)
+</p>
+
+<p className="text-[#6B6B6B] md:text-xl font-['Source Sans Pro']">
+  Check out the <Link className=" text-blue-500" href="https://groupme.com/join_group/100592857/PWjF5nZz" target="_blank">GroupMe</Link> for instant updates on Rush
+</p>
+
+<p className="text-[#6B6B6B] md:text-xl font-['Source Sans Pro']">
+  Create a <Link className=" text-blue-500" href="https://epichire.com/clubs/125/invite?code=2qyrXs" target="_blank">EpicHire Account</Link> to join our Organization!
+</p> */}
+
+<h3 className="text-2xl font-bold tracking-tight mt-6 md:text-3xl font-['Source Sans Pro']">Preparation Resources:</h3>
+
+<ul className="list-disc ml-6">
+  <li className="text-[#6B6B6B] md:text-xl font-['Source Sans Pro']">
+    <Link className="text-blue-500" href="https://career.uga.edu/online_resources" target="_blank">Career Center - Online Resources</Link>
+  </li>
+  <li className="text-[#6B6B6B] md:text-xl font-['Source Sans Pro']">
+    <Link className="text-blue-500" href="https://career.uga.edu/students#resumes_cover_letters" target="_blank">Resume Cover Letter Templates</Link>
+  </li>
+  <li className="text-[#6B6B6B] md:text-xl font-['Source Sans Pro']">
+    <Link className="text-blue-500" href="https://career.uga.edu/students#interviewing" target="_blank">Interviewing Resources</Link>
+  </li>
+  <li className="text-[#6B6B6B] md:text-xl font-['Source Sans Pro']">
+    <Link className="text-blue-500" href="https://www.wayup.com/guide/6-dos-and-donts-of-video-interviews/" target="_blank">WayUp - 6 Dos and Don'ts of Video Interviews</Link>
+  </li>
+  <li className="text-[#6B6B6B] md:text-xl font-['Source Sans Pro']">
+    <Link className="text-blue-500" href="https://www.wayup.com/guide/first-round-interview-tips-will-land-second-interview/" target="_blank">WayUp - 7 First-Round Interview Tips</Link>
+  </li>
+  <li className="text-[#6B6B6B] md:text-xl font-['Source Sans Pro']">
+    <Link className="text-blue-500" href="https://www.wayup.com/guide/the-ultimate-guide-to-following-up/" target="_blank">WayUp - Ultimate Guide to Following Up</Link>
+  </li>
+</ul>
+
+                      {/* <h2
                         className="text-3xl font-bold tracking-tighter md:text-4xl font-['Source Sans Pro']">
                             ΚΘΠ</h2>
                       <p className="text-[#6B6B6B] md:text-xl font-['Source Sans Pro']">
@@ -76,7 +120,7 @@ export default function Page() {
                       </p>
                       <p className="text-[#6B6B6B] md:text-xl font-['Source Sans Pro']">
                       Create a <Link className=" text-blue-500" href="https://epichire.com/clubs/125/invite?code=2qyrXs" target="_blank">EpicHire Account</Link> to join our Organization!
-                      </p>
+                      </p> */}
                     </div>
                   </div>
                 </div>
