@@ -99,7 +99,7 @@ export default function Page() {
     <Link className="text-blue-500" href="https://career.uga.edu/students#interviewing" target="_blank">Interviewing Resources</Link>
   </li>
   <li className="text-[#6B6B6B] md:text-xl font-['Source Sans Pro']">
-    <Link className="text-blue-500" href="https://www.wayup.com/guide/6-dos-and-donts-of-video-interviews/" target="_blank">WayUp - 6 Dos and Don'ts of Video Interviews</Link>
+    <Link className="text-blue-500" href="https://www.wayup.com/guide/6-dos-and-donts-of-video-interviews/" target="_blank">WayUp - 6 Dos and Don&apos;ts of Video Interviews</Link>
   </li>
   <li className="text-[#6B6B6B] md:text-xl font-['Source Sans Pro']">
     <Link className="text-blue-500" href="https://www.wayup.com/guide/first-round-interview-tips-will-land-second-interview/" target="_blank">WayUp - 7 First-Round Interview Tips</Link>
