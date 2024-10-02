@@ -29,13 +29,13 @@ export default function Page() {
         <div className="mt-8 space-y-4">
           
           <Link
-            href="https://calendly.com/hmc93124-uga/ktp-rush-interview?month=2024-09&date=2024-09-13"
+            href="https://docs.google.com/forms/d/e/1FAIpQLSe-6KX_OwdfHAU-yoDtZx2Zgo5ED7SzUDhvrmG6lnpBjgUxfQ/viewform"
             className="inline-flex items-center justify-between w-full px-4 py-3 rounded-lg bg-[#2b2b2b] hover:bg-[#3b3b3b] transition-colors"
             prefetch={false}
           >
             <div className="flex items-center space-x-3">
               <FormIcon className="w-5 h-5" />
-              <span>Rush Interview</span>
+              <span>Senior Rush Interest Form</span>
             </div>
             <ArrowRightIcon className="w-5 h-5" />
           </Link>
@@ -46,7 +46,7 @@ export default function Page() {
           >
             <div className="flex items-center space-x-3">
               <FormIcon className="w-5 h-5" />
-              <span>What is KTP?</span>
+              <span>Info Session Slides</span>
             </div>
             <ArrowRightIcon className="w-5 h-5" />
           </Link>
