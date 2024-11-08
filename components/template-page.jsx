@@ -91,6 +91,9 @@ export default function TemplatePage() {
           <Link className="text-sm font-medium hover:text-blue-600 hover:animate-pulse transition-colors" href="#leadership">
             Leadership
           </Link>
+          <Link className="text-sm font-medium hover:text-black-900 hover:animate-pulse transition-colors" href="/hackathon">
+            Hackathon
+          </Link>
           <Link className="text-sm font-medium hover:text-blue-600 hover:animate-pulse transition-colors" href="#contact">
             Contact
           </Link>
@@ -114,7 +117,7 @@ export default function TemplatePage() {
                   <Button
     className="hover:animate-pulse bg-[#052039] hover:bg-[#2463EB] font-['Source Sans Pro'] text-white"
   >
-    Fall Rush 2024
+    Spring Rush 2025
   </Button>
                   </Link>
                   {/* <Link

@@ -10,7 +10,7 @@ import pfp from '../../public/whiteKTPpfp.jpg'
 export default function Page() {
   return (
     <main className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-[#8e2de2] to-[#4a00e0] text-white">
-      <div className="max-w-md w-full px-6 py-12 bg-[#1b1b1b] rounded-2xl shadow-xl">
+      <div className="max-w-md full px-6 py-12 bg-[#1b1b1b] rounded-2xl shadow-xl">
         <div className="flex flex-col items-center space-y-4">
           <div className="rounded-full w-24 h-24 overflow-hidden">
             <Image
