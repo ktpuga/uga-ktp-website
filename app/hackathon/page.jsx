@@ -29,18 +29,18 @@ export default function Page() {
      // Cleanup the event listener when the component unmounts
      return () => window.removeEventListener('resize', updateMobile);
    }, []);
-    useEffect(() => {
-        const calculateTimeLeft = () => {
-            const now = new Date();
-            const calculatedTimeLeft = targetTime.getTime() - now.getTime();
-            setTimeLeft(calculatedTimeLeft > 0 ? calculatedTimeLeft : 0); // Ensure no negative time
-        };
+    // useEffect(() => {
+    //     const calculateTimeLeft = () => {
+    //         const now = new Date();
+    //         const calculatedTimeLeft = targetTime.getTime() - now.getTime();
+    //         setTimeLeft(calculatedTimeLeft > 0 ? calculatedTimeLeft : 0); // Ensure no negative time
+    //     };
 
-        calculateTimeLeft(); // Initial calculation
-        const timer = setInterval(calculateTimeLeft, 1000); // Update every second
+    //     calculateTimeLeft(); // Initial calculation
+    //     const timer = setInterval(calculateTimeLeft, 1000); // Update every second
 
-        return () => clearInterval(timer); // Clear timer on component unmount
-    }, []);
+    //     return () => clearInterval(timer); // Clear timer on component unmount
+    // }, []);
 
     return (
         <div className="flex flex-col min-h-screen font-sans bg-gray-900 text-gray-100 scroll-smooth">
@@ -103,11 +103,12 @@ export default function Page() {
                                         Time Till Event:
                                     </p>
                                     <div className="text-gray-300 md:text-md">
-                                        <CountdownTimer timeLeft={timeLeft} />
+                                        {/* <CountdownTimer timeLeft={timeLeft} /> */}
+                                        <p>00:00</p>
                                     </div>
                                     
                                 </div>
-                                <Image unoptimized width="400" height="50" className="mx-auto" src={gif.src}/>
+                                <Image unoptimized width="400" alt='cat walking gif' height="50" className="mx-auto" src={gif.src}/>
                             </div>
                            
                         </div>

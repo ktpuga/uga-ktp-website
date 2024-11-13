@@ -73,7 +73,7 @@ export default function TemplatePage() {
         }
       `}</style>
       <header className="sticky top-0 px-4 lg:px-6 h-16 flex items-center border-b border-gray-200 bg-white/[.3] backdrop-blur z-50">
-        <Link className="flex items-center justify-center" href="#rush">
+        <Link className="flex items-center justify-center" href="#">
           <span className="font-bold text-2xl text-blue-600">ΚΘΠ</span>
           {!mobile &&
             <span className="ml-2 font-semibold text-lg">Phi Colony at UGA</span>
