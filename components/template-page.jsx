@@ -33,8 +33,8 @@ import Link from "next/link"
 import { useRouter } from 'next/router'
 import React, { useEffect, useState } from 'react'
 import Card from '../components/ui/card'
-import cliktp from '../public/CLIKTP.gif'
 import main from '../public/glitchKTP.gif'
+import pfp from '../public/whiteKTPpfp.jpg'
 function importAll(r) {
   let images = {};
    r.keys().forEach((item, index) => { images[item.replace('./', '')] = r(item); });
@@ -76,7 +76,7 @@ export default function TemplatePage() {
         <Link className="flex items-center justify-center" href="#">
           <span className="font-bold text-2xl text-blue-600">ΚΘΠ</span>
           {!mobile &&
-            <span className="ml-2 font-semibold text-lg">Phi Colony at UGA</span>
+            <span className="ml-2 font-semibold text-lg">Phi Chapter at UGA</span>
           }
         
         </Link>
@@ -84,9 +84,12 @@ export default function TemplatePage() {
         <Link className="text-sm font-medium hover:text-blue-600 hover:animate-pulsetransition-colors" href="/rush">
             Rush
           </Link>
-          <Link className="text-sm font-medium hover:text-blue-600 hover:animate-pulse transition-colors" href="#about">
+          {!mobile &&
+            <Link className="text-sm font-medium hover:text-blue-600 hover:animate-pulse transition-colors" href="#about">
             About
           </Link>
+          }
+          
           
           <Link className="text-sm font-medium hover:text-blue-600 hover:animate-pulse transition-colors" href="#leadership">
             Leadership
@@ -109,7 +112,7 @@ export default function TemplatePage() {
                   ΚΘΠ
                 </h1>
                 <p className="text-[#6B6B6B] md:text-xl font-['Source Sans Pro']">
-                  A co-ed professional development fraternity at the University of Georgia, dedicated to empowering
+                  The first and only Professional Technology fraternity at the University of Georgia, dedicated to empowering
                   students through leadership, networking, and friendships.
                 </p>
                 <div className="flex flex-col gap-2 min-[400px]:flex-row">
@@ -132,9 +135,9 @@ export default function TemplatePage() {
               <div className="flex items-center justify-center">
                 <Image
                 unoptimized
-                  src={cliktp}
-                  width="400"
-                  height="400"
+                  src={pfp.src}
+                  width="200"
+                  height="200"
                   alt="ΚΘΠ"
                   className="rounded-xl"
                   style={{objectFit: "cover" }} />
@@ -157,14 +160,14 @@ export default function TemplatePage() {
               </div>
               <div className="space-y-4 animate-fade-in-left">
                 <h2
-                  className="text-3xl font-bold tracking-tighter md:text-4xl font-['Source Sans Pro']">About ΚΘΠ Phi Colony</h2>
+                  className="text-3xl font-bold tracking-tighter md:text-4xl font-['Source Sans Pro']">About ΚΘΠ Phi Chapter</h2>
                 <p className="text-[#6B6B6B] md:text-xl font-['Source Sans Pro']">
                 
-Kappa Theta Pi is the first professional technology fraternity at UGA, focused on
-developing tech skills and professionalism while fostering strong friendships and networking. Join us as we recruit our inaugural class and build a lasting legacy.
+KTP focuses on
+developing technical skills and professionalism while fostering strong friendships and networking. KTP at UGA is an exclusive organization chaptered to build a lasting legacy on-campus and around the globe 🌎
                 </p>
-                <p className="text-[#6B6B6B] md:text-xl font-['Source Sans Pro']">
-                  Our <Link className=" text-blue-500" href="https://ktpmichigan.com" target="_blank">Alpha chapter</Link> was founded on January 10th, 2012 at the University of Michigan!
+                <p className="text-[#6B6B6B] md:text-l font-['Source Sans Pro']">
+                  The <Link className=" text-blue-500" href="https://ktpmichigan.com" target="_blank">Alpha chapter</Link> was founded on January 10th, 2012 at the University of Michigan!
                 </p>
               </div>
             </div>
@@ -217,14 +220,14 @@ developing tech skills and professionalism while fostering strong friendships an
                 name="Ryan Majd"
                 title="President"
                 bio="Ryan is a junior Computer Science major and Mathematics minor at UGA. He enjoys playing basketball, going to the gym and working on his Company."
-                avatarSrc="https://media.licdn.com/dms/image/v2/D5603AQH3d38w-8dLvw/profile-displayphoto-shrink_800_800/profile-displayphoto-shrink_800_800/0/1693084481808?e=1730332800&v=beta&t=g2k1GMG-CgtWtmVHY4Dz-BcRlY1XAUdZUjYRJiqhYHs" 
+                avatarSrc="https://media.licdn.com/dms/image/v2/D4E03AQHm2u_lAtKk8w/profile-displayphoto-shrink_400_400/profile-displayphoto-shrink_400_400/0/1730818562764?e=1739404800&v=beta&t=o8kwyCJapNhv4VfVvgl7A4O4-TV2UfHD3GyvVMdVyWA" 
                 fallbackInitials="RM"
                 instagramUrl="https://www.instagram.com/TheRyanMajd"
                 linkedinUrl="https://www.linkedin.com/in/ryan-majd/"
                 otherUrl='https://theryanmajd.github.io/my-website/'/>
                 <Card
                 name="Alli Gay"
-                title="VP of Marketing & Engagement"
+                title="VP of Marketing"
                 bio="Alli is a Data Science major at UGA. She is also involved in UGA’s Club Cross Country/Track team and Delta Zeta Sorority. She loves to run, be outside, paint, and listen to music."
                 avatarSrc={images['alli.jpeg'].default.src}
                 fallbackInitials="AG"
@@ -338,7 +341,7 @@ developing tech skills and professionalism while fostering strong friendships an
               <h2
                 className="text-3xl font-bold tracking-tighter md:text-4xl font-['Source Sans Pro']">Contact</h2>
               <p className="text-[#6B6B6B] md:text-xl font-['Source Sans Pro']">
-                Join us for our upcoming Fall Rush and become a part of the ΚΘΠ community.
+                Join us for our upcoming Spring Rush and become a part of the KTPhamily.
               </p>
               
               <div className=" container mx-auto flex justify-center text-center items-center space-x-2">

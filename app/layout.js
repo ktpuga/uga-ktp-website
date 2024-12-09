@@ -5,7 +5,7 @@ const inter = Inter({ subsets: ["latin"] });
 
 export const metadata = {
   title: "Kappa Theta Pi",
-  description: "Phi Colony at UGA",
+  description: "Phi Chapter at UGA. UGA First Professional Technology Fraternity.",
 };
 
 export default function RootLayout({ children }) {

@@ -55,7 +55,7 @@ export default function Page() {
                 <Link className="flex items-center justify-center" href="/">
                     <span className="font-bold text-2xl text-indigo-500">ΚΘΠ</span>
                     {!mobile &&
-            <span className="ml-2 font-semibold text-lg">Phi Colony at UGA</span>
+            <span className="ml-2 font-semibold text-lg">Phi Chapter at UGA</span>
           }
                 </Link>
                 <nav className="ml-auto flex gap-4 sm:gap-6">
