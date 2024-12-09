@@ -24,7 +24,7 @@ export default function Page() {
             />
           </div>
           <h1 className="text-2xl font-bold">Kappa Theta Pi</h1>
-          <p className="text-muted-foreground">Phi Colony (UGA)</p>
+          <p className="text-muted-foreground">Phi Chapter (UGA)</p>
         </div>
         <div className="mt-8 space-y-4">
           

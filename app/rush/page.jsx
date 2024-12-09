@@ -24,7 +24,7 @@ export default function Page() {
               <Link className="flex items-center justify-center" href="/">
                 <span className="font-bold text-2xl text-blue-600">ΚΘΠ</span>
             
-                  <span className="ml-2 font-semibold text-lg">Phi Colony at UGA</span>
+                  <span className="ml-2 font-semibold text-lg">Phi Chapter at UGA</span>
             
               
               </Link>
