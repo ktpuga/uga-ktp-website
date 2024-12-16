@@ -88,7 +88,7 @@ export default function Page() {
 
                         <h2 className="text-2xl font-bold text-indigo-400 mb-4">Reporting Violations</h2>
                         <p className="text-gray-300">
-                            If you witness or experience a violation, report it to the ΚΘΠ executive board. All reports will be treated confidentially to protect the reporter's privacy.
+                            If you witness or experience a violation, report it to the ΚΘΠ executive board. All reports will be treated confidentially to protect the reporter&apos;s privacy.
                         </p>
                     </div>
                 </section>
