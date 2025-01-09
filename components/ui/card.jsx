@@ -1,4 +1,5 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import PropTypes from 'prop-types';
 import React from 'react';
 
 const Card = ({ name, title, bio, avatarSrc, fallbackInitials, instagramUrl, linkedinUrl, otherUrl }) => {
@@ -86,5 +87,15 @@ function LinkedinIcon(props) {
     )
   }
   
+Card.propTypes = {
+  name: PropTypes.string.isRequired,
+  title: PropTypes.string.isRequired,
+  bio: PropTypes.string.isRequired,
+  avatarSrc: PropTypes.string.isRequired,
+  fallbackInitials: PropTypes.string.isRequired,
+  instagramUrl: PropTypes.string.isRequired,
+  linkedinUrl: PropTypes.string.isRequired,
+  otherUrl: PropTypes.string,
+};
 
 export default Card;

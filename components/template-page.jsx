@@ -1,6 +1,5 @@
 'use client'
 import { Button } from "@/components/ui/button"
-import AOS from "aos"
 import Image from "next/image"
 import Link from "next/link"
 import React, { useEffect, useState } from 'react'
@@ -11,7 +10,7 @@ import pfp from '../public/whiteKTPpfp.jpg'
 import { AOSInit } from "./ui/timeline"
 function importAll(r) {
   let images = {};
-   r.keys().forEach((item, index) => { images[item.replace('./', '')] = r(item); });
+   r.keys().forEach((item) => { images[item.replace('./', '')] = r(item); });
   return images
  }
 
@@ -41,7 +40,7 @@ export default function TemplatePage() {
   return (
     (<div className="flex flex-col min-h-screen font-sans bg-white text-gray-900 scroll-smooth">
       <AOSInit/>
-      <style jsx global>{`
+      <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Source+Sans+Pro:wght@400;600;700&display=swap');
         body {
           font-family: 'Source Sans Pro', sans-serif;
@@ -340,25 +339,6 @@ developing technical skills and professionalism while fostering strong friendshi
       </main>
       <Footer/>
     </div>)
-  );
-}
-
-function CodeIcon(props) {
-  return (
-    (<svg
-      {...props}
-      xmlns="http://www.w3.org/2000/svg"
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round">
-      <polyline points="16 18 22 12 16 6" />
-      <polyline points="8 6 2 12 8 18" />
-    </svg>)
   );
 }
 

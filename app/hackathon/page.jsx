@@ -2,7 +2,7 @@
 import { Button } from "@/components/ui/button"
 import Image from "next/image"
 import Link from "next/link"
-import { useEffect, useState } from "react"
+import React, { useEffect, useState } from 'react'
 import Footer from '../../components/ui/footer'
 import gif from '../../public/cat_walking.gif'
 
@@ -33,7 +33,7 @@ export default function Page() {
 
     return (
         <div className="flex flex-col min-h-screen font-sans bg-gray-900 text-gray-100 scroll-smooth">
-            <style jsx global>{`
+            <style>{`
               @import url('https://fonts.googleapis.com/css2?family=Source+Sans+Pro:wght@400;600;700&display=swap');
               body {
                 font-family: 'Source Sans Pro', sans-serif;

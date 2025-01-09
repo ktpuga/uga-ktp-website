@@ -1,6 +1,4 @@
 'use client'
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Button } from "@/components/ui/button"
 import Image from "next/image"
 import Link from "next/link"
 import React from 'react'
@@ -28,28 +26,6 @@ export default function Page() {
         </div>
         <div className="mt-8 space-y-4">
           
-          {/* <Link
-            href="https://docs.google.com/forms/d/e/1FAIpQLSe-6KX_OwdfHAU-yoDtZx2Zgo5ED7SzUDhvrmG6lnpBjgUxfQ/viewform"
-            className="inline-flex items-center justify-between w-full px-4 py-3 rounded-lg bg-[#2b2b2b] hover:bg-[#3b3b3b] transition-colors"
-            prefetch={false}
-          >
-            <div className="flex items-center space-x-3">
-              <FormIcon className="w-5 h-5" />
-              <span>Senior Rush Interest Form</span>
-            </div>
-            <ArrowRightIcon className="w-5 h-5" />
-          </Link> */}
-          {/* <Link
-            href="https://www.canva.com/design/DAGJiHhrIrE/oREZAJR6d7Uy4eXMjGAEWQ/edit?utm_content=DAGJiHhrIrE&utm_campaign=designshare&utm_medium=link2&utm_source=sharebutton"
-            className="inline-flex items-center justify-between w-full px-4 py-3 rounded-lg bg-[#2b2b2b] hover:bg-[#3b3b3b] transition-colors"
-            prefetch={false}
-          >
-            <div className="flex items-center space-x-3">
-              <FormIcon className="w-5 h-5" />
-              <span>Info Session Slides</span>
-            </div>
-            <ArrowRightIcon className="w-5 h-5" />
-          </Link> */}
           <Link
             href="/"
             className="inline-flex items-center justify-between w-full px-4 py-3 rounded-lg bg-[#2b2b2b] hover:bg-[#3b3b3b] transition-colors"
@@ -137,51 +113,6 @@ function GithubIcon(props) {
     </svg>
   );
 }
-
-
-
-// function GitlabIcon(props) {
-//   return (
-//     <svg
-//       {...props}
-//       xmlns="http://www.w3.org/2000/svg"
-//       width="24"
-//       height="24"
-//       viewBox="0 0 24 24"
-//       fill="none"
-//       stroke="currentColor"
-//       strokeWidth="2"
-//       strokeLinecap="round"
-//       strokeLinejoin="round"
-//     >
-//       <path d="m22 13.29-3.33-10a.42.42 0 0 0-.14-.18.38.38 0 0 0-.22-.11.39.39 0 0 0-.23.07.42.42 0 0 0-.14.18l-2.26 6.67H8.32L6.1 3.26a.42.42 0 0 0-.1-.18.38.38 0 0 0-.26-.08.39.39 0 0 0-.23.07.42.42 0 0 0-.14.18L2 13.29a.74.74 0 0 0 .27.83L12 21l9.69-6.88a.71.71 0 0 0 .31-.83Z" />
-//     </svg>
-//   )
-// }
-
-function FormIcon(props) {
-  return (
-    <svg
-      {...props}
-      xmlns="http://www.w3.org/2000/svg"
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-      <line x1="3" y1="10" x2="21" y2="10" />
-      <line x1="8" y1="6" x2="16" y2="6" />
-      <line x1="12" y1="14" x2="16" y2="14" />
-      <line x1="8" y1="18" x2="16" y2="18" />
-    </svg>
-  );
-}
-
 function GlobeIcon(props) {
   return (
     <svg
