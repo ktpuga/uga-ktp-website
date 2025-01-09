@@ -28,7 +28,7 @@ export default function Page() {
         </div>
         <div className="mt-8 space-y-4">
           
-          <Link
+          {/* <Link
             href="https://docs.google.com/forms/d/e/1FAIpQLSe-6KX_OwdfHAU-yoDtZx2Zgo5ED7SzUDhvrmG6lnpBjgUxfQ/viewform"
             className="inline-flex items-center justify-between w-full px-4 py-3 rounded-lg bg-[#2b2b2b] hover:bg-[#3b3b3b] transition-colors"
             prefetch={false}
@@ -38,8 +38,8 @@ export default function Page() {
               <span>Senior Rush Interest Form</span>
             </div>
             <ArrowRightIcon className="w-5 h-5" />
-          </Link>
-          <Link
+          </Link> */}
+          {/* <Link
             href="https://www.canva.com/design/DAGJiHhrIrE/oREZAJR6d7Uy4eXMjGAEWQ/edit?utm_content=DAGJiHhrIrE&utm_campaign=designshare&utm_medium=link2&utm_source=sharebutton"
             className="inline-flex items-center justify-between w-full px-4 py-3 rounded-lg bg-[#2b2b2b] hover:bg-[#3b3b3b] transition-colors"
             prefetch={false}
@@ -49,7 +49,7 @@ export default function Page() {
               <span>Info Session Slides</span>
             </div>
             <ArrowRightIcon className="w-5 h-5" />
-          </Link>
+          </Link> */}
           <Link
             href="/"
             className="inline-flex items-center justify-between w-full px-4 py-3 rounded-lg bg-[#2b2b2b] hover:bg-[#3b3b3b] transition-colors"

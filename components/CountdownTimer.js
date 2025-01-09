@@ -12,7 +12,9 @@ const CountdownTimer = createReactClass({
 
     propTypes: {
         timeLeft: PropTypes.number.isRequired,
-        interval: PropTypes.number
+        interval: PropTypes.number,
+        completeCallback: PropTypes.func,
+        tickCallback: PropTypes.func
     },
 
     getDefaultProps: function () {
