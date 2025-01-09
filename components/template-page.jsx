@@ -40,12 +40,7 @@ export default function TemplatePage() {
   return (
     (<div className="flex flex-col min-h-screen font-sans bg-white text-gray-900 scroll-smooth">
       <AOSInit/>
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Source+Sans+Pro:wght@400;600;700&display=swap');
-        body {
-          font-family: 'Source Sans Pro', sans-serif;
-        }
-      `}</style>
+
       <header className="sticky top-0 px-4 lg:px-6 h-16 flex items-center border-b border-gray-200 bg-white/[.3] backdrop-blur z-50">
         <Link className="flex items-center justify-center" href="#">
           <span className="font-bold text-2xl text-blue-600">ΚΘΠ</span>
@@ -136,7 +131,6 @@ export default function TemplatePage() {
                 <h2
                   className="text-3xl font-bold tracking-tighter md:text-4xl font-['Source Sans Pro']">About ΚΘΠ Phi Chapter</h2>
                 <p className="text-[#6B6B6B] md:text-xl font-['Source Sans Pro']">
-                
 KTP focuses on
 developing technical skills and professionalism while fostering strong friendships and networking. KTP at UGA is an exclusive organization chaptered to build a lasting legacy on-campus and around the globe 🌎
                 </p>

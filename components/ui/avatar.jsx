@@ -1,11 +1,9 @@
 "use client"
 
-import * as AvatarPrimitive from "@radix-ui/react-avatar";
-import * as React from "react";
+import * as AvatarPrimitive from "@radix-ui/react-avatar"
+import * as React from "react"
 
-import { cn } from "@/lib/utils";
-
-import PropTypes from 'prop-types';
+import { cn } from "@/lib/utils"
 
 const Avatar = React.forwardRef(({ className, ...props }, ref) => (
   <AvatarPrimitive.Root
@@ -34,16 +32,4 @@ const AvatarFallback = React.forwardRef(({ className, ...props }, ref) => (
 ))
 AvatarFallback.displayName = AvatarPrimitive.Fallback.displayName
 
-Avatar.propTypes = {
-  className: PropTypes.string,
-};
-
-AvatarImage.propTypes = {
-  className: PropTypes.string,
-};
-
-AvatarFallback.propTypes = {
-  className: PropTypes.string,
-};
-
-export { Avatar, AvatarFallback, AvatarImage };
+export { Avatar, AvatarFallback, AvatarImage }

@@ -59,13 +59,7 @@ const responsive = {
 export default function Page() {
     return (
         (
-        <div className="flex flex-col min-h-screen font-sans bg-white text-gray-900 scroll-smooth">
-            <style>{`
-              @import url('https://fonts.googleapis.com/css2?family=Source+Sans+Pro:wght@400;600;700&display=swap');
-              body {
-                font-family: 'Source Sans Pro', sans-serif;
-              }
-            `}</style>
+        <div className="flex flex-col min-h-screen font-sans bg-white text-gray-900 scroll-smooth ">
             <header className="sticky top-0 px-4 lg:px-6 h-16 flex items-center border-b border-gray-200 bg-white/[.3] backdrop-blur z-50">
               <Link className="flex items-center justify-center" href="/">
                 <span className="font-bold text-2xl text-blue-600">ΚΘΠ</span>

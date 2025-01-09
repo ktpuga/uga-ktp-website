@@ -1,7 +1,7 @@
 import * as React from "react";
 
 import { cn } from "@/lib/utils";
-// eslint-disable-next-line react/prop-types
+
 const Textarea = React.forwardRef(({ className, ...props }, ref) => {
   return (
     (<textarea
@@ -16,4 +16,3 @@ const Textarea = React.forwardRef(({ className, ...props }, ref) => {
 Textarea.displayName = "Textarea"
 
 export { Textarea };
-
