@@ -5,8 +5,10 @@ import Link from "next/link";
 import React, { useEffect } from "react";
 import { FaCalendarAlt, FaChevronRight, FaClock, FaMapMarkerAlt } from "react-icons/fa";
 import eFair from "../../public/engagementfair.jpeg";
+import gameNight from "../../public/game_night.jpeg";
+import infoSesh from "../../public/Info_Session.jpeg";
 import alphaPC from "../../public/PCalpha.jpg";
-
+import armWrestle from "../../public/power_dynamic.jpeg";
 export const AOSInit = () => {
     useEffect(() => {
       AOS.init({
@@ -33,44 +35,65 @@ const TimelineComponent = () => {
     },
     {
       id: 2,
-      title: "KTP Information Sessions",
-      date: "TBD",
-      time: "TBD",
+      title: "KTP Information Sessions I & II",
+      date: ["January 29, 2025","January 31, 2025"
+      ],
+      time: "6:30 PM - 7:30 PM",
       location: "TBA",
-      description: `Learn about our professional tech frat, our values. We'll cover the rush process, membership expectations, and answer any questions you have. Explore how KTP can help you grow both personally and professionally.`,
+      description: `Learn about our professional tech frat, our values. We'll cover the rush process, membership expectations, and answer any questions you have. Explore how KTP can help you grow both personally and professionally!`,
+      image: infoSesh,
+      url: undefined,
+    },
+    {
+      id: 2.5,
+      title: "KTP Information Session III",
+      date: "February 1, 2025",
+      time: "2:00 PM - 3:00 PM",
+      location: "Online",
+      description: `Your last chance to learn about our professional tech frat, our values, and what we do. Last info session before events begin.`,
       image: "",
       url: undefined,
     },
     {
       id: 3,
       title: "Speed Dating - Meet the Brothers",
-      date: "TBD",
-      time: "TBD",
-      location: "TBA",
-      description: "",
+      date: "February 4, 2025",
+      time: "7:00 PM - 8:00 PM",
+      location: "Miller Learning Center RM TBA",
+      description: "Meet the brothers of Kappa Theta Pi through quick, meaningful conversations. Explore our values, experiences, and professional opportunities while expanding your network and discovering what makes our brotherhood unique!",
       image: alphaPC,
       url: undefined,
     },
     {
       id: 4,
-      title: "Rush Interviews",
-      date: "TBD",
-      time: "TBD",
-      location: "TBA",
-      description: "",
-      image: "",
+      title: "Game Night",
+      date: "February 5, 2025",
+      time: "7:00 PM - 8:00 PM",
+      location: "Miller Learning Center RM TBA",
+      description: "Snacks, games, and good company. See you there!",
+      image: gameNight,
       url: "",
     },
     {
-        id: 5,
-        title: "Bid Day Celebration",
-        date: "TBD",
-        time: "TBD",
-        location: "TBA",
-        description: "The culmination of Rush Week! Join us for the formal bid ceremony and celebration with new members. 🥷",
-        image: "https://images.unsplash.com/photo-1516450360452-9312f5e86fc7",
-        url: "",
-      }
+      id: 4.5,
+      title: "Rush Interviews",
+      date: "February 5-12, 2025",
+      time: "15 Minutes",
+      location: "In-Person",
+      description: "Rush interviews are required for all potential new members. Sign up for a time slot to meet with actives so we can get to know you better! 😊",
+      image: armWrestle,
+      url: "",
+    },
+    // {
+    //     id: 5,
+    //     title: "Bid Day Celebration",
+    //     date: "TBD",
+    //     time: "TBD",
+    //     location: "TBA",
+    //     description: "The culmination of Rush Week! Join us for the formal bid ceremony and celebration with new members. 🥷",
+    //     image: "https://images.unsplash.com/photo-1516450360452-9312f5e86fc7",
+    //     url: "",
+    //   }
   ];
 
   return (
@@ -110,7 +133,7 @@ const TimelineComponent = () => {
                   
                   <div className="flex items-center text-accent mb-2">
                     <FaCalendarAlt className="mr-2" />
-                    <span className="text-sm">{event.date}</span>
+                    <span className="text-sm"> {Array.isArray(event.date) ? event.date.join(", ") : event.date}</span>
                   </div>
                   
                   <div className="flex items-center text-accent mb-2">

@@ -25,7 +25,28 @@ export default function Page() {
           <p className="text-muted-foreground">Phi Chapter (UGA)</p>
         </div>
         <div className="mt-8 space-y-4">
-          
+        <Link
+            href="https://docs.google.com/forms/d/e/1FAIpQLSdd83ur8x5wAo40T8ZRZUAq3rMi5MLvtkBDpUob2bEb_cOwfg/viewform"
+            className="inline-flex items-center justify-between w-full px-4 py-3 rounded-lg bg-[#2b2b2b] hover:bg-[#3b3b3b] transition-colors"
+            prefetch={false}
+          >
+            <div className="flex items-center space-x-3">
+              <FormIcon className="w-5 h-5" />
+              <span>KTP Rush Interest Form</span>
+            </div>
+            <ArrowRightIcon className="w-5 h-5" />
+          </Link>
+        <Link
+            href="https://groupme.com/join_group/105354211/NUNp5nWk"
+            className="inline-flex items-center justify-between w-full px-4 py-3 rounded-lg bg-[#2b2b2b] hover:bg-[#3b3b3b] transition-colors"
+            prefetch={false}
+          >
+            <div className="flex items-center space-x-3">
+              <FormIcon className="w-5 h-5" />
+              <span>Interest GroupMe</span>
+            </div>
+            <ArrowRightIcon className="w-5 h-5" />
+          </Link>
           <Link
             href="/"
             className="inline-flex items-center justify-between w-full px-4 py-3 rounded-lg bg-[#2b2b2b] hover:bg-[#3b3b3b] transition-colors"
@@ -94,6 +115,28 @@ function ArrowRightIcon(props) {
       <path d="m12 5 7 7-7 7" />
     </svg>
   )
+}
+function FormIcon(props) {
+  return (
+    <svg
+      {...props}
+      xmlns="http://www.w3.org/2000/svg"
+      width="24"
+      height="24"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+      <line x1="3" y1="10" x2="21" y2="10" />
+      <line x1="8" y1="6" x2="16" y2="6" />
+      <line x1="12" y1="14" x2="16" y2="14" />
+      <line x1="8" y1="18" x2="16" y2="18" />
+    </svg>
+  );
 }
 function GithubIcon(props) {
   return (

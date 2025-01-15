@@ -3,10 +3,12 @@ import { Button } from "@/components/ui/button"
 import Image from "next/image"
 import Link from "next/link"
 import React, { useEffect, useState } from 'react'
+import Carousel from 'react-multi-carousel'
 import Card from '../components/ui/card'
 import Footer from '../components/ui/footer'
 import main from '../public/glitchKTP.gif'
-import pfp from '../public/whiteKTPpfp.jpg'
+import pcAlpha from '../public/PCalpha.jpg'
+import pfp from '../public/whiteKTPpfp.jpg'; // deprecated for now 
 import { AOSInit } from "./ui/timeline"
 function importAll(r) {
   let images = {};
@@ -101,13 +103,45 @@ export default function TemplatePage() {
                   </Link> */}
                 </div>
               </div>
-              <div className="flex items-center justify-center">
-                <Image
+              <div className="flex items-center space-x-4 justify-center">
+                {/* TODO: Fix this make it look pretty! */}
+              {/* <Carousel 
+        responsive={responsive} 
+        infinite={true} 
+        autoPlay={true} 
+        autoPlaySpeed={3000}
+        arrows={false}
+        showDots={true}
+        containerClass="carousel-container"
+        itemClass="carousel-item"
+        removeArrowOnDeviceType={["tablet", "mobile"]}
+      >
+        {resources.map((resource, index) => (
+          <div key={index} className="p-6 border rounded-lg shadow-lg bg-white mx-4">
+            <div className="list-disc ml-6 hover:animate-pulse">
+              <div className="text-[#6B6B6B] md:text-xl font-['Source Sans Pro']">
+                <Link className="text-blue-500" href={resource.url} target="_blank" rel="noopener noreferrer">
+                  {resource.title}
+                </Link>
+              </div>
+            </div>
+          </div>
+        ))}
+      </Carousel> */}
+                {/* <Image
                 unoptimized
                   src={pfp.src}
                   width="200"
                   height="200"
                   alt="ΚΘΠ"
+                  className="rounded-xl"
+                  style={{objectFit: "cover" }} /> */}
+                  <Image
+                unoptimized
+                  src={pcAlpha.src}
+                  width="400"
+                  height="200"
+                  alt="ΚΘΠ Pledge Class Alpha"
                   className="rounded-xl"
                   style={{objectFit: "cover" }} />
               </div>
@@ -320,7 +354,7 @@ developing technical skills and professionalism while fostering strong friendshi
                     <Link href="https://www.linkedin.com/company/kappa-theta-pi-uga/" target="_blank" className="text-lg font-large hover:text-blue-600 hover:animate-pulse transition-colors" prefetch={false}>
                       <LinkedinIcon className="h-6 w-6" />
                     </Link>
-                    <Link className="text-lg font-large hover:text-blue-600 hover:animate-pulse transition-colors" href="https://groupme.com/join_group/105220597/ltavLs2X" target="_blank">
+                    <Link className="text-lg font-large hover:text-blue-600 hover:animate-pulse transition-colors" href="https://groupme.com/join_group/105354211/NUNp5nWk" target="_blank">
                 <GroupIcon className="h-6 w-6" />
               </Link>
               <Link className="text-lg font-large hover:text-blue-600 hover:animate-pulse transition-colors" href="mailto:uga.ktp@gmail.com;ryan.majd@uga.edu">

@@ -121,7 +121,7 @@ export default function Page() {
           Spring 2025 Rush
         </h1>
         <p className="animate-pulse text-[#6B6B6B] md:text-xl font-['Source Sans Pro']">
-          Coming Soon
+          Rush Theme: Coming Soon
         </p>
         <Timeline/>
     
