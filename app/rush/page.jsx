@@ -59,30 +59,32 @@ const responsive = {
 export default function Page() {
     return (
         (
-        <div className="flex flex-col min-h-screen font-sans bg-white text-gray-900 scroll-smooth ">
+        <div className="flex flex-col min-h-screen font-sans bg-black text-gray-900 scroll-smooth ">
             <header className="sticky top-0 px-4 lg:px-6 h-16 flex items-center border-b border-gray-200 bg-white/[.3] backdrop-blur z-50">
               <Link className="flex items-center justify-center" href="/">
-                <span className="font-bold text-2xl text-blue-600">ΚΘΠ</span>
+                <span className="font-bold text-2xl text-pink-500">ΚΘΠ</span>
             
                   <span className="ml-2 font-semibold text-lg">Phi Chapter at UGA</span>
             
               
               </Link>
               <nav className="ml-auto flex gap-4 sm:gap-6">
-              <Link className="text-sm font-medium hover:text-blue-600 hover:animate-pulse transition-colors" href="/">
+              <Link className="text-sm font-medium hover:text-pink-500 transition-colors"
+            href="/">
                   Home
                 </Link>
                 </nav>
                 </header>
-            <main className="flex-1">
-            <section id="resources" className="bg-[#E0E0E0] py-6 md:py-10">
-<div className="container mx-auto px-4 md:px-6">
-<div className="container mx-auto text-center gap-6 md:gap-10">
-<div className="flex items-center justify-center"></div>
-<div className="space-y-4 animate-fade-in-left">
-<h2
-  className="text-3xl font-bold tracking-tighter md:text-4xl font-['Source Sans Pro']">
-  ΚΘΠ Prep Resources:
+                <main className="flex-1">
+        {/* RESOURCES SECTION */}
+        <section id="resources" className="bg-[#1A1A1A] py-6 md:py-10">
+          <div className="container mx-auto px-4 md:px-6">
+            <div className="container mx-auto text-center gap-6 md:gap-10">
+              <div className="space-y-4 animate-fade-in-left">
+                <h2
+                  className="text-3xl font-bold tracking-tighter md:text-4xl font-['Source Sans Pro'] text-pink-500"
+                >
+  ΚΘΠ <span className="p-2 font-gameOfSquids">Prep Resources:</span>
 </h2>
 <Carousel 
         responsive={responsive} 
@@ -96,10 +98,10 @@ export default function Page() {
         removeArrowOnDeviceType={["tablet", "mobile"]}
       >
         {resources.map((resource, index) => (
-          <div key={index} className="p-6 border rounded-lg shadow-lg bg-white mx-4">
+          <div key={index}    className="p-6 border border-pink-500 rounded-lg shadow-lg bg-[#2A2A2A] mx-4">
             <div className="list-disc ml-6 hover:animate-pulse">
-              <div className="text-[#6B6B6B] md:text-xl font-['Source Sans Pro']">
-                <Link className="text-blue-500" href={resource.url} target="_blank" rel="noopener noreferrer">
+              <div className="text-[#FFF] md:text-xl font-['Source Sans Pro']">
+                <Link className="text-pink-400 underline" href={resource.url} target="_blank" rel="noopener noreferrer">
                   {resource.title}
                 </Link>
               </div>
@@ -112,16 +114,16 @@ export default function Page() {
                   </div>
                 </div>
               </section>
-            <section className="bg-[#F0F0F0] mx-auto py-12 md:py-20 flex flex-col items-center justify-center">
+            <section className="bg-[#2B2B2B] mx-auto py-12 md:py-20 flex flex-col items-center justify-center">
   <div className="container mx-auto px-4 md:px-6">
     <div className="gap-6 md:gap-10 text-center">
       <div className="space-y-4">
         
-        <h1 className="text-3xl font-bold text-blue-600 tracking-tighter md:text-4xl lg:text-5xl font-['Source Sans Pro']">
+        <h1 className="text-3xl font-bold text-[#249f9c] tracking-tighter md:text-4xl lg:text-5xl font-gameOfSquids">
           Spring 2025 Rush
         </h1>
-        <p className="animate-pulse text-[#6B6B6B] md:text-xl font-['Source Sans Pro']">
-          Rush Theme: Coming Soon
+        <p className="animate-pulse text-[#6B6B6B] md:text-xl font-gameOfSquids ">
+          Rush Theme: <span className="text-pink-500">Squid Games</span>
         </p>
         <Timeline/>
     

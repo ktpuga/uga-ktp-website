@@ -7,6 +7,9 @@ module.exports = {
   ],
   theme: {
     extend: {
+      fontFamily: {
+        gameOfSquids: ['"Game of Squids"', 'sans-serif'],
+      },
       colors: {
         primary: {
           DEFAULT: "#0D6EFD",

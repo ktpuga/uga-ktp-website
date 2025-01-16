@@ -6,6 +6,12 @@ html {
   scroll-behavior: smooth;
 }
 
+@font-face {
+  font-family: 'Game Of Squids'; /* Name for CSS usage */
+  src: url("../public/Game\ Of\ Squids.ttf") format("truetype");
+  font-weight: normal;
+}
+
 @layer base {
   :root {
     --background: 0 0% 100%;

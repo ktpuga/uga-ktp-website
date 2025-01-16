@@ -111,7 +111,7 @@ const TimelineComponent = () => {
                 className="relative flex items-center justify-center"
                 data-aos="slide-down"
               >
-             <div className="absolute w-4 h-4 bg-primary rounded-full transform transition-all duration-3000 hover:scale-[2] hover:bg-ring"></div>
+             <div className="absolute w-4 h-4 bg-pink-500 rounded-full transform transition-all duration-3000 hover:scale-[2]"></div>
               </div>
 
               {/* Event content */}
@@ -149,7 +149,7 @@ const TimelineComponent = () => {
                   <p className="text-body text-accent mb-2">{event.description}</p>
                   
                   {event.url && (
-                    <Link href={event.url ? event.url : "" } target={event.url ? '_blank' : ''} className="flex items-center text-primary hover:text-ring transition-colors duration-300">
+                    <Link href={event.url ? event.url : "" } target={event.url ? '_blank' : ''} className="flex items-center text-pink-500 hover:text-ring transition-colors duration-300">
                     Learn More
                     <FaChevronRight className="ml-2" />
                   </Link> 
