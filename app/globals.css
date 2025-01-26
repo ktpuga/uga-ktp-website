@@ -1,15 +1,162 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import 'tailwindcss';
 
-html {
-  scroll-behavior: smooth;
+@plugin 'tailwindcss-animate';
+
+@theme {
+  --font-game-of-squids: 'Game of Squids', sans-serif;
+
+  --color-primary: #0d6efd;
+  --color-primary-foreground: #ffffff;
+
+  --color-secondary: #f0f1f3;
+  --color-secondary-foreground: #020817;
+
+  --color-accent: #6d7074;
+  --color-accent-foreground: #020817;
+
+  --color-background: #fafafb;
+  --color-foreground: #020817;
+
+  --color-card: #ffffff;
+  --color-card-foreground: #020817;
+
+  --color-popover: #ffffff;
+  --color-popover-foreground: #020817;
+
+  --color-muted: #f0f1f3;
+  --color-muted-foreground: #6d7074;
+
+  --color-destructive: #ff4c4c;
+  --color-destructive-foreground: #ffffff;
+
+  --color-border: #e0e0e0;
+  --color-input: #e0e0e0;
+  --color-ring: #0d6efd;
+
+  --color-chart-1: #ff6f61;
+  --color-chart-2: #4caf50;
+  --color-chart-3: #03a9f4;
+  --color-chart-4: #ffc107;
+  --color-chart-5: #8e44ad;
+
+  --color-dark-primary: #0d6efd;
+  --color-dark-primary-foreground: #ffffff;
+
+  --color-dark-secondary: #1e1e2c;
+  --color-dark-secondary-foreground: #fafafb;
+
+  --color-dark-accent: #6d7074;
+  --color-dark-accent-foreground: #fafafb;
+
+  --color-dark-background: #020817;
+  --color-dark-foreground: #fafafb;
+
+  --color-dark-card: #121212;
+  --color-dark-card-foreground: #fafafb;
+
+  --color-dark-popover: #121212;
+  --color-dark-popover-foreground: #fafafb;
+
+  --color-dark-muted: #1e1e2c;
+  --color-dark-muted-foreground: #6d7074;
+
+  --color-dark-destructive: #ff4c4c;
+  --color-dark-destructive-foreground: #ffffff;
+
+  --color-dark-border: #3c3c3c;
+  --color-dark-input: #3c3c3c;
+  --color-dark-ring: #0d6efd;
+
+  --background-image-gradient-radial: radial-gradient(var(--tw-gradient-stops));
+  --background-image-gradient-conic: conic-gradient(
+    from 180deg at 50% 50%,
+    var(--tw-gradient-stops)
+  );
+
+  --animate-fade-in-right: fade-in-right 0.6s ease-in-out;
+  --animate-fade-in-left: fade-in-left 0.6s ease-in-out;
+  --animate-fade-in-top: fade-in-top 0.6s ease-in-out;
+  --animate-fade-in-bottom: fade-in-bottom 0.6 ease-in-out;
+  --animate-rotate-360: rotate-360 1s linear;
+
+  @keyframes fade-in-right {
+    0% {
+      opacity: 0;
+      transform: translateX(-20px);
+    }
+    100% {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+  @keyframes fade-in-left {
+    0% {
+      opacity: 0;
+      transform: translateX(20px);
+    }
+    100% {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+  @keyframes fade-in-top {
+    0% {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    100% {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+  @keyframes rotate-360 {
+    0% {
+      transform: rotate(0deg);
+    }
+    100% {
+      transform: rotate(360deg);
+    }
+  }
+  @keyframes fade-in-bottom {
+    0% {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    100% {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
 }
 
-@font-face {
-  font-family: 'Game Of Squids'; /* Name for CSS usage */
-  src: url("../public/Game\ Of\ Squids.ttf") format("truetype");
-  font-weight: normal;
+/*
+  The default border color has changed to `currentColor` in Tailwind CSS v4,
+  so we've added these compatibility styles to make sure everything still
+  looks the same as it did with Tailwind CSS v3.
+
+  If we ever want to remove these styles, we need to add an explicit border
+  color utility to any element that depends on these defaults.
+*/
+@layer base {
+  *,
+  ::after,
+  ::before,
+  ::backdrop,
+  ::file-selector-button {
+    border-color: var(--color-gray-200, currentColor);
+  }
+}
+
+@layer utilities {
+  html {
+    scroll-behavior: smooth;
+  }
+
+  @font-face {
+    font-family: 'Game Of Squids'; /* Name for CSS usage */
+    src: url('../public/Game\ Of\ Squids.ttf') format('truetype');
+    font-weight: normal;
+  }
 }
 
 @layer base {

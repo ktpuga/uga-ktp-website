@@ -14,7 +14,7 @@ export default function Page() {
 
     return (
         <div className="flex flex-col min-h-screen font-sans bg-gray-900 text-gray-100 scroll-smooth">
-            <header className="sticky top-0 px-4 lg:px-6 h-16 flex items-center border-b border-gray-700 bg-gray-800/[.85] backdrop-blur z-50">
+            <header className="sticky top-0 px-4 lg:px-6 h-16 flex items-center border-b border-gray-700 bg-gray-800/[.85] backdrop-blur-sm z-50">
                 <Link className="flex items-center justify-center" href="/">
                     <span className="font-bold text-2xl text-indigo-500">ΚΘΠ</span>
                     {!mobile &&
@@ -41,7 +41,7 @@ export default function Page() {
             </header>
 
             <main className="flex-1 relative">
-                <div className="absolute inset-0 bg-gradient-to-br from-gray-900 via-indigo-900 to-black opacity-70"></div>
+                <div className="absolute inset-0 bg-linear-to-br from-gray-900 via-indigo-900 to-black opacity-70"></div>
                 <div className="absolute inset-0 bg-cover bg-center opacity-20"></div>
                     {/* bg-[url('/background-pattern.svg')] */}
                 <section className="relative z-10 mx-auto py-16 px-6 max-w-4xl text-center">

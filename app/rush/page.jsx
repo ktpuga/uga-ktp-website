@@ -60,7 +60,7 @@ export default function Page() {
     return (
         (
         <div className="flex flex-col min-h-screen font-sans bg-black text-gray-900 scroll-smooth ">
-            <header className="sticky top-0 px-4 lg:px-6 h-16 flex items-center border-b border-gray-200 bg-white/[.3] backdrop-blur z-50">
+            <header className="sticky top-0 px-4 lg:px-6 h-16 flex items-center border-b border-gray-200 bg-white/[.3] backdrop-blur-sm z-50">
               <Link className="flex items-center justify-center" href="/">
                 <span className="font-bold text-2xl text-pink-500">ΚΘΠ</span>
             

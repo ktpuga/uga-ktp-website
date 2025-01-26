@@ -43,7 +43,7 @@ export default function TemplatePage() {
     (<div className="flex flex-col min-h-screen font-sans bg-white text-gray-900 scroll-smooth">
       <AOSInit/>
 
-      <header className="sticky top-0 px-4 lg:px-6 h-16 flex items-center border-b border-gray-200 bg-white/[.3] backdrop-blur z-50">
+      <header className="sticky top-0 px-4 lg:px-6 h-16 flex items-center border-b border-gray-200 bg-white/[.3] backdrop-blur-sm z-50">
         <Link className="flex items-center justify-center" href="#">
           <span className="font-bold text-2xl text-blue-600">ΚΘΠ</span>
           {!mobile &&
@@ -97,7 +97,7 @@ export default function TemplatePage() {
                   {/* <Link
                     href="https://uga.campuslabs.com/engage/organization/ktp"
                     target="_Blank"
-                    className="hover:animate-pulse hover:bg-[#2463EB] inline-flex items-center justify-center rounded-md border border-input bg-[#F0F0F0] px-4 py-2 text-sm font-medium shadow-sm transition-colors hover:bg-[#fff] hover:text-[#333333] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 font-['Source Sans Pro']"
+                    className="hover:animate-pulse hover:bg-[#2463EB] inline-flex items-center justify-center rounded-md border border-input bg-[#F0F0F0] px-4 py-2 text-sm font-medium shadow-xs transition-colors hover:bg-[#fff] hover:text-[#333333] focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 font-['Source Sans Pro']"
                     prefetch={false}>
                     Involvement Network
                   </Link> */}
@@ -184,20 +184,20 @@ developing technical skills and professionalism while fostering strong friendshi
                 At the heart of ΚΘΠ are the values that guide our organization and shape our members.
               </p>
               <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3">
-                <div className="rounded-lg bg-[#E0E0E0] p-6 text-left shadow-sm" data-aos='fade-left' data-aos-duration='600'>
+                <div className="rounded-lg bg-[#E0E0E0] p-6 text-left shadow-xs" data-aos='fade-left' data-aos-duration='600'>
                   <h3 className="text-xl font-bold font-['Source Sans Pro']">Leadership</h3>
                   <p className="text-[#6B6B6B] font-['Source Sans Pro']">
                     We empower our members to take on leadership roles and develop their skills to make a positive
                     impact. Members have the opprotunity to join Comittee&apos;s and/or be involved in the Executive Board! 
                   </p>
                 </div>
-                <div className="rounded-lg bg-[#E0E0E0] p-6 text-left shadow-sm"data-aos='fade-up' data-aos-duration='600'>
+                <div className="rounded-lg bg-[#E0E0E0] p-6 text-left shadow-xs"data-aos='fade-up' data-aos-duration='600'>
                   <h3 className="text-xl font-bold font-['Source Sans Pro']">Professionalism</h3>
                   <p className="text-[#6B6B6B] font-['Source Sans Pro']">
                   Through events like interview training, resume building, one-on-one mentorship, and more, Kappa Theta Pi Professional Development aims to prepare members for success in any technology-related career. We take pride in developing the tech leaders of the future.
                   </p>
                 </div>
-                <div className="rounded-lg bg-[#E0E0E0] p-6 text-left shadow-sm" data-aos='fade-right' data-aos-duration='600'>
+                <div className="rounded-lg bg-[#E0E0E0] p-6 text-left shadow-xs" data-aos='fade-right' data-aos-duration='600'>
                   <h3 className="text-xl font-bold font-['Source Sans Pro']">Community</h3>
                   <p className="text-[#6B6B6B] font-['Source Sans Pro']">
                   The people you meet in Kappa Theta Pi will go on to be some of your closest friends throughout college and beyond. We host a variety of exclusive social events throughout the semester through which our members can bond.

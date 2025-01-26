@@ -111,12 +111,12 @@ const TimelineComponent = () => {
                 className="relative flex items-center justify-center"
                 data-aos="slide-down"
               >
-             <div className="absolute w-4 h-4 bg-pink-500 rounded-full transform transition-all duration-3000 hover:scale-[2]"></div>
+             <div className="absolute w-4 h-4 bg-pink-500 rounded-full transform transition-all duration-3000 hover:scale-2"></div>
               </div>
 
               {/* Event content */}
               <div className={`w-1/2 ${index % 2 === 0 ? "pl-6" : "pr-6"}` }>
-                <div className="bg-card p-6 rounded-lg shadow-sm hover:shadow-lg transition-shadow duration-300">
+                <div className="bg-card p-6 rounded-lg shadow-xs hover:shadow-lg transition-shadow duration-300">
                   <Image 
                   unoptimized
                     src={event.image} 
