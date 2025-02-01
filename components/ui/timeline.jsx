@@ -62,7 +62,7 @@ const TimelineComponent = () => {
       location: "Online",
       description: `Your last chance to learn about our professional tech frat, our values, and what we do. Last info session before events begin. (Info sessions share identical information)`,
       image: "",
-      url: undefined,
+      url: "https://us04web.zoom.us/j/76776366156?pwd=Y6TbFeCp7AqmV9ObOIDoDMDR4I6gSe.1",
     },
     {
       id: 3,
@@ -126,7 +126,7 @@ const TimelineComponent = () => {
 
               {/* Event content */}
               <div className={`w-1/2 ${index % 2 === 0 ? "pl-6" : "pr-6"}` }>
-                <div className="bg-card p-6 rounded-lg shadow-xs hover:shadow-lg transition-shadow duration-300">
+                <div className={`bg-card p-6 rounded-lg shadow-xs hover:shadow-lg transition-shadow duration-300`}>
                   <Image 
                   unoptimized
                     src={event.image} 
