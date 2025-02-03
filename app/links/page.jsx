@@ -26,6 +26,17 @@ export default function Page() {
         </div>
         <div className="mt-8 space-y-4">
         <Link
+            href="https://www.signupgenius.com/go/10C0C44ACAB29A3FCC16-54745399-ktprush#/"
+            className="inline-flex items-center justify-between w-full px-4 py-3 rounded-lg bg-[#2b2b2b] hover:bg-[#3b3b3b] transition-colors"
+            prefetch={false}
+          >
+            <div className="flex items-center space-x-3">
+              <InterviewIcon className="w-5 h-5" />
+              <span>Rush Interview Signup</span>
+            </div>
+            <ArrowRightIcon className="w-5 h-5" />
+          </Link>
+        <Link
             href="https://docs.google.com/forms/d/e/1FAIpQLSdd83ur8x5wAo40T8ZRZUAq3rMi5MLvtkBDpUob2bEb_cOwfg/viewform"
             className="inline-flex items-center justify-between w-full px-4 py-3 rounded-lg bg-[#2b2b2b] hover:bg-[#3b3b3b] transition-colors"
             prefetch={false}
@@ -42,7 +53,7 @@ export default function Page() {
             prefetch={false}
           >
             <div className="flex items-center space-x-3">
-              <FormIcon className="w-5 h-5" />
+              <GroupChatIcon className="w-5 h-5" />
               <span>Interest GroupMe</span>
             </div>
             <ArrowRightIcon className="w-5 h-5" />
@@ -80,7 +91,7 @@ export default function Page() {
             </div>
             <ArrowRightIcon className="w-5 h-5" />
           </Link>
-          <Link
+          {/* <Link
             href="mailto:uga.ktp@gmail.com"
             className="inline-flex items-center justify-between w-full px-4 py-3 rounded-lg bg-[#2b2b2b] hover:bg-[#3b3b3b] transition-colors"
             prefetch={false}
@@ -90,7 +101,7 @@ export default function Page() {
               <span>Email</span>
             </div>
             <ArrowRightIcon className="w-5 h-5" />
-          </Link>
+          </Link> */}
         </div>
       </div>
     </main>
@@ -113,6 +124,25 @@ function ArrowRightIcon(props) {
     >
       <path d="M5 12h14" />
       <path d="m12 5 7 7-7 7" />
+    </svg>
+  )
+}
+function InterviewIcon(props) {
+  return (
+    <svg
+      {...props}
+      xmlns="http://www.w3.org/2000/svg"
+      width="24"
+      height="24"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      {/* Speech Bubble */}
+      <path d="M3 12v-4a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2H7l-4 4v-4z" />
     </svg>
   )
 }
@@ -221,3 +251,24 @@ function MailIcon(props) {
 }
 
 
+function GroupChatIcon(props) {
+  return (
+    <svg
+      {...props}
+      xmlns="http://www.w3.org/2000/svg"
+      width="24"
+      height="24"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      {/* Outer group bubble */}
+      <path d="M5 15v2a2 2 0 0 0 2 2h5l4 4v-4h1a2 2 0 0 0 2-2v-2a5 5 0 0 0-5-5H10a5 5 0 0 0-5 5z" />
+      {/* Inner chat bubble */}
+      <path d="M8 9v1a3 3 0 0 0 3 3h3l2 2v-2h1a3 3 0 0 0 3-3V9a3 3 0 0 0-3-3h-7a3 3 0 0 0-3 3z" />
+    </svg>
+  )
+}
