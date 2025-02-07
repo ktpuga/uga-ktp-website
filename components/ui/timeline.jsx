@@ -89,10 +89,10 @@ const TimelineComponent = () => {
       title: "Rush Interviews",
       date: "February 5-12, 2025",
       time: "15 Minutes",
-      location: "In-Person",
+      location: "Boyd Graduate Research Center, RM 204",
       description: "Rush interviews are required for all potential new members. Sign up for a time slot to meet with actives so we can get to know you better! 😊",
       image: armWrestle,
-      url: "",
+      url: "https://www.signupgenius.com/go/10C0C44ACAB29A3FCC16-54745399-ktprush#/",
     },
     // {
     //     id: 5,
