@@ -91,7 +91,7 @@ export default function TemplatePage() {
                   <Button
     className="hover:animate-pulse bg-[#052039] hover:bg-[#2463EB] font-['Source Sans Pro'] text-white"
   >
-    Spring Rush 2025
+    Fall Rush 2025
   </Button>
                   </Link>
                   {/* <Link
