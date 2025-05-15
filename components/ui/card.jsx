@@ -3,8 +3,8 @@ import React from 'react';
 
 const Card = ({ name, title, bio, avatarSrc, fallbackInitials, instagramUrl, linkedinUrl, otherUrl }) => {
   return (
-    <div className="rounded-lg bg-[#F0F0F0] p-4 text-center shadow-xs w-45 h-45 flex flex-col items-center justify-center">
-      <Avatar className="w-16 h-16 mb-2">                     
+    <div className="rounded-lg bg-gradient-to-br from-[#c8e6ff] to-[#c7f8d4] p-4 text-center shadow-xs w-45 h-45 flex flex-col items-center justify-center">
+      <Avatar className="w-20 h-20 mb-2">                     
         {/* embedded bio for SEO purposes */}
         <AvatarImage src={avatarSrc} alt={`${name} Avatar, bio: ${bio}`} /> 
         <AvatarFallback>{fallbackInitials}</AvatarFallback>

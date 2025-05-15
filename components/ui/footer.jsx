@@ -6,7 +6,7 @@ export class footer extends Component {
         <footer className="bg-[#052039] py-6 w-full shrink-0 text-white">
         <div
           className="container mx-auto px-4 md:px-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-xs font-['Source Sans Pro']">&copy; 2024 ΚΘΠ. All rights reserved.</p>
+          <p className="text-xs font-['Source Sans Pro']">&copy; 2025 ΚΘΠ. All rights reserved.</p>
           <nav className="flex gap-4 sm:gap-6">
             <Link
               href="/code-of-conduct"

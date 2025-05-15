@@ -1,114 +1,116 @@
+// pages/hackathon/page.jsx
+// 🚀 Dark‑mode hackathon page with animated gibberish line.
+
 'use client'
-import { Button } from "@/components/ui/button"
-import Image from "next/image"
-import Link from "next/link"
+import { Button } from '@/components/ui/button'
+import Footer from '@/components/ui/footer'
+import ktpHacks1 from '@/public/ktpHacks1.jpeg'
+import ktpHacks2 from '@/public/ktpHacks2.jpeg'
+import ktpHacks3 from '@/public/ktpHacks3.jpeg'
+import Image from 'next/image'
+import Link from 'next/link'
 import React, { useEffect, useState } from 'react'
-import Footer from '../../components/ui/footer'
-import gif from '../../public/cat_walking.gif'
-import ktpHacks from '../../public/ktpHacks1.jpeg'
-export default function Page() {
 
-    const [mobile, setMobile] = useState(false);
-    const [gibberish, setGibberish] = useState("§k'rbuiafbvciu@R*(FH");
+export default function HackathonPage() {
+  const [mobile, setMobile] = useState(false)
+  const [gibberish, setGibberish] = useState('WELCOME_TO_KTP_HACKS')
 
-    useEffect(() => {
-        const updateMobile = () => setMobile(window.innerWidth < 599);
-        updateMobile();
-        window.addEventListener('resize', updateMobile);
+  useEffect(() => {
+    const updateMobile = () => setMobile(window.innerWidth < 599)
+    updateMobile()
+    window.addEventListener('resize', updateMobile)
 
-        // Update gibberish with random symbols every 50ms
-        const gibberishInterval = setInterval(() => {
-            const symbols = "!@#$%^&*()_+[]{}|;:',.<>?`~0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
-            const newGibberish = Array.from({ length: 18 }, () =>
-                symbols.charAt(Math.floor(Math.random() * symbols.length))
-            ).join('');
-            setGibberish(newGibberish);
-        }, 50);
+    const scramble = setInterval(() => {
+      // shuffle characters
+      setGibberish((prev) => prev.split('').sort(() => Math.random() - 0.5).join(''))
+    }, 100)
 
-        return () => {
-            window.removeEventListener('resize', updateMobile);
-            clearInterval(gibberishInterval);
-        };
-    }, []);
+    return () => {
+      window.removeEventListener('resize', updateMobile)
+      clearInterval(scramble)
+    }
+  }, [])
 
-    return (
-        <div className="flex flex-col min-h-screen font-sans bg-gray-900 text-gray-100 scroll-smooth">
-            <header className="sticky top-0 px-4 lg:px-6 h-16 flex items-center border-b border-gray-700 bg-gray-800/[.85] backdrop-blur-sm z-50">
-                <Link className="flex items-center justify-center" href="/">
-                    <span className="font-bold text-2xl text-indigo-500">ΚΘΠ</span>
-                    {!mobile && <span className="ml-2 font-semibold text-lg">Phi Chapter at UGA</span>}
-                </Link>
-                <nav className="ml-auto flex gap-4 sm:gap-6">
-                    <Link className="text-sm font-medium hover:text-blue-600 hover:animate-pulse transition-colors" href="/rush">
-                        Rush
-                    </Link>
-                    <Link className="text-sm font-medium hover:text-blue-600 hover:animate-pulse transition-colors" href="/#about">
-                        About
-                    </Link>
-                    <Link className="text-sm font-medium hover:text-blue-600 hover:animate-pulse transition-colors" href="/#leadership">
-                        Leadership
-                    </Link>
-                    <Link className="text-sm font-medium hover:text-blue-600 hover:animate-pulse transition-colors" href="/hackathon">
-                        Hackathon
-                    </Link>
-                    <Link className="text-sm font-medium hover:text-blue-600 hover:animate-pulse transition-colors" href="/#contact">
-                        Contact
-                    </Link>
-                </nav>
-            </header>
+  return (
+    <div className="flex min-h-screen flex-col font-sans bg-gray-900 text-gray-100">
+      {/* ---------- NAV ---------- */}
+      <header className="sticky top-0 z-50 flex h-16 items-center border-b border-gray-700 bg-gray-800/80 px-4 backdrop-blur-md lg:px-6">
+        <Link href="/" className="flex items-center font-bold text-indigo-400">
+          ΚΘΠ {!mobile && <span className="ml-2 text-sm font-semibold text-gray-300">Phi Chapter at UGA</span>}
+        </Link>
+        <nav className="ml-auto flex gap-4 sm:gap-6">
+          {[
+            ['Rush', '/rush'],
+            ['About', '/#about'],
+            ['Leadership', '/#leadership'],
+            ['Hackathon', '/hackathon'],
+            ['Contact', '/#contact'],
+          ].map(([label, href]) => (
+            <Link
+              key={label}
+              href={href}
+              className="text-sm font-medium transition-colors hover:text-indigo-400"
+            >
+              {label}
+            </Link>
+          ))}
+        </nav>
+      </header>
 
-            <main className="flex-1 relative">
-                <div className="absolute inset-0 bg-linear-to-br from-gray-900 via-indigo-900 to-black opacity-70"></div>
-                <div className="absolute inset-0 bg-cover bg-center opacity-20"></div> 
-                {/* bg-[url('/background-pattern.svg')] */}
+      {/* ---------- MAIN ---------- */}
+      <main className="relative flex-1 overflow-hidden">
+        {/* Starfield background */}
+        <div aria-hidden className="pointer-events-none absolute inset-0 -z-10 animate-pulse [background-image:radial-gradient(white_1px,transparent_1px)] [background-size:4px_4px] opacity-10" />
 
-                <section className="animate-fade-in-top relative z-10 mx-auto py-16 px-6 max-w-4xl text-center">
-  <h1 className=" text-4xl font-extrabold text-indigo-400 tracking-tight mb-6 md:text-5xl lg:text-6xl">
-    KTP Hacks
-  </h1>
-  <p className=" text-gray-300 text-lg max-w-2xl mx-auto mb-6">
-  KTP Hacks is a private hackathon designed exclusively for brothers to showcase their innovation and creativity.
-  </p>
-  <p className=" text-gray-400 text-sm max-w-2xl mx-auto mb-2">KTP Hacks does not take place during Spring semesters, as <Link target="_Blank" href="https://ugahacks.com" className="font-bold text-indigo-400">UGAHacks</Link> hosts the flagship hackathon during this time.</p>
-  <div className="bg-gray-800/80 rounded-2xl shadow-2xl p-8 md:p-12">
-    <div className="space-y-8">
-      <div className="flex flex-wrap justify-center gap-4">
-        <Image
-          unoptimized
-          width={200}
-          height={200}
-          alt="KTP Hacks Picture"
-          src="/ktpHacks1.jpeg"
-          className="rounded-lg shadow-md transition-transform hover:scale-105"
-        />
-        <Image
-          unoptimized
-          width={200}
-          height={200}
-          alt="KTP Hacks Picture 2"
-          src="/ktpHacks2.jpeg"
-          className="rounded-lg shadow-md transition-transform hover:scale-105"
-        />
-        <Image
-          unoptimized
-          width={200}
-          height={200}
-          alt="KTP Hacks Picture 3"
-          src="/ktpHacks3.jpeg"
-          className="rounded-lg shadow-md transition-transform hover:scale-105"
-        />
-      </div>
-      <Link href="https://uga-ktp-hackathon-f24.devpost.com/" target="_blank">
-        <Button className="hover:animate-pulse bg-indigo-600 hover:bg-indigo-500 text-white text-lg px-6 py-3 rounded-lg shadow-lg">
-          Last Year&rsquo;s DevPost Link
-        </Button>
-      </Link>
-    </div>
-  </div>
-</section>
-
-            </main>
-            <Footer />
+        {/* Blurred gradient blobs */}
+        <div aria-hidden className="absolute inset-0 -z-10">
+          <div className="absolute -left-32 top-0 h-[28rem] w-[28rem] rounded-full bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-500 opacity-30 blur-[140px]" />
+          <div className="absolute -bottom-32 right-0 h-[24rem] w-[24rem] rounded-full bg-gradient-to-tr from-emerald-500 via-teal-500 to-cyan-500 opacity-25 blur-[120px]" />
         </div>
-    );
+
+        {/* Hero / Content */}
+        <section className="relative z-10 mx-auto max-w-5xl px-6 py-10 text-center md:py-24">
+          <h1 className="mb-4 bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400 bg-clip-text text-5xl font-extrabold tracking-tight text-transparent md:text-6xl lg:text-7xl">
+            KTP&nbsp;<span className="animate-fade animate-infinite">Hacks</span>
+          </h1>
+           <p className="mb-10 font-mono text-xs uppercase tracking-widest text-emerald-400 md:text-sm">
+            {gibberish}
+          </p>
+          <p className="mx-auto mb-8 max-w-2xl text-lg text-gray-300 md:text-xl">
+            An annual private hackathon where brothers turn caffeine &amp; code into the next big idea. <br/>
+          </p>
+         
+
+          <p className="mx-auto mb-12 max-w-2xl text-sm text-gray-400">
+            No spring edition – we support
+            <Link href="https://ugahacks.com" target="_blank" className="text-indigo-400 hover:underline">
+              &nbsp;UGAHacks
+            </Link>
+            &nbsp;as the flagship event during that semester.
+          </p>
+
+          {/* Gallery */}
+          <div className="mx-auto mb-12 grid max-w-4xl grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3">
+            {[ktpHacks1, ktpHacks2, ktpHacks3].map((src, i) => (
+              <Image
+                unoptimized
+                key={i}
+                src={src}
+                alt={`KTP Hacks screenshot ${i + 1}`}
+                className="h-64 w-full rounded-xl object-cover shadow-lg transition-transform hover:scale-[1.03]"
+              />
+            ))}
+          </div>
+
+          <Link href="https://uga-ktp-hackathon-f24.devpost.com/" target="_blank">
+            <Button className="rounded-lg bg-indigo-600 px-8 py-3 text-lg font-semibold text-white transition-colors hover:bg-indigo-500">
+              View Last Year’s DevPost
+            </Button>
+          </Link>
+        </section>
+      </main>
+
+      <Footer />
+    </div>
+  )
 }
