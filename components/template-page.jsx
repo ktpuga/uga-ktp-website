@@ -11,7 +11,7 @@ import mtdspexec from "../public/mytie_x_dsp_exec.JPEG"
 import pcAlpha from "../public/PCalpha.jpg"
 import retreat1 from "../public/retreat_1_whiteshirts.JPEG"
 import tg from "../public/tailgate.JPEG"
-import AlumniSection from "./alumniSection"
+import AlumniSection from "./AlumniSection"
 import Card from "./ui/Card"
 import { AOSInit } from "./ui/timeline"
 
