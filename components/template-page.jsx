@@ -12,7 +12,7 @@ import pcAlpha from "../public/PCalpha.jpg"
 import retreat1 from "../public/retreat_1_whiteshirts.JPEG"
 import tg from "../public/tailgate.JPEG"
 import AlumniSection from "./AlumniSection"
-import Card from "./ui/Card"
+import Card from "./ui/Card.jsx"
 import { AOSInit } from "./ui/timeline"
 
 

@@ -5,7 +5,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { FaGoogle, FaUniversity, FaUps } from "react-icons/fa";
-import Card from "./ui/Card"; // adjust path if Card lives elsewhere
+import Card from "./ui/Card.jsx"; // adjust path if Card lives elsewhere
   
 // ⬇️ Headshot images
 function importAll(r) {
