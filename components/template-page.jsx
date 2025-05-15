@@ -1,5 +1,6 @@
 'use client'
 import { Button } from "@/components/ui/button"
+import Card from "@/components/ui/Card"
 import Image from "next/image"
 import Link from "next/link"
 import React, { useEffect, useState } from "react"
@@ -12,7 +13,6 @@ import pcAlpha from "../public/PCalpha.jpg"
 import retreat1 from "../public/retreat_1_whiteshirts.JPEG"
 import tg from "../public/tailgate.JPEG"
 import AlumniSection from "./AlumniSection"
-import Card from "./ui/Card.jsx"
 import { AOSInit } from "./ui/timeline"
 
 

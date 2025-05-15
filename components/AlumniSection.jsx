@@ -3,9 +3,9 @@
 // The top‑right badge now supports **either** a react‑icon *or* a custom image logo.
 // If `alum.icon` is a component, we render it; if it’s a string (URL), we show that image.
 
+import Card from "@/components/ui/Card"; // adjust path if Card lives elsewhere
 import React, { useEffect, useState } from 'react';
 import { FaGoogle, FaUniversity, FaUps } from "react-icons/fa";
-import Card from "./ui/Card.jsx"; // adjust path if Card lives elsewhere
   
 // ⬇️ Headshot images
 function importAll(r) {
