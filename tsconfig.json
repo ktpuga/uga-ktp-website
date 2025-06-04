@@ -1,5 +1,9 @@
 {
   "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./*"]       // 👈 tells TS/VS Code that "@/foo" == "./foo"
+    },
     "target": "ES2017",
     "lib": [
       "dom",
@@ -31,5 +35,6 @@
   ],
   "exclude": [
     "node_modules"
-  ]
+  ],
+
 }
