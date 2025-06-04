@@ -14,12 +14,12 @@ export class footer extends Component {
               prefetch={false}>
               Code of Conduct
             </Link>
-            {/* <Link
-              href="#"
+            <Link
+              href="/blog"
               className="text-xs hover:underline underline-offset-4 font-['Source Sans Pro']"
               prefetch={false}>
-              Privacy Policy
-            </Link> */}
+              Blog
+            </Link>
             <Link
               href="https://www.instagram.com/ugaktp/"
               target="_Blank"

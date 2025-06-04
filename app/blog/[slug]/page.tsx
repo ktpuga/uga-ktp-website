@@ -1,0 +1,226 @@
+/* app/blog/[slug]/page.tsx --------------------------------------------- */
+import { PortableText, type PortableTextReactComponents } from '@portabletext/react';
+import imageUrlBuilder from '@sanity/image-url';
+import type { SanityImageSource } from '@sanity/image-url/lib/types/types';
+import type { Metadata } from 'next';
+import { groq, type SanityDocument } from 'next-sanity';
+import Link from 'next/link';
+import { client } from '../../../sanity/client';
+const META_QUERY = groq`
+  *[_type=="post" && slug.current == $slug][0]{
+    title,
+    "description": excerpt,
+    publishedAt,
+    mainImage,
+    author->{ name }
+  }
+`;
+export async function generateMetadata(
+  { params }: { params: Promise<{ slug: string }> }
+): Promise<Metadata> {
+  const { slug } = await params;
+  const data = await client.fetch(META_QUERY, { slug });
+  const cover =
+    data?.mainImage &&
+    imageUrlBuilder({ projectId, dataset }).image(data.mainImage).width(1200).height(630).url();
+
+  const base = 'https://ktpgeorgia.com';
+  const url = `${base}/blog/${slug}`;
+
+  return {
+    title: data?.title || 'Blog',
+    description: data?.description || 'Kappa Theta Pi blog post',
+    alternates: { canonical: url },
+    openGraph: {
+      type: 'article',
+      url,
+      title: data?.title,
+      description: data?.description,
+      images: cover ? [{ url: cover }] : undefined,
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: data?.title,
+      description: data?.description,
+      images: cover ? [cover] : undefined,
+    },
+  };
+}
+const ptComponents = {
+  /* —– block-level elements —– */
+  block: {
+    h2: ({ children }) => (
+      <h2 className="mt-8 text-2xl font-bold tracking-tight text-indigo-400">
+        {children}
+      </h2>
+    ),
+    h3: ({ children }) => (
+      <h3 className="mt-6 text-xl font-semibold tracking-tight text-indigo-400">
+        {children}
+      </h3>
+    ),
+  },
+
+  /* —– inline marks —– */
+  marks: {
+    link: ({ children, value }) => (
+      <Link
+        href={value?.href || '#'}
+        target={value?.blank ? '_blank' : undefined}
+        rel="noopener noreferrer"
+        className="text-indigo-400 underline hover:text-indigo-300"
+      >
+        {children}
+      </Link>
+    ),
+  },
+
+  /* —– lists —– */
+  list: {
+    bullet: ({ children }) => <ul className="ml-6 list-disc space-y-2">{children}</ul>,
+    number: ({ children }) => <ol className="ml-6 list-decimal space-y-2">{children}</ol>,
+  },
+
+  /* —– custom types —– */
+  types: {
+    image: ({ value }) => {
+      const url =
+        value &&
+        imageUrlBuilder({ projectId, dataset }).image(value).width(800).height(500).url();
+      return url ? (
+        <img src={url} alt={value.alt || 'Blog image'} className="my-8 rounded-lg" />
+      ) : null;
+    },
+  },
+} satisfies Partial<PortableTextReactComponents>;
+
+/* 1.  Builder — no external helper  ------------------------------------ */
+const { projectId, dataset } = client.config();
+const urlFor = (src: SanityImageSource) =>
+  projectId && dataset ? imageUrlBuilder({ projectId, dataset }).image(src) : null;
+
+/* 2.  Query — cover + author (name & image) ----------------------------- */
+const POST_QUERY = groq`
+  *[_type == "post" && slug.current == $slug][0]{
+    _id,
+    title,
+    body,
+    publishedAt,
+    mainImage,
+    author->{ name, image }
+  }
+`;
+
+export const revalidate = 30;
+
+interface PageProps {
+  params: { slug: string };
+}
+
+export default async function PostPage({ params }: PageProps) {
+  const { slug } = await params;
+  const post: SanityDocument = await client.fetch(POST_QUERY, { slug: slug });
+
+  if (!post) {
+    /* optional: Next.js 404 */
+    return <h1 className="p-8 text-center text-2xl text-red-500">Post not found</h1>;
+  }
+
+  /* 3.  Build image URLs ------------------------------------------------ */
+  const coverUrl =
+    post.mainImage && urlFor(post.mainImage)?.width(1200).height(600).url();
+
+  const authorImg =
+    post.author?.image && urlFor(post.author.image)?.width(96).height(96).url();
+  const ld = {
+    '@context': 'https://schema.org',
+    '@type': 'Article',
+    headline: post.title,
+    datePublished: post.publishedAt,
+    author: { '@type': 'Person', name: post.author?.name },
+    image: coverUrl ? [coverUrl] : undefined,
+    url: `${process.env.NEXT_PUBLIC_SITE_URL}/blog/${slug}`,
+  };
+  /* 4.  Render ---------------------------------------------------------- */
+  return (
+    <div className="flex min-h-screen flex-col bg-gray-900 font-sans text-gray-100">
+      {/* ---------- NAV ---------- */}
+      <header className="sticky top-0 z-50 flex h-16 items-center border-b border-gray-700 bg-gray-800/80 px-4 backdrop-blur-md lg:px-6">
+        <Link href="/" className="flex items-center font-bold text-indigo-400">
+          ΚΘΠ <span className="ml-2 hidden text-sm font-semibold text-gray-300 sm:inline">| Blog</span>
+        </Link>
+        <nav className="ml-auto flex gap-4 sm:gap-6">
+          <Link href="/blog" className="text-sm font-medium transition-colors hover:text-indigo-400">
+            Back to posts
+          </Link>
+        </nav>
+      </header>
+
+      {/* ---------- MAIN ---------- */}
+      <main className="relative flex-1 overflow-hidden">
+        {/* Glowing blobs */}
+        <div aria-hidden className="absolute inset-0 -z-10">
+          <div className="absolute -left-32 top-0 h-[26rem] w-[26rem] rounded-full bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-500 opacity-30 blur-[140px]" />
+          <div className="absolute -bottom-28 right-0 h-[22rem] w-[22rem] rounded-full bg-gradient-to-tr from-emerald-500 via-teal-500 to-cyan-500 opacity-25 blur-[120px]" />
+        </div>
+
+        {/* Article */}
+        <article className="relative z-10 mx-auto max-w-3xl px-6 py-16 md:py-24">
+          <script type="application/ld+json" suppressHydrationWarning dangerouslySetInnerHTML={{ __html: JSON.stringify(ld) }} />
+          {/* Cover */}
+          {coverUrl && (
+            <img
+              src={coverUrl}
+              alt={post.title}
+              className="mb-8 w-full rounded-lg object-cover"
+            />
+          )}
+
+          {/* Title & date */}
+          <h1 className="mb-4 text-4xl font-extrabold tracking-tight">{post.title}</h1>
+          <p className="mb-8 text-sm text-gray-400">
+            {new Date(post.publishedAt).toLocaleDateString(undefined, {
+              year: 'numeric',
+              month: 'long',
+              day: 'numeric',
+            })}
+          </p>
+
+          {/* Body (PortableText) */}
+          {Array.isArray(post.body) && (
+            <div className="prose prose-lg prose-invert">
+              <PortableText value={post.body} components={ptComponents} />
+            </div>
+          )}
+
+          {/* Author block */}
+          {post.author?.name && (
+            <section className="mt-16 flex items-start gap-4 border-t border-gray-700 pt-8">
+              {authorImg && (
+                <img
+                  src={authorImg}
+                  alt={post.author.name}
+                  className="h-16 w-16 rounded-full object-cover"
+                />
+              )}
+
+              <div>
+                <p className="text-sm text-gray-200">
+                  <span className="block font-semibold text-indigo-400">
+                    {post.author.name}
+                  </span>
+                  <span>Author</span>
+                </p>
+
+                {/* ——— Disclaimer ——— */}
+                <p className="mt-4 max-w-xl text-xs text-gray-400">
+                  Opinions are the author&apos;s and may not represent KTP Phi Chapter or UGA. Content is informational—not professional advice. External links are for convenience not endorsement unless explicitly mentioned.
+                </p>
+              </div>
+            </section>
+          )}
+        </article>
+      </main>
+    </div>
+  );
+}

@@ -133,14 +133,20 @@ export default function TemplatePage() {
                     <span className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/60 to-transparent transition-transform duration-500 group-hover:translate-x-full" />
                   </Button>
                 </Link>
-                <Link
+                <Link href="/blog" className="inline-flex items-center justify-center rounded-md text-sm font-medium text-indigo-600 transition-colors hover:bg-indigo-50">
+                  <Button className="group relative overflow-hidden bg-indigo-600 text-white shadow-lg transition duration-300 hover:bg-indigo-700 inline-flex">
+                    <span>Blog</span>
+                    <span className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/60 to-transparent transition-transform duration-500 group-hover:translate-x-full" />
+                  </Button>
+                </Link>
+                {/* <Link
                   href="https://uga.campuslabs.com/engage/organization/ktp"
                   target="_blank"
                   className="inline-flex items-center justify-center rounded-md border border-indigo-600 px-4 py-2 text-sm font-medium text-indigo-600 transition-colors hover:bg-indigo-50"
                   prefetch={false}
                 >
                   Involvement Network
-                </Link>
+                </Link> */}
               </div>
             </div>
 
