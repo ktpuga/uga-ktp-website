@@ -3,7 +3,7 @@ import { PortableText, type PortableTextReactComponents } from '@portabletext/re
 import imageUrlBuilder from '@sanity/image-url';
 import type { SanityImageSource } from '@sanity/image-url/lib/types/types';
 import type { Metadata } from 'next';
-import { groq, type SanityDocument } from 'next-sanity';
+import { groq } from 'next-sanity';
 import Link from 'next/link';
 import { client } from '../../../sanity/client';
 const META_QUERY = groq`
@@ -15,8 +15,13 @@ const META_QUERY = groq`
     author->{ name }
   }
 `;
+type RouteParams = Promise<{ slug: string }>;   // <-  PROMISE
+/* 1.  Builder — no external helper  ------------------------------------ */
+const { projectId, dataset } = client.config();
+const urlFor = (src: SanityImageSource) =>
+  projectId && dataset ? imageUrlBuilder({ projectId, dataset }).image(src) : null;
 export async function generateMetadata(
-  { params }: { params: Promise<{ slug: string }> }
+  { params }: { params: RouteParams }
 ): Promise<Metadata> {
   const { slug } = await params;
   const data = await client.fetch(META_QUERY, { slug });
@@ -94,10 +99,7 @@ const ptComponents = {
   },
 } satisfies Partial<PortableTextReactComponents>;
 
-/* 1.  Builder — no external helper  ------------------------------------ */
-const { projectId, dataset } = client.config();
-const urlFor = (src: SanityImageSource) =>
-  projectId && dataset ? imageUrlBuilder({ projectId, dataset }).image(src) : null;
+
 
 /* 2.  Query — cover + author (name & image) ----------------------------- */
 const POST_QUERY = groq`
@@ -113,14 +115,11 @@ const POST_QUERY = groq`
 
 export const revalidate = 30;
 
-interface PageProps {
-  params: { slug: string };
-}
-
-export default async function PostPage({ params }: PageProps) {
-  const { slug } = await params;
-  const post: SanityDocument = await client.fetch(POST_QUERY, { slug: slug });
-
+export default async function PostPage(
+  { params }: { params: Promise<{ slug: string }> }   // <- matches Next
+) {
+  const { slug } = await params;                       // await once
+  const post = await client.fetch(POST_QUERY, { slug });
   if (!post) {
     /* optional: Next.js 404 */
     return <h1 className="p-8 text-center text-2xl text-red-500">Post not found</h1>;
