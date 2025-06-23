@@ -13,23 +13,45 @@ import React, { useEffect, useState } from 'react'
 
 export default function HackathonPage() {
   const [mobile, setMobile] = useState(false)
-  const [gibberish, setGibberish] = useState('WELCOME_TO_KTP_HACKS')
+  const phrases = ['WELCOME_TO_KTP_HACKS', 'RETURNING_THIS_FALL', 'exec.Code()=>CreateInnovation()']
+  const [gibberish, setGibberish] = useState(phrases[0]);
 
   useEffect(() => {
-    const updateMobile = () => setMobile(window.innerWidth < 599)
-    updateMobile()
-    window.addEventListener('resize', updateMobile)
+  let phraseIdx = 0;                 // which phrase is active?
+  let scrambleTimer; // shuffles letters
+  let switchTimer;  // swaps phrases
+  const updateMobile = () => setMobile(window.innerWidth < 599)
+  updateMobile()
+  /** start/stop the letter-scramble interval */
+  const startScramble = () => {
+    scrambleTimer = setInterval(() => {
+      setGibberish(prev =>
+        prev
+          .split("")                       // break into letters
+          .sort(() => Math.random() - 0.5) // Fisher-Yates shuffle
+          .join("")
+      );
+    }, 100); // adjust speed to taste
+  };
 
-    const scramble = setInterval(() => {
-      // shuffle characters
-      setGibberish((prev) => prev.split('').sort(() => Math.random() - 0.5).join(''))
-    }, 100)
+  /** change to the next phrase every N ms */
+  const switchPhrase = () => {
+    clearInterval(scrambleTimer);            // stop scrambling old phrase
+    phraseIdx = (phraseIdx + 1) % phrases.length;
+    setGibberish(phrases[phraseIdx]);        // show new phrase unscrumbled
+    startScramble();                         // then start scrambling it
+  };
 
-    return () => {
-      window.removeEventListener('resize', updateMobile)
-      clearInterval(scramble)
-    }
-  }, [])
+  // initial kick-off
+  startScramble();
+  switchTimer = setInterval(switchPhrase, 2000); // change every 2 s
+
+  return () => {
+    window.removeEventListener("resize", updateMobile);
+    clearInterval(scrambleTimer);
+    clearInterval(switchTimer);
+  };
+}, []);
 
   return (
     <div className="flex min-h-screen flex-col font-sans bg-gray-900 text-gray-100">
@@ -80,11 +102,10 @@ export default function HackathonPage() {
             An annual private hackathon where brothers turn caffeine &amp; code into the next big idea. <br/>
           </p>
          
-
           <p className="mx-auto mb-12 max-w-2xl text-sm text-gray-400">
-            No spring edition – we support
+            No spring edition – we support&nbsp;
             <Link href="https://ugahacks.com" target="_blank" className="text-indigo-400 hover:underline">
-              &nbsp;UGAHacks
+              UGAHacks
             </Link>
             &nbsp;as the flagship event during that semester.
           </p>
@@ -105,6 +126,11 @@ export default function HackathonPage() {
           <Link href="https://uga-ktp-hackathon-f24.devpost.com/" target="_blank">
             <Button className="rounded-lg bg-indigo-600 px-8 py-3 text-lg font-semibold text-white transition-colors hover:bg-indigo-500">
               View Last Year’s DevPost
+            </Button>
+          </Link>
+          <Link href="mailto:ryan.majd@uga.edu?subject=[KTPHacks Sponsor Inquiry]" target="_blank" className='p-4'>
+            <Button className="rounded-lg bg-indigo-600 px-8 py-3 text-lg font-semibold text-white transition-colors hover:bg-indigo-500">
+              Sponsor Us
             </Button>
           </Link>
         </section>

@@ -27,7 +27,7 @@ const POSTS_QUERY = groq`
 `;
 
 export const revalidate = 30; // ISR every 30 s
-
+export const dynamic = 'force-dynamic'
 export default async function BlogIndex() {
   const posts = await client.fetch<SanityDocument[]>(POSTS_QUERY);
 
