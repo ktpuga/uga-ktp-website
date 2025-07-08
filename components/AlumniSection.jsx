@@ -157,20 +157,20 @@ function AlumniCard({ alum }) {
 // ===== section wrapper =====
 export default function AlumniSection() {
   return (
-    <section id="alumni" className="bg-white py-16 md:py-24">
+    <section id="alumni" className="bg-background py-16 md:py-24 rounded-3xl shadow-xl">
       <div
         className="container mx-auto max-w-6xl px-4 md:px-6"
         data-aos="fade-up"
         data-aos-duration="600"
       >
         <div className="text-center">
-          <h2 className="text-3xl font-bold tracking-tight md:text-4xl">Meet Our Alumni Base</h2>
-          <p className="mx-auto mt-3 max-w-2xl text-lg text-slate-700">
+          <h2 className="text-3xl font-bold tracking-tight md:text-4xl text-primary">Meet Our Alumni Base</h2>
+          <p className="mx-auto mt-3 max-w-2xl text-lg text-foreground">
             Celebrating ΚΘΠ alumni and their ongoing impact.
           </p>
         </div>
 
-        <div className="mt-12 grid grid-cols-2 gap-6 text-sm sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+        <div className="mt-12 grid grid-cols-2 gap-8 text-sm sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
           {alumniData.map((alum) => (
             <AlumniCard key={alum.name} alum={alum} />
           ))}

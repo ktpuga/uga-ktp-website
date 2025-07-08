@@ -142,14 +142,15 @@ export default async function PostPage(
   };
   /* 4.  Render ---------------------------------------------------------- */
   return (
-    <div className="flex min-h-screen flex-col bg-gray-900 font-sans text-gray-100">
+    <div className="flex min-h-screen flex-col font-sans bg-gradient-to-br from-gray-950 via-indigo-950 to-black text-gray-100 overflow-hidden">
       {/* ---------- NAV ---------- */}
-      <header className="sticky top-0 z-50 flex h-16 items-center border-b border-gray-700 bg-gray-800/80 px-4 backdrop-blur-md lg:px-6">
-        <Link href="/" className="flex items-center font-bold text-indigo-400">
-          ΚΘΠ <span className="ml-2 hidden text-sm font-semibold text-gray-300 sm:inline">| Blog</span>
+      <header className="sticky top-0 z-50 flex h-16 items-center border-b border-indigo-900 bg-black/70 backdrop-blur-md px-4 lg:px-6 shadow-lg">
+        <Link href="/" className="flex items-center font-bold text-cyan-400 drop-shadow-neon">
+          <span className="text-2xl md:text-3xl tracking-tight bg-gradient-to-tr from-indigo-400 via-cyan-400 to-fuchsia-500 bg-clip-text text-transparent animate-pulse">ΚΘΠ</span>
+          <span className="ml-2 hidden text-sm font-semibold text-fuchsia-300 sm:inline">| Blog</span>
         </Link>
         <nav className="ml-auto flex gap-4 sm:gap-6">
-          <Link href="/blog" className="text-sm font-medium transition-colors hover:text-indigo-400">
+          <Link href="/blog" className="text-sm font-medium transition-colors hover:text-fuchsia-400">
             Back to posts
           </Link>
         </nav>
@@ -157,27 +158,30 @@ export default async function PostPage(
 
       {/* ---------- MAIN ---------- */}
       <main className="relative flex-1 overflow-hidden">
-        {/* Glowing blobs */}
+        {/* Neon grid and glowing blobs */}
+        <div aria-hidden className="pointer-events-none absolute inset-0 -z-20 animate-pulse [background-image:radial-gradient(#00fff7_1px,transparent_1px)] [background-size:6px_6px] opacity-10" />
         <div aria-hidden className="absolute inset-0 -z-10">
-          <div className="absolute -left-32 top-0 h-[26rem] w-[26rem] rounded-full bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-500 opacity-30 blur-[140px]" />
-          <div className="absolute -bottom-28 right-0 h-[22rem] w-[22rem] rounded-full bg-gradient-to-tr from-emerald-500 via-teal-500 to-cyan-500 opacity-25 blur-[120px]" />
+          <div className="absolute -left-32 top-0 h-[26rem] w-[26rem] rounded-full bg-gradient-to-br from-indigo-600 via-fuchsia-600 to-cyan-400 opacity-40 blur-[140px] animate-pulse" />
+          <div className="absolute -bottom-28 right-0 h-[22rem] w-[22rem] rounded-full bg-gradient-to-tr from-cyan-500 via-fuchsia-500 to-indigo-500 opacity-30 blur-[120px] animate-pulse" />
         </div>
 
         {/* Article */}
-        <article className="relative z-10 mx-auto max-w-3xl px-6 py-16 md:py-24">
+        <article className="relative z-10 mx-auto max-w-3xl px-6 py-16 md:py-24 bg-black/60 backdrop-blur-lg rounded-2xl shadow-2xl border border-indigo-900">
           <script type="application/ld+json" suppressHydrationWarning dangerouslySetInnerHTML={{ __html: JSON.stringify(ld) }} />
           {/* Cover */}
           {coverUrl && (
             <img
               src={coverUrl}
               alt={post.title}
-              className="mb-8 w-full rounded-lg object-cover"
+              className="mb-8 w-full rounded-xl object-cover shadow-lg"
             />
           )}
 
           {/* Title & date */}
-          <h1 className="mb-4 text-4xl font-extrabold tracking-tight">{post.title}</h1>
-          <p className="mb-8 text-sm text-gray-400">
+          <h1 className="mb-4 text-4xl font-extrabold tracking-tight bg-gradient-to-r from-cyan-400 via-fuchsia-400 to-indigo-400 bg-clip-text text-transparent drop-shadow-neon">
+            {post.title}
+          </h1>
+          <p className="mb-8 text-sm text-fuchsia-200">
             {new Date(post.publishedAt).toLocaleDateString(undefined, {
               year: 'numeric',
               month: 'long',
@@ -194,25 +198,25 @@ export default async function PostPage(
 
           {/* Author block */}
           {post.author?.name && (
-            <section className="mt-16 flex items-start gap-4 border-t border-gray-700 pt-8">
+            <section className="mt-16 flex items-start gap-4 border-t border-indigo-900 pt-8">
               {authorImg && (
                 <img
                   src={authorImg}
                   alt={post.author.name}
-                  className="h-16 w-16 rounded-full object-cover"
+                  className="h-16 w-16 rounded-full object-cover ring-4 ring-fuchsia-400"
                 />
               )}
 
               <div>
-                <p className="text-sm text-gray-200">
-                  <span className="block font-semibold text-indigo-400">
+                <p className="text-sm text-cyan-200">
+                  <span className="block font-semibold text-fuchsia-300">
                     {post.author.name}
                   </span>
                   <span>Author</span>
                 </p>
 
                 {/* ——— Disclaimer ——— */}
-                <p className="mt-4 max-w-xl text-xs text-gray-400">
+                <p className="mt-4 max-w-xl text-xs text-indigo-300">
                   Opinions are the author&apos;s and may not represent KTP Phi Chapter or UGA. Content is informational—not professional advice. External links are for convenience not endorsement unless explicitly mentioned.
                 </p>
               </div>
