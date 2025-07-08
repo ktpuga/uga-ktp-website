@@ -88,20 +88,46 @@ const events = [
   }
 ]
 
-const TimelineComponent = () => (
-  <div className='min-h-screen py-12 px-4 sm:px-6 lg:px-8'>
+/**
+ * TimelineComponent
+ *
+ * Props:
+ * - events: array of event objects (same structure as before)
+ * - timelineColor: Tailwind color for the vertical line (default: 'bg-border')
+ * - dotColor: Tailwind color for the timeline dots (default: 'bg-pink-500')
+ * - cardClass: Tailwind classes for the event card (default: 'rounded-lg bg-card p-6 shadow-xs transition-shadow duration-300 hover:shadow-lg')
+ * - accentClass: Tailwind classes for accent text/icons (default: 'text-accent')
+ * - headingClass: Tailwind classes for event title (default: 'mb-2 text-lg font-heading text-foreground')
+ * - aosAnimation: AOS animation type (default: 'fade-up')
+ */
+
+const TimelineComponent = ({
+  events = [],
+  timelineColor = 'bg-border',
+  dotColor = 'bg-pink-500',
+  cardClass = 'rounded-lg bg-card p-6 shadow-xs transition-shadow duration-300 hover:shadow-lg',
+  accentClass = 'text-accent',
+  headingClass = 'mb-2 text-lg font-heading text-foreground',
+  aosAnimation = 'fade-up',
+}) => (
+  <div className="min-h-screen py-12 px-4 sm:px-6 lg:px-8">
     <AOSInit />
-    <div className='mx-auto max-w-3xl'>
-      <div className='relative'>
-        <div className='absolute left-1/2 h-full w-0.5 -translate-x-1/2 transform bg-border' />
+    <div className="mx-auto max-w-3xl">
+      <div className="relative">
+        <div className={`absolute left-1/2 h-full w-0.5 -translate-x-1/2 transform ${timelineColor}`} />
         {events.map((event, index) => (
-          <div key={event.id} data-aos='fade-up' className={`mb-8 flex ${index % 2 === 0 ? 'flex-row' : 'flex-row-reverse'}`}>
-            <div className='w-1/2' />
-            <div className='relative flex items-center justify-center'>
-              <div className='absolute h-4 w-4 transform rounded-full bg-pink-500 transition-all duration-300 hover:scale-150' />
+          <div
+            key={event.id}
+            data-aos={aosAnimation}
+            data-aos-delay={index * 60}
+            className={`mb-8 flex ${index % 2 === 0 ? 'flex-row' : 'flex-row-reverse'}`}
+          >
+            <div className="w-1/2" />
+            <div className="relative flex items-center justify-center">
+              <div className={`absolute h-4 w-4 transform rounded-full ${dotColor} transition-all duration-300 hover:scale-150`} />
             </div>
-            <div className={`w-1/2 ${index % 2 === 0 ? 'pl-6' : 'pr-6'}`}>
-              <div className='rounded-lg bg-card p-6 shadow-xs transition-shadow duration-300 hover:shadow-lg'>
+            <div className={`w-1/2 ${index % 2 === 0 ? 'pl-6' : 'pr-6'}`}> 
+              <div className={cardClass}>
                 {event.image && (
                   <Image
                     src={event.image}
@@ -109,26 +135,26 @@ const TimelineComponent = () => (
                     width="100"
                     height="100"
                     unoptimized
-                    className='mb-4 h-48 w-full rounded-md object-cover object-top'
+                    className="mb-4 h-48 w-full rounded-md object-cover object-top"
                   />
                 )}
-                <h3 className='mb-2 text-lg font-heading text-foreground'>{event.title}</h3>
-                <div className='mb-2 flex items-center text-accent'>
-                  <FaCalendarAlt className='mr-2' />
-                  <span className='text-sm'>{Array.isArray(event.date) ? event.date.join(', ') : event.date}</span>
+                <h3 className={headingClass}>{event.title}</h3>
+                <div className={`mb-2 flex items-center ${accentClass}`}>
+                  <FaCalendarAlt className="mr-2" />
+                  <span className="text-sm">{Array.isArray(event.date) ? event.date.join(', ') : event.date}</span>
                 </div>
-                <div className='mb-2 flex items-center text-accent'>
-                  <FaClock className='mr-2' />
-                  <span className='text-sm'>{event.time}</span>
+                <div className={`mb-2 flex items-center ${accentClass}`}>
+                  <FaClock className="mr-2" />
+                  <span className="text-sm">{event.time}</span>
                 </div>
-                <div className='mb-4 flex items-center text-accent'>
-                  <FaMapMarkerAlt className='mr-2' />
-                  <span className='text-sm'>{event.location}</span>
+                <div className={`mb-4 flex items-center ${accentClass}`}>
+                  <FaMapMarkerAlt className="mr-2" />
+                  <span className="text-sm">{event.location}</span>
                 </div>
-                <p className='mb-2 text-accent text-body'>{event.description}</p>
+                <p className={`mb-2 ${accentClass} text-body`}>{event.description}</p>
                 {event.url && (
-                  <Link href={event.url} target='_blank' className='flex items-center text-pink-500 transition-colors duration-300 hover:text-ring'>
-                    Learn More <FaChevronRight className='ml-2' />
+                  <Link href={event.url} target="_blank" className="flex items-center text-pink-500 transition-colors duration-300 hover:text-ring">
+                    Learn More <FaChevronRight className="ml-2" />
                   </Link>
                 )}
               </div>
@@ -140,4 +166,7 @@ const TimelineComponent = () => (
   </div>
 )
 
-export default TimelineComponent
+// Default export for current usage (with hardcoded events)
+export default function TimelineDefault() {
+  return <TimelineComponent events={events} />
+}

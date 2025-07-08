@@ -54,11 +54,12 @@ export default function HackathonPage() {
 }, []);
 
   return (
-    <div className="flex min-h-screen flex-col font-sans bg-gray-900 text-gray-100">
+    <div className="flex min-h-screen flex-col font-sans bg-gradient-to-br from-gray-950 via-indigo-950 to-black text-gray-100 relative overflow-hidden">
       {/* ---------- NAV ---------- */}
-      <header className="sticky top-0 z-50 flex h-16 items-center border-b border-gray-700 bg-gray-800/80 px-4 backdrop-blur-md lg:px-6">
-        <Link href="/" className="flex items-center font-bold text-indigo-400">
-          ΚΘΠ {!mobile && <span className="ml-2 text-sm font-semibold text-gray-300">Phi Chapter at UGA</span>}
+      <header className="sticky top-0 z-50 flex h-16 items-center border-b border-indigo-800 bg-black/70 px-4 backdrop-blur-md lg:px-6 shadow-lg">
+        <Link href="/" className="flex items-center font-bold text-cyan-400 drop-shadow-neon">
+          <span className="text-2xl md:text-3xl tracking-tight bg-gradient-to-tr from-indigo-400 via-cyan-400 to-fuchsia-500 bg-clip-text text-transparent animate-pulse">ΚΘΠ</span>
+          {!mobile && <span className="ml-2 text-sm font-semibold text-fuchsia-300">Phi Chapter at UGA</span>}
         </Link>
         <nav className="ml-auto flex gap-4 sm:gap-6">
           {[
@@ -71,7 +72,7 @@ export default function HackathonPage() {
             <Link
               key={label}
               href={href}
-              className="text-sm font-medium transition-colors hover:text-indigo-400"
+              className="text-sm font-medium transition-colors hover:text-fuchsia-400"
             >
               {label}
             </Link>
@@ -81,58 +82,58 @@ export default function HackathonPage() {
 
       {/* ---------- MAIN ---------- */}
       <main className="relative flex-1 overflow-hidden">
-        {/* Starfield background */}
-        <div aria-hidden className="pointer-events-none absolute inset-0 -z-10 animate-pulse [background-image:radial-gradient(white_1px,transparent_1px)] [background-size:4px_4px] opacity-10" />
-
-        {/* Blurred gradient blobs */}
+        {/* Animated/Glowing Backgrounds */}
+        <div aria-hidden className="pointer-events-none absolute inset-0 -z-20 animate-pulse [background-image:radial-gradient(#00fff7_1px,transparent_1px)] [background-size:6px_6px] opacity-10" />
         <div aria-hidden className="absolute inset-0 -z-10">
-          <div className="absolute -left-32 top-0 h-[28rem] w-[28rem] rounded-full bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-500 opacity-30 blur-[140px]" />
-          <div className="absolute -bottom-32 right-0 h-[24rem] w-[24rem] rounded-full bg-gradient-to-tr from-emerald-500 via-teal-500 to-cyan-500 opacity-25 blur-[120px]" />
+          <div className="absolute -left-32 top-0 h-[32rem] w-[32rem] rounded-full bg-gradient-to-br from-indigo-600 via-fuchsia-600 to-cyan-400 opacity-40 blur-[160px] animate-pulse" />
+          <div className="absolute -bottom-32 right-0 h-[28rem] w-[28rem] rounded-full bg-gradient-to-tr from-cyan-500 via-fuchsia-500 to-indigo-500 opacity-30 blur-[120px] animate-pulse" />
         </div>
 
         {/* Hero / Content */}
         <section className="relative z-10 mx-auto max-w-5xl px-6 py-10 text-center md:py-24">
-          <h1 className="mb-4 bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400 bg-clip-text text-5xl font-extrabold tracking-tight text-transparent md:text-6xl lg:text-7xl">
+          <h1 className="mb-4 bg-gradient-to-r from-cyan-400 via-fuchsia-400 to-indigo-400 bg-clip-text text-5xl font-extrabold tracking-tight text-transparent md:text-6xl lg:text-7xl drop-shadow-neon animate-fade-in">
             KTP&nbsp;<span className="animate-fade animate-infinite">Hacks</span>
           </h1>
-           <p className="mb-10 font-mono text-xs uppercase tracking-widest text-emerald-400 md:text-sm">
+          <p className="mb-10 font-mono text-xs uppercase tracking-widest text-cyan-300 md:text-sm animate-fade-in delay-100">
             {gibberish}
           </p>
-          <p className="mx-auto mb-8 max-w-2xl text-lg text-gray-300 md:text-xl">
-            An annual private hackathon where brothers turn caffeine &amp; code into the next big idea. <br/>
+          <p className="mx-auto mb-8 max-w-2xl text-lg text-fuchsia-200 md:text-xl animate-fade-in delay-200">
+            An annual private hackathon where brothers turn caffeine &amp; code into the next big idea.
           </p>
-         
-          <p className="mx-auto mb-12 max-w-2xl text-sm text-gray-400">
+          <p className="mx-auto mb-12 max-w-2xl text-sm text-indigo-300 animate-fade-in delay-300">
             No spring edition – we support&nbsp;
-            <Link href="https://ugahacks.com" target="_blank" className="text-indigo-400 hover:underline">
+            <Link href="https://ugahacks.com" target="_blank" className="text-cyan-300 hover:underline">
               UGAHacks
             </Link>
             &nbsp;as the flagship event during that semester.
           </p>
 
           {/* Gallery */}
-          <div className="mx-auto mb-12 grid max-w-4xl grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3">
+          <div className="mx-auto mb-12 grid max-w-4xl grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3">
             {[ktpHacks1, ktpHacks2, ktpHacks3].map((src, i) => (
-              <Image
-                unoptimized
-                key={i}
-                src={src}
-                alt={`KTP Hacks screenshot ${i + 1}`}
-                className="h-64 w-full rounded-xl object-cover shadow-lg transition-transform hover:scale-[1.03]"
-              />
+              <div key={i} className="rounded-2xl bg-black/60 backdrop-blur-lg shadow-2xl border-2 border-indigo-900 hover:border-fuchsia-500 transition-all duration-300 group overflow-hidden">
+                <Image
+                  unoptimized
+                  src={src}
+                  alt={`KTP Hacks screenshot ${i + 1}`}
+                  className="h-64 w-full object-cover group-hover:scale-105 transition-transform duration-500"
+                />
+              </div>
             ))}
           </div>
 
-          <Link href="https://uga-ktp-hackathon-f24.devpost.com/" target="_blank">
-            <Button className="rounded-lg bg-indigo-600 px-8 py-3 text-lg font-semibold text-white transition-colors hover:bg-indigo-500">
-              View Last Year’s DevPost
-            </Button>
-          </Link>
-          <Link href="mailto:ryan.majd@uga.edu?subject=[KTPHacks Sponsor Inquiry]" target="_blank" className='p-4'>
-            <Button className="rounded-lg bg-indigo-600 px-8 py-3 text-lg font-semibold text-white transition-colors hover:bg-indigo-500">
-              Sponsor Us
-            </Button>
-          </Link>
+          <div className="flex flex-col sm:flex-row gap-6 justify-center items-center">
+            <Link href="https://uga-ktp-hackathon-f24.devpost.com/" target="_blank">
+              <Button className="rounded-xl bg-gradient-to-r from-cyan-500 via-fuchsia-500 to-indigo-500 px-8 py-3 text-lg font-semibold text-white shadow-lg hover:from-fuchsia-500 hover:to-cyan-500 transition-all duration-300 drop-shadow-neon">
+                View Last Year’s DevPost
+              </Button>
+            </Link>
+            <Link href="mailto:ryan.majd@uga.edu?subject=[KTPHacks Sponsor Inquiry]" target="_blank" className='p-0'>
+              <Button className="rounded-xl bg-gradient-to-r from-fuchsia-500 via-cyan-500 to-indigo-500 px-8 py-3 text-lg font-semibold text-white shadow-lg hover:from-cyan-500 hover:to-fuchsia-500 transition-all duration-300 drop-shadow-neon">
+                Sponsor Us
+              </Button>
+            </Link>
+          </div>
         </section>
       </main>
 

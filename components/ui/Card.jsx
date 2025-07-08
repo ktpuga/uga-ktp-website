@@ -3,24 +3,24 @@ import React from 'react';
 
 const Card = ({ name, title, bio, avatarSrc, fallbackInitials, instagramUrl, linkedinUrl, otherUrl }) => {
   return (
-    <div className="rounded-lg bg-gradient-to-br from-[#c8e6ff] to-[#c7f8d4] p-4 text-center shadow-xs w-45 h-45 flex flex-col items-center justify-center">
-      <Avatar className="w-20 h-20 mb-2">                     
+    <div className="relative rounded-2xl bg-card/80 backdrop-blur-lg border-2 border-transparent bg-clip-padding p-6 text-center shadow-xl flex flex-col items-center justify-center transition-transform duration-300 hover:scale-105 hover:border-gradient-to-tr hover:from-indigo-400 hover:via-fuchsia-400 hover:to-cyan-400 group">
+      <Avatar className="w-20 h-20 mb-4 shadow-lg ring-4 ring-indigo-200 group-hover:ring-fuchsia-300 transition-all duration-300">                     
         {/* embedded bio for SEO purposes */}
         <AvatarImage src={avatarSrc} alt={`${name} Avatar, bio: ${bio}`} /> 
         <AvatarFallback>{fallbackInitials}</AvatarFallback>
       </Avatar>
-      <h3 className="text-md font-bold font-['Source Sans Pro']">{name}</h3>
-      <p className="text-[#6B6B6B] text-sm font-['Source Sans Pro']">{title}</p>
-      <div className="flex gap-2 mt-2">
+      <h3 className="text-lg font-bold text-primary mb-1">{name}</h3>
+      <p className="text-sm text-foreground mb-2">{title}</p>
+      <div className="flex gap-2 mt-2 justify-center">
         {otherUrl && 
-          <a href={otherUrl} className="text-[#6B6B6B] hover:text-[#0000F0]" target="_blank" rel="noopener noreferrer">
+          <a href={otherUrl} className="text-foreground hover:text-indigo-500 transition-colors" target="_blank" rel="noopener noreferrer">
             <HomeIcon className="h-5 w-5" />
           </a>
         }
-        <a href={instagramUrl} className="text-[#6B6B6B] hover:text-[#0000F0]" target="_blank" rel="noopener noreferrer">
+        <a href={instagramUrl} className="text-foreground hover:text-pink-500 transition-colors" target="_blank" rel="noopener noreferrer">
           <InstagramIcon className="h-5 w-5" />
         </a>
-        <a href={linkedinUrl} className="text-[#6B6B6B] hover:text-[#0000F0]" target="_blank" rel="noopener noreferrer">
+        <a href={linkedinUrl} className="text-foreground hover:text-blue-500 transition-colors" target="_blank" rel="noopener noreferrer">
           <LinkedinIcon className="h-5 w-5" />
         </a>
       </div>

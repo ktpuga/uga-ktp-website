@@ -27,7 +27,7 @@ const STATIC_PAGES = [
 ];
 
 export async function GET() {
-  const base  = "KTPGeorgia.com";
+  const base  = "https://KTPGeorgia.com";
   const posts = await client.fetch<{ slug: string; publishedAt: string }[]>(POST_QUERY);
 
   /* --- Static page <url> blocks ------------------------------------ */

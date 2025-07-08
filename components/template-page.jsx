@@ -61,7 +61,7 @@ export default function TemplatePage() {
   }, [])
 
   return (
-    <div className="flex min-h-screen flex-col scroll-smooth font-sans text-gray-900">
+    <div className="flex min-h-screen flex-col scroll-smooth font-sans bg-background text-foreground">
       <AOSInit />
 
       {/* ===============================  NAVBAR  ============================== */}
@@ -100,58 +100,45 @@ export default function TemplatePage() {
 
       <main className="flex-1">
         {/* ===============================  HERO  ============================== */}
-        <section className="relative overflow-hidden py-16 md:py-24 lg:py-32">
-          {/* animated blue→green blob background */}
-          <span className="pointer-events-none absolute -left-[20%] top-1/2 -z-10 h-[120vw] w-[120vw] -translate-y-1/2 rounded-full bg-gradient-to-br from-blue-800 via-blue-600 to-green-500 opacity-20 blur-3xl will-change-transform md:-left-[10%] md:h-[80vw] md:w-[80vw]" />
-
-          <div
-            className="container mx-auto grid max-w-6xl grid-cols-1 items-center gap-12 px-4 md:grid-cols-2 md:px-6"
-            data-aos="fade-up"
-            data-aos-duration="400"
-          >
-            {/* -----------------------------  Hero copy  ----------------------------- */}
-            <div className="space-y-6">
-              <h1 className="text-4xl font-extrabold tracking-tighter text-slate-900 drop-shadow-sm md:text-5xl lg:text-6xl">
-                <span className="bg-gradient-to-tr from-indigo-600 via-sky-500 to-teal-400 bg-clip-text text-transparent">
-                  Kappa Theta Pi
-                </span>
+        <section className="relative overflow-hidden py-20 md:py-32 lg:py-40 flex items-center min-h-[70vh]">
+          {/* Animated SVG background */}
+          <svg className="absolute inset-0 -z-10 w-full h-full animate-pulse" viewBox="0 0 1440 600" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <linearGradient id="heroGradient" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0%" stopColor="#6366F1" />
+                <stop offset="50%" stopColor="#A21CAF" />
+                <stop offset="100%" stopColor="#06B6D4" />
+              </linearGradient>
+            </defs>
+            <path fill="url(#heroGradient)" fillOpacity="0.18" d="M0,160L60,154.7C120,149,240,139,360,154.7C480,171,600,213,720,229.3C840,245,960,235,1080,208C1200,181,1320,139,1380,117.3L1440,96L1440,0L1380,0C1320,0,1200,0,1080,0C960,0,840,0,720,0C600,0,480,0,360,0C240,0,120,0,60,0L0,0Z" />
+          </svg>
+          <div className="container mx-auto grid max-w-6xl grid-cols-1 items-center gap-16 px-4 md:grid-cols-2 md:px-6">
+            {/* Hero Copy */}
+            <div className="space-y-8" data-aos="fade-up" data-aos-duration="600">
+              <h1 className="text-5xl md:text-7xl font-extrabold tracking-tight leading-tight bg-gradient-to-tr from-indigo-400 via-fuchsia-500 to-cyan-400 bg-clip-text text-transparent drop-shadow-xl animate-fade-in">
+                Kappa Theta Pi
               </h1>
-              <p className="max-w-prose text-lg text-slate-700 md:text-xl">
-                UGA's first and only <strong>Professional Technology Fraternity</strong>, empowering students through
-                leadership, networking, and lifelong friendships.
+              <p className="max-w-prose text-xl md:text-2xl text-primary animate-fade-in delay-100">
+                UGA's first and only <strong>Professional Technology Fraternity</strong>, empowering students through leadership, networking, and lifelong friendships.
               </p>
-              <div className="flex flex-col gap-3 sm:flex-row">
-                {/* <Link href="/rush">
-                  <Button className="group relative overflow-hidden bg-indigo-600 text-white shadow-lg transition duration-300 hover:bg-indigo-700 inline-flex">
+              <div className="flex flex-col gap-4 sm:flex-row animate-fade-in delay-200">
+                <Link href="/rush">
+                  <Button className="relative px-8 py-4 text-lg font-semibold rounded-2xl bg-gradient-to-r from-indigo-600 via-fuchsia-500 to-cyan-400 shadow-xl text-white hover:scale-105 transition-transform duration-300 backdrop-blur-lg/30">
                     <span className="relative z-10">Fall Rush 2025</span>
-                    <span className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/60 to-transparent transition-transform duration-500 group-hover:translate-x-full" />
-                  </Button>
-                </Link> */}
-                <Link href="/rush" className="inline-flex items-center justify-center rounded-md text-sm font-medium text-indigo-600 transition-colors hover:bg-indigo-50">
-                  <Button className="group relative overflow-hidden bg-indigo-600 text-white shadow-lg transition duration-300 hover:bg-indigo-700 inline-flex">
-                    <span>Fall Rush 2025</span>
-                    <span className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/60 to-transparent transition-transform duration-500 group-hover:translate-x-full" />
+                    <span className="absolute inset-0 -z-10 rounded-2xl bg-white/10 blur-xl" />
                   </Button>
                 </Link>
-                <Link href="/blog" className="inline-flex items-center justify-center rounded-md text-sm font-medium text-indigo-600 transition-colors hover:bg-indigo-50">
-                  <Button className="group relative overflow-hidden bg-indigo-600 text-white shadow-lg transition duration-300 hover:bg-indigo-700 inline-flex">
-                    <span>Blog</span>
-                    <span className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/60 to-transparent transition-transform duration-500 group-hover:translate-x-full" />
+                <Link href="/blog">
+                  <Button className="relative px-8 py-4 text-lg font-semibold rounded-2xl bg-gradient-to-r from-cyan-400 via-fuchsia-500 to-indigo-600 shadow-xl text-white hover:scale-105 transition-transform duration-300 backdrop-blur-lg/30">
+                    <span className="relative z-10">Blog</span>
+                    <span className="absolute inset-0 -z-10 rounded-2xl bg-white/10 blur-xl" />
                   </Button>
                 </Link>
-                {/* <Link
-                  href="https://uga.campuslabs.com/engage/organization/ktp"
-                  target="_blank"
-                  className="inline-flex items-center justify-center rounded-md border border-indigo-600 px-4 py-2 text-sm font-medium text-indigo-600 transition-colors hover:bg-indigo-50"
-                  prefetch={false}
-                >
-                  Involvement Network
-                </Link> */}
               </div>
+              
             </div>
-
-            {/* -----------------------  Decorative Image Collage  ---------------------- */}
-           <div className="flex items-center justify-center">
+            {/* Decorative Image Collage (with parallax and fade-in) */}
+            <div className="flex items-center justify-center animate-fade-in delay-200">
               <div className="relative w-full max-w-md sm:max-w-lg">
                 <div className="grid grid-cols-3 gap-4">
                   {heroPics.slice(0, 6).map((src, i) => (
@@ -162,7 +149,8 @@ export default function TemplatePage() {
                       alt={`ΚΘΠ collage ${i + 1}`}
                       width={400}
                       height={300}
-                      className={`h-36 w-full rounded-xl object-cover shadow-lg transition-transform duration-300 hover:scale-105 ${rotation[i % rotation.length]}`}
+                      className={`h-36 w-full rounded-xl object-cover shadow-2xl transition-transform duration-500 hover:scale-110 ${rotation[i % rotation.length]}`}
+                      style={{ transform: `translateY(${(i % 2 === 0 ? -1 : 1) * 10}px)` }}
                     />
                   ))}
                 </div>
@@ -172,7 +160,7 @@ export default function TemplatePage() {
         </section>
 
         {/* ===============================  ABOUT  ============================= */}
-        <section id="about" className="bg-slate-50 py-16 md:py-24">
+        <section id="about" className="bg-card py-16 md:py-24">
           <div className="container mx-auto max-w-6xl px-4 md:px-6" data-aos="fade-up" data-aos-duration="500">
             <div className="grid gap-10 md:grid-cols-2 md:gap-16">
               <div className="relative flex items-center justify-center">
@@ -188,12 +176,12 @@ export default function TemplatePage() {
               </div>
 
               <div className="space-y-6">
-                <h2 className="text-3xl font-bold tracking-tight md:text-4xl">About ΚΘΠ Phi Chapter</h2>
-                <p className="text-lg text-slate-700">
+                <h2 className="text-3xl font-bold tracking-tight md:text-4xl text-primary">About ΚΘΠ Phi Chapter</h2>
+                <p className="text-lg text-foreground">
                   KTP develops technical skills and professionalism while fostering strong friendships and an international
                   network. Our UGA chapter is committed to leaving a lasting legacy on campus and beyond 🌎.
                 </p>
-                <p className="text-base text-slate-700">
+                <p className="text-base text-foreground">
 
                   <Link href="https://ktpmichigan.com" target="_blank" className="text-indigo-600 hover:underline">
                     The Alpha Chapter
@@ -206,14 +194,14 @@ export default function TemplatePage() {
         </section>
 
         {/* =========  VALUES  ========= */}
-        <section id="values" className="relative overflow-hidden py-16 md:py-24">
+        <section id="values" className="relative overflow-hidden py-16 md:py-24 bg-background">
           {/* top-right blob */}
           <span className="pointer-events-none absolute -right-1/3 -top-1/4 -z-10 h-[60vw] w-[60vw] rounded-full bg-gradient-to-br from-fuchsia-500 via-purple-500 to-indigo-500 opacity-10 blur-3xl" />
 
           <div className="container mx-auto max-w-6xl px-4 md:px-6" data-aos="fade-up" data-aos-duration="500">
             <div className="text-center">
-              <h2 className="text-3xl font-bold tracking-tight md:text-4xl">Our Values</h2>
-              <p className="mx-auto mt-3 max-w-2xl text-lg text-slate-700">
+              <h2 className="text-3xl font-bold tracking-tight md:text-4xl text-primary">Our Values</h2>
+              <p className="mx-auto mt-3 max-w-2xl text-lg text-foreground">
                 The pillars that guide and shape every ΚΘΠ member.
               </p>
             </div>
@@ -239,10 +227,10 @@ export default function TemplatePage() {
                   data-aos="fade-up"
                   data-aos-delay={100 + i * 100}
                 >
-                  <h3 className="mb-2 text-xl font-bold text-slate-800 group-hover:text-indigo-600">
+                  <h3 className="mb-2 text-xl font-bold text-primary group-hover:text-indigo-600">
                     {v.title}
                   </h3>
-                  <p className="text-slate-700">{v.desc}</p>
+                  <p className="text-foreground">{v.desc}</p>
                 </div>
               ))}
             </div>
@@ -250,12 +238,12 @@ export default function TemplatePage() {
         </section>
 
         {/* =========  EXEC BOARD  ========= */}
-        <section id="leadership" className="bg-slate-50 py-16 md:py-24">
+        <section id="leadership" className="bg-card py-16 md:py-24">
           
           <div className="container mx-auto max-w-6xl px-4 md:px-6" data-aos="fade-up" data-aos-duration="600">
             <div className="text-center">
-              <h2 className="text-3xl font-bold tracking-tight md:text-4xl">Meet the Exec Board</h2>
-              <p className="mx-auto mt-3 max-w-2xl text-lg text-slate-700">
+              <h2 className="text-3xl font-bold tracking-tight md:text-4xl text-primary">Meet the Exec Board</h2>
+              <p className="mx-auto mt-3 max-w-2xl text-lg text-foreground">
                 The leaders driving ΚΘΠ forward.
               </p>
             </div>

@@ -7,8 +7,8 @@ import pfp from '../../public/whiteKTPpfp.jpg'
 
 export default function Page() {
   return (
-    <main className="flex flex-col items-center justify-center min-h-screen bg-linear-to-br from-[#8e2de2] to-[#4a00e0] text-white">
-      <div className="max-w-md full px-6 py-12 bg-[#1b1b1b] rounded-2xl shadow-xl">
+    <main className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-indigo-600 via-fuchsia-500 to-pink-500 text-white">
+      <div className="max-w-md full px-6 py-12 bg-black/70 backdrop-blur-lg rounded-2xl shadow-xl my-8">
         <div className="flex flex-col items-center space-y-4">
           <div className="rounded-full w-24 h-24 overflow-hidden">
             <Image
@@ -22,7 +22,7 @@ export default function Page() {
             />
           </div>
           <h1 className="text-2xl font-bold">Kappa Theta Pi</h1>
-          <p className="text-muted-foreground">Phi Chapter (UGA)</p>
+          <p className="text-gray-300">Phi Chapter (UGA)</p>
         </div>
         <div className="mt-8 space-y-4">
         <Link

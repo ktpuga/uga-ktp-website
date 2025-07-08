@@ -26,19 +26,39 @@ const resources = [
 
 export default function Page () {
   return (
-    <div className='flex min-h-screen flex-col font-sans bg-gray-950 text-gray-100'>
-      <header className='sticky top-0 z-50 flex h-16 items-center border-b border-gray-800 bg-gray-900/70 px-4 backdrop-blur-sm lg:px-6'>
-        <Link href='/' className='flex items-center font-bold text-pink-500'>ΚΘΠ<span className='ml-2 hidden text-lg font-semibold md:inline'>Phi Chapter at UGA</span></Link>
+    <div className='flex min-h-screen flex-col font-sans bg-gradient-to-br from-pink-200 via-yellow-100 to-cyan-100 text-pink-900'>
+      <header className='sticky top-0 z-50 flex h-16 items-center border-b border-pink-300 bg-white/70 px-4 backdrop-blur-md lg:px-6 shadow-md'>
+        <Link href='/' className='flex items-center font-bold text-pink-500'>
+          <span className="text-2xl md:text-3xl tracking-tight bg-gradient-to-tr from-pink-500 via-yellow-400 to-cyan-400 bg-clip-text text-transparent drop-shadow-lg">ΚΘΠ</span>
+          <span className='ml-2 hidden text-lg font-semibold md:inline text-pink-400'>Phi Chapter at UGA</span>
+        </Link>
         <nav className='ml-auto flex gap-4 sm:gap-6'>
           <Link href='/' className='text-sm font-medium transition-colors hover:text-pink-500'>Home</Link>
         </nav>
       </header>
 
       <main className='flex-1'>
+        {/* ---------- HERO ---------- */}
+        <section className='relative flex flex-col items-center justify-center py-16 md:py-24 min-h-[40vh]'>
+          {/* Beachy SVGs and gradients */}
+          <div className="absolute inset-0 -z-10 pointer-events-none">
+            <div className="absolute left-0 top-0 h-64 w-64 rounded-full bg-gradient-to-br from-pink-400 via-yellow-300 to-cyan-300 opacity-30 blur-3xl" />
+            <div className="absolute right-0 bottom-0 h-80 w-80 rounded-full bg-gradient-to-tr from-yellow-200 via-pink-200 to-cyan-200 opacity-40 blur-2xl" />
+            {/* Palm tree SVG */}
+            <svg className="absolute left-8 bottom-0 w-24 h-24 opacity-60" viewBox="0 0 64 64" fill="none"><path d="M32 60V36" stroke="#fbbf24" strokeWidth="3" strokeLinecap="round"/><path d="M32 36C32 36 29 28 20 28C11 28 8 36 8 36C8 36 15 32 24 36C33 40 32 36 32 36Z" fill="#f472b6"/><path d="M32 36C32 36 35 28 44 28C53 28 56 36 56 36C56 36 49 32 40 36C31 40 32 36 32 36Z" fill="#38bdf8"/></svg>
+            {/* Sun SVG */}
+            <svg className="absolute right-8 top-8 w-16 h-16 opacity-70" viewBox="0 0 64 64" fill="none"><circle cx="32" cy="32" r="14" fill="#fde68a"/><g stroke="#fbbf24" strokeWidth="2"><line x1="32" y1="4" x2="32" y2="16"/><line x1="32" y1="48" x2="32" y2="60"/><line x1="4" y1="32" x2="16" y2="32"/><line x1="48" y1="32" x2="60" y2="32"/><line x1="12.22" y1="12.22" x2="20.49" y2="20.49"/><line x1="43.51" y1="43.51" x2="51.78" y2="51.78"/><line x1="12.22" y1="51.78" x2="20.49" y2="43.51"/><line x1="43.51" y1="20.49" x2="51.78" y2="12.22"/></g></svg>
+          </div>
+          <h1 className='text-5xl md:text-7xl font-extrabold tracking-tight bg-gradient-to-tr from-pink-500 via-yellow-400 to-cyan-400 bg-clip-text text-transparent drop-shadow-xl text-center mb-4'>Love Island Rush</h1>
+          <p className='text-xl md:text-2xl text-pink-600 text-center max-w-2xl mb-6'>
+            Find your perfect match with ΚΘΠ! Join us for a week of fun, friendship, and unforgettable Love Island vibes. All majors welcome!
+          </p>
+        </section>
+
         {/* ---------- RESOURCES ---------- */}
-        <section id='resources' className='bg-gray-900 py-10'>
+        <section id='resources' className='bg-white/60 py-10'>
           <div className='container mx-auto px-4 md:px-6 text-center'>
-            <h2 className='mb-8 text-3xl font-bold tracking-tight text-pink-500 md:text-4xl'>ΚΘΠ <span className='font-gameOfSquids'>Prep Resources</span></h2>
+            <h2 className='mb-8 text-3xl font-bold tracking-tight text-pink-500 md:text-4xl'>Prep Resources</h2>
             <Carousel
               responsive={responsive}
               infinite
@@ -51,8 +71,8 @@ export default function Page () {
               removeArrowOnDeviceType={['tablet', 'mobile']}
             >
               {resources.map((r) => (
-                <div key={r.title} className='rounded-xl border border-pink-500 bg-gray-800 p-6 shadow-lg'>
-                  <Link href={r.url} target='_blank' className='block font-medium text-pink-400 underline hover:text-pink-300'>
+                <div key={r.title} className='rounded-2xl border-2 border-pink-300 bg-gradient-to-br from-pink-100 via-yellow-50 to-cyan-50 p-6 shadow-xl backdrop-blur-lg'>
+                  <Link href={r.url} target='_blank' className='block font-semibold text-pink-600 underline hover:text-pink-400 transition-colors'>
                     {r.title}
                   </Link>
                 </div>
@@ -62,12 +82,30 @@ export default function Page () {
         </section>
 
         {/* ---------- TIMELINE ---------- */}
-        <section className='bg-gray-800 py-16'>
+        <section className='relative bg-gradient-to-br from-pink-100 via-yellow-50 to-cyan-50 py-16'>
+          {/* Beach wave SVG at bottom */}
+          <svg className="absolute left-0 bottom-0 w-full h-24 md:h-32 -z-10" viewBox="0 0 1440 320" fill="none"><path fill="#fbbf24" fillOpacity="0.18" d="M0,224L48,202.7C96,181,192,139,288,133.3C384,128,480,160,576,186.7C672,213,768,235,864,229.3C960,224,1056,192,1152,170.7C1248,149,1344,139,1392,133.3L1440,128L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z" /><path fill="#38bdf8" fillOpacity="0.12" d="M0,288L48,272C96,256,192,224,288,197.3C384,171,480,149,576,154.7C672,160,768,192,864,197.3C960,203,1056,181,1152,154.7C1248,128,1344,96,1392,80L1440,64L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z" /></svg>
+          {/* <Timeline
+            timelineColor="bg-pink-300"
+            dotColor="bg-yellow-300"
+            cardClass="rounded-lg bg-white/80 p-6 shadow-lg border-2 border-pink-200 hover:border-yellow-300 transition-all duration-300"
+            accentClass="text-pink-500"
+            headingClass="mb-2 text-lg font-heading text-pink-600"
+            aosAnimation="fade-up"
+          /> */}
           <div className='container mx-auto px-4 md:px-6 text-center'>
-            <h1 className='mb-4 text-4xl font-bold tracking-tight text-emerald-400 md:text-5xl'>Fall&nbsp;2025 Rush</h1>
-            <p className='mb-10 animate-pulse text-lg text-gray-400'>Last Semester's Theme: <span className='text-pink-500'>Squid&nbsp;Games</span></p>
-            {/* <Timeline /> */}
-            
+            <h2 className='mb-8 text-4xl font-extrabold tracking-tight text-pink-500 md:text-5xl'>Rush Week Events</h2>
+            <div className='mx-auto max-w-2xl grid gap-8 md:grid-cols-2'>
+              {[1,2,3,4,5].map((n) => (
+                <div key={n} className='rounded-2xl bg-white/80 shadow-lg p-8 flex flex-col items-center border-2 border-pink-200 hover:border-yellow-300 transition-all duration-300'>
+                  <div className='mb-4 flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-tr from-pink-300 via-yellow-200 to-cyan-200 shadow-md text-3xl font-bold text-pink-500'>
+                    {n}
+                  </div>
+                  <h3 className='text-2xl font-bold text-pink-600 mb-2'>Event #{n}</h3>
+                  <p className='text-pink-500'>Details coming soon!</p>
+                </div>
+              ))}
+            </div>
           </div>
         </section>
       </main>
