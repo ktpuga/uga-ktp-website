@@ -24,6 +24,7 @@ const STATIC_PAGES = [
   '/links',
   '/code-of-conduct',
   '/blog',                 // blog index
+  '/sponsorship',
 ];
 
 export async function GET() {
