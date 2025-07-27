@@ -39,21 +39,75 @@ export default function Page () {
 
       <main className='flex-1'>
         {/* ---------- HERO ---------- */}
-        <section className='relative flex flex-col items-center justify-center py-16 md:py-24 min-h-[40vh]'>
-          {/* Beachy SVGs and gradients */}
-          <div className="absolute inset-0 -z-10 pointer-events-none">
-            <div className="absolute left-0 top-0 h-64 w-64 rounded-full bg-gradient-to-br from-pink-400 via-yellow-300 to-cyan-300 opacity-30 blur-3xl" />
-            <div className="absolute right-0 bottom-0 h-80 w-80 rounded-full bg-gradient-to-tr from-yellow-200 via-pink-200 to-cyan-200 opacity-40 blur-2xl" />
-            {/* Palm tree SVG */}
-            <svg className="absolute left-8 bottom-0 w-24 h-24 opacity-60" viewBox="0 0 64 64" fill="none"><path d="M32 60V36" stroke="#fbbf24" strokeWidth="3" strokeLinecap="round"/><path d="M32 36C32 36 29 28 20 28C11 28 8 36 8 36C8 36 15 32 24 36C33 40 32 36 32 36Z" fill="#f472b6"/><path d="M32 36C32 36 35 28 44 28C53 28 56 36 56 36C56 36 49 32 40 36C31 40 32 36 32 36Z" fill="#38bdf8"/></svg>
-            {/* Sun SVG */}
-            <svg className="absolute right-8 top-8 w-16 h-16 opacity-70" viewBox="0 0 64 64" fill="none"><circle cx="32" cy="32" r="14" fill="#fde68a"/><g stroke="#fbbf24" strokeWidth="2"><line x1="32" y1="4" x2="32" y2="16"/><line x1="32" y1="48" x2="32" y2="60"/><line x1="4" y1="32" x2="16" y2="32"/><line x1="48" y1="32" x2="60" y2="32"/><line x1="12.22" y1="12.22" x2="20.49" y2="20.49"/><line x1="43.51" y1="43.51" x2="51.78" y2="51.78"/><line x1="12.22" y1="51.78" x2="20.49" y2="43.51"/><line x1="43.51" y1="20.49" x2="51.78" y2="12.22"/></g></svg>
-          </div>
-          <h1 className='text-5xl md:text-7xl font-extrabold tracking-tight bg-gradient-to-tr from-pink-500 via-yellow-400 to-cyan-400 bg-clip-text text-transparent drop-shadow-xl text-center mb-4'>Love Island Rush</h1>
-          <p className='text-xl md:text-2xl text-pink-600 text-center max-w-2xl mb-6'>
-            Find your perfect match with ΚΘΠ! Join us for a week of fun, friendship, and unforgettable Love Island vibes. All majors welcome!
-          </p>
-        </section>
+        <section className="relative flex flex-col items-center justify-center py-20 md:py-32 min-h-[50vh] overflow-hidden">
+  {/* Decorative gradients */}
+  <div className="absolute inset-0 -z-10 pointer-events-none">
+    <div
+      className="absolute -left-1/4 -top-1/4 h-80 w-80 rounded-full bg-gradient-to-br from-pink-400 via-yellow-300 to-cyan-300 opacity-20 blur-3xl"
+    />
+    <div
+      className="absolute -right-1/4 -bottom-1/4 h-96 w-96 rounded-full bg-gradient-to-tr from-yellow-200 via-pink-200 to-cyan-200 opacity-30 blur-2xl "
+    />
+  </div>
+
+  {/* Palm tree SVG with gentle sway */}
+  <svg
+    className="absolute left-8 bottom-0 w-24 h-24 opacity-70 animate-swing"
+    viewBox="0 0 64 64"
+    fill="none"
+    aria-hidden="true"
+  >
+    <path d="M32 60V36" stroke="#fbbf24" strokeWidth="3" strokeLinecap="round" />
+    <path
+      d="M32 36C32 36 29 28 20 28C11 28 8 36 8 36C8 36 15 32 24 36C33 40 32 36 32 36Z"
+      fill="#f472b6"
+    />
+    <path
+      d="M32 36C32 36 35 28 44 28C53 28 56 36 56 36C56 36 49 32 40 36C31 40 32 36 32 36Z"
+      fill="#38bdf8"
+    />
+  </svg>
+
+  {/* Sun SVG */}
+  <svg
+    className="absolute right-8 top-8 w-16 h-16 opacity-80"
+    viewBox="0 0 64 64"
+    fill="none"
+    aria-hidden="true"
+  >
+    <circle cx="32" cy="32" r="14" fill="#fde68a" />
+    <g stroke="#fbbf24" strokeWidth="2">
+      <line x1="32" y1="4" x2="32" y2="16" />
+      <line x1="32" y1="48" x2="32" y2="60" />
+      <line x1="4" y1="32" x2="16" y2="32" />
+      <line x1="48" y1="32" x2="60" y2="32" />
+      <line x1="12.22" y1="12.22" x2="20.49" y2="20.49" />
+      <line x1="43.51" y1="43.51" x2="51.78" y2="51.78" />
+      <line x1="12.22" y1="51.78" x2="20.49" y2="43.51" />
+      <line x1="43.51" y1="20.49" x2="51.78" y2="12.22" />
+    </g>
+  </svg>
+
+  <h1 className="text-5xl md:text-7xl font-extrabold text-center bg-clip-text text-transparent bg-gradient-to-tr from-pink-500 via-yellow-400 to-cyan-400 drop-shadow-lg">
+    Love Island Rush
+  </h1>
+
+  <p className="mt-4 text-lg md:text-2xl text-center text-pink-600 max-w-xl">
+    Find your perfect match with ΚΘΠ! Join us for a week of fun, friendship, and unforgettable Love Island vibes.
+    <br />
+    All majors welcome!
+  </p>
+
+  <Link
+    href="https://forms.gle/CKxazwh6BvDTp6yr7"
+    target="_blank"
+    className="mt-8 inline-block px-8 py-3 bg-gradient-to-r from-pink-500 to-yellow-500 text-white font-semibold rounded-full shadow-xl transform hover:scale-105 transition duration-300"
+    aria-label="Open Rush Form in new tab"
+  >
+    💌 Apply Now
+  </Link>
+</section>
+
 
         {/* ---------- RESOURCES ---------- */}
         <section id='resources' className='bg-white/60 py-10'>

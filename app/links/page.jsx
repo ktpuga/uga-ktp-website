@@ -25,7 +25,7 @@ export default function Page() {
           <p className="text-gray-300">Phi Chapter (UGA)</p>
         </div>
         <div className="mt-8 space-y-4">
-        <Link
+        {/* <Link
             href="https://www.signupgenius.com/go/10C0C44ACAB29A3FCC16-54745399-ktprush#/"
             className="inline-flex items-center justify-between w-full px-4 py-3 rounded-lg bg-[#2b2b2b] hover:bg-[#3b3b3b] transition-colors"
             prefetch={false}
@@ -35,20 +35,20 @@ export default function Page() {
               <span>Rush Interview Signup</span>
             </div>
             <ArrowRightIcon className="w-5 h-5" />
-          </Link>
+          </Link> */}
         <Link
-            href="https://docs.google.com/forms/d/e/1FAIpQLSdd83ur8x5wAo40T8ZRZUAq3rMi5MLvtkBDpUob2bEb_cOwfg/viewform"
+            href="https://forms.gle/2pLuD194auQzUYQJA"
             className="inline-flex items-center justify-between w-full px-4 py-3 rounded-lg bg-[#2b2b2b] hover:bg-[#3b3b3b] transition-colors"
             prefetch={false}
           >
             <div className="flex items-center space-x-3">
               <FormIcon className="w-5 h-5" />
-              <span>KTP Rush Interest Form</span>
+              <span>KTP Rush Form</span>
             </div>
             <ArrowRightIcon className="w-5 h-5" />
           </Link>
         <Link
-            href="https://groupme.com/join_group/105354211/NUNp5nWk"
+            href="https://groupme.com/join_group/108870644/Du9fC5Fp"
             className="inline-flex items-center justify-between w-full px-4 py-3 rounded-lg bg-[#2b2b2b] hover:bg-[#3b3b3b] transition-colors"
             prefetch={false}
           >

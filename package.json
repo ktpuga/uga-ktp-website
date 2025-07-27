@@ -31,14 +31,14 @@
     "sanity": "^3.91.0",
     "sharp": "^0.33.5",
     "styled-components": "^6.1.18",
-    "tailwind-merge": "^2.5.2",
-    "tailwindcss-animate": "^1.0.7"
+    "tailwind-merge": "^2.5.2"
   },
   "devDependencies": {
     "@babel/plugin-transform-typescript": "7.19.3",
     "@tailwindcss/postcss": "^4.0.0",
     "postcss": "^8",
     "tailwindcss": "^4.0.0",
+    "tailwindcss-animate": "^1.0.7",
     "typescript": "5.8.3"
   }
 }
