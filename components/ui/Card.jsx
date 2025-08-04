@@ -1,7 +1,7 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import React from 'react';
 
-const Card = ({ name, title, bio, avatarSrc, fallbackInitials, instagramUrl, linkedinUrl, otherUrl }) => {
+const Card = ({ name, title, bio, avatarSrc, fallbackInitials, instagramUrl, linkedinUrl, otherUrl, email }) => {
   return (
     <div className="relative rounded-2xl bg-card/80 backdrop-blur-lg border-2 border-transparent bg-clip-padding p-6 text-center shadow-xl flex flex-col items-center justify-center transition-transform duration-300 hover:scale-105 hover:border-gradient-to-tr hover:from-indigo-400 hover:via-fuchsia-400 hover:to-cyan-400 group">
       <Avatar className="w-20 h-20 mb-4 shadow-lg ring-4 ring-indigo-200 group-hover:ring-fuchsia-300 transition-all duration-300">                     
@@ -17,12 +17,18 @@ const Card = ({ name, title, bio, avatarSrc, fallbackInitials, instagramUrl, lin
             <HomeIcon className="h-5 w-5" />
           </a>
         }
-        <a href={instagramUrl} className="text-foreground hover:text-pink-500 transition-colors" target="_blank" rel="noopener noreferrer">
+        {instagramUrl &&
+         <a href={instagramUrl} className="text-foreground hover:text-pink-500 transition-colors" target="_blank" rel="noopener noreferrer">
           <InstagramIcon className="h-5 w-5" />
         </a>
-        <a href={linkedinUrl} className="text-foreground hover:text-blue-500 transition-colors" target="_blank" rel="noopener noreferrer">
+        } 
+       {email && <a href={'mailto:'+email} className="text-foreground hover:text-green-500 transition-colors" target="_blank" rel="noopener noreferrer">
+          <MailIcon className="h-5 w-5" />
+        </a>}
+        {linkedinUrl && <a href={linkedinUrl} className="text-foreground hover:text-blue-500 transition-colors" target="_blank" rel="noopener noreferrer">
           <LinkedinIcon className="h-5 w-5" />
-        </a>
+        </a>}
+        
       </div>
     </div>
   );
@@ -85,6 +91,29 @@ function LinkedinIcon(props) {
       </svg>
     )
   }
+
+  export function MailIcon(props) {
+  return (
+    <svg
+      {...props}
+      xmlns="http://www.w3.org/2000/svg"
+      width="24"
+      height="24"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M4 4h16a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z" />
+      <polyline points="22 6 12 13 2 6" />
+    </svg>
+  );
+}
+
+
+
   
 
 export default Card;
