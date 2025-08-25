@@ -150,15 +150,60 @@ export default function Page () {
           <div className='container mx-auto px-4 md:px-6 text-center'>
             <h2 className='mb-8 text-4xl font-extrabold tracking-tight text-pink-500 md:text-5xl'>Rush Week Events</h2>
             <div className='mx-auto max-w-2xl grid gap-8 md:grid-cols-2'>
-              {[1,2,3,4,5].map((n) => (
-                <div key={n} className='rounded-2xl bg-white/80 shadow-lg p-8 flex flex-col items-center border-2 border-pink-200 hover:border-yellow-300 transition-all duration-300'>
-                  <div className='mb-4 flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-tr from-pink-300 via-yellow-200 to-cyan-200 shadow-md text-3xl font-bold text-pink-500'>
-                    {n}
-                  </div>
-                  <h3 className='text-2xl font-bold text-pink-600 mb-2'>Event #{n}</h3>
-                  <p className='text-pink-500'>Details coming soon!</p>
+              {/* Event 1 */}
+              <div className='rounded-2xl bg-white/80 shadow-lg p-8 flex flex-col items-center border-2 border-pink-200 hover:border-yellow-300 transition-all duration-300'>
+                <div className='mb-4 flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-tr from-pink-300 via-yellow-200 to-cyan-200 shadow-md text-3xl font-bold text-pink-500'>
+                  9/1
                 </div>
-              ))}
+                <h3 className='text-2xl font-bold text-pink-600 mb-2'>Info Session 1</h3>
+                <p className='text-pink-500'>Via Zoom</p>
+                <p className='text-pink-400'>7-8 PM</p>
+              </div>
+              {/* Event 2 */}
+              <div className='rounded-2xl bg-white/80 shadow-lg p-8 flex flex-col items-center border-2 border-pink-200 hover:border-yellow-300 transition-all duration-300'>
+                <div className='mb-4 flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-tr from-pink-300 via-yellow-200 to-cyan-200 shadow-md text-3xl font-bold text-pink-500'>
+                  9/2
+                </div>
+                <h3 className='text-2xl font-bold text-pink-600 mb-2'>Info Session 2</h3>
+                <p className='text-pink-500'>Boyd 307A</p>
+                <p className='text-pink-400'>7-8 PM</p>
+              </div>
+              {/* Event 3 */}
+              <div className='rounded-2xl bg-white/80 shadow-lg p-8 flex flex-col items-center border-2 border-pink-200 hover:border-yellow-300 transition-all duration-300'>
+                <div className='mb-4 flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-tr from-pink-300 via-yellow-200 to-cyan-200 shadow-md text-3xl font-bold text-pink-500'>
+                  9/3
+                </div>
+                <h3 className='text-2xl font-bold text-pink-600 mb-2'>Info Session 3</h3>
+                <p className='text-pink-500'>Via Zoom</p>
+                <p className='text-pink-400'>7-8 PM</p>
+              </div>
+              {/* Event 4 */}
+              <div className='rounded-2xl bg-white/80 shadow-lg p-8 flex flex-col items-center border-2 border-pink-200 hover:border-yellow-300 transition-all duration-300'>
+                <div className='mb-4 flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-tr from-pink-300 via-yellow-200 to-cyan-200 shadow-md text-3xl font-bold text-pink-500'>
+                  9/4
+                </div>
+                <h3 className='text-2xl font-bold text-pink-600 mb-2'>Game Night</h3>
+                <p className='text-pink-500'>Boyd 307A</p>
+                <p className='text-pink-400'>7-8 PM</p>
+              </div>
+              {/* Event 5 */}
+              <div className='rounded-2xl bg-white/80 shadow-lg p-8 flex flex-col items-center border-2 border-pink-200 hover:border-yellow-300 transition-all duration-300'>
+                <div className='mb-4 flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-tr from-pink-300 via-yellow-200 to-cyan-200 shadow-md text-3xl font-bold text-pink-500'>
+                  9/5
+                </div>
+                <h3 className='text-2xl font-bold text-pink-600 mb-2'>Speed Dating</h3>
+                <p className='text-pink-500'>Boyd TBD</p>
+                <p className='text-pink-400'>7-8 PM</p>
+              </div>
+              {/* Event 6 */}
+              <div className='rounded-2xl bg-white/80 shadow-lg p-8 flex flex-col items-center border-2 border-pink-200 hover:border-yellow-300 transition-all duration-300'>
+                <div className='mb-4 flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-tr from-pink-300 via-yellow-200 to-cyan-200 shadow-md text-3xl font-bold text-pink-500'>
+                  9/8-9/16
+                </div>
+                <h3 className='text-2xl font-bold text-pink-600 mb-2'>Interviews</h3>
+                <p className='text-pink-500'>Various</p>
+                <p className='text-pink-400'>Times (See email)</p>
+              </div>
             </div>
           </div>
         </section>
