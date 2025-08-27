@@ -174,7 +174,7 @@ export default function Page () {
                   9/3
                 </div>
                 <h3 className='text-2xl font-bold text-pink-600 mb-2'>Info Session 3</h3>
-                <p className='text-pink-500'>Via Zoom</p>
+                <p className='text-pink-500'>Boyd 307A</p>
                 <p className='text-pink-400'>7-8 PM</p>
               </div>
               {/* Event 4 */}
@@ -192,7 +192,7 @@ export default function Page () {
                   9/5
                 </div>
                 <h3 className='text-2xl font-bold text-pink-600 mb-2'>Speed Dating</h3>
-                <p className='text-pink-500'>Boyd TBD</p>
+                <p className='text-pink-500'>Boyd 203</p>
                 <p className='text-pink-400'>7-8 PM</p>
               </div>
               {/* Event 6 */}
