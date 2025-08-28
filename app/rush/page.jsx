@@ -189,7 +189,7 @@ export default function Page () {
               {/* Event 5 */}
               <div className='rounded-2xl bg-white/80 shadow-lg p-8 flex flex-col items-center border-2 border-pink-200 hover:border-yellow-300 transition-all duration-300'>
                 <div className='mb-4 flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-tr from-pink-300 via-yellow-200 to-cyan-200 shadow-md text-3xl font-bold text-pink-500'>
-                  9/5
+                  9/8
                 </div>
                 <h3 className='text-2xl font-bold text-pink-600 mb-2'>Speed Dating</h3>
                 <p className='text-pink-500'>Boyd 203</p>
@@ -198,7 +198,7 @@ export default function Page () {
               {/* Event 6 */}
               <div className='rounded-2xl bg-white/80 shadow-lg p-8 flex flex-col items-center border-2 border-pink-200 hover:border-yellow-300 transition-all duration-300'>
                 <div className='mb-4 flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-tr from-pink-300 via-yellow-200 to-cyan-200 shadow-md text-3xl font-bold text-pink-500'>
-                  9/8-9/16
+                  9/9-9/16
                 </div>
                 <h3 className='text-2xl font-bold text-pink-600 mb-2'>Interviews</h3>
                 <p className='text-pink-500'>Various</p>
