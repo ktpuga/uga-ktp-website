@@ -21,7 +21,7 @@
     "create-react-class": "^15.7.0",
     "eslint-config-next": "15.5.2",
     "lucide-react": "^0.436.0",
-    "next": "15.5.2",
+    "next": "16.0.1",
     "next-sanity": "10.0.15",
     "next-sitemap": "^4.2.3",
     "react": "19.1.1",
