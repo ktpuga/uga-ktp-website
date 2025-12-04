@@ -2,7 +2,9 @@
   "compilerOptions": {
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./*"]       // 👈 tells TS/VS Code that "@/foo" == "./foo"
+      "@/*": [
+        "./*"
+      ] // 👈 tells TS/VS Code that "@/foo" == "./foo"
     },
     "target": "ES2017",
     "lib": [
@@ -31,10 +33,10 @@
     "next-env.d.ts",
     ".next/types/**/*.ts",
     "**/*.ts",
-    "**/*.tsx"
+    "**/*.tsx",
+    ".next/dev/types/**/*.ts"
   ],
   "exclude": [
     "node_modules"
-  ],
-
+  ]
 }
