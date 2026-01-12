@@ -37,7 +37,7 @@ export default function Page() {
             <ArrowRightIcon className="w-5 h-5" />
           </Link> */}
         <Link
-            href="https://forms.gle/2pLuD194auQzUYQJA"
+            href="https://docs.google.com/forms/d/e/1FAIpQLSeJcH3DrhT2-tV3HKejUGByJiL71F3dJF-BhTziDTC6-2xo5w/viewform?usp=dialog"
             className="inline-flex items-center justify-between w-full px-4 py-3 rounded-lg bg-[#2b2b2b] hover:bg-[#3b3b3b] transition-colors"
             prefetch={false}
           >
