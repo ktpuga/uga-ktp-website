@@ -48,7 +48,7 @@ export default function Page() {
             <ArrowRightIcon className="w-5 h-5" />
           </Link>
         <Link
-            href="https://groupme.com/join_group/108870644/Du9fC5Fp"
+            href="https://groupme.com/join_group/112546512/uH0wRE3H"
             className="inline-flex items-center justify-between w-full px-4 py-3 rounded-lg bg-[#2b2b2b] hover:bg-[#3b3b3b] transition-colors"
             prefetch={false}
           >
