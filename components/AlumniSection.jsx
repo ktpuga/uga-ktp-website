@@ -115,16 +115,66 @@ const alumniData = [
     },
 
     {
-        name: "Stephen Sulimanu",
+        name: "Stephen Sulimani",
         classYear: 2025,
         class: "Founder",
         bio: "",
         avatarSrc: images["stephen.jpeg"].default.src,
         fallbackInitials: "SS",
-        instagramUrl: "https://www.instagram.com/yushus_komarlu/",
-        linkedinUrl: "https://www.linkedin.com/in/yushuskomarlu/",
+        instagramUrl: "https://www.instagram.com/stephensulimani/",
+        linkedinUrl: "https://www.linkedin.com/in/stephensulimani/",
+        icon: logos.lexisNexis,
+    },
+
+    {
+        name: "Hayden Crane",
+        classYear: 2025,
+        class: "Founder",
+        bio: "",
+        avatarSrc: images["hayden.jpeg"].default.src,
+        fallbackInitials: "HC",
+        instagramUrl: "https://www.instagram.com/haydencrane/",
+        linkedinUrl: "https://www.linkedin.com/in/haydencrane/",
+        icon: logos.lexisNexis,
+    },
+
+    {
+        name: "Henry Lue",
+        classYear: 2025,
+        class: "Beta",
+        bio: "",
+        avatarSrc: images["henry.jpeg"].default.src,
+        fallbackInitials: "HL",
+        instagramUrl: "https://www.instagram.com/henrylue/",
+        linkedinUrl: "https://www.linkedin.com/in/henrylue/",
+        icon: logos.lexisNexis,
+    },
+
+    {
+        name: "Anjali Devarapalli",
+        classYear: 2025,
+        class: "Alpha",
+        bio: "",
+        avatarSrc: images["anjali.jpeg"].default.src,
+        fallbackInitials: "AD",
+        instagramUrl: "https://www.instagram.com/anjali/",
+        linkedinUrl: "https://www.linkedin.com/in/anjali/",
+        icon: logos.lexisNexis,
+    },
+    
+    {
+        name: "Tharushika Dehi",
+        classYear: 2025,
+        class: "Alpha",
+        bio: "",
+        avatarSrc: images["anjali.jpeg"].default.src,
+        fallbackInitials: "TD",
+        instagramUrl: "https://www.instagram.com/tharushikadehi/",
+        linkedinUrl: "https://www.linkedin.com/in/tharushikadehi/",
         icon: logos.lexisNexis,
     }
+
+    
 ].sort((a, b) => a.classYear - b.classYear);
 
 function AlumniCard({ alum }) {
