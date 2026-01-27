@@ -1,51 +1,51 @@
-'use client'
-import { Button } from "@/components/ui/button"
-import Card from "@/components/ui/Card"
-import Image from "next/image"
-import Link from "next/link"
-import React, { useEffect, useState } from "react"
-import Footer from "../components/ui/footer"
-import dnTTb from "../public/datenight_x_TT_beta.JPEG"
-import main from "../public/glitchKTP.gif"
-import mtdspa from "../public/mytie_x_dsp_alpha.JPEG"
-import mtdspexec from "../public/mytie_x_dsp_exec.JPEG"
-import pcAlpha from "../public/PCalpha.jpg"
-import retreat1 from "../public/retreat_1_whiteshirts.JPEG"
-import tg from "../public/tailgate.JPEG"
-import AlumniSection from "./AlumniSection"
-import { AOSInit } from "./ui/timeline"
+"use client";
+import { Button } from "@/components/ui/button";
+import Card from "@/components/ui/Card";
+import Image from "next/image";
+import Link from "next/link";
+import React, { useEffect, useState } from "react";
+import Footer from "../components/ui/footer";
+import dnTTb from "../public/datenight_x_TT_beta.JPEG";
+import main from "../public/glitchKTP.gif";
+import mtdspa from "../public/mytie_x_dsp_alpha.JPEG";
+import mtdspexec from "../public/mytie_x_dsp_exec.JPEG";
+import pcAlpha from "../public/PCalpha.jpg";
+import retreat1 from "../public/retreat_1_whiteshirts.JPEG";
+import tg from "../public/tailgate.JPEG";
+import AlumniSection from "./AlumniSection";
+import { AOSInit } from "./ui/timeline";
 
 // NEW: Hackathon photos (same set used on /hackathon)
-import ktpHacks1 from "@/public/ktpHacks1.jpeg"
-import ktpHacks2 from "@/public/ktpHacks2.jpeg"
-import ktpHacks4 from "@/public/ktphacks2_1.jpeg"
-import ktpHacks13 from "@/public/ktphacks2_10.jpeg"
-import ktpHacks5 from "@/public/ktphacks2_2.jpeg"
-import ktpHacks6 from "@/public/ktphacks2_3.jpeg"
-import ktpHacks7 from "@/public/ktphacks2_4.jpeg"
-import ktpHacks8 from "@/public/ktphacks2_5.jpeg"
-import ktpHacks9 from "@/public/ktphacks2_6.jpeg"
-import ktpHacks10 from "@/public/ktphacks2_7.jpeg"
-import ktpHacks11 from "@/public/ktphacks2_8.jpeg"
-import ktpHacks12 from "@/public/ktphacks2_9.jpeg"
-import ktpHacks3 from "@/public/ktpHacks3.jpeg"
+import ktpHacks1 from "@/public/ktpHacks1.jpeg";
+import ktpHacks2 from "@/public/ktpHacks2.jpeg";
+import ktpHacks4 from "@/public/ktphacks2_1.jpeg";
+import ktpHacks13 from "@/public/ktphacks2_10.jpeg";
+import ktpHacks5 from "@/public/ktphacks2_2.jpeg";
+import ktpHacks6 from "@/public/ktphacks2_3.jpeg";
+import ktpHacks7 from "@/public/ktphacks2_4.jpeg";
+import ktpHacks8 from "@/public/ktphacks2_5.jpeg";
+import ktpHacks9 from "@/public/ktphacks2_6.jpeg";
+import ktpHacks10 from "@/public/ktphacks2_7.jpeg";
+import ktpHacks11 from "@/public/ktphacks2_8.jpeg";
+import ktpHacks12 from "@/public/ktphacks2_9.jpeg";
+import ktpHacks3 from "@/public/ktpHacks3.jpeg";
 
 /* -------------------------------------------------------------------------- */
 /*                             UTILITY: IMPORT ALL                            */
 /* -------------------------------------------------------------------------- */
 function importAll(r) {
-  const images = {}
+  const images = {};
   r.keys().forEach((item) => {
-    images[item.replace("./", "")] = r(item)
-  })
-  return images
+    images[item.replace("./", "")] = r(item);
+  });
+  return images;
 }
 
 export default function TemplatePage() {
   /* ---------------------- Collect leadership head‑shots --------------------- */
   const images = importAll(
-    require.context("../public/leadership/", false, /\.(png|jpe?g|svg)$/)
-  )
+    require.context("../public/leadership/", false, /\.(png|jpe?g|svg)$/),
+  );
 
   const rotation = [
     "rotate-[3deg]",
@@ -54,7 +54,7 @@ export default function TemplatePage() {
     "-rotate-[3deg]",
     "rotate-[2deg]",
     "-rotate-[1deg]",
-  ]
+  ];
 
   /* ------------------- Media for the hero collage ------------------ */
   const heroPics = [
@@ -64,7 +64,7 @@ export default function TemplatePage() {
     mtdspexec.src,
     retreat1.src,
     tg.src,
-  ].filter(Boolean)
+  ].filter(Boolean);
 
   /* ------------------- Hackathon images for highlights -------------- */
   const hackPics = [
@@ -81,16 +81,16 @@ export default function TemplatePage() {
     ktpHacks11,
     ktpHacks12,
     ktpHacks13,
-  ]
+  ];
 
   /* --------------------------- Mobile breakpoint --------------------------- */
-  const [mobile, setMobile] = useState(false)
+  const [mobile, setMobile] = useState(false);
   useEffect(() => {
-    const updateMobile = () => setMobile(window.innerWidth < 599)
-    updateMobile()
-    window.addEventListener("resize", updateMobile)
-    return () => window.removeEventListener("resize", updateMobile)
-  }, [])
+    const updateMobile = () => setMobile(window.innerWidth < 599);
+    updateMobile();
+    window.addEventListener("resize", updateMobile);
+    return () => window.removeEventListener("resize", updateMobile);
+  }, []);
 
   return (
     <div className="flex min-h-screen flex-col scroll-smooth font-sans bg-gradient-to-br from-slate-50 via-white to-slate-100 text-slate-900">
@@ -134,14 +134,21 @@ export default function TemplatePage() {
         {/* ===============================  HERO  ============================== */}
         <section className="relative overflow-hidden py-20 md:py-28 flex items-center min-h-[70vh]">
           {/* Animated gradient blobs */}
-          <div aria-hidden className="pointer-events-none absolute inset-0 -z-10">
+          <div
+            aria-hidden
+            className="pointer-events-none absolute inset-0 -z-10"
+          >
             <div className="absolute -left-20 top-0 h-[28rem] w-[28rem] rounded-full bg-gradient-to-br from-indigo-500 via-fuchsia-500 to-cyan-400 opacity-25 blur-[120px]" />
             <div className="absolute -bottom-24 right-0 h-[26rem] w-[26rem] rounded-full bg-gradient-to-tr from-cyan-400 via-indigo-500 to-fuchsia-500 opacity-20 blur-[110px]" />
           </div>
 
           <div className="container mx-auto grid max-w-6xl grid-cols-1 items-center gap-16 px-4 md:grid-cols-2 md:px-6">
             {/* Hero Copy */}
-            <div className="space-y-8" data-aos="fade-up" data-aos-duration="600">
+            <div
+              className="space-y-8"
+              data-aos="fade-up"
+              data-aos-duration="600"
+            >
               <p className="inline-flex items-center gap-2 rounded-full border border-indigo-200 bg-white/60 px-3 py-1 text-xs font-semibold tracking-wider text-indigo-700 shadow-sm">
                 UGA's Professional Technology Fraternity
               </p>
@@ -149,7 +156,8 @@ export default function TemplatePage() {
                 Kappa Theta Pi
               </h1>
               <p className="max-w-prose text-lg md:text-xl text-slate-700">
-                Empowering technologists through leadership, mentorship, and community. On a mission to build what matters.
+                Empowering technologists through leadership, mentorship, and
+                community. On a mission to build what matters.
               </p>
               <div className="flex flex-col gap-4 sm:flex-row">
                 <Link href="/rush">
@@ -158,7 +166,10 @@ export default function TemplatePage() {
                   </Button>
                 </Link>
                 <Link href="/hackathon">
-                  <Button variant="outline" className="px-8 py-4 text-lg rounded-2xl border-slate-300 hover:border-indigo-400 hover:text-indigo-700">
+                  <Button
+                    variant="outline"
+                    className="px-8 py-4 text-lg rounded-2xl border-slate-300 hover:border-indigo-400 hover:text-indigo-700"
+                  >
                     See KTP Hacks
                   </Button>
                 </Link>
@@ -183,7 +194,11 @@ export default function TemplatePage() {
             </div>
 
             {/* Decorative Image Collage */}
-            <div className="flex items-center justify-center" data-aos="fade-up" data-aos-delay="150">
+            <div
+              className="flex items-center justify-center"
+              data-aos="fade-up"
+              data-aos-delay="150"
+            >
               <div className="relative w-full max-w-md sm:max-w-lg">
                 <div className="grid grid-cols-3 gap-4">
                   {heroPics.slice(0, 6).map((src, i) => (
@@ -195,7 +210,9 @@ export default function TemplatePage() {
                       width={400}
                       height={300}
                       className={`h-36 w-full rounded-xl object-cover shadow-2xl transition-transform duration-500 hover:scale-110 ${rotation[i % rotation.length]}`}
-                      style={{ transform: `translateY(${(i % 2 === 0 ? -1 : 1) * 10}px)` }}
+                      style={{
+                        transform: `translateY(${(i % 2 === 0 ? -1 : 1) * 10}px)`,
+                      }}
                     />
                   ))}
                 </div>
@@ -209,17 +226,29 @@ export default function TemplatePage() {
           <div className="container mx-auto max-w-6xl px-4 md:px-6">
             <div className="mb-6 flex items-end justify-between">
               <div>
-                <h2 className="text-2xl md:text-3xl font-bold tracking-tight text-slate-900">Hackathon Highlights</h2>
-                <p className="text-slate-600">Second Edition • Fall 2025 • 8 projects • 12 hours</p>
+                <h2 className="text-2xl md:text-3xl font-bold tracking-tight text-slate-900">
+                  Hackathon Highlights
+                </h2>
+                <p className="text-slate-600">
+                  Second Edition • Fall 2025 • 8 projects • 12 hours
+                </p>
               </div>
-              <Link href="/hackathon" className="text-indigo-600 hover:underline font-medium">See more →</Link>
+              <Link
+                href="/hackathon"
+                className="text-indigo-600 hover:underline font-medium"
+              >
+                See more →
+              </Link>
             </div>
 
             {/* Horizontal scroll / snap carousel (no extra deps) */}
             <div className="group relative">
               <div className="no-scrollbar flex snap-x snap-mandatory gap-4 overflow-x-auto rounded-2xl border border-slate-200 bg-white p-4">
                 {hackPics.map((img, i) => (
-                  <figure key={i} className="relative h-56 w-[300px] shrink-0 snap-start overflow-hidden rounded-xl bg-slate-50 ring-1 ring-slate-100">
+                  <figure
+                    key={i}
+                    className="relative h-56 w-[300px] shrink-0 snap-start overflow-hidden rounded-xl bg-slate-50 ring-1 ring-slate-100"
+                  >
                     <Image
                       unoptimized
                       src={img}
@@ -233,10 +262,19 @@ export default function TemplatePage() {
 
             {/* Devpost CTA */}
             <div className="mt-6 flex flex-wrap items-center gap-3">
-              <Link href="https://uga-ktp-hackathon-fall-25.devpost.com/" target="_blank">
-                <Button className="rounded-xl bg-gradient-to-r from-indigo-600 via-fuchsia-500 to-cyan-500 px-6 py-3 text-white shadow-md hover:from-fuchsia-500 hover:to-indigo-600">View 2025 Devpost</Button>
+              <Link
+                href="https://uga-ktp-hackathon-fall-25.devpost.com/"
+                target="_blank"
+              >
+                <Button className="rounded-xl bg-gradient-to-r from-indigo-600 via-fuchsia-500 to-cyan-500 px-6 py-3 text-white shadow-md hover:from-fuchsia-500 hover:to-indigo-600">
+                  View 2025 Devpost
+                </Button>
               </Link>
-              <Link href="https://uga-ktp-hackathon-f24.devpost.com/" target="_blank" className="text-sm text-slate-600 hover:underline">
+              <Link
+                href="https://uga-ktp-hackathon-f24.devpost.com/"
+                target="_blank"
+                className="text-sm text-slate-600 hover:underline"
+              >
                 or view 2024
               </Link>
             </div>
@@ -245,7 +283,11 @@ export default function TemplatePage() {
 
         {/* ===============================  ABOUT  ============================= */}
         <section id="about" className="bg-card py-16 md:py-24">
-          <div className="container mx-auto max-w-6xl px-4 md:px-6" data-aos="fade-up" data-aos-duration="500">
+          <div
+            className="container mx-auto max-w-6xl px-4 md:px-6"
+            data-aos="fade-up"
+            data-aos-duration="500"
+          >
             <div className="grid gap-10 md:grid-cols-2 md:gap-16">
               <div className="relative flex items-center justify-center">
                 <Image
@@ -260,16 +302,25 @@ export default function TemplatePage() {
               </div>
 
               <div className="space-y-6">
-                <h2 className="text-3xl font-bold tracking-tight md:text-4xl text-primary">About ΚΘΠ Phi Chapter</h2>
+                <h2 className="text-3xl font-bold tracking-tight md:text-4xl text-primary">
+                  About ΚΘΠ Phi Chapter
+                </h2>
                 <p className="text-lg text-foreground">
-                  KTP develops technical skills and professionalism while fostering strong friendships and an international
-                  network. Our UGA chapter is committed to leaving a lasting legacy on campus and beyond 🌎.
+                  KTP develops technical skills and professionalism while
+                  fostering strong friendships and an international network. Our
+                  UGA chapter is committed to leaving a lasting legacy on campus
+                  and beyond 🌎.
                 </p>
                 <p className="text-base text-foreground">
-                  <Link href="https://ktpmichigan.com" target="_blank" className="text-indigo-600 hover:underline">
+                  <Link
+                    href="https://ktpmichigan.com"
+                    target="_blank"
+                    className="text-indigo-600 hover:underline"
+                  >
                     The Alpha Chapter
                   </Link>
-                  , founded on January 10, 2012 at the University of Michigan, paved the way for our growing fraternity.
+                  , founded on January 10, 2012 at the University of Michigan,
+                  paved the way for our growing fraternity.
                 </p>
               </div>
             </div>
@@ -277,12 +328,21 @@ export default function TemplatePage() {
         </section>
 
         {/* =========  VALUES  ========= */}
-        <section id="values" className="relative overflow-hidden py-16 md:py-24 bg-gradient-to-b from-white/70 to-slate-100">
+        <section
+          id="values"
+          className="relative overflow-hidden py-16 md:py-24 bg-gradient-to-b from-white/70 to-slate-100"
+        >
           <span className="pointer-events-none absolute -right-1/3 -top-1/4 -z-10 h-[60vw] w-[60vw] rounded-full bg-gradient-to-br from-fuchsia-500 via-purple-500 to-indigo-500 opacity-10 blur-3xl" />
 
-          <div className="container mx-auto max-w-6xl px-4 md:px-6" data-aos="fade-up" data-aos-duration="500">
+          <div
+            className="container mx-auto max-w-6xl px-4 md:px-6"
+            data-aos="fade-up"
+            data-aos-duration="500"
+          >
             <div className="text-center">
-              <h2 className="text-3xl font-bold tracking-tight md:text-4xl text-primary">Our Values</h2>
+              <h2 className="text-3xl font-bold tracking-tight md:text-4xl text-primary">
+                Our Values
+              </h2>
               <p className="mx-auto mt-3 max-w-2xl text-lg text-foreground">
                 The pillars that guide and shape every ΚΘΠ member.
               </p>
@@ -321,9 +381,15 @@ export default function TemplatePage() {
 
         {/* =========  EXEC BOARD  ========= */}
         <section id="leadership" className="bg-card py-16 md:py-24">
-          <div className="container mx-auto max-w-6xl px-4 md:px-6" data-aos="fade-up" data-aos-duration="600">
+          <div
+            className="container mx-auto max-w-6xl px-4 md:px-6"
+            data-aos="fade-up"
+            data-aos-duration="600"
+          >
             <div className="text-center">
-              <h2 className="text-3xl font-bold tracking-tight md:text-4xl text-primary">Meet the Exec Board</h2>
+              <h2 className="text-3xl font-bold tracking-tight md:text-4xl text-primary">
+                Meet the Exec Board
+              </h2>
               <p className="mx-auto mt-3 max-w-2xl text-lg text-foreground">
                 The leaders driving ΚΘΠ forward.
               </p>
@@ -332,13 +398,69 @@ export default function TemplatePage() {
               {/* === Cards (unchanged) === */}
               {/* prettier-ignore */}
               <Card name="Daniel Rifai" title="President" bio="Daniel Rifai is a third year Computer Science and Finance major. He enjoys the outdoors, sports, film, and card games." avatarSrc={images["danny.jpeg"].default.src} fallbackInitials="DR" instagramUrl="https://www.instagram.com/drifai2" linkedinUrl="https://www.linkedin.com/in/daniel-rifai-19226a292/" />
-              <Card name="Andrew Warner" title="VP of Membership" bio="Andrew is a junior Computer Science major at UGA. He enjoys playing video games, watching movies, and spending time with friends." avatarSrc={images["andrew.jpeg"].default.src} fallbackInitials="AW" instagramUrl="https://www.instagram.com/andrew__warner/" linkedinUrl="https://www.linkedin.com/in/andrew-a-warner/" />
-              <Card name="Alli Gay" title="VP of Finance" bio="Alli is a Data Science major at UGA. She is also involved in UGA’s Club Cross Country/Track team and Delta Zeta Sorority. She loves to run, be outside, paint, and listen to music." avatarSrc={images["alli.jpeg"].default.src} fallbackInitials="AG" instagramUrl="https://www.instagram.com/allisonngayy/" linkedinUrl="https://www.linkedin.com/in/allison-gay-8956a7296/" />
-              <Card name="Ajeetha Murugappan" title="VP of Marketing" bio="Ajeetha is a junior Computer Science major and Business minor. She enjoys golfing, going to concerts, and long walks!" avatarSrc={images["ajeetha.jpeg"].default.src} fallbackInitials="AM" instagramUrl="https://www.instagram.com/ajeetha.05/" linkedinUrl="https://www.linkedin.com/in/ajeetha-murugappan-43b6a01b5/" />
-              <Card name="Yoshna Agarwal" title="VP of Internal Affairs" bio="2nd Year CS major @ University of Georgia" avatarSrc={images["yoshna.jpeg"].default.src} fallbackInitials="YA" instagramUrl="https://www.instagram.com/yoshnaagarwal/" linkedinUrl="https://www.linkedin.com/in/yoshna-agarwal/" />
-              <Card name="Jonah Criswell" title="VP of External Affairs" bio="CS & Business @ UGA | Incoming SWE Intern @ Wells Fargo | SWE @ UGA Small Satellite Research Lab" avatarSrc={images["jonah.jpeg"].default.src} fallbackInitials="JC" instagramUrl="https://www.instagram.com/jonah.criswell/" linkedinUrl="https://www.linkedin.com/in/jonah-criswell/" />
-              <Card name="Manya Vikram" title="VP of Professional Dev" bio="Manya is a junior CS major." avatarSrc={images["manya.jpeg"].default.src} fallbackInitials="MV" instagramUrl="https://www.instagram.com/manya.vv/" linkedinUrl="https://www.linkedin.com/in/manya-vikram-bb0652220/" />
-              <Card name="Adithya Lakshmikanth" title="VP of Technical Dev" bio="Junior at the University of Georgia pursuing degrees in Computer Science and Applied Mathematics, currently serving as a Technical Organizer for UGAHacks." avatarSrc={images["adithya.jpeg"].default.src} fallbackInitials="AL" instagramUrl="https://www.instagram.com/ladithya27/" linkedinUrl="https://www.linkedin.com/in/ladithya/" />
+              <Card
+                name="Andrew Warner"
+                title="VP of Membership"
+                bio="Andrew is a junior Computer Science major at UGA. He enjoys playing video games, watching movies, and spending time with friends."
+                avatarSrc={images["andrew.jpeg"].default.src}
+                fallbackInitials="AW"
+                instagramUrl="https://www.instagram.com/andrew__warner/"
+                linkedinUrl="https://www.linkedin.com/in/andrew-a-warner/"
+              />
+              <Card
+                name="Alli Gay"
+                title="VP of Finance"
+                bio="Alli is a Data Science major at UGA. She is also involved in UGA’s Club Cross Country/Track team and Delta Zeta Sorority. She loves to run, be outside, paint, and listen to music."
+                avatarSrc={images["alli.jpeg"].default.src}
+                fallbackInitials="AG"
+                instagramUrl="https://www.instagram.com/allisonngayy/"
+                linkedinUrl="https://www.linkedin.com/in/allison-gay-8956a7296/"
+              />
+              <Card
+                name="Ajeetha Murugappan"
+                title="VP of Marketing"
+                bio="Ajeetha is a junior Computer Science major and Business minor. She enjoys golfing, going to concerts, and long walks!"
+                avatarSrc={images["ajeetha.jpeg"].default.src}
+                fallbackInitials="AM"
+                instagramUrl="https://www.instagram.com/ajeetha.05/"
+                linkedinUrl="https://www.linkedin.com/in/ajeetha-murugappan-43b6a01b5/"
+              />
+              <Card
+                name="Yoshna Agarwal"
+                title="VP of Internal Affairs"
+                bio="2nd Year CS major @ University of Georgia"
+                avatarSrc={null}
+                fallbackInitials="YA"
+                instagramUrl="https://www.instagram.com/yoshnaagarwal/"
+                linkedinUrl="https://www.linkedin.com/in/yoshna-agarwal/"
+              />
+              <Card
+                name="Jonah Criswell"
+                title="VP of External Affairs"
+                bio="CS & Business @ UGA | Incoming SWE Intern @ Wells Fargo | SWE @ UGA Small Satellite Research Lab"
+                avatarSrc={null}
+                fallbackInitials="JC"
+                instagramUrl="https://www.instagram.com/jonah.criswell/"
+                linkedinUrl="https://www.linkedin.com/in/jonah-criswell/"
+              />
+              <Card
+                name="Manya Vikram"
+                title="VP of Professional Dev"
+                bio="Manya is a junior CS major."
+                avatarSrc={images["manya.jpeg"].default.src}
+                fallbackInitials="MV"
+                instagramUrl="https://www.instagram.com/manya.vv/"
+                linkedinUrl="https://www.linkedin.com/in/manya-vikram-bb0652220/"
+              />
+              <Card
+                name="Adithya Lakshmikanth"
+                title="VP of Technical Dev"
+                bio="Junior at the University of Georgia pursuing degrees in Computer Science and Applied Mathematics, currently serving as a Technical Organizer for UGAHacks."
+                avatarSrc={null}
+                fallbackInitials="AL"
+                instagramUrl="https://www.instagram.com/ladithya27/"
+                linkedinUrl="https://www.linkedin.com/in/ladithya/"
+              />
             </div>
           </div>
         </section>
@@ -347,8 +469,14 @@ export default function TemplatePage() {
 
         {/* =========  CONTACT  ========= */}
         <section id="contact" className="bg-slate-100 py-16 md:py-24">
-          <div className="container mx-auto max-w-4xl px-4 text-center md:px-6" data-aos="flip-up" data-aos-duration="300">
-            <h2 className="text-3xl font-bold tracking-tight md:text-4xl">Contact</h2>
+          <div
+            className="container mx-auto max-w-4xl px-4 text-center md:px-6"
+            data-aos="flip-up"
+            data-aos-duration="300"
+          >
+            <h2 className="text-3xl font-bold tracking-tight md:text-4xl">
+              Contact
+            </h2>
             <p className="mx-auto mt-3 max-w-2xl text-lg text-slate-700">
               Join us for Rush and become part of the KTPhamily.
             </p>
@@ -369,7 +497,7 @@ export default function TemplatePage() {
       </main>
       <Footer />
     </div>
-  )
+  );
 }
 
 /* -----------------------------  Helpers  ----------------------------- */
@@ -383,7 +511,7 @@ function SocialLink({ href, children }) {
     >
       {children}
     </Link>
-  )
+  );
 }
 
 function InstagramIcon(props) {
@@ -404,7 +532,7 @@ function InstagramIcon(props) {
       <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" />
       <line x1="17.5" x2="17.51" y1="6.5" y2="6.5" />
     </svg>
-  )
+  );
 }
 
 function MailIcon(props) {
@@ -424,7 +552,7 @@ function MailIcon(props) {
       <rect width="20" height="16" x="2" y="4" rx="2" />
       <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
     </svg>
-  )
+  );
 }
 
 function LinkedinIcon(props) {
@@ -445,5 +573,5 @@ function LinkedinIcon(props) {
       <rect width="4" height="12" x="2" y="9" />
       <circle cx="4" cy="4" r="2" />
     </svg>
-  )
+  );
 }
