@@ -47,16 +47,16 @@ export default function Page () {
           </div>
 
           <h1 className="text-5xl md:text-7xl font-extrabold text-center bg-clip-text text-transparent bg-gradient-to-tr from-sky-400 via-indigo-300 to-cyan-300 drop-shadow-xl">
-            Spring Rush 2026... Coming Soon
+            Spring Rush 2026 - Now Open!
           </h1>
 
           <p className="mt-4 text-lg md:text-2xl text-center text-sky-200/90 max-w-2xl">
-            Details are being finalized. Check back soon for dates, locations, and the official theme.
+            Here are the rush events!
           </p>
 
           {/* Interest link placeholder (disabled until ready) */}
           <span className="mt-8 inline-block px-8 py-3 rounded-full border border-sky-400/50 text-sky-200/80 bg-white/5 backdrop-blur shadow-lg select-none">
-            ❓ Interest Form: TBD
+            ❓ Interest Form: <Link href="https://docs.google.com/forms/d/e/1FAIpQLSeJcH3DrhT2-tV3HKejUGByJiL71F3dJF-BhTziDTC6-2xo5w/viewform"> </Link>
           </span>
         </section>
 
@@ -95,10 +95,13 @@ export default function Page () {
             </p>
             <div className='mx-auto max-w-3xl grid gap-8 md:grid-cols-2'>
               {[
-                { label: 'Info Session 1', when: '??/??', where: 'TBD', time: 'TBD' },
-                { label: 'Info Session 2', when: '??/??', where: 'TBD', time: 'TBD' },
-                { label: 'Social / Game Night', when: '??/??', where: 'TBD', time: 'TBD' },
-                { label: 'Interviews', when: '??/??–??/??', where: 'Various', time: 'By email' },
+                { label: 'Info Session 1', when: '1/28', where: 'Boyd 328', time: '7:00pm' },
+                { label: 'Info Session 2', when: '1/29', where: 'Boyd 328', time: '7:00pm' },
+                { label: 'Info Session 3', when: '1/30', where: 'Boyd 328', time: '7:00pm' },
+                { label: 'Social / Game Night', when: '2/2', where: 'Boyd 328', time: '7:00pm' },
+                { label: 'Shark Tank Night', when: '2/3', where: 'Boyd 328', time: '7:00pm' },
+                { label: 'Meet the Brothers: Speed Dating', when: '2/9', where: 'Boyd 328', time: '7:00pm' },
+                { label: 'Interviews', when: '2/10–2/16', where: 'Various', time: 'By email' },
               ].map((e) => (
                 <div key={e.label} className='rounded-2xl bg-white/5 shadow-lg p-8 flex flex-col items-center border-2 border-indigo-800 hover:border-sky-500 transition-all duration-300'>
                   <div className='mb-4 flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-tr from-sky-500 via-indigo-500 to-cyan-400 shadow-md text-3xl font-bold text-white'>
