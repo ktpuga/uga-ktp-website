@@ -56,7 +56,9 @@ export default function Page () {
 
           {/* Interest link placeholder (disabled until ready) */}
           <span className="mt-8 inline-block px-8 py-3 rounded-full border border-sky-400/50 text-sky-200/80 bg-white/5 backdrop-blur shadow-lg select-none">
-            ❓ Interest Form: <Link href="https://docs.google.com/forms/d/e/1FAIpQLSeJcH3DrhT2-tV3HKejUGByJiL71F3dJF-BhTziDTC6-2xo5w/viewform"> </Link>
+            <Link href="https://docs.google.com/forms/d/e/1FAIpQLSeJcH3DrhT2-tV3HKejUGByJiL71F3dJF-BhTziDTC6-2xo5w/viewform">
+            ❓ Interest Form: Click Here
+              </Link>
           </span>
         </section>
 
