@@ -429,7 +429,7 @@ export default function TemplatePage() {
                 name="Yoshna Agarwal"
                 title="VP of Internal Affairs"
                 bio="2nd Year CS major @ University of Georgia"
-                avatarSrc={null}
+                avatarSrc={images["yoshna.jpg"].default.src}
                 fallbackInitials="YA"
                 instagramUrl="https://www.instagram.com/yoshnaagarwal/"
                 linkedinUrl="https://www.linkedin.com/in/yoshna-agarwal/"
@@ -438,7 +438,7 @@ export default function TemplatePage() {
                 name="Jonah Criswell"
                 title="VP of External Affairs"
                 bio="CS & Business @ UGA | Incoming SWE Intern @ Wells Fargo | SWE @ UGA Small Satellite Research Lab"
-                avatarSrc={null}
+                avatarSrc={images["jonah.jpeg"].default.src}
                 fallbackInitials="JC"
                 instagramUrl="https://www.instagram.com/jonah.criswell/"
                 linkedinUrl="https://www.linkedin.com/in/jonah-criswell/"
@@ -456,7 +456,7 @@ export default function TemplatePage() {
                 name="Adithya Lakshmikanth"
                 title="VP of Technical Dev"
                 bio="Junior at the University of Georgia pursuing degrees in Computer Science and Applied Mathematics, currently serving as a Technical Organizer for UGAHacks."
-                avatarSrc={null}
+                avatarSrc={images["adithya.jpg"].default.src}
                 fallbackInitials="AL"
                 instagramUrl="https://www.instagram.com/ladithya27/"
                 linkedinUrl="https://www.linkedin.com/in/ladithya/"
