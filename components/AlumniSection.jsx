@@ -112,6 +112,18 @@ const alumniData = [
         instagramUrl: "https://www.instagram.com/yushus_komarlu/",
         linkedinUrl: "https://www.linkedin.com/in/yushuskomarlu/",
         icon: logos.lexisNexis,
+    },
+
+    {
+        name: "Stephen Sulimanu",
+        classYear: 2025,
+        class: "Founder",
+        bio: "",
+        avatarSrc: images["stephen.jpeg"].default.src,
+        fallbackInitials: "SS",
+        instagramUrl: "https://www.instagram.com/yushus_komarlu/",
+        linkedinUrl: "https://www.linkedin.com/in/yushuskomarlu/",
+        icon: logos.lexisNexis,
     }
 ].sort((a, b) => a.classYear - b.classYear);
 
