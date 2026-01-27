@@ -167,7 +167,7 @@ const alumniData = [
         classYear: 2025,
         class: "Alpha",
         bio: "",
-        avatarSrc: images["anjali.jpeg"].default.src,
+        avatarSrc: images["tharushika.jpeg"].default.src,
         fallbackInitials: "TD",
         instagramUrl: "https://www.instagram.com/tharushikadehi/",
         linkedinUrl: "https://www.linkedin.com/in/tharushikadehi/",
