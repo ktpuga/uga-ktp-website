@@ -438,7 +438,7 @@ export default function TemplatePage() {
                 name="Jonah Criswell"
                 title="VP of External Affairs"
                 bio="CS & Business @ UGA | Incoming SWE Intern @ Wells Fargo | SWE @ UGA Small Satellite Research Lab"
-                avatarSrc={images["jonah.jpeg"].default.src}
+                avatarSrc={images["jonah2.jpeg"].default.src}
                 fallbackInitials="JC"
                 instagramUrl="https://www.instagram.com/jonah.criswell/"
                 linkedinUrl="https://www.linkedin.com/in/jonah-criswell/"
