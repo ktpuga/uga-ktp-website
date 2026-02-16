@@ -35,6 +35,7 @@ const logos = {
         "https://images.icon-icons.com/2699/PNG/512/lexisnexis_logo_icon_169270.png",
     georgiaTech:
         "https://upload.wikimedia.org/wikipedia/commons/8/84/Georgia_Tech_logo_2021_Cropped.png",
+
 };
 
 // 🗂️ Alumni data
@@ -48,7 +49,7 @@ const alumniData = [
         fallbackInitials: "GJ",
         instagramUrl: "https://www.instagram.com/gargee.jam/",
         linkedinUrl: "https://www.linkedin.com/in/gargeejamadagni/",
-        icon: FaUniversity, // grad‑school
+        icon: FaUniversity,
     },
     {
         name: "Siya Sharma",
@@ -136,9 +137,9 @@ const alumniData = [
         bio: "",
         avatarSrc: images["hayden.jpeg"].default.src,
         fallbackInitials: "HC",
-        instagramUrl: "https://www.instagram.com/haydencrane/",
+        instagramUrl: "https://www.instagram.com/haydencranee/",
         linkedinUrl: "https://www.linkedin.com/in/haydencrane/",
-        icon: logos.lexisNexis,
+        icon: FaUniversity,
     },
 
     {
@@ -148,9 +149,9 @@ const alumniData = [
         bio: "",
         avatarSrc: null,
         fallbackInitials: "HL",
-        instagramUrl: "https://www.instagram.com/henrylue/",
-        linkedinUrl: "https://www.linkedin.com/in/henrylue/",
-        icon: logos.lexisNexis,
+        instagramUrl: "https://www.instagram.com/henry.lue/",
+        linkedinUrl: "https://www.linkedin.com/in/henry-lue/",
+        icon: FaUniversity,
     },
 
     {
@@ -160,9 +161,9 @@ const alumniData = [
         bio: "",
         avatarSrc: null,
         fallbackInitials: "AD",
-        instagramUrl: "https://www.instagram.com/anjali/",
-        linkedinUrl: "https://www.linkedin.com/in/anjali/",
-        icon: logos.lexisNexis,
+        instagramUrl: "https://www.instagram.com/anjali.devarapalli/",
+        linkedinUrl: "https://www.linkedin.com/in/anjali-devarapalli-b1677329a//",
+        icon: FaUniversity,
     },
 
     {
@@ -173,8 +174,8 @@ const alumniData = [
         avatarSrc: null,
         fallbackInitials: "TD",
         instagramUrl: "https://www.instagram.com/tharushikadehi/",
-        linkedinUrl: "https://www.linkedin.com/in/tharushikadehi/",
-        icon: logos.lexisNexis,
+        linkedinUrl: "https://www.linkedin.com/in/maryan-dehipitiarachchi/",
+        icon: FaUniversity,
     },
 ].sort((a, b) => a.classYear - b.classYear);
 
@@ -206,7 +207,7 @@ function AlumniCard({ alum }) {
     })();
 
     return (
-        <div className="relative">
+        <div className="relative h-full">
             <Card
                 name={alum.name}
                 title={
@@ -225,6 +226,7 @@ function AlumniCard({ alum }) {
                 fallbackInitials={alum.fallbackInitials}
                 instagramUrl={alum.instagramUrl}
                 linkedinUrl={alum.linkedinUrl}
+                className="h-full"
             />
             {badgeEl && (
                 <span className={`absolute ${badgePos} text-xl text-slate-600`}>

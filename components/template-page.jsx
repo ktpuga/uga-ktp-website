@@ -488,7 +488,7 @@ export default function TemplatePage() {
               <SocialLink href="https://www.linkedin.com/company/kappa-theta-pi-uga/">
                 <LinkedinIcon className="h-6 w-6" />
               </SocialLink>
-              <SocialLink href="mailto:uga.ktp@gmail.com;ryan.majd@uga.edu">
+              <SocialLink href="mailto:uga.ktp@gmail.com">
                 <MailIcon className="h-6 w-6" />
               </SocialLink>
             </div>
