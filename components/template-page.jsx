@@ -399,13 +399,12 @@ export default function TemplatePage() {
               {/* prettier-ignore */}
               <Card name="Daniel Rifai" title="President" bio="Daniel Rifai is a third year Computer Science and Finance major. He enjoys the outdoors, sports, film, and card games." avatarSrc={images["danny.jpeg"].default.src} fallbackInitials="DR" instagramUrl="https://www.instagram.com/drifai2" linkedinUrl="https://www.linkedin.com/in/daniel-rifai-19226a292/" />
               <Card
-                name="Andrew Warner"
+                name="William Tomaszewski"
                 title="VP of Membership"
-                bio="Andrew is a junior Computer Science major at UGA. He enjoys playing video games, watching movies, and spending time with friends."
-                avatarSrc={images["andrew.jpeg"].default.src}
-                fallbackInitials="AW"
-                instagramUrl="https://www.instagram.com/andrew__warner/"
-                linkedinUrl="https://www.linkedin.com/in/andrew-a-warner/"
+                bio="Will is a sophomore Computer Science major at UGA."
+                avatarSrc={images["will.jpg"].default.src}
+                fallbackInitials="WT"
+                instagramUrl="https://www.instagram.com/will_.tom/"
               />
               <Card
                 name="Alli Gay"
