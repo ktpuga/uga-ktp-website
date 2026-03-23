@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import React, { useEffect, useState } from "react";
 import Footer from "../components/ui/footer";
+import LoginButton from "./auth/LoginButton";
 import dnTTb from "../public/datenight_x_TT_beta.JPEG";
 import main from "../public/glitchKTP.gif";
 import mtdspa from "../public/mytie_x_dsp_alpha.JPEG";
@@ -127,6 +128,7 @@ export default function TemplatePage() {
                 {l.label}
               </Link>
             ))}
+          <LoginButton />
         </nav>
       </header>
 
