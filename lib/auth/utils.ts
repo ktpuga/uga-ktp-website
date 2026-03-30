@@ -25,6 +25,6 @@ export async function getAuthUser(): Promise<AuthUser | null> {
 
 export function hasRole(user: AuthUser | null, requiredRole: UserRole): boolean {
   if (!user) return false;
-  const hierarchy = { alumni: 3, actives: 2, pledges: 1 };
+  const hierarchy = { admin: 4,alumni: 3, actives: 2, pledges: 1 };
   return hierarchy[user.role] >= hierarchy[requiredRole];
 }
