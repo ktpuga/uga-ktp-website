@@ -1,6 +1,6 @@
 import { getSession } from 'next-auth/react';
 
-export type UserRole = 'member' | 'alumni' | 'admin';
+export type UserRole = 'pledges' | 'members' | 'alumni' | 'admin';
 
 export interface AuthUser {
   id?: string;
@@ -25,6 +25,6 @@ export async function getAuthUser(): Promise<AuthUser | null> {
 
 export function hasRole(user: AuthUser | null, requiredRole: UserRole): boolean {
   if (!user) return false;
-  const hierarchy = { admin: 4,alumni: 3, actives: 2, pledges: 1 };
+  const hierarchy = { admin: 4,alumni: 3, members: 2, pledges: 1 };
   return hierarchy[user.role] >= hierarchy[requiredRole];
 }
