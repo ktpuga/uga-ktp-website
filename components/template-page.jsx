@@ -127,6 +127,11 @@ export default function TemplatePage() {
                 {l.label}
               </Link>
             ))}
+          <Link href="/login">
+            <Button size="sm" className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg px-4">
+              Login
+            </Button>
+          </Link>
         </nav>
       </header>
 
