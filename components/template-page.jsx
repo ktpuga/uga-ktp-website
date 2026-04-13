@@ -127,12 +127,16 @@ export default function TemplatePage() {
                 {l.label}
               </Link>
             ))}
-          <Link href="/login">
-            <Button size="sm" className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg px-4">
-              Login
-            </Button>
-          </Link>
+          
         </nav>
+        <Link
+            href="/login"
+            className="ml-6 text-sm font-medium px-3 py-1.5 rounded-md border border-slate-300 transition-colors duration-300 hover:text-indigo-600 hover:border-indigo-400"
+          >
+            <span className="relative before:absolute before:-bottom-0.5 before:left-0 before:h-0.5 before:w-full before:origin-left before:scale-x-0 before:bg-indigo-500 before:transition-transform before:duration-300 group-hover:before:scale-x-100 [a:hover_&]:before:scale-x-100">
+              Portal Login
+            </span>
+          </Link>
       </header>
 
       <main className="flex-1">

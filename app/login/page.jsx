@@ -25,17 +25,17 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-900 via-blue-800 to-blue-900 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-white-700 via-white-800 to-white-900 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="text-center mb-8">
           <Link href="/" className="inline-flex items-center justify-center mb-4">
             <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center shadow-xl">
-              <span className="text-blue-900 text-3xl font-bold">ΚΘΠ</span>
+              <span className="text-blue-900 text-2xl font-bold">ΚΘΠ</span>
             </div>
           </Link>
-          <h1 className="text-3xl font-bold text-white mb-2">Welcome Back</h1>
-          <p className="text-blue-100">Sign in to access your portal</p>
+          <h1 className="text-3xl font-bold text-black mb-2">Welcome Back</h1>
+          <p className="text-black-100">Sign in to access your portal</p>
         </div>
 
         {/* Login Card */}
@@ -108,7 +108,7 @@ export default function Login() {
         </div>
 
         <div className="mt-6 text-center">
-          <Link href="/" className="text-sm text-white hover:underline">
+          <Link href="/" className="text-sm text-black hover:underline">
             ← Back to home
           </Link>
         </div>
