@@ -128,7 +128,7 @@ export default function TemplatePage() {
               </Link>
             ))}
           <Link href="/login">
-            <Button size="sm" className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg px-4">
+            <Button size="sm" className="bg-blue-600 hover:bg-blue-700 text-white rounded-lg ">
               Login
             </Button>
           </Link>
