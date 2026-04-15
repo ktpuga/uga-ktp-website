@@ -44,11 +44,17 @@ export default function AdminAnalytics() {
   const [range, setRange] = useState('semester');
 
   return (
-    <div className="space-y-6">
+    <div className="relative space-y-6">
+      {/* Ambient gradient blobs matching main site hero */}
+      <div aria-hidden className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
+        <div className="absolute -left-32 -top-32 h-[28rem] w-[28rem] rounded-full bg-gradient-to-br from-indigo-500 via-fuchsia-500 to-cyan-400 opacity-10 blur-[120px]" />
+        <div className="absolute -bottom-32 right-0 h-[26rem] w-[26rem] rounded-full bg-gradient-to-tr from-cyan-400 via-indigo-500 to-fuchsia-500 opacity-10 blur-[110px]" />
+      </div>
+
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Analytics</h1>
-          <p className="text-gray-600">Track chapter metrics and engagement</p>
+          <h1 className="text-3xl font-bold text-blue-900 mb-2">Analytics</h1>
+          <p className="text-slate-600">Track chapter metrics and engagement</p>
         </div>
         <select
           value={range}
@@ -70,18 +76,18 @@ export default function AdminAnalytics() {
           { label: 'Events Hosted', value: '24', trend: '8 this month', icon: Target },
           { label: 'Retention Rate', value: '94%', trend: '+2% from last year', icon: Award },
         ].map(({ label, value, trend, icon: Icon }) => (
-          <Card key={label}>
+          <Card key={label} className="ring-1 ring-slate-100 shadow-sm hover:shadow-indigo-200/50 hover:-translate-y-0.5 transition-all duration-300">
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
-                <CardTitle className="text-sm font-medium text-gray-600">{label}</CardTitle>
+                <CardTitle className="text-sm font-medium text-slate-600">{label}</CardTitle>
                 <Icon className="w-4 h-4 text-blue-800" />
               </div>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{value}</div>
+              <div className="text-2xl font-bold text-blue-900">{value}</div>
               <div className="flex items-center gap-1 mt-1 text-sm text-green-600">
                 <TrendingUp className="w-3 h-3" />
-                <span className="text-gray-500">{trend}</span>
+                <span className="text-slate-500">{trend}</span>
               </div>
             </CardContent>
           </Card>

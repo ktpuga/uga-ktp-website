@@ -1,12 +1,14 @@
 "use client";
 import { Button } from "@/components/ui/button";
-import Card from "@/components/ui/Card";
+import Card from "@/components/ui/profile-card";
 import Image from "next/image";
 import Link from "next/link";
 import React, { useEffect, useState } from "react";
 import Footer from "../components/ui/footer";
 import dnTTb from "../public/datenight_x_TT_beta.JPEG";
-import main from "../public/glitchKTP.gif";
+import ktpUpdated1 from "../public/KTP_UPDATED1.jpg";
+import ktpUpdated2 from "../public/KTP_UPDATED2.jpg";
+import ktpUpdated3 from "../public/KTP_UPDATED3.jpg";
 import mtdspa from "../public/mytie_x_dsp_alpha.JPEG";
 import mtdspexec from "../public/mytie_x_dsp_exec.JPEG";
 import pcAlpha from "../public/PCalpha.jpg";
@@ -83,6 +85,17 @@ export default function TemplatePage() {
     ktpHacks13,
   ];
 
+   /* ------------------- Jobs to Larp for more interest -------------- */
+  const networkCompanies = [
+    { src: '/ktpjobs/macys-logo-1.svg', alt: "Macy's" },
+    { src: '/ktpjobs/Oracle_logo.svg', alt: 'Oracle' },
+    { src: '/ktpjobs/IBM_logo.svg', alt: 'IBM' },
+    { src: '/ktpjobs/Google_2015_logo.svg', alt: 'Google' },
+    { src: '/ktpjobs/Claude_AI_logo.svg', alt: 'Claude' },
+    { src: '/ktpjobs/Gulfstream_Aerospace_logo.svg', alt: 'Gulfstream' },
+    { src: '/ktpjobs/PwC_2025_Logo.svg', alt: 'PwC' },
+  ];
+
   /* --------------------------- Mobile breakpoint --------------------------- */
   const [mobile, setMobile] = useState(false);
   useEffect(() => {
@@ -92,34 +105,36 @@ export default function TemplatePage() {
     return () => window.removeEventListener("resize", updateMobile);
   }, []);
 
+  /* --------------------------- Navbar scroll divider ----------------------- */
+  const [scrolled, setScrolled] = useState(false);
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 10);
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
   return (
     <div className="flex min-h-screen flex-col scroll-smooth font-sans bg-gradient-to-br from-slate-50 via-white to-slate-100 text-slate-900">
       <AOSInit />
 
       {/* ===============================  NAVBAR  ============================== */}
-      <header className="sticky top-0 z-50 flex h-16 items-center border-b border-slate-200 bg-white/70 px-4 backdrop-blur-md lg:px-6">
+      <header className={`sticky top-0 z-50 flex h-16 items-center border-b px-4 backdrop-blur-md lg:px-6 transition-all duration-300 ${scrolled ? "bg-white border-slate-200 shadow-sm" : "bg-slate-50/0 border-transparent"}`}>
         <Link href="#" className="flex items-center gap-2">
           
-          {/*create a higher svg logo than what is currently being used - andrew */}
           <Image
-            src="/KTP_LOGO.png"
+            src="/KTP PHI CHAPTER.svg"
             alt="ΚΘΠ"
             width={48}
             height={48}
             className="h-10 w-auto object-contain"
           />
-          {!mobile && (
-            <span className="text-lg font-semibold text-slate-800/80">
-              Phi Chapter at UGA
-            </span>
-          )}
         </Link>
         <nav className="ml-auto flex gap-4 sm:gap-6">
           {[
             { href: "/rush", label: "Rush" },
             { href: "#about", label: "About", hideOnMobile: true },
             { href: "#leadership", label: "Leadership" },
-            { href: "#alumni", label: "Alumni", hideOnMobile: true },
+            // { href: "#alumni", label: "Alumni", hideOnMobile: true },
             { href: "/hackathon", label: "Hackathon" },
             { href: "#contact", label: "Contact" },
           ]
@@ -167,7 +182,7 @@ export default function TemplatePage() {
               <p className="inline-flex items-center gap-2 rounded-full border border-blue-200 bg-white/60 px-3 py-1 text-xs font-semibold tracking-wider text-blue-600 shadow-sm">
                 UGA's Professional Technology Fraternity
               </p>
-              <h1 className="text-5xl md:text-7xl font-extrabold tracking-tight leading-tight  text-blue-800 bg-clip-text  drop-shadow-xl">
+              <h1 className="text-5xl md:text-7xl font-extrabold tracking-tight leading-tight  text-blue-900 bg-clip-text  drop-shadow-xl">
                 Kappa Theta Pi
               </h1>
               <p className="max-w-prose text-lg md:text-xl text-slate-700">
@@ -175,11 +190,11 @@ export default function TemplatePage() {
                 community. On a mission to build what matters.
               </p>
               <div className="flex flex-col gap-4 sm:flex-row">
-                <Link href="/rush">
+                {/*<Link href="/rush"> */}
                   <Button className="relative px-8 py-4 text-lg font-semibold rounded-2xl bg-gradient-to-r from-blue-600 via-black-500 to-blue-950 shadow-xl text-white hover:scale-105 transition-transform duration-300">
-                    Spring Rush 2026
+                    Rush Coming Soon..
                   </Button>
-                </Link>
+                {/* </Link> */}
                 <Link href="/hackathon">
                   <Button
                     variant="outline"
@@ -215,7 +230,9 @@ export default function TemplatePage() {
               data-aos-delay="150"
             >
               <div className="relative w-full max-w-md sm:max-w-lg">
-                <div className="grid grid-cols-3 gap-4">
+                {/* Dark blue faint gradient backdrop behind the collage */}
+                <div className="absolute -inset-6 -z-10 rounded-3xl bg-gradient-to-br from-blue-950/40 via-blue-900/30 to-indigo-900/15 blur-2xl" />
+                <div className="grid grid-cols-3 gap-0">
                   {heroPics.slice(0, 6).map((src, i) => (
                     <Image
                       key={i}
@@ -223,10 +240,11 @@ export default function TemplatePage() {
                       src={src}
                       alt={`ΚΘΠ collage ${i + 1}`}
                       width={400}
-                      height={300}
-                      className={`h-36 w-full rounded-xl object-cover shadow-2xl transition-transform duration-500 hover:scale-110 ${rotation[i % rotation.length]}`}
+                      height={500}
+                      className={`h-52 w-full rounded-xl object-cover shadow-2xl transition-transform duration-500 hover:scale-110 ${rotation[i % rotation.length]}`}
                       style={{
-                        transform: `translateY(${(i % 2 === 0 ? -1 : 1) * 10}px)`,
+                        transform: `translateY(${(i % 2 === 0 ? -1 : 1) * 14}px)`,
+                        marginLeft: i !== 0 ? "-12px" : "0",
                       }}
                     />
                   ))}
@@ -281,7 +299,7 @@ export default function TemplatePage() {
                 href="https://uga-ktp-hackathon-fall-25.devpost.com/"
                 target="_blank"
               >
-                <Button className="rounded-xl bg-gradient-to-r from-indigo-600 via-fuchsia-500 to-cyan-500 px-6 py-3 text-white shadow-md hover:from-fuchsia-500 hover:to-indigo-600">
+                <Button className="rounded-xl bg-gradient-to-r text-white px-6 py-3 shadow-md hover:from-blue-900 hover:to-indigo-600">
                   View 2025 Devpost
                 </Button>
               </Link>
@@ -304,21 +322,32 @@ export default function TemplatePage() {
             data-aos-duration="500"
           >
             <div className="grid gap-10 md:grid-cols-2 md:gap-16">
-              <div className="relative flex items-center justify-center">
-                <Image
-                  unoptimized
-                  src={main.src}
-                  width={420}
-                  height={420}
-                  alt="About ΚΘΠ"
-                  className="rounded-2xl shadow-xl"
-                />
-                <span className="absolute -inset-2 -z-10 animate-pulse rounded-3xl bg-gradient-to-br from-blue-400 via-teal-400 to-green-300 opacity-10 blur-2xl" />
+              {/* About section image collage — mirrors hero collage structure */}
+              <div className="relative flex items-center justify-center overflow-visible -mx-8 md:-mx-16">
+                {/* Blue-to-cyan gradient backdrop matching site theme */}
+                <div className="absolute -inset-6 -z-10 rounded-3xl bg-gradient-to-br from-blue-900/40 via-sky-700/25 to-cyan-800/15 blur-2xl" />
+                <div className="grid grid-cols-3 w-full">
+                  {[ktpUpdated1, ktpUpdated2, ktpUpdated3].map((img, i) => (
+                    <Image
+                      key={i}
+                      unoptimized
+                      src={img.src}
+                      alt={`ΚΘΠ about ${i + 1}`}
+                      width={400}
+                      height={500}
+                      className={`h-96 w-full rounded-xl object-cover shadow-2xl transition-transform duration-500 hover:scale-110 ${rotation[i % rotation.length]}`}
+                      style={{
+                        transform: `translateY(${(i % 2 === 0 ? -1 : 1) * 14}px)`,
+                        marginLeft: i !== 0 ? "-14px" : "0",
+                      }}
+                    />
+                  ))}
+                </div>
               </div>
 
               <div className="space-y-6">
                 <h2 className="text-3xl font-bold tracking-tight md:text-4xl text-primary">
-                  About ΚΘΠ Phi Chapter
+                  About KTP Phi Chapter
                 </h2>
                 <p className="text-lg text-foreground">
                   KTP develops technical skills and professionalism while
@@ -342,6 +371,53 @@ export default function TemplatePage() {
           </div>
         </section>
 
+        {/* =========  NETWORK MARQUEE  ========= */}
+        <section className="bg-card py-12 md:py-16">
+          <div className="container mx-auto max-w-6xl px-4 md:px-6">
+            <h2 className="text-center text-3xl font-bold tracking-tight md:text-4xl text-primary mb-10">
+              Our Network
+            </h2>
+
+            {/* Row 1 — scrolls left */}
+            <div className="relative overflow-hidden mb-8">
+              <div className="flex gap-16 items-center animate-marquee-left whitespace-nowrap">
+                {networkCompanies.map((company, index) => (
+                  <img key={`r1a-${index}`} src={company.src} alt={company.alt} className="h-10 w-32 object-contain flex-shrink-0" />
+                ))}
+                {networkCompanies.map((company, index) => (
+                  <img key={`r1b-${index}`} src={company.src} alt={company.alt} className="h-10 w-32 object-contain flex-shrink-0" />
+                ))}
+              </div>
+            </div>
+
+            {/* Row 2 — scrolls right (reverse direction) */}
+            <div className="relative overflow-hidden">
+              <div className="flex gap-16 items-center animate-marquee-right whitespace-nowrap">
+                {[...networkCompanies].reverse().map((company, index) => (
+                  <img key={`r2a-${index}`} src={company.src} alt={company.alt} className="h-10 w-32 object-contain flex-shrink-0" />
+                ))}
+                {[...networkCompanies].reverse().map((company, index) => (
+                  <img key={`r2b-${index}`} src={company.src} alt={company.alt} className="h-10 w-32 object-contain flex-shrink-0" />
+                ))}
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Marquee keyframes */}
+        <style>{`
+          @keyframes marquee-left {
+            from { transform: translateX(0); }
+            to   { transform: translateX(-50%); }
+          }
+          @keyframes marquee-right {
+            from { transform: translateX(-50%); }
+            to   { transform: translateX(0); }
+          }
+          .animate-marquee-left  { animation: marquee-left  18s linear infinite; }
+          .animate-marquee-right { animation: marquee-right 18s linear infinite; }
+        `}</style>
+
         {/* =========  VALUES  ========= */}
         <section
           id="values"
@@ -359,7 +435,7 @@ export default function TemplatePage() {
                 Our Values
               </h2>
               <p className="mx-auto mt-3 max-w-2xl text-lg text-foreground">
-                The pillars that guide and shape every ΚΘΠ member.
+                The pillars that guide and shape every KTP member.
               </p>
             </div>
 
@@ -375,7 +451,7 @@ export default function TemplatePage() {
                 },
                 {
                   title: "Community",
-                  desc: "The friendships built in ΚΘΠ last well beyond college & span the globe through countless events.",
+                  desc: "The friendships built in KTP last well beyond college & span the globe through countless events.",
                 },
               ].map((v, i) => (
                 <div
@@ -406,7 +482,7 @@ export default function TemplatePage() {
                 Meet the Exec Board
               </h2>
               <p className="mx-auto mt-3 max-w-2xl text-lg text-foreground">
-                The leaders driving ΚΘΠ forward.
+                The leaders driving KTP forward.
               </p>
             </div>
             <div className="mt-6 grid grid-cols-2 gap-6 text-sm p-0 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4">

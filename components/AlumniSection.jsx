@@ -3,7 +3,7 @@
 // The top‑right badge now supports **either** a react‑icon *or* a custom image logo.
 // If `alum.icon` is a component, we render it; if it’s a string (URL), we show that image.
 
-import Card from "@/components/ui/Card"; // adjust path if Card lives elsewhere
+import Card from "@/components/ui/profile-card";
 import React, { useEffect, useState } from "react";
 import { FaGoogle, FaUniversity, FaUps } from "react-icons/fa";
 
@@ -254,7 +254,7 @@ export default function AlumniSection() {
                         Meet Our Alumni Base
                     </h2>
                     <p className="mx-auto mt-3 max-w-2xl text-lg text-foreground">
-                        Celebrating ΚΘΠ alumni and their ongoing impact.
+                        Celebrating ΚTP alumni and their ongoing impact.
                     </p>
                 </div>
 

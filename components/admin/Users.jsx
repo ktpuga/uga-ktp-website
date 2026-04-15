@@ -8,137 +8,129 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../components/ui/ta
 import { Avatar, AvatarFallback } from '../../components/ui/avatar';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '../../components/ui/dialog';
 import { Label } from '../../components/ui/label';
-import { Search, UserPlus, Mail, MoreVertical, Shield, UserCog, Users as UsersIcon } from 'lucide-react';
+import { Search, UserPlus, Mail, MoreVertical, Shield, UserCog } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '../../components/ui/dropdown-menu';
-
 export default function AdminUsers() {
-  const [searchQuery, setSearchQuery] = useState('');
-  const [filterRole, setFilterRole] = useState('all');
-  const [filterStatus, setFilterStatus] = useState('all');
-
-  const members = [
-    {
-      id: 1,
-      name: 'Alex Thompson',
-      email: 'alex.t@uga.edu',
-      role: 'President',
-      status: 'active',
-      joinDate: 'Fall 2023',
-      year: 'Senior',
-      major: 'Computer Science',
-      initials: 'AT',
-    },
-    {
-      id: 2,
-      name: 'Jordan Lee',
-      email: 'jordan.l@uga.edu',
-      role: 'Vice President',
-      status: 'active',
-      joinDate: 'Fall 2023',
-      year: 'Senior',
-      major: 'Information Systems',
-      initials: 'JL',
-    },
-    {
-      id: 3,
-      name: 'Sam Martinez',
-      email: 'sam.m@uga.edu',
-      role: 'Member',
-      status: 'active',
-      joinDate: 'Spring 2024',
-      year: 'Junior',
-      major: 'Computer Science',
-      initials: 'SM',
-    },
-    {
-      id: 4,
-      name: 'Casey Nguyen',
-      email: 'casey.n@uga.edu',
-      role: 'Tech Chair',
-      status: 'active',
-      joinDate: 'Fall 2024',
-      year: 'Sophomore',
-      major: 'Computer Engineering',
-      initials: 'CN',
-    },
-    {
-      id: 5,
-      name: 'Riley Johnson',
-      email: 'riley.j@uga.edu',
-      role: 'Member',
-      status: 'active',
-      joinDate: 'Fall 2024',
-      year: 'Sophomore',
-      major: 'MIS',
-      initials: 'RJ',
-    },
-    {
-      id: 6,
-      name: 'Morgan Davis',
-      email: 'morgan.d@uga.edu',
-      role: 'Member',
-      status: 'inactive',
-      joinDate: 'Spring 2024',
-      year: 'Junior',
-      major: 'Computer Science',
-      initials: 'MD',
-    },
-  ];
-
-  const alumni = [
-    {
-      id: 1,
-      name: 'Sarah Chen',
-      email: 's.chen@example.com',
-      status: 'active',
-      graduationYear: '2023',
-      company: 'Google',
-      initials: 'SC',
-    },
-    {
-      id: 2,
-      name: 'Michael Rodriguez',
-      email: 'm.rodriguez@example.com',
-      status: 'active',
-      graduationYear: '2022',
-      company: 'Amazon',
-      initials: 'MR',
-    },
-    {
-      id: 3,
-      name: 'Emily Johnson',
-      email: 'e.johnson@example.com',
-      status: 'active',
-      graduationYear: '2024',
-      company: 'Microsoft',
-      initials: 'EJ',
-    },
-  ];
-
-  const getRoleBadgeColor = (role: string) => {
-    const colors: Record<string, string> = {
-      President: 'bg-red-100 text-red-800',
-      'Vice President': 'bg-amber-100 text-amber-800',
-      'Tech Chair': 'bg-blue-100 text-blue-800',
-      Member: 'bg-gray-100 text-gray-800',
+    const [searchQuery, setSearchQuery] = useState('');
+    const [filterRole, setFilterRole] = useState('all');
+    const [filterStatus, setFilterStatus] = useState('all');
+    const members = [
+        {
+            id: 1,
+            name: 'Alex Thompson',
+            email: 'alex.t@uga.edu',
+            role: 'President',
+            status: 'active',
+            joinDate: 'Fall 2023',
+            year: 'Senior',
+            major: 'Computer Science',
+            initials: 'AT',
+        },
+        {
+            id: 2,
+            name: 'Jordan Lee',
+            email: 'jordan.l@uga.edu',
+            role: 'Vice President',
+            status: 'active',
+            joinDate: 'Fall 2023',
+            year: 'Senior',
+            major: 'Information Systems',
+            initials: 'JL',
+        },
+        {
+            id: 3,
+            name: 'Sam Martinez',
+            email: 'sam.m@uga.edu',
+            role: 'Member',
+            status: 'active',
+            joinDate: 'Spring 2024',
+            year: 'Junior',
+            major: 'Computer Science',
+            initials: 'SM',
+        },
+        {
+            id: 4,
+            name: 'Casey Nguyen',
+            email: 'casey.n@uga.edu',
+            role: 'Tech Chair',
+            status: 'active',
+            joinDate: 'Fall 2024',
+            year: 'Sophomore',
+            major: 'Computer Engineering',
+            initials: 'CN',
+        },
+        {
+            id: 5,
+            name: 'Riley Johnson',
+            email: 'riley.j@uga.edu',
+            role: 'Member',
+            status: 'active',
+            joinDate: 'Fall 2024',
+            year: 'Sophomore',
+            major: 'MIS',
+            initials: 'RJ',
+        },
+        {
+            id: 6,
+            name: 'Morgan Davis',
+            email: 'morgan.d@uga.edu',
+            role: 'Member',
+            status: 'inactive',
+            joinDate: 'Spring 2024',
+            year: 'Junior',
+            major: 'Computer Science',
+            initials: 'MD',
+        },
+    ];
+    const alumni = [
+        {
+            id: 1,
+            name: 'Sarah Chen',
+            email: 's.chen@example.com',
+            status: 'active',
+            graduationYear: '2023',
+            company: 'Google',
+            initials: 'SC',
+        },
+        {
+            id: 2,
+            name: 'Michael Rodriguez',
+            email: 'm.rodriguez@example.com',
+            status: 'active',
+            graduationYear: '2022',
+            company: 'Amazon',
+            initials: 'MR',
+        },
+        {
+            id: 3,
+            name: 'Emily Johnson',
+            email: 'e.johnson@example.com',
+            status: 'active',
+            graduationYear: '2024',
+            company: 'Microsoft',
+            initials: 'EJ',
+        },
+    ];
+    const getRoleBadgeColor = (role) => {
+        const colors = {
+            President: 'bg-red-100 text-red-800',
+            'Vice President': 'bg-amber-100 text-amber-800',
+            'Tech Chair': 'bg-blue-100 text-blue-800',
+            Member: 'bg-gray-100 text-gray-800',
+        };
+        return colors[role] || 'bg-gray-100 text-gray-800';
     };
-    return colors[role] || 'bg-gray-100 text-gray-800';
-  };
-
-  const getStatusBadgeColor = (status: string) => {
-    return status === 'active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800';
-  };
-
-  const filteredMembers = members.filter(member => {
-    const matchesSearch = member.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         member.email.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesRole = filterRole === 'all' || member.role === filterRole;
-    const matchesStatus = filterStatus === 'all' || member.status === filterStatus;
-    return matchesSearch && matchesRole && matchesStatus;
-  });
-
-  return (
-    <div className="space-y-6">
+    const getStatusBadgeColor = (status) => {
+        return status === 'active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800';
+    };
+    const filteredMembers = members.filter(member => {
+        const matchesSearch = member.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            member.email.toLowerCase().includes(searchQuery.toLowerCase());
+        const matchesRole = filterRole === 'all' || member.role === filterRole;
+        const matchesStatus = filterStatus === 'all' || member.status === filterStatus;
+        return matchesSearch && matchesRole && matchesStatus;
+    });
+    return (<div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
@@ -148,7 +140,7 @@ export default function AdminUsers() {
         <Dialog>
           <DialogTrigger asChild>
             <Button className="bg-red-800 hover:bg-red-900">
-              <UserPlus className="w-4 h-4 mr-2" />
+              <UserPlus className="w-4 h-4 mr-2"/>
               Add User
             </Button>
           </DialogTrigger>
@@ -160,11 +152,11 @@ export default function AdminUsers() {
             <div className="space-y-4 mt-4">
               <div className="space-y-2">
                 <Label htmlFor="name">Full Name</Label>
-                <Input id="name" placeholder="Enter full name" />
+                <Input id="name" placeholder="Enter full name"/>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
-                <Input id="email" type="email" placeholder="email@uga.edu" />
+                <Input id="email" type="email" placeholder="email@uga.edu"/>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
@@ -245,17 +237,12 @@ export default function AdminUsers() {
             <CardContent className="pt-6">
               <div className="grid md:grid-cols-3 gap-4">
                 <div className="relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                  <Input
-                    placeholder="Search members..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-10"
-                  />
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400"/>
+                  <Input placeholder="Search members..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="pl-10"/>
                 </div>
                 <Select value={filterRole} onValueChange={setFilterRole}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Filter by role" />
+                    <SelectValue placeholder="Filter by role"/>
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">All Roles</SelectItem>
@@ -267,7 +254,7 @@ export default function AdminUsers() {
                 </Select>
                 <Select value={filterStatus} onValueChange={setFilterStatus}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Filter by status" />
+                    <SelectValue placeholder="Filter by status"/>
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">All Status</SelectItem>
@@ -281,8 +268,7 @@ export default function AdminUsers() {
 
           {/* Members List */}
           <div className="grid gap-4">
-            {filteredMembers.map((member) => (
-              <Card key={member.id} className="hover:shadow-md transition-shadow">
+            {filteredMembers.map((member) => (<Card key={member.id} className="hover:shadow-md transition-shadow">
                 <CardContent className="flex items-center justify-between p-6">
                   <div className="flex items-center gap-4 flex-1 min-w-0">
                     <Avatar className="w-12 h-12">
@@ -311,21 +297,21 @@ export default function AdminUsers() {
                   </div>
                   <div className="flex gap-2 flex-shrink-0">
                     <Button variant="outline" size="sm">
-                      <Mail className="w-4 h-4" />
+                      <Mail className="w-4 h-4"/>
                     </Button>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button variant="outline" size="sm">
-                          <MoreVertical className="w-4 h-4" />
+                          <MoreVertical className="w-4 h-4"/>
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
                         <DropdownMenuItem>
-                          <UserCog className="w-4 h-4 mr-2" />
+                          <UserCog className="w-4 h-4 mr-2"/>
                           Edit Profile
                         </DropdownMenuItem>
                         <DropdownMenuItem>
-                          <Shield className="w-4 h-4 mr-2" />
+                          <Shield className="w-4 h-4 mr-2"/>
                           Change Role
                         </DropdownMenuItem>
                         <DropdownMenuItem className="text-red-600">
@@ -335,16 +321,14 @@ export default function AdminUsers() {
                     </DropdownMenu>
                   </div>
                 </CardContent>
-              </Card>
-            ))}
+              </Card>))}
           </div>
         </TabsContent>
 
         <TabsContent value="alumni" className="mt-6 space-y-4">
           {/* Alumni List */}
           <div className="grid gap-4">
-            {alumni.map((person) => (
-              <Card key={person.id} className="hover:shadow-md transition-shadow">
+            {alumni.map((person) => (<Card key={person.id} className="hover:shadow-md transition-shadow">
                 <CardContent className="flex items-center justify-between p-6">
                   <div className="flex items-center gap-4 flex-1 min-w-0">
                     <Avatar className="w-12 h-12">
@@ -370,17 +354,17 @@ export default function AdminUsers() {
                   </div>
                   <div className="flex gap-2 flex-shrink-0">
                     <Button variant="outline" size="sm">
-                      <Mail className="w-4 h-4" />
+                      <Mail className="w-4 h-4"/>
                     </Button>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button variant="outline" size="sm">
-                          <MoreVertical className="w-4 h-4" />
+                          <MoreVertical className="w-4 h-4"/>
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
                         <DropdownMenuItem>
-                          <UserCog className="w-4 h-4 mr-2" />
+                          <UserCog className="w-4 h-4 mr-2"/>
                           Edit Profile
                         </DropdownMenuItem>
                         <DropdownMenuItem className="text-red-600">
@@ -390,11 +374,9 @@ export default function AdminUsers() {
                     </DropdownMenu>
                   </div>
                 </CardContent>
-              </Card>
-            ))}
+              </Card>))}
           </div>
         </TabsContent>
       </Tabs>
-    </div>
-  );
+    </div>);
 }

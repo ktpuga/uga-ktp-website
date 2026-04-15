@@ -16,12 +16,13 @@ export default function MemberLayout({ children }) {
   const router = useRouter();
 
   return (
-    <div className="flex min-h-screen bg-slate-50">
+    <div className="flex min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100">
       {/* Sidebar */}
-      <aside className="w-60 shrink-0 bg-white border-r border-slate-200 flex flex-col">
-        <div className="h-16 flex items-center gap-3 px-5 border-b border-slate-200">
+      <aside className="w-60 shrink-0 bg-white/80 backdrop-blur-md border-r border-slate-200 flex flex-col">
+        {/* Sidebar header with subtle blue gradient matching main site */}
+        <div className="h-16 flex items-center gap-3 px-5 border-b border-slate-200 bg-gradient-to-r from-blue-950/5 to-transparent">
           <Link href="/" className="flex items-center gap-2">
-            <Image src="/KTP_LOGO.png" alt="KTP" width={36} height={36} className="h-8 w-auto" />
+            <Image src="/KTP PHI CHAPTER.svg" alt="KTP" width={36} height={36} className="h-8 w-auto" />
             <span className="font-semibold text-blue-900 text-sm">Member Portal</span>
           </Link>
         </div>

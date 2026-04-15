@@ -4,68 +4,63 @@ import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
 import { Calendar, Users, Megaphone, TrendingUp, ArrowRight, Bell } from 'lucide-react';
 import { Link } from 'react-router';
-
 export default function MemberDashboard() {
-  const upcomingEvents = [
-    {
-      id: 1,
-      title: 'General Body Meeting',
-      date: 'March 3, 2026',
-      time: '7:00 PM',
-      location: 'Tate Student Center',
-      type: 'Meeting',
-    },
-    {
-      id: 2,
-      title: 'Tech Talk: AI in Production',
-      date: 'March 7, 2026',
-      time: '6:30 PM',
-      location: 'Boyd GSRC',
-      type: 'Workshop',
-    },
-    {
-      id: 3,
-      title: 'Social: Game Night',
-      date: 'March 10, 2026',
-      time: '8:00 PM',
-      location: 'Member\'s Apartment',
-      type: 'Social',
-    },
-  ];
-
-  const announcements = [
-    {
-      id: 1,
-      title: 'Spring Rush Applications Open',
-      message: 'Applications for Spring 2026 rush are now open. Share with interested students!',
-      date: '2 days ago',
-      priority: 'high',
-    },
-    {
-      id: 2,
-      title: 'New Partnership with Google',
-      message: 'Excited to announce our new partnership with Google for exclusive tech talks.',
-      date: '5 days ago',
-      priority: 'normal',
-    },
-    {
-      id: 3,
-      title: 'Hackathon Team Formation',
-      message: 'Looking to form teams for UGA\'s upcoming hackathon. DM leadership if interested!',
-      date: '1 week ago',
-      priority: 'normal',
-    },
-  ];
-
-  const recentPhotos = [
-    'https://images.unsplash.com/photo-1758598306835-2c030e203707?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxwcm9mZXNzaW9uYWwlMjB0ZWNobm9sb2d5JTIwdGVhbSUyMG5ldHdvcmtpbmd8ZW58MXx8fHwxNzcyMzIxMTE3fDA&ixlib=rb-4.1.0&q=80&w=400',
-    'https://images.unsplash.com/photo-1758270705172-07b53627dfcb?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxkaXZlcnNlJTIwc3R1ZGVudHMlMjBjb2xsYWJvcmF0aW9uJTIwY2FtcHVzfGVufDF8fHx8MTc3MjIxODI3Nnww&ixlib=rb-4.1.0&q=80&w=400',
-    'https://images.unsplash.com/photo-1765366417030-16d9765d920a?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxtb2Rlcm4lMjBvZmZpY2UlMjB3b3Jrc3BhY2UlMjBwcm9mZXNzaW9uYWx8ZW58MXx8fHwxNzcyMjg3NjI0fDA&ixlib=rb-4.1.0&q=80&w=400',
-    'https://images.unsplash.com/photo-1758270702512-089c0da33998?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxncmFkdWF0aW9uJTIwYWx1bW5pJTIwY2VsZWJyYXRpb258ZW58MXx8fHwxNzcyMzIxMTE4fDA&ixlib=rb-4.1.0&q=80&w=400',
-  ];
-
-  return (
-    <div className="space-y-8">
+    const upcomingEvents = [
+        {
+            id: 1,
+            title: 'General Body Meeting',
+            date: 'March 3, 2026',
+            time: '7:00 PM',
+            location: 'Tate Student Center',
+            type: 'Meeting',
+        },
+        {
+            id: 2,
+            title: 'Tech Talk: AI in Production',
+            date: 'March 7, 2026',
+            time: '6:30 PM',
+            location: 'Boyd GSRC',
+            type: 'Workshop',
+        },
+        {
+            id: 3,
+            title: 'Social: Game Night',
+            date: 'March 10, 2026',
+            time: '8:00 PM',
+            location: 'Member\'s Apartment',
+            type: 'Social',
+        },
+    ];
+    const announcements = [
+        {
+            id: 1,
+            title: 'Spring Rush Applications Open',
+            message: 'Applications for Spring 2026 rush are now open. Share with interested students!',
+            date: '2 days ago',
+            priority: 'high',
+        },
+        {
+            id: 2,
+            title: 'New Partnership with Google',
+            message: 'Excited to announce our new partnership with Google for exclusive tech talks.',
+            date: '5 days ago',
+            priority: 'normal',
+        },
+        {
+            id: 3,
+            title: 'Hackathon Team Formation',
+            message: 'Looking to form teams for UGA\'s upcoming hackathon. DM leadership if interested!',
+            date: '1 week ago',
+            priority: 'normal',
+        },
+    ];
+    const recentPhotos = [
+        'https://images.unsplash.com/photo-1758598306835-2c030e203707?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxwcm9mZXNzaW9uYWwlMjB0ZWNobm9sb2d5JTIwdGVhbSUyMG5ldHdvcmtpbmd8ZW58MXx8fHwxNzcyMzIxMTE3fDA&ixlib=rb-4.1.0&q=80&w=400',
+        'https://images.unsplash.com/photo-1758270705172-07b53627dfcb?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxkaXZlcnNlJTIwc3R1ZGVudHMlMjBjb2xsYWJvcmF0aW9uJTIwY2FtcHVzfGVufDF8fHx8MTc3MjIxODI3Nnww&ixlib=rb-4.1.0&q=80&w=400',
+        'https://images.unsplash.com/photo-1765366417030-16d9765d920a?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxtb2Rlcm4lMjBvZmZpY2UlMjB3b3Jrc3BhY2UlMjBwcm9mZXNzaW9uYWx8ZW58MXx8fHwxNzcyMjg3NjI0fDA&ixlib=rb-4.1.0&q=80&w=400',
+        'https://images.unsplash.com/photo-1758270702512-089c0da33998?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxncmFkdWF0aW9uJTIwYWx1bW5pJTIwY2VsZWJyYXRpb258ZW58MXx8fHwxNzcyMzIxMTE4fDA&ixlib=rb-4.1.0&q=80&w=400',
+    ];
+    return (<div className="space-y-8">
       {/* Welcome Section */}
       <div>
         <h1 className="text-3xl font-bold text-gray-900 mb-2">Welcome back, Member!</h1>
@@ -78,7 +73,7 @@ export default function MemberDashboard() {
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
               <CardTitle className="text-sm font-medium text-gray-600">Upcoming Events</CardTitle>
-              <Calendar className="w-4 h-4 text-red-800" />
+              <Calendar className="w-4 h-4 text-red-800"/>
             </div>
           </CardHeader>
           <CardContent>
@@ -91,7 +86,7 @@ export default function MemberDashboard() {
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
               <CardTitle className="text-sm font-medium text-gray-600">Active Members</CardTitle>
-              <Users className="w-4 h-4 text-red-800" />
+              <Users className="w-4 h-4 text-red-800"/>
             </div>
           </CardHeader>
           <CardContent>
@@ -104,7 +99,7 @@ export default function MemberDashboard() {
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
               <CardTitle className="text-sm font-medium text-gray-600">New Announcements</CardTitle>
-              <Megaphone className="w-4 h-4 text-red-800" />
+              <Megaphone className="w-4 h-4 text-red-800"/>
             </div>
           </CardHeader>
           <CardContent>
@@ -117,7 +112,7 @@ export default function MemberDashboard() {
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
               <CardTitle className="text-sm font-medium text-gray-600">Attendance Rate</CardTitle>
-              <TrendingUp className="w-4 h-4 text-red-800" />
+              <TrendingUp className="w-4 h-4 text-red-800"/>
             </div>
           </CardHeader>
           <CardContent>
@@ -141,18 +136,14 @@ export default function MemberDashboard() {
                 <Link to="/member/calendar">
                   <Button variant="outline" size="sm">
                     View All
-                    <ArrowRight className="ml-2 w-4 h-4" />
+                    <ArrowRight className="ml-2 w-4 h-4"/>
                   </Button>
                 </Link>
               </div>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {upcomingEvents.map((event) => (
-                  <div
-                    key={event.id}
-                    className="flex gap-4 p-4 rounded-lg border border-gray-200 hover:border-red-200 hover:bg-red-50/50 transition-colors"
-                  >
+                {upcomingEvents.map((event) => (<div key={event.id} className="flex gap-4 p-4 rounded-lg border border-gray-200 hover:border-red-200 hover:bg-red-50/50 transition-colors">
                     <div className="flex flex-col items-center justify-center bg-red-100 rounded-lg px-3 py-2 min-w-16">
                       <div className="text-xs text-red-800 font-medium">
                         {new Date(event.date).toLocaleDateString('en-US', { month: 'short' })}
@@ -170,8 +161,7 @@ export default function MemberDashboard() {
                       </div>
                       <p className="text-sm text-gray-600">{event.time} • {event.location}</p>
                     </div>
-                  </div>
-                ))}
+                  </div>))}
               </div>
             </CardContent>
           </Card>
@@ -182,28 +172,21 @@ export default function MemberDashboard() {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Bell className="w-5 h-5" />
+                <Bell className="w-5 h-5"/>
                 Announcements
               </CardTitle>
               <CardDescription>Latest updates from leadership</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {announcements.map((announcement) => (
-                  <div
-                    key={announcement.id}
-                    className="pb-4 border-b border-gray-100 last:border-0 last:pb-0"
-                  >
+                {announcements.map((announcement) => (<div key={announcement.id} className="pb-4 border-b border-gray-100 last:border-0 last:pb-0">
                     <div className="flex items-start justify-between gap-2 mb-2">
                       <h4 className="text-sm font-semibold text-gray-900">{announcement.title}</h4>
-                      {announcement.priority === 'high' && (
-                        <Badge variant="destructive" className="text-xs">Important</Badge>
-                      )}
+                      {announcement.priority === 'high' && (<Badge variant="destructive" className="text-xs">Important</Badge>)}
                     </div>
                     <p className="text-sm text-gray-600 mb-2">{announcement.message}</p>
                     <p className="text-xs text-gray-500">{announcement.date}</p>
-                  </div>
-                ))}
+                  </div>))}
               </div>
             </CardContent>
           </Card>
@@ -221,28 +204,18 @@ export default function MemberDashboard() {
             <Link to="/member/files">
               <Button variant="outline" size="sm">
                 View Gallery
-                <ArrowRight className="ml-2 w-4 h-4" />
+                <ArrowRight className="ml-2 w-4 h-4"/>
               </Button>
             </Link>
           </div>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {recentPhotos.map((photo, index) => (
-              <div
-                key={index}
-                className="aspect-square rounded-lg overflow-hidden hover:scale-105 transition-transform cursor-pointer"
-              >
-                <ImageWithFallback
-                  src={photo}
-                  alt={`Recent photo ${index + 1}`}
-                  className="w-full h-full object-cover"
-                />
-              </div>
-            ))}
+            {recentPhotos.map((photo, index) => (<div key={index} className="aspect-square rounded-lg overflow-hidden hover:scale-105 transition-transform cursor-pointer">
+                <ImageWithFallback src={photo} alt={`Recent photo ${index + 1}`} className="w-full h-full object-cover"/>
+              </div>))}
           </div>
         </CardContent>
       </Card>
-    </div>
-  );
+    </div>);
 }

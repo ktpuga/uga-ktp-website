@@ -1,4 +1,4 @@
-import Card from '@/components/ui/Card';
+import Card from '@/components/ui/profile-card';
 import Link from 'next/link';
 import manya from '../../public/leadership/manya.jpeg';
 import ryan from '../../public/leadership/ryan.jpeg';

@@ -8,99 +8,90 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Badge } from '../../components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../components/ui/tabs';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '../../components/ui/dialog';
-import { Megaphone, Plus, Edit, Trash2, Send, Eye } from 'lucide-react';
+import { Plus, Edit, Trash2, Send, Eye } from 'lucide-react';
 import { toast } from 'sonner';
 import { Toaster } from '../../components/ui/sonner';
-
 export default function AdminAnnouncements() {
-  const [announcements, setAnnouncements] = useState([
-    {
-      id: 1,
-      title: 'Spring Rush Applications Open',
-      message: 'Applications for Spring 2026 rush are now open. Share with interested students!',
-      audience: 'Members',
-      priority: 'high',
-      status: 'published',
-      publishedDate: '2026-02-26',
-      views: 156,
-    },
-    {
-      id: 2,
-      title: 'New Partnership with Google',
-      message: 'Excited to announce our new partnership with Google for exclusive tech talks.',
-      audience: 'All',
-      priority: 'normal',
-      status: 'published',
-      publishedDate: '2026-02-23',
-      views: 203,
-    },
-    {
-      id: 3,
-      title: 'Hackathon Team Formation',
-      message: 'Looking to form teams for UGA\'s upcoming hackathon. DM leadership if interested!',
-      audience: 'Members',
-      priority: 'normal',
-      status: 'published',
-      publishedDate: '2026-02-21',
-      views: 98,
-    },
-    {
-      id: 4,
-      title: 'Alumni Networking Event - March 15',
-      message: 'Save the date for our upcoming alumni networking event at The Georgian Hotel.',
-      audience: 'Alumni',
-      priority: 'normal',
-      status: 'scheduled',
-      publishedDate: '2026-03-10',
-      views: 0,
-    },
-  ]);
-
-  const [isCreating, setIsCreating] = useState(false);
-  const [newAnnouncement, setNewAnnouncement] = useState({
-    title: '',
-    message: '',
-    audience: 'Members',
-    priority: 'normal',
-  });
-
-  const handleCreateAnnouncement = () => {
-    const announcement = {
-      id: announcements.length + 1,
-      ...newAnnouncement,
-      status: 'published',
-      publishedDate: new Date().toISOString().split('T')[0],
-      views: 0,
+    const [announcements, setAnnouncements] = useState([
+        {
+            id: 1,
+            title: 'Spring Rush Applications Open',
+            message: 'Applications for Spring 2026 rush are now open. Share with interested students!',
+            audience: 'Members',
+            priority: 'high',
+            status: 'published',
+            publishedDate: '2026-02-26',
+            views: 156,
+        },
+        {
+            id: 2,
+            title: 'New Partnership with Google',
+            message: 'Excited to announce our new partnership with Google for exclusive tech talks.',
+            audience: 'All',
+            priority: 'normal',
+            status: 'published',
+            publishedDate: '2026-02-23',
+            views: 203,
+        },
+        {
+            id: 3,
+            title: 'Hackathon Team Formation',
+            message: 'Looking to form teams for UGA\'s upcoming hackathon. DM leadership if interested!',
+            audience: 'Members',
+            priority: 'normal',
+            status: 'published',
+            publishedDate: '2026-02-21',
+            views: 98,
+        },
+        {
+            id: 4,
+            title: 'Alumni Networking Event - March 15',
+            message: 'Save the date for our upcoming alumni networking event at The Georgian Hotel.',
+            audience: 'Alumni',
+            priority: 'normal',
+            status: 'scheduled',
+            publishedDate: '2026-03-10',
+            views: 0,
+        },
+    ]);
+    const [isCreating, setIsCreating] = useState(false);
+    const [newAnnouncement, setNewAnnouncement] = useState({
+        title: '',
+        message: '',
+        audience: 'Members',
+        priority: 'normal',
+    });
+    const handleCreateAnnouncement = () => {
+        const announcement = {
+            id: announcements.length + 1,
+            ...newAnnouncement,
+            status: 'published',
+            publishedDate: new Date().toISOString().split('T')[0],
+            views: 0,
+        };
+        setAnnouncements([announcement, ...announcements]);
+        setNewAnnouncement({ title: '', message: '', audience: 'Members', priority: 'normal' });
+        setIsCreating(false);
+        toast.success('Announcement published successfully!');
     };
-    setAnnouncements([announcement, ...announcements]);
-    setNewAnnouncement({ title: '', message: '', audience: 'Members', priority: 'normal' });
-    setIsCreating(false);
-    toast.success('Announcement published successfully!');
-  };
-
-  const handleDelete = (id: number) => {
-    setAnnouncements(announcements.filter(a => a.id !== id));
-    toast.success('Announcement deleted');
-  };
-
-  const getPriorityColor = (priority: string) => {
-    return priority === 'high' ? 'bg-red-100 text-red-800' : 'bg-gray-100 text-gray-800';
-  };
-
-  const getStatusColor = (status: string) => {
-    const colors: Record<string, string> = {
-      published: 'bg-green-100 text-green-800',
-      scheduled: 'bg-blue-100 text-blue-800',
-      draft: 'bg-gray-100 text-gray-800',
+    const handleDelete = (id) => {
+        setAnnouncements(announcements.filter(a => a.id !== id));
+        toast.success('Announcement deleted');
     };
-    return colors[status] || 'bg-gray-100 text-gray-800';
-  };
-
-  const publishedAnnouncements = announcements.filter(a => a.status === 'published');
-  const scheduledAnnouncements = announcements.filter(a => a.status === 'scheduled');
-
-  return (
-    <>
+    const getPriorityColor = (priority) => {
+        return priority === 'high' ? 'bg-red-100 text-red-800' : 'bg-gray-100 text-gray-800';
+    };
+    const getStatusColor = (status) => {
+        const colors = {
+            published: 'bg-green-100 text-green-800',
+            scheduled: 'bg-blue-100 text-blue-800',
+            draft: 'bg-gray-100 text-gray-800',
+        };
+        return colors[status] || 'bg-gray-100 text-gray-800';
+    };
+    const publishedAnnouncements = announcements.filter(a => a.status === 'published');
+    const scheduledAnnouncements = announcements.filter(a => a.status === 'scheduled');
+    return (<>
       <Toaster />
       <div className="space-y-6">
         {/* Header */}
@@ -112,7 +103,7 @@ export default function AdminAnnouncements() {
           <Dialog open={isCreating} onOpenChange={setIsCreating}>
             <DialogTrigger asChild>
               <Button className="bg-red-800 hover:bg-red-900">
-                <Plus className="w-4 h-4 mr-2" />
+                <Plus className="w-4 h-4 mr-2"/>
                 New Announcement
               </Button>
             </DialogTrigger>
@@ -126,30 +117,16 @@ export default function AdminAnnouncements() {
               <div className="space-y-4 mt-4">
                 <div className="space-y-2">
                   <Label htmlFor="title">Title</Label>
-                  <Input
-                    id="title"
-                    placeholder="Announcement title"
-                    value={newAnnouncement.title}
-                    onChange={(e) => setNewAnnouncement({ ...newAnnouncement, title: e.target.value })}
-                  />
+                  <Input id="title" placeholder="Announcement title" value={newAnnouncement.title} onChange={(e) => setNewAnnouncement({ ...newAnnouncement, title: e.target.value })}/>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="message">Message</Label>
-                  <Textarea
-                    id="message"
-                    placeholder="Write your announcement message..."
-                    rows={5}
-                    value={newAnnouncement.message}
-                    onChange={(e) => setNewAnnouncement({ ...newAnnouncement, message: e.target.value })}
-                  />
+                  <Textarea id="message" placeholder="Write your announcement message..." rows={5} value={newAnnouncement.message} onChange={(e) => setNewAnnouncement({ ...newAnnouncement, message: e.target.value })}/>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="audience">Audience</Label>
-                    <Select
-                      value={newAnnouncement.audience}
-                      onValueChange={(value) => setNewAnnouncement({ ...newAnnouncement, audience: value })}
-                    >
+                    <Select value={newAnnouncement.audience} onValueChange={(value) => setNewAnnouncement({ ...newAnnouncement, audience: value })}>
                       <SelectTrigger id="audience">
                         <SelectValue />
                       </SelectTrigger>
@@ -162,10 +139,7 @@ export default function AdminAnnouncements() {
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="priority">Priority</Label>
-                    <Select
-                      value={newAnnouncement.priority}
-                      onValueChange={(value) => setNewAnnouncement({ ...newAnnouncement, priority: value })}
-                    >
+                    <Select value={newAnnouncement.priority} onValueChange={(value) => setNewAnnouncement({ ...newAnnouncement, priority: value })}>
                       <SelectTrigger id="priority">
                         <SelectValue />
                       </SelectTrigger>
@@ -177,12 +151,8 @@ export default function AdminAnnouncements() {
                   </div>
                 </div>
                 <div className="flex gap-2 pt-4">
-                  <Button
-                    className="flex-1 bg-red-800 hover:bg-red-900"
-                    onClick={handleCreateAnnouncement}
-                    disabled={!newAnnouncement.title || !newAnnouncement.message}
-                  >
-                    <Send className="w-4 h-4 mr-2" />
+                  <Button className="flex-1 bg-red-800 hover:bg-red-900" onClick={handleCreateAnnouncement} disabled={!newAnnouncement.title || !newAnnouncement.message}>
+                    <Send className="w-4 h-4 mr-2"/>
                     Publish Now
                   </Button>
                   <Button variant="outline" onClick={() => setIsCreating(false)}>
@@ -232,16 +202,13 @@ export default function AdminAnnouncements() {
           </TabsList>
 
           <TabsContent value="published" className="mt-6 space-y-4">
-            {publishedAnnouncements.map((announcement) => (
-              <Card key={announcement.id} className="hover:shadow-md transition-shadow">
+            {publishedAnnouncements.map((announcement) => (<Card key={announcement.id} className="hover:shadow-md transition-shadow">
                 <CardHeader>
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-2 flex-wrap">
                         <CardTitle className="text-lg">{announcement.title}</CardTitle>
-                        {announcement.priority === 'high' && (
-                          <Badge className={getPriorityColor(announcement.priority)}>High Priority</Badge>
-                        )}
+                        {announcement.priority === 'high' && (<Badge className={getPriorityColor(announcement.priority)}>High Priority</Badge>)}
                         <Badge variant="outline">{announcement.audience}</Badge>
                         <Badge className={getStatusColor(announcement.status)}>
                           {announcement.status}
@@ -251,14 +218,10 @@ export default function AdminAnnouncements() {
                     </div>
                     <div className="flex gap-2 flex-shrink-0">
                       <Button variant="ghost" size="sm">
-                        <Edit className="w-4 h-4" />
+                        <Edit className="w-4 h-4"/>
                       </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleDelete(announcement.id)}
-                      >
-                        <Trash2 className="w-4 h-4 text-red-600" />
+                      <Button variant="ghost" size="sm" onClick={() => handleDelete(announcement.id)}>
+                        <Trash2 className="w-4 h-4 text-red-600"/>
                       </Button>
                     </div>
                   </div>
@@ -267,26 +230,22 @@ export default function AdminAnnouncements() {
                   <div className="flex items-center gap-6 text-sm text-gray-600">
                     <span>Published {announcement.publishedDate}</span>
                     <span className="flex items-center gap-1">
-                      <Eye className="w-4 h-4" />
+                      <Eye className="w-4 h-4"/>
                       {announcement.views} views
                     </span>
                   </div>
                 </CardContent>
-              </Card>
-            ))}
+              </Card>))}
           </TabsContent>
 
           <TabsContent value="scheduled" className="mt-6 space-y-4">
-            {scheduledAnnouncements.map((announcement) => (
-              <Card key={announcement.id} className="hover:shadow-md transition-shadow">
+            {scheduledAnnouncements.map((announcement) => (<Card key={announcement.id} className="hover:shadow-md transition-shadow">
                 <CardHeader>
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-2 flex-wrap">
                         <CardTitle className="text-lg">{announcement.title}</CardTitle>
-                        {announcement.priority === 'high' && (
-                          <Badge className={getPriorityColor(announcement.priority)}>High Priority</Badge>
-                        )}
+                        {announcement.priority === 'high' && (<Badge className={getPriorityColor(announcement.priority)}>High Priority</Badge>)}
                         <Badge variant="outline">{announcement.audience}</Badge>
                         <Badge className={getStatusColor(announcement.status)}>
                           Scheduled
@@ -296,14 +255,10 @@ export default function AdminAnnouncements() {
                     </div>
                     <div className="flex gap-2 flex-shrink-0">
                       <Button variant="ghost" size="sm">
-                        <Edit className="w-4 h-4" />
+                        <Edit className="w-4 h-4"/>
                       </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleDelete(announcement.id)}
-                      >
-                        <Trash2 className="w-4 h-4 text-red-600" />
+                      <Button variant="ghost" size="sm" onClick={() => handleDelete(announcement.id)}>
+                        <Trash2 className="w-4 h-4 text-red-600"/>
                       </Button>
                     </div>
                   </div>
@@ -313,11 +268,9 @@ export default function AdminAnnouncements() {
                     Scheduled for {announcement.publishedDate}
                   </div>
                 </CardContent>
-              </Card>
-            ))}
+              </Card>))}
           </TabsContent>
         </Tabs>
       </div>
-    </>
-  );
+    </>);
 }
