@@ -1,7 +1,7 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import React from 'react';
 
-const Card = ({ name, title, bio, avatarSrc, fallbackInitials, instagramUrl, linkedinUrl, otherUrl, email, className }) => {
+const MemberProfileCard = ({ name, title, bio, avatarSrc, fallbackInitials, instagramUrl, linkedinUrl, otherUrl, email, className }) => {
   return (
     <div className={`relative rounded-2xl bg-card/80 backdrop-blur-lg border-2 border-transparent bg-clip-padding p-6 text-center shadow-xl flex flex-col items-center justify-center transition-transform duration-300 hover:scale-105 hover:border-gradient-to-tr hover:from-indigo-400 hover:via-fuchsia-400 hover:to-cyan-400 group min-h-[260px] h-full ${className ?? ""}`}>
       <Avatar className="w-20 h-20 mb-4 shadow-lg ring-4 ring-indigo-200 group-hover:ring-fuchsia-300 transition-all duration-300">                     
@@ -116,4 +116,45 @@ function LinkedinIcon(props) {
 
   
 
-export default Card;
+export default MemberProfileCard;
+
+/* ── Generic UI card components (used by member portal pages) ── */
+export function Card({ className = '', children, ...props }) {
+  return (
+    <div className={`rounded-xl border border-slate-200 bg-white shadow-sm ${className}`} {...props}>
+      {children}
+    </div>
+  );
+}
+
+export function CardHeader({ className = '', children, ...props }) {
+  return (
+    <div className={`flex flex-col space-y-1.5 p-6 ${className}`} {...props}>
+      {children}
+    </div>
+  );
+}
+
+export function CardTitle({ className = '', children, ...props }) {
+  return (
+    <h3 className={`font-semibold leading-none tracking-tight ${className}`} {...props}>
+      {children}
+    </h3>
+  );
+}
+
+export function CardDescription({ className = '', children, ...props }) {
+  return (
+    <p className={`text-sm text-slate-500 ${className}`} {...props}>
+      {children}
+    </p>
+  );
+}
+
+export function CardContent({ className = '', children, ...props }) {
+  return (
+    <div className={`p-6 pt-0 ${className}`} {...props}>
+      {children}
+    </div>
+  );
+}
