@@ -5,7 +5,7 @@ import type { SanityImageSource } from '@sanity/image-url/lib/types/types';
 import type { Metadata } from 'next';
 import { groq } from 'next-sanity';
 import Link from 'next/link';
-import { client } from '../../../sanity/client';
+import { client } from '../../../public/sanity/client';
 const META_QUERY = groq`
   *[_type=="post" && slug.current == $slug][0]{
     title,

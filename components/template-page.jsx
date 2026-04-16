@@ -93,7 +93,9 @@ export default function TemplatePage() {
     { src: '/ktpjobs/Google_2015_logo.svg', alt: 'Google' },
     { src: '/ktpjobs/Claude_AI_logo.svg', alt: 'Claude' },
     { src: '/ktpjobs/Gulfstream_Aerospace_logo.svg', alt: 'Gulfstream' },
-    { src: '/ktpjobs/PwC_2025_Logo.svg', alt: 'PwC' },
+    { src: '/ktpjobs/GSKY.png', alt: 'GreenSky' },
+    { src: '/ktpjobs/UPS.svg', alt: 'UPS' },
+    { src: '/ktpjobs/NASA_logo.svg', alt: 'Nasa' },
   ];
 
   /* --------------------------- Mobile breakpoint --------------------------- */
@@ -152,9 +154,9 @@ export default function TemplatePage() {
         </nav>
         <Link
             href="/login"
-            className="ml-6 text-sm font-medium px-3 py-1.5 rounded-md border border-slate-300 transition-colors duration-300 hover:text-indigo-600 hover:border-indigo-400"
+            className="ml-6 text-sm font-medium px-3 py-1.5 rounded-md bg-blue-900 text-white border border-blue-900 transition-colors duration-300 hover:bg-blue-800 hover:border-blue-800"
           >
-            <span className="relative before:absolute before:-bottom-0.5 before:left-0 before:h-0.5 before:w-full before:origin-left before:scale-x-0 before:bg-indigo-500 before:transition-transform before:duration-300 group-hover:before:scale-x-100 [a:hover_&]:before:scale-x-100">
+            <span className="relative before:absolute before:-bottom-0.5 before:left-0 before:h-0.5 before:w-full before:origin-left before:scale-x-0 before:bg-white before:transition-transform before:duration-300 [a:hover_&]:before:scale-x-100">
               Portal Login
             </span>
           </Link>
@@ -162,7 +164,43 @@ export default function TemplatePage() {
 
       <main className="flex-1">
         {/* ===============================  HERO  ============================== */}
+
+        {/* -------- OLD HERO DESIGN (two-column side-by-side layout) --------
         <section className="relative overflow-hidden py-20 md:py-28 flex items-center min-h-[70vh]">
+          <div aria-hidden className="pointer-events-none absolute inset-0 -z-10">
+            <div className="absolute -left-20 top-0 h-[28rem] w-[28rem] rounded-full bg-gradient-to-br from-indigo-500 via-fuchsia-500 to-cyan-400 opacity-25 blur-[120px]" />
+            <div className="absolute -bottom-24 right-0 h-[26rem] w-[26rem] rounded-full bg-gradient-to-tr from-cyan-400 via-indigo-500 to-fuchsia-500 opacity-20 blur-[110px]" />
+          </div>
+          <div className="container mx-auto grid max-w-6xl grid-cols-1 items-center gap-16 px-4 md:grid-cols-2 md:px-6">
+            <div className="space-y-8" data-aos="fade-up" data-aos-duration="600">
+              <p className="inline-flex items-center gap-2 rounded-full border border-blue-200 bg-white/60 px-3 py-1 text-xs font-semibold tracking-wider text-blue-600 shadow-sm">
+                UGA's Professional Technology Fraternity
+              </p>
+              <h1 className="text-5xl md:text-7xl font-extrabold tracking-tight leading-tight text-blue-900 bg-clip-text drop-shadow-xl">
+                Kappa Theta Pi
+              </h1>
+              <p className="max-w-prose text-lg md:text-xl text-slate-700">
+                Empowering technologists through leadership, mentorship, and community. On a mission to build what matters.
+              </p>
+            </div>
+            <div className="flex items-center justify-center" data-aos="fade-up" data-aos-delay="150">
+              <div className="relative w-full max-w-md sm:max-w-lg">
+                <div className="absolute -inset-6 -z-10 rounded-3xl bg-gradient-to-br from-blue-950/40 via-blue-900/30 to-indigo-900/15 blur-2xl" />
+                <div className="grid grid-cols-3 gap-0">
+                  {heroPics.slice(0, 6).map((src, i) => (
+                    <Image key={i} unoptimized src={src} alt={`collage ${i + 1}`} width={400} height={500}
+                      className={`h-52 w-full rounded-xl object-cover shadow-2xl transition-transform duration-500 hover:scale-110 ${rotation[i % rotation.length]}`}
+                      style={{ transform: `translateY(${(i % 2 === 0 ? -1 : 1) * 14}px)`, marginLeft: i !== 0 ? "-12px" : "0" }}
+                    />
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+        -------- END OLD HERO DESIGN -------- */}
+
+        <section className="relative overflow-hidden py-16 md:py-24 min-h-[70vh]">
           {/* Animated gradient blobs */}
           <div
             aria-hidden
@@ -172,67 +210,33 @@ export default function TemplatePage() {
             <div className="absolute -bottom-24 right-0 h-[26rem] w-[26rem] rounded-full bg-gradient-to-tr from-cyan-400 via-indigo-500 to-fuchsia-500 opacity-20 blur-[110px]" />
           </div>
 
-          <div className="container mx-auto grid max-w-6xl grid-cols-1 items-center gap-16 px-4 md:grid-cols-2 md:px-6">
-            {/* Hero Copy */}
+          <div className="container mx-auto max-w-6xl px-4 md:px-6">
+            {/* Centered Hero Copy */}
             <div
-              className="space-y-8"
+              className="text-center max-w-3xl mx-auto mb-14"
               data-aos="fade-up"
               data-aos-duration="600"
             >
-              <p className="inline-flex items-center gap-2 rounded-full border border-blue-200 bg-white/60 px-3 py-1 text-xs font-semibold tracking-wider text-blue-600 shadow-sm">
-                UGA's Professional Technology Fraternity
+              <p className="inline-flex items-center gap-2 rounded-full border border-blue-200 bg-white/60 px-3 py-1 text-xs font-semibold tracking-wider text-blue-600 shadow-sm mb-6">
+                UGA&apos;s Professional Technology Fraternity
               </p>
-              <h1 className="text-5xl md:text-7xl font-extrabold tracking-tight leading-tight  text-blue-900 bg-clip-text  drop-shadow-xl">
+              <h1 className="text-5xl md:text-7xl font-extrabold tracking-tight leading-tight text-blue-900 drop-shadow-xl mb-6">
                 Kappa Theta Pi
               </h1>
-              <p className="max-w-prose text-lg md:text-xl text-slate-700">
+              <p className="text-lg md:text-xl text-slate-700 max-w-2xl mx-auto">
                 Empowering technologists through leadership, mentorship, and
                 community. On a mission to build what matters.
               </p>
-              <div className="flex flex-col gap-4 sm:flex-row">
-                {/*<Link href="/rush"> */}
-                  <Button className="relative px-8 py-4 text-lg font-semibold rounded-2xl bg-gradient-to-r from-blue-600 via-black-500 to-blue-950 shadow-xl text-white hover:scale-105 transition-transform duration-300">
-                    Rush Coming Soon..
-                  </Button>
-                {/* </Link> */}
-                <Link href="/hackathon">
-                  <Button
-                    variant="outline"
-                    className="px-8 py-4 text-lg rounded-2xl border-slate-300 hover:border-indigo-400 hover:text-indigo-700"
-                  >
-                    See KTP Hacks
-                  </Button>
-                </Link>
-              </div>
-
-              {/* Sponsor marquee */}
-              {/* <div className="relative mt-6 overflow-hidden rounded-xl border border-slate-200 bg-white/60">
-                <div className="flex items-center gap-8 whitespace-nowrap animate-[marquee_22s_linear_infinite] p-3 text-sm text-slate-600">
-                  <span className="font-semibold text-slate-800">Supported by:</span>
-                  <span>GitHub</span>
-                  <span>Red Bull</span>
-                  <span>DoorDash</span>
-                  <span>UGAHacks</span>
-                  <span>GitHub / GitHub Education</span>
-                  <span>Red Bull</span>
-                  <span>DoorDash</span>
-                </div>
-              </div>
-              <style jsx>{`
-                @keyframes marquee { from { transform: translateX(0); } to { transform: translateX(-50%); } }
-              `}</style> */}
             </div>
 
-            {/* Decorative Image Collage */}
+            {/* Full-width Image Collage below text */}
             <div
-              className="flex items-center justify-center"
               data-aos="fade-up"
               data-aos-delay="150"
             >
-              <div className="relative w-full max-w-md sm:max-w-lg">
-                {/* Dark blue faint gradient backdrop behind the collage */}
+              <div className="relative">
                 <div className="absolute -inset-6 -z-10 rounded-3xl bg-gradient-to-br from-blue-950/40 via-blue-900/30 to-indigo-900/15 blur-2xl" />
-                <div className="grid grid-cols-3 gap-0">
+                <div className="grid grid-cols-3 md:grid-cols-6 gap-3">
                   {heroPics.slice(0, 6).map((src, i) => (
                     <Image
                       key={i}
@@ -240,12 +244,8 @@ export default function TemplatePage() {
                       src={src}
                       alt={`ΚΘΠ collage ${i + 1}`}
                       width={400}
-                      height={500}
-                      className={`h-52 w-full rounded-xl object-cover shadow-2xl transition-transform duration-500 hover:scale-110 ${rotation[i % rotation.length]}`}
-                      style={{
-                        transform: `translateY(${(i % 2 === 0 ? -1 : 1) * 14}px)`,
-                        marginLeft: i !== 0 ? "-12px" : "0",
-                      }}
+                      height={300}
+                      className={`h-44 md:h-52 w-full rounded-xl object-cover shadow-2xl transition-transform duration-500 hover:scale-105 ${rotation[i % rotation.length]}`}
                     />
                   ))}
                 </div>
@@ -371,52 +371,34 @@ export default function TemplatePage() {
           </div>
         </section>
 
-        {/* =========  NETWORK MARQUEE  ========= */}
+        {/* =========  OUR NETWORK  ========= */}
         <section className="bg-card py-12 md:py-16">
           <div className="container mx-auto max-w-6xl px-4 md:px-6">
-            <h2 className="text-center text-3xl font-bold tracking-tight md:text-4xl text-primary mb-10">
+            <h2 className="text-center text-3xl font-bold tracking-tight md:text-4xl text-primary mb-4">
               Our Network
             </h2>
+            <p className="text-center text-slate-600 mb-10">
+              Where KTP members intern and work
+            </p>
 
-            {/* Row 1 — scrolls left */}
-            <div className="relative overflow-hidden mb-8">
-              <div className="flex gap-16 items-center animate-marquee-left whitespace-nowrap">
-                {networkCompanies.map((company, index) => (
-                  <img key={`r1a-${index}`} src={company.src} alt={company.alt} className="h-10 w-32 object-contain flex-shrink-0" />
-                ))}
-                {networkCompanies.map((company, index) => (
-                  <img key={`r1b-${index}`} src={company.src} alt={company.alt} className="h-10 w-32 object-contain flex-shrink-0" />
-                ))}
-              </div>
-            </div>
-
-            {/* Row 2 — scrolls right (reverse direction) */}
-            <div className="relative overflow-hidden">
-              <div className="flex gap-16 items-center animate-marquee-right whitespace-nowrap">
-                {[...networkCompanies].reverse().map((company, index) => (
-                  <img key={`r2a-${index}`} src={company.src} alt={company.alt} className="h-10 w-32 object-contain flex-shrink-0" />
-                ))}
-                {[...networkCompanies].reverse().map((company, index) => (
-                  <img key={`r2b-${index}`} src={company.src} alt={company.alt} className="h-10 w-32 object-contain flex-shrink-0" />
-                ))}
-              </div>
+            <div className="flex flex-wrap items-center justify-center gap-10 md:gap-14">
+              {networkCompanies.map((company, i) => (
+                <div
+                  key={i}
+                  className="grayscale opacity-70 hover:grayscale-0 hover:opacity-100 transition-all duration-500"
+                  data-aos="fade-up"
+                  data-aos-delay={80 * i}
+                >
+                  <img
+                    src={company.src}
+                    alt={company.alt}
+                    className="h-10 w-auto max-w-[120px] object-contain"
+                  />
+                </div>
+              ))}
             </div>
           </div>
         </section>
-
-        {/* Marquee keyframes */}
-        <style>{`
-          @keyframes marquee-left {
-            from { transform: translateX(0); }
-            to   { transform: translateX(-50%); }
-          }
-          @keyframes marquee-right {
-            from { transform: translateX(-50%); }
-            to   { transform: translateX(0); }
-          }
-          .animate-marquee-left  { animation: marquee-left  18s linear infinite; }
-          .animate-marquee-right { animation: marquee-right 18s linear infinite; }
-        `}</style>
 
         {/* =========  VALUES  ========= */}
         <section
