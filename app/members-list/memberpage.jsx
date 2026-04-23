@@ -90,32 +90,14 @@ export default function Login() {
               htmlFor="email"
               className="block text-xs font-semibold tracking-wider text-white/80 uppercase"
             >
-              Email
+              Phone or Email
             </label>
             <input
               id="email"
-              type="email"
-              placeholder="Enter your email"
+              type="text"
+              placeholder="Enter your phone or email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              required
-              className="w-full bg-transparent border border-white/40 rounded-md px-4 py-3 text-white placeholder:text-white/40 focus:outline-none focus:border-white focus:ring-1 focus:ring-white/60 transition-colors"
-            />
-          </div>
-
-            <div className="space-y-2">
-            <label
-              htmlFor="email"
-              className="block text-xs font-semibold tracking-wider text-white/80 uppercase"
-            >
-              Password
-            </label>
-            <input
-              id="password"
-              type="password"
-              placeholder="Enter your password"
-              // value={password}
-              onChange={(e) => setPassword(e.target.value)}
               required
               className="w-full bg-transparent border border-white/40 rounded-md px-4 py-3 text-white placeholder:text-white/40 focus:outline-none focus:border-white focus:ring-1 focus:ring-white/60 transition-colors"
             />
@@ -143,6 +125,12 @@ export default function Login() {
           >
             Next
           </button>
+
+          <div className="text-center">
+            <a href="#" className="text-[#6CA0FF] hover:underline text-sm">
+              Forgot your password, or need to create a new one?
+            </a>
+          </div>
 
           <button
             type="button"
