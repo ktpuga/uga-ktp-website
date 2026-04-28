@@ -34,7 +34,7 @@ const logos = {
 };
 
 /* -------------------------------------------------------------------------- */
-/*                             INSTAGRAM ICON SVG                             */
+/*                                  ICONS                                     */
 /* -------------------------------------------------------------------------- */
 function InstagramIcon(props) {
   return (
@@ -79,12 +79,11 @@ function LinkedinIcon(props) {
 }
 
 /* -------------------------------------------------------------------------- */
-/*                           SQUARE MEMBER CARD                               */
+/*                           MEMBER CARD                                      */
 /* -------------------------------------------------------------------------- */
 function MemberCard({ name, title, avatarSrc, fallbackInitials, instagramUrl, linkedinUrl }) {
   return (
-    <div className="group flex flex-col w-[160px] sm:w-[180px]">
-      {/* Square image */}
+    <div className="group flex flex-col">
       <div className="relative aspect-square w-full overflow-hidden rounded-xl bg-slate-100 shadow-md">
         {avatarSrc ? (
           <Image
@@ -95,41 +94,29 @@ function MemberCard({ name, title, avatarSrc, fallbackInitials, instagramUrl, li
             className="object-cover transition-transform duration-500 group-hover:scale-105"
           />
         ) : (
-          <div className="flex h-full w-full items-center justify-center bg-indigo-50 text-2xl font-bold text-indigo-300">
+          <div className="flex h-full w-full items-center justify-center bg-blue-50 text-2xl font-bold text-blue-300">
             {fallbackInitials}
           </div>
         )}
-
-        {/* Social overlay — slides up on hover */}
         <div className="absolute inset-x-0 bottom-0 translate-y-full transition-transform duration-300 group-hover:translate-y-0">
           <div className="flex justify-center gap-4 bg-white/90 px-3 py-2.5 backdrop-blur-sm">
             {instagramUrl && (
-              <a
-                href={instagramUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-slate-500 transition-colors hover:text-pink-500"
-              >
+              <a href={instagramUrl} target="_blank" rel="noopener noreferrer"
+                className="text-slate-500 transition-colors hover:text-pink-500">
                 <InstagramIcon />
               </a>
             )}
             {linkedinUrl && (
-              <a
-                href={linkedinUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-slate-500 transition-colors hover:text-blue-600"
-              >
+              <a href={linkedinUrl} target="_blank" rel="noopener noreferrer"
+                className="text-slate-500 transition-colors hover:text-blue-600">
                 <LinkedinIcon />
               </a>
             )}
           </div>
         </div>
       </div>
-
-      {/* Name + title below card */}
       <div className="mt-3 text-center">
-        <p className="font-semibold text-slate-900 leading-tight">{name}</p>
+        <p className="font-semibold text-slate-900 leading-tight text-sm">{name}</p>
         <p className="mt-0.5 text-xs text-slate-500">{title}</p>
       </div>
     </div>
@@ -143,70 +130,46 @@ function AlumniCard({ alum }) {
   const badgeEl = (() => {
     if (!alum.icon) return null;
     if (typeof alum.icon === "string")
-      return (
-        <img
-          src={alum.icon}
-          alt="organization logo"
-          className="h-6 w-6 object-contain"
-        />
-      );
+      return <img src={alum.icon} alt="organization logo" className="h-6 w-6 object-contain" />;
     const Icon = alum.icon;
     return <Icon className="text-slate-400" />;
   })();
 
   return (
-    <div className="group flex flex-col w-[160px] sm:w-[180px]">
+    <div className="group flex flex-col">
       <div className="relative aspect-square w-full overflow-hidden rounded-xl bg-slate-100 shadow-md">
         {alum.avatarSrc ? (
-          <Image
-            src={alum.avatarSrc}
-            alt={alum.name}
-            fill
-            unoptimized
-            className="object-cover transition-transform duration-500 group-hover:scale-105"
-          />
+          <Image src={alum.avatarSrc} alt={alum.name} fill unoptimized
+            className="object-cover transition-transform duration-500 group-hover:scale-105" />
         ) : (
-          <div className="flex h-full w-full items-center justify-center bg-indigo-50 text-2xl font-bold text-indigo-300">
+          <div className="flex h-full w-full items-center justify-center bg-blue-50 text-2xl font-bold text-blue-300">
             {alum.fallbackInitials}
           </div>
         )}
-
-        {/* Badge top-right */}
         {badgeEl && (
           <span className="absolute right-2 top-2 flex h-8 w-8 items-center justify-center rounded-full bg-white/90 shadow-sm backdrop-blur-sm text-lg">
             {badgeEl}
           </span>
         )}
-
-        {/* Social overlay */}
         <div className="absolute inset-x-0 bottom-0 translate-y-full transition-transform duration-300 group-hover:translate-y-0">
           <div className="flex justify-center gap-4 bg-white/90 px-3 py-2.5 backdrop-blur-sm">
             {alum.instagramUrl && (
-              <a
-                href={alum.instagramUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-slate-500 transition-colors hover:text-pink-500"
-              >
+              <a href={alum.instagramUrl} target="_blank" rel="noopener noreferrer"
+                className="text-slate-500 transition-colors hover:text-pink-500">
                 <InstagramIcon />
               </a>
             )}
             {alum.linkedinUrl && (
-              <a
-                href={alum.linkedinUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-slate-500 transition-colors hover:text-blue-600"
-              >
+              <a href={alum.linkedinUrl} target="_blank" rel="noopener noreferrer"
+                className="text-slate-500 transition-colors hover:text-blue-600">
                 <LinkedinIcon />
               </a>
             )}
           </div>
         </div>
       </div>
-
       <div className="mt-3 text-center">
-        <p className="font-semibold text-slate-900 leading-tight">{alum.name}</p>
+        <p className="font-semibold text-slate-900 leading-tight text-sm">{alum.name}</p>
         <p className="mt-0.5 text-xs text-slate-500">
           {alum.class && <span className="font-medium">{alum.class} · </span>}
           Class of {alum.classYear}
@@ -228,7 +191,6 @@ export default function MembersPage() {
   );
   const allImages = { ...leadershipImages, ...memberImages };
 
-  /* ------------------- Exec board data ------------------- */
   const execMembers = [
     { name: "Daniel Rifai", title: "President", avatarKey: "danny.jpeg", fallbackInitials: "DR", instagramUrl: "https://www.instagram.com/drifai2", linkedinUrl: "https://www.linkedin.com/in/daniel-rifai-19226a292/" },
     { name: "William Tomaszewski", title: "VP of Membership", avatarKey: "will.jpg", fallbackInitials: "WT", instagramUrl: "https://www.instagram.com/will_.tom/" },
@@ -240,7 +202,6 @@ export default function MembersPage() {
     { name: "Adithya Lakshmikanth", title: "VP of Technical Dev", avatarKey: "adithya.jpg", fallbackInitials: "AL", instagramUrl: "https://www.instagram.com/ladithya27/", linkedinUrl: "https://www.linkedin.com/in/ladithya/" },
   ];
 
-  /* ------------------- Alumni data ------------------- */
   const alumniData = [
     { name: "Gargee Jamadagni", classYear: 2025, class: "Founder", avatarKey: "gargee.jpeg", fallbackInitials: "GJ", instagramUrl: "https://www.instagram.com/gargee.jam/", linkedinUrl: "https://www.linkedin.com/in/gargeejamadagni/", icon: FaUniversity },
     { name: "Siya Sharma", classYear: 2025, class: "Founder", avatarKey: "siya.jpeg", fallbackInitials: "SS", instagramUrl: "https://www.instagram.com/siyasharma.03/", linkedinUrl: "https://www.linkedin.com/in/siya-sharma-ss2025/", icon: logos.invesco },
@@ -256,9 +217,10 @@ export default function MembersPage() {
     { name: "Tharushika Dehi", classYear: 2025, class: "Alpha", avatarSrc: null, fallbackInitials: "TD", instagramUrl: "https://www.instagram.com/tharushikadehi/", linkedinUrl: "https://www.linkedin.com/in/maryan-dehipitiarachchi/", icon: FaUniversity },
   ].sort((a, b) => a.classYear - b.classYear);
 
-  /* ------------------- Navbar state ------------------- */
   const [mobile, setMobile] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const [activeTab, setActiveTab] = useState("exec-board");
+  const [visible, setVisible] = useState(true);
 
   useEffect(() => {
     const updateMobile = () => setMobile(window.innerWidth < 599);
@@ -273,6 +235,21 @@ export default function MembersPage() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
+  const switchTab = (id) => {
+    if (id === activeTab) return;
+    setVisible(false);
+    setTimeout(() => {
+      setActiveTab(id);
+      setVisible(true);
+    }, 150);
+  };
+
+  const dirLinks = [
+    { id: "exec-board", label: "Executive Board" },
+    { id: "members", label: "Members" },
+    { id: "alumni", label: "Alumni" },
+  ];
+
   return (
     <div className="flex min-h-screen flex-col font-sans bg-white text-slate-900">
       <AOSInit />
@@ -280,19 +257,11 @@ export default function MembersPage() {
       {/* ===============================  NAVBAR  ============================== */}
       <header
         className={`sticky top-0 z-50 flex h-16 items-center border-b px-4 backdrop-blur-md lg:px-6 transition-all duration-300 ${
-          scrolled
-            ? "bg-white border-slate-200 shadow-sm"
-            : "bg-white/80 border-transparent"
+          scrolled ? "bg-white border-slate-200 shadow-sm" : "bg-white/80 border-transparent"
         }`}
       >
         <Link href="/" className="flex items-center gap-2">
-          <Image
-            src="/KTP PHI CHAPTER.svg"
-            alt="ΚΘΠ"
-            width={48}
-            height={48}
-            className="h-10 w-auto object-contain"
-          />
+          <Image src="/KTP PHI CHAPTER.svg" alt="ΚΘΠ" width={48} height={48} className="h-10 w-auto object-contain" />
         </Link>
         <nav className="ml-auto flex gap-4 sm:gap-6">
           {[
@@ -307,8 +276,8 @@ export default function MembersPage() {
               <Link
                 key={l.label}
                 href={l.href}
-                className={`relative text-sm font-medium transition-colors duration-300 before:absolute before:-bottom-0.5 before:left-0 before:h-0.5 before:w-full before:origin-left before:scale-x-0 before:bg-indigo-500 before:transition-transform before:duration-300 hover:text-indigo-600 hover:before:scale-x-100 ${
-                  l.label === "Members" ? "text-indigo-600 before:scale-x-100" : ""
+                className={`relative text-sm font-medium transition-colors duration-300 before:absolute before:-bottom-0.5 before:left-0 before:h-0.5 before:w-full before:origin-left before:scale-x-0 before:bg-blue-900 before:transition-transform before:duration-300 hover:text-blue-900 hover:before:scale-x-100 ${
+                  l.label === "Members" ? "text-blue-900 before:scale-x-100" : ""
                 }`}
               >
                 {l.label}
@@ -325,91 +294,159 @@ export default function MembersPage() {
 
       <main className="flex-1">
         {/* ===============================  HERO  ============================== */}
-        <section className="border-b border-slate-100 py-12 md:py-16">
-          <div
-            className="container mx-auto max-w-6xl px-4 md:px-6 text-center"
-            data-aos="fade-up"
-            data-aos-duration="500"
-          >
-            <p className="inline-flex items-center gap-2 rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-semibold tracking-wider text-blue-600 shadow-sm mb-5">
-              University of Georgia&apos;s Professional Technology Fraternity
-            </p>
-            <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight text-blue-900 mb-4">
-              Our Members
-            </h1>
-            <p className="mx-auto max-w-xl text-base md:text-lg text-slate-600">
-              The people behind KTP Phi Chapter — our executive board and the alumni who built the chapter.
-            </p>
-          </div>
-        </section>
-
-        {/* ===============================  EXEC BOARD  ========================= */}
-        <section className="py-14 md:py-20">
-          <div
-            className="container mx-auto max-w-6xl px-4 md:px-6"
-            data-aos="fade-up"
-            data-aos-duration="500"
-          >
-            <div className="mb-10">
-              <h2 className="text-2xl md:text-3xl font-bold tracking-tight text-slate-900">
-                Executive Board
-              </h2>
-              <p className="mt-1 text-slate-500 text-sm">
-                The leaders driving KTP forward this semester.
-              </p>
-            </div>
-
-            <div className="flex flex-wrap justify-center gap-5">
-              {execMembers.map((member) => (
-                <MemberCard
-                  key={member.name}
-                  name={member.name}
-                  title={member.title}
-                  avatarSrc={
-                    member.avatarKey && allImages[member.avatarKey]
-                      ? allImages[member.avatarKey].default.src
-                      : null
-                  }
-                  fallbackInitials={member.fallbackInitials}
-                  instagramUrl={member.instagramUrl}
-                  linkedinUrl={member.linkedinUrl}
-                />
-              ))}
+        <section className="border-b border-slate-100 py-10 md:py-14">
+          <div className="container mx-auto max-w-6xl px-4 md:px-6">
+            <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6">
+              <div>
+                <p className="inline-flex items-center gap-2 rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-semibold tracking-wider text-blue-600 shadow-sm mb-4">
+                  University of Georgia&apos;s Professional Technology Fraternity
+                </p>
+                <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight text-blue-900 mb-2">
+                  Our Members
+                </h1>
+                <p className="max-w-xl text-base text-slate-600">
+                  Meet the executive board, active brothers, and alumni of KTP Phi Chapter.
+                </p>
+              </div>
             </div>
           </div>
         </section>
 
-        {/* ===============================  ALUMNI  ============================= */}
-        <section className="border-t border-slate-100 py-14 md:py-20 bg-slate-50/60">
-          <div
-            className="container mx-auto max-w-6xl px-4 md:px-6"
-            data-aos="fade-up"
-            data-aos-duration="500"
-          >
-            <div className="mb-10">
-              <h2 className="text-2xl md:text-3xl font-bold tracking-tight text-slate-900">
-                Alumni
-              </h2>
-              <p className="mt-1 text-slate-500 text-sm">
-                Celebrating ΚΘΠ alumni and their ongoing impact.
-              </p>
-            </div>
+        {/* ===============================  DIRECTORY + CONTENT  ================ */}
+        <section className="py-10 md:py-14">
+          <div className="container mx-auto max-w-6xl px-4 md:px-6">
+            <div className="flex flex-col md:flex-row gap-8">
 
-            <div className="flex flex-wrap justify-center gap-5">
-              {alumniData.map((alum) => (
-                <AlumniCard
-                  key={alum.name}
-                  alum={{
-                    ...alum,
-                    avatarSrc:
-                      alum.avatarSrc !== undefined
-                        ? alum.avatarSrc
-                        : alum.avatarKey && allImages[alum.avatarKey]
-                        ? allImages[alum.avatarKey].default.src
-                        : null,
-                  }}
-                />
-              ))}
+              {/* ----- Sidebar directory nav (desktop) / tab row (mobile) ----- */}
+              <aside className="md:w-52 shrink-0">
+                {/* Mobile: horizontal pill tabs */}
+                <div className="flex md:hidden gap-2 mb-6 overflow-x-auto pb-1">
+                  {dirLinks.map(({ id, label }) => (
+                    <button
+                      key={id}
+                      onClick={() => switchTab(id)}
+                      className={`whitespace-nowrap px-4 py-2 text-sm font-medium rounded-full border transition-all duration-200 ${
+                        activeTab === id
+                          ? "bg-blue-900 text-white border-blue-900 shadow-sm"
+                          : "bg-white text-slate-600 border-slate-200 hover:border-blue-900 hover:text-blue-900"
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Desktop: vertical card nav */}
+                <nav className="hidden md:flex sticky top-24 flex-col gap-1 rounded-2xl border border-slate-200 bg-slate-50 p-3 shadow-sm">
+                  <p className="px-3 pb-2 pt-1 text-xs font-semibold uppercase tracking-widest text-slate-400">
+                    Directory
+                  </p>
+                  {dirLinks.map(({ id, label }) => (
+                    <button
+                      key={id}
+                      onClick={() => switchTab(id)}
+                      className={`w-full px-4 py-3 text-sm font-medium rounded-xl text-left transition-all duration-200 ${
+                        activeTab === id
+                          ? "bg-blue-900 text-white shadow-sm"
+                          : "text-slate-600 hover:text-blue-900 hover:bg-white"
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </nav>
+              </aside>
+
+              {/* ----- Content panel ----- */}
+              <div className="flex-1 min-w-0">
+                <div
+                  style={{ opacity: visible ? 1 : 0, transition: "opacity 150ms ease" }}
+                >
+                  {/* EXEC BOARD */}
+                  {activeTab === "exec-board" && (
+                    <div>
+                      <div className="mb-7 pb-5 border-b border-slate-100">
+                        <h2 className="text-2xl md:text-3xl font-bold tracking-tight text-slate-900">
+                          Executive Board
+                        </h2>
+                        <p className="mt-1 text-slate-500 text-sm">
+                          The leaders driving KTP forward this semester.
+                        </p>
+                      </div>
+                      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-x-5 gap-y-8">
+                        {execMembers.map((member) => (
+                          <MemberCard
+                            key={member.name}
+                            name={member.name}
+                            title={member.title}
+                            avatarSrc={
+                              member.avatarKey && allImages[member.avatarKey]
+                                ? allImages[member.avatarKey].default.src
+                                : null
+                            }
+                            fallbackInitials={member.fallbackInitials}
+                            instagramUrl={member.instagramUrl}
+                            linkedinUrl={member.linkedinUrl}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* MEMBERS */}
+                  {activeTab === "members" && (
+                    <div>
+                      <div className="mb-7 pb-5 border-b border-slate-100">
+                        <h2 className="text-2xl md:text-3xl font-bold tracking-tight text-slate-900">
+                          Members
+                        </h2>
+                        <p className="mt-1 text-slate-500 text-sm">
+                          Active brothers of KTP Phi Chapter.
+                        </p>
+                      </div>
+                      <div className="flex items-center justify-center rounded-2xl border border-dashed border-slate-300 bg-slate-50 py-32">
+                        <div className="text-center px-4">
+                          <p className="text-slate-400 font-medium">Active member profiles coming soon.</p>
+                          <p className="mt-1 text-xs text-slate-300">
+                            Check back after the next pledge class is initiated.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* ALUMNI */}
+                  {activeTab === "alumni" && (
+                    <div>
+                      <div className="mb-7 pb-5 border-b border-slate-100">
+                        <h2 className="text-2xl md:text-3xl font-bold tracking-tight text-slate-900">
+                          Alumni
+                        </h2>
+                        <p className="mt-1 text-slate-500 text-sm">
+                          Celebrating KTP alumni and their ongoing impact.
+                        </p>
+                      </div>
+                      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-x-5 gap-y-8">
+                        {alumniData.map((alum) => (
+                          <AlumniCard
+                            key={alum.name}
+                            alum={{
+                              ...alum,
+                              avatarSrc:
+                                alum.avatarSrc !== undefined
+                                  ? alum.avatarSrc
+                                  : alum.avatarKey && allImages[alum.avatarKey]
+                                  ? allImages[alum.avatarKey].default.src
+                                  : null,
+                            }}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
             </div>
           </div>
         </section>

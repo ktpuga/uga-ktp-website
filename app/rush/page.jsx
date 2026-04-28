@@ -2,8 +2,9 @@
 'use client'
 import Footer from '@/components/ui/footer'
 import Timeline from '@/components/ui/timeline'
+import Image from 'next/image'
 import Link from 'next/link'
-import React from 'react'
+import React, { useEffect, useState } from 'react'
 import Carousel from 'react-multi-carousel'
 import 'react-multi-carousel/lib/styles.css'
 
@@ -25,15 +26,21 @@ const resources = [
 ]
 
 export default function Page () {
+  const [scrolled, setScrolled] = useState(false)
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 10)
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => window.removeEventListener('scroll', onScroll)
+  }, [])
+
   return (
-    <div className='flex min-h-screen flex-col font-sans bg-gradient-to-br from-slate-950 via-indigo-950 to-sky-950 text-sky-100'>
-      <header className='sticky top-0 z-50 flex h-16 items-center border-b border-indigo-800 bg-black/60 px-4 backdrop-blur-md lg:px-6 shadow-md'>
-        <Link href='/' className='flex items-center font-bold text-sky-300'>
-          <span className="text-2xl md:text-3xl tracking-tight bg-gradient-to-tr from-sky-400 via-indigo-400 to-cyan-400 bg-clip-text text-transparent drop-shadow-lg">ΚΘΠ</span>
-          <span className='ml-2 hidden text-lg font-semibold md:inline text-indigo-300'>Phi Chapter at UGA</span>
+    <div className='flex min-h-screen flex-col font-sans bg-gradient-to-br from-slate-50 via-white to-slate-100 text-slate-900'>
+      <header className={`sticky top-0 z-50 flex h-16 items-center border-b px-4 backdrop-blur-md lg:px-6 transition-all duration-300 ${scrolled ? 'bg-white border-slate-200 shadow-sm' : 'bg-transparent border-transparent'}`}>
+        <Link href='/' className='flex items-center font-bold'>
+          <Image src="/KTP PHI CHAPTER.svg" alt="ΚΘΠ" width={95} height={37} className="h-8 w-auto object-contain" />
         </Link>
         <nav className='ml-auto flex gap-4 sm:gap-6'>
-          <Link href='/' className='text-sm font-medium transition-colors hover:text-sky-300'>Home</Link>
+          <Link href='/' className='text-sm font-medium transition-colors hover:text-blue-900'>Home</Link>
         </nav>
       </header>
 
@@ -42,20 +49,20 @@ export default function Page () {
         <section className="relative flex flex-col items-center justify-center py-20 md:py-32 min-h-[50vh] overflow-hidden">
           {/* Decorative blue glows */}
           <div className="absolute inset-0 -z-10 pointer-events-none">
-            <div className="absolute -left-1/4 -top-1/4 h-80 w-80 rounded-full bg-gradient-to-br from-sky-500 via-indigo-500 to-cyan-400 opacity-25 blur-3xl" />
-            <div className="absolute -right-1/4 -bottom-1/4 h-96 w-96 rounded-full bg-gradient-to-tr from-cyan-400 via-sky-500 to-indigo-500 opacity-30 blur-2xl" />
+            <div className="absolute -left-1/4 -top-1/4 h-80 w-80 rounded-full bg-gradient-to-br from-sky-300 via-blue-200 to-cyan-200 opacity-30 blur-3xl" />
+            <div className="absolute -right-1/4 -bottom-1/4 h-96 w-96 rounded-full bg-gradient-to-tr from-cyan-200 via-sky-300 to-blue-200 opacity-25 blur-2xl" />
           </div>
 
-          <h1 className="text-5xl md:text-7xl font-extrabold text-center bg-clip-text text-transparent bg-gradient-to-tr from-sky-400 via-indigo-300 to-cyan-300 drop-shadow-xl">
+          <h1 className="text-5xl md:text-7xl font-extrabold text-center text-blue-900 drop-shadow-xl">
             Spring Rush 2026 - Now Open!
           </h1>
 
-          <p className="mt-4 text-lg md:text-2xl text-center text-sky-200/90 max-w-2xl">
+          <p className="mt-4 text-lg md:text-2xl text-center text-slate-700 max-w-2xl">
             Here are the rush events!
           </p>
 
           {/* Interest link placeholder (disabled until ready) */}
-          <span className="mt-8 inline-block px-8 py-3 rounded-full border border-sky-400/50 text-sky-200/80 bg-white/5 backdrop-blur shadow-lg select-none">
+          <span className="mt-8 inline-block px-8 py-3 rounded-full border border-blue-900/60 text-blue-900 bg-white/80 backdrop-blur shadow-lg select-none">
             <Link href="https://docs.google.com/forms/d/e/1FAIpQLSeJcH3DrhT2-tV3HKejUGByJiL71F3dJF-BhTziDTC6-2xo5w/viewform">
             ❓ Interest Form: Click Here
               </Link>
@@ -63,9 +70,9 @@ export default function Page () {
         </section>
 
         {/* ---------- RESOURCES (blue theme) ---------- */}
-        <section id='resources' className='bg-black/30 py-10'>
+        <section id='resources' className='bg-slate-100 py-10'>
           <div className='container mx-auto px-4 md:px-6 text-center'>
-            <h2 className='mb-8 text-3xl font-bold tracking-tight text-sky-300 md:text-4xl'>Prep Resources</h2>
+            <h2 className='mb-8 text-3xl font-bold tracking-tight text-blue-900 md:text-4xl'>Prep Resources</h2>
             <Carousel
               responsive={responsive}
               infinite
@@ -78,8 +85,8 @@ export default function Page () {
               removeArrowOnDeviceType={['tablet', 'mobile']}
             >
               {resources.map((r) => (
-                <div key={r.title} className='rounded-2xl border-2 border-indigo-800 bg-gradient-to-br from-slate-900 via-indigo-900/60 to-sky-900/40 p-6 shadow-xl backdrop-blur-lg'>
-                  <Link href={r.url} target='_blank' className='block font-semibold text-sky-300 underline hover:text-cyan-300 transition-colors'>
+                <div key={r.title} className='rounded-2xl border-2 border-slate-200 bg-white p-6 shadow-md'>
+                  <Link href={r.url} target='_blank' className='block font-semibold text-blue-900 underline hover:text-black transition-colors'>
                     {r.title}
                   </Link>
                 </div>
@@ -89,10 +96,10 @@ export default function Page () {
         </section>
 
         {/* ---------- TIMELINE (placeholder cards) ---------- */}
-        <section className='relative bg-gradient-to-br from-slate-950 via-indigo-950 to-sky-950 py-16'>
+        <section className='relative bg-gradient-to-b from-white to-slate-100 py-16'>
           <div className='container mx-auto px-4 md:px-6 text-center'>
-            <h2 className='mb-8 text-4xl font-extrabold tracking-tight text-sky-300 md:text-5xl'>Rush Week Events</h2>
-            <p className='mx-auto mb-10 max-w-xl text-sky-200/80'>
+            <h2 className='mb-8 text-4xl font-extrabold tracking-tight text-blue-900 md:text-5xl'>Rush Week Events</h2>
+            <p className='mx-auto mb-10 max-w-xl text-slate-600'>
               Dates and venues are TBD. Here’s the typical structure — exact info will be announced soon.
             </p>
             <div className='mx-auto max-w-3xl grid gap-8 md:grid-cols-2'>
@@ -105,13 +112,13 @@ export default function Page () {
                 { label: 'Meet the Brothers: Speed Dating', when: '2/9', where: 'Boyd 328', time: '7:00pm' },
                 { label: 'Interviews', when: '2/10–2/16', where: 'Various', time: 'By email' },
               ].map((e) => (
-                <div key={e.label} className='rounded-2xl bg-white/5 shadow-lg p-8 flex flex-col items-center border-2 border-indigo-800 hover:border-sky-500 transition-all duration-300'>
-                  <div className='mb-4 flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-tr from-sky-500 via-indigo-500 to-cyan-400 shadow-md text-3xl font-bold text-white'>
+                <div key={e.label} className='rounded-2xl bg-white shadow-lg p-8 flex flex-col items-center border-2 border-slate-200 hover:border-blue-900 transition-all duration-300'>
+                  <div className='mb-4 flex items-center justify-center w-16 h-16 rounded-full bg-blue-900 shadow-md text-3xl font-bold text-white'>
                     ?
                   </div>
-                  <h3 className='text-2xl font-bold text-sky-200 mb-1'>{e.label}</h3>
-                  <p className='text-sky-300/90'>{e.where}</p>
-                  <p className='text-sky-300/60'>{e.when} · {e.time}</p>
+                  <h3 className='text-2xl font-bold text-slate-900 mb-1'>{e.label}</h3>
+                  <p className='text-slate-600'>{e.where}</p>
+                  <p className='text-slate-400'>{e.when} · {e.time}</p>
                 </div>
               ))}
             </div>
