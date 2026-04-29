@@ -1,147 +1,123 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import Image from 'next/image';
-import Link from 'next/link';
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
-const ROLES = [
-  { id: 'member', label: 'Member' },
-  { id: 'alumni', label: 'Alumni' },
-  { id: 'Leadership', label: 'Leadership' },
-];
+const TABS = ["member", "alumni", "Leadership"];
 
 export default function Login() {
   const router = useRouter();
-  const [activeRole, setActiveRole] = useState('member');
-  const [email, setEmail] = useState('');
-  const [keepSignedIn, setKeepSignedIn] = useState(true);
+  const [activeTab, setActiveTab] = useState("member");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
 
   const handleLogin = (role) => {
-    if (role === 'member') {
-      router.push('/member');
-    } else if (role === 'alumni') {
-      router.push('/alumni');
+    if (role === "member") {
+      router.push("/member");
+    } else if (role === "alumni") {
+      router.push("/alumni");
     } else {
-      router.push('/admin');
+      router.push("/admin");
     }
   };
 
   return (
-    <div
-      className="min-h-screen flex items-center justify-center p-4"
-      style={{ backgroundColor: '#14326E' }}
-    >
+    <div className="min-h-screen bg-gradient-to-br from-white-700 via-white-800 to-white-900 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         {/* Logo */}
-        <div className="flex flex-col items-center mb-8">
-          <Link href="/" className="inline-flex items-center justify-center mb-6">
-            <Image
-              src="/KTP PHI CHAPTER.svg"
-              alt="Kappa Theta Pi - Phi Chapter"
-              width={180}
-              height={92}
-              priority
-              style={{
-                filter: 'brightness(0) invert(1) drop-shadow(0 0 18px rgba(255, 255, 255, 0.15))',
-              }}
-            />
+        <div className="text-center mb-8">
+          <Link
+            href="/"
+            className="inline-flex items-center justify-center mb-4"
+          >
+            <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center shadow-xl">
+              <span className="text-blue-900 text-2xl font-bold">ΚΘΠ</span>
+            </div>
           </Link>
-          <h1 className="text-2xl font-semibold text-white text-center">
-            Sign in to your KTP Account
-          </h1>
+          <h1 className="text-3xl font-bold text-black mb-2">Welcome Back</h1>
+          <p className="text-black-100">Sign in to access your portal</p>
         </div>
 
-        {/* Role selector (styled like EA's social row) */}
-        <div className="flex justify-center gap-3 mb-6">
-          {ROLES.map((role) => (
-            <button
-              key={role.id}
-              type="button"
-              onClick={() => setActiveRole(role.id)}
-              className={`px-4 py-3 rounded-lg text-sm font-medium transition-all min-w-[88px] ${
-                activeRole === role.id
-                  ? 'bg-white text-[#14326E] shadow-md'
-                  : 'bg-[#1d4090] text-white/80 hover:bg-[#244da8]'
-              }`}
-            >
-              {role.label}
-            </button>
-          ))}
-        </div>
-
-        {/* "or" divider */}
-        <div className="flex items-center gap-3 mb-6">
-          <div className="flex-1 h-px bg-white/20" />
-          <span className="text-white/60 text-sm">or</span>
-          <div className="flex-1 h-px bg-white/20" />
-        </div>
-
-        {/* Form */}
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            handleLogin(activeRole);
-          }}
-          className="space-y-5"
-        >
-          <div className="space-y-2">
-            <label
-              htmlFor="email"
-              className="block text-xs font-semibold tracking-wider text-white/80 uppercase"
-            >
-              Phone or Email
-            </label>
-            <input
-              id="email"
-              type="text"
-              placeholder="Enter your phone or email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              className="w-full bg-transparent border border-white/40 rounded-md px-4 py-3 text-white placeholder:text-white/40 focus:outline-none focus:border-white focus:ring-1 focus:ring-white/60 transition-colors"
-            />
+        {/* Login Card */}
+        <div className="bg-white rounded-2xl shadow-2xl p-8">
+          {/* Tab List */}
+          <div className="grid grid-cols-3 gap-1 bg-slate-100 rounded-lg p-1 mb-6">
+            {TABS.map((tab) => (
+              <button
+                key={tab}
+                type="button"
+                onClick={() => setActiveTab(tab)}
+                className={`py-2 text-sm font-medium rounded-md transition-colors capitalize ${
+                  activeTab === tab
+                    ? "bg-white text-blue-900 shadow-sm"
+                    : "text-slate-600 hover:text-slate-900"
+                }`}
+              >
+                {tab}
+              </button>
+            ))}
           </div>
 
-          <label className="flex items-center gap-2 text-white/90 text-sm cursor-pointer select-none">
-            <input
-              type="checkbox"
-              checked={keepSignedIn}
-              onChange={(e) => setKeepSignedIn(e.target.checked)}
-              className="w-4 h-4 accent-blue-500 cursor-pointer"
-            />
-            <span>Keep me signed in</span>
-            <span
-              aria-hidden
-              className="inline-flex items-center justify-center w-4 h-4 rounded-full border border-white/40 text-white/60 text-[10px]"
-            >
-              ?
-            </span>
-          </label>
-
-          <button
-            type="submit"
-            className="w-full bg-[#2A5CCA] hover:bg-[#3570DB] text-white font-semibold tracking-wider py-3 rounded-md uppercase transition-colors shadow-lg"
+          {/* Form */}
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              handleLogin(activeTab);
+            }}
+            className="space-y-4"
           >
-            Next
-          </button>
+            <div className="space-y-2">
+              <label
+                htmlFor="email"
+                className="block text-sm font-medium text-slate-700"
+              >
+                {activeTab === "admin" ? "Admin Email" : "Email"}
+              </label>
+              <Input
+                id="email"
+                type="email"
+                placeholder={`${activeTab}@ktpgeorgia.com`}
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <label
+                htmlFor="password"
+                className="block text-sm font-medium text-slate-700"
+              >
+                {activeTab === "admin" ? "Admin Password" : "Password"}
+              </label>
+              <Input
+                id="password"
+                type="password"
+                placeholder="••••••••"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+              />
+            </div>
+            <Button
+              type="submit"
+              className="w-full bg-blue-900 hover:bg-blue-800 text-white capitalize"
+            >
+              Sign In as {activeTab}
+            </Button>
+          </form>
 
-          <div className="text-center">
-            <a href="#" className="text-[#6CA0FF] hover:underline text-sm">
-              Forgot your password, or need to create a new one?
+          <div className="mt-6 text-center">
+            <a href="#" className="text-sm text-blue-900 hover:underline">
+              Forgot your password?
             </a>
           </div>
+        </div>
 
-          <button
-            type="button"
-            className="w-full border border-[#2A5CCA] text-white font-semibold tracking-wider py-3 rounded-md uppercase hover:bg-[#2A5CCA]/20 transition-colors"
-          >
-            Create Account
-          </button>
-        </form>
-
-        <div className="mt-8 text-center">
-          <Link href="/" className="text-sm text-white/70 hover:text-white hover:underline">
+        <div className="mt-6 text-center">
+          <Link href="/" className="text-sm text-black hover:underline">
             ← Back to home
           </Link>
         </div>
