@@ -105,8 +105,7 @@ export default function HackathonPage() {
             ['Rush', '/rush'],
             ['About', '/#about'],
             ['Leadership', '/#leadership'],
-            ['Hackathon', '/hackathon'],
-            ['Contact', '/#contact']
+            ['Hackathon', '/hackathon']
           ].map(([label, href]) => (
             <Link
               key={label}

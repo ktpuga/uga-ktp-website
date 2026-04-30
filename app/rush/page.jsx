@@ -27,21 +27,53 @@ const resources = [
 
 export default function Page () {
   const [scrolled, setScrolled] = useState(false)
+  const [mobile, setMobile] = useState(false)
+
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 10)
     window.addEventListener('scroll', onScroll, { passive: true })
     return () => window.removeEventListener('scroll', onScroll)
   }, [])
 
+  useEffect(() => {
+    const updateMobile = () => setMobile(window.innerWidth < 599)
+    updateMobile()
+    window.addEventListener('resize', updateMobile)
+    return () => window.removeEventListener('resize', updateMobile)
+  }, [])
+
   return (
     <div className='flex min-h-screen flex-col font-sans bg-gradient-to-br from-slate-50 via-white to-slate-100 text-slate-900'>
-      <header className={`sticky top-0 z-50 flex h-16 items-center border-b px-4 backdrop-blur-md lg:px-6 transition-all duration-300 ${scrolled ? 'bg-white border-slate-200 shadow-sm' : 'bg-transparent border-transparent'}`}>
-        <Link href='/' className='flex items-center font-bold'>
-          <Image src="/KTP PHI CHAPTER.svg" alt="ΚΘΠ" width={95} height={37} className="h-8 w-auto object-contain" />
+      <header className={`sticky top-0 z-50 flex h-16 items-center border-b px-4 backdrop-blur-md lg:px-6 transition-all duration-300 ${scrolled ? 'bg-white border-slate-200 shadow-sm' : 'bg-white/80 border-transparent'}`}>
+        <Link href='/' className='flex items-center gap-2'>
+          <Image src='/KTP PHI CHAPTER.svg' alt='ΚΘΠ' width={48} height={48} className='h-10 w-auto object-contain' />
         </Link>
         <nav className='ml-auto flex gap-4 sm:gap-6'>
-          <Link href='/' className='text-sm font-medium transition-colors hover:text-blue-900'>Home</Link>
+          {[
+            { href: '/rush', label: 'Rush' },
+            { href: '/#about', label: 'About', hideOnMobile: true },
+            { href: '/members-list', label: 'Members' },
+            { href: '/hackathon', label: 'Hackathon' },
+          ]
+            .filter((l) => !(mobile && l.hideOnMobile))
+            .map((l) => (
+              <Link
+                key={l.label}
+                href={l.href}
+                className={`relative text-sm font-medium transition-colors duration-300 before:absolute before:-bottom-0.5 before:left-0 before:h-0.5 before:w-full before:origin-left before:scale-x-0 before:bg-blue-900 before:transition-transform before:duration-300 hover:text-blue-900 hover:before:scale-x-100 ${
+                  l.label === 'Rush' ? 'text-blue-900 before:scale-x-100' : ''
+                }`}
+              >
+                {l.label}
+              </Link>
+            ))}
         </nav>
+        <Link
+          href='/login'
+          className='ml-6 text-sm font-medium px-3 py-1.5 rounded-md bg-blue-900 text-white border border-blue-900 transition-colors duration-300 hover:bg-blue-800 hover:border-blue-800'
+        >
+          Portal Login
+        </Link>
       </header>
 
       <main className='flex-1'>
@@ -54,23 +86,34 @@ export default function Page () {
           </div>
 
           <h1 className="text-5xl md:text-7xl font-extrabold text-center text-blue-900 drop-shadow-xl">
-            Spring Rush 2026 - Now Open!
+            Fall Rush 2027 - Coming Soon!
           </h1>
 
           <p className="mt-4 text-lg md:text-2xl text-center text-slate-700 max-w-2xl">
             Here are the rush events!
           </p>
 
-          {/* Interest link placeholder (disabled until ready) */}
+          {/* Interest link placeholder (Dont Open Until Fall 2027 Rush!)
           <span className="mt-8 inline-block px-8 py-3 rounded-full border border-blue-900/60 text-blue-900 bg-white/80 backdrop-blur shadow-lg select-none">
             <Link href="https://docs.google.com/forms/d/e/1FAIpQLSeJcH3DrhT2-tV3HKejUGByJiL71F3dJF-BhTziDTC6-2xo5w/viewform">
             ❓ Interest Form: Click Here
               </Link>
           </span>
+          */}
         </section>
+
 
         {/* ---------- RESOURCES (blue theme) ---------- */}
         <section id='resources' className='bg-slate-100 py-10'>
+          <style>{`
+            .react-multi-carousel-dot button {
+              border-color: #1e3a5f;
+              background: transparent;
+            }
+            .react-multi-carousel-dot--active button {
+              background: #1e3a5f;
+            }
+          `}</style>
           <div className='container mx-auto px-4 md:px-6 text-center'>
             <h2 className='mb-8 text-3xl font-bold tracking-tight text-blue-900 md:text-4xl'>Prep Resources</h2>
             <Carousel
@@ -80,7 +123,7 @@ export default function Page () {
               autoPlaySpeed={3200}
               arrows={false}
               showDots
-              containerClass='mx-auto max-w-5xl'
+              containerClass='mx-auto max-w-5xl pb-10'
               itemClass='px-2'
               removeArrowOnDeviceType={['tablet', 'mobile']}
             >
@@ -96,7 +139,7 @@ export default function Page () {
         </section>
 
         {/* ---------- TIMELINE (placeholder cards) ---------- */}
-        <section className='relative bg-gradient-to-b from-white to-slate-100 py-16'>
+        <section id='events' className='relative bg-gradient-to-b from-white to-slate-100 py-16'>
           <div className='container mx-auto px-4 md:px-6 text-center'>
             <h2 className='mb-8 text-4xl font-extrabold tracking-tight text-blue-900 md:text-5xl'>Rush Week Events</h2>
             <p className='mx-auto mb-10 max-w-xl text-slate-600'>

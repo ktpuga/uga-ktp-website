@@ -1,8 +1,8 @@
 import Card from '@/components/ui/profile-card';
 import Link from 'next/link';
-import manya from '../../public/leadership/manya.jpeg';
+import manya from '../../public/members/executive/manya.jpeg';
 import ryan from '../../public/leadership/ryan.jpeg';
-import stephen from '../../public/leadership/stephen.jpeg';
+import stephen from '../../public/members/alumni/stephen.jpeg';
 
 export default function SponsorshipPage() {
   return (
