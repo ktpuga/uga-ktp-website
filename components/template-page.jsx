@@ -215,7 +215,7 @@ export default function TemplatePage() {
               data-aos-delay="150"
             >
               <div className="relative">
-                <div className="absolute -inset-6 -z-10 rounded-3xl bg-gradient-to-br from-blue-950/40 via-blue-900/30 to-indigo-900/15 blur-2xl" />
+                <div className="absolute -inset-6 -z-10 rounded-3xl " />
                 <div className="grid grid-cols-3 md:grid-cols-6 gap-3">
                   {heroPics.slice(0, 6).map((src, i) => (
                     <Image
@@ -225,7 +225,7 @@ export default function TemplatePage() {
                       alt={`ΚΘΠ collage ${i + 1}`}
                       width={400}
                       height={300}
-                      className={`h-44 md:h-52 w-full rounded-xl object-cover shadow-2xl transition-transform duration-500 hover:scale-105 ${rotation[i % rotation.length]}`}
+                      className={`h-56 md:h-72 w-full rounded-xl object-cover transition-transform duration-500 hover:scale-105 ${rotation[i % rotation.length]}`}
                     />
                   ))}
                 </div>

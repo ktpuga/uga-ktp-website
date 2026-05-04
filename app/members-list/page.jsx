@@ -183,13 +183,15 @@ function AlumniCard({ alum }) {
 /*                               MAIN PAGE                                    */
 /* -------------------------------------------------------------------------- */
 export default function MembersPage() {
-  const leadershipImages = importAll(
-    require.context("../../public/leadership/", false, /\.(png|jpe?g|svg)$/),
+  const executiveImages = importAll(
+    require.context("../../public/members/executive/", false, /\.(png|jpe?g|svg)$/),
   );
-  const memberImages = importAll(
-    require.context("../../public/members/", false, /\.(png|jpe?g|svg)$/),
+  const alumniImages = importAll(
+    require.context("../../public/members/alumni/", false, /\.(png|jpe?g|svg)$/),
   );
-  const allImages = { ...leadershipImages, ...memberImages };
+  const activeImages = importAll(
+    require.context("../../public/members/active/", false, /\.(png|jpe?g|svg)$/),
+  );
 
   const execMembers = [
     { name: "Daniel Rifai", title: "President", avatarKey: "danny.jpeg", fallbackInitials: "DR", instagramUrl: "https://www.instagram.com/drifai2", linkedinUrl: "https://www.linkedin.com/in/daniel-rifai-19226a292/" },
@@ -216,6 +218,11 @@ export default function MembersPage() {
     { name: "Anjali Devarapalli", classYear: 2025, class: "Alpha", avatarSrc: null, fallbackInitials: "AD", instagramUrl: "https://www.instagram.com/anjali.devarapalli/", linkedinUrl: "https://www.linkedin.com/in/anjali-devarapalli-b1677329a//", icon: FaUniversity },
     { name: "Tharushika Dehi", classYear: 2025, class: "Alpha", avatarSrc: null, fallbackInitials: "TD", instagramUrl: "https://www.instagram.com/tharushikadehi/", linkedinUrl: "https://www.linkedin.com/in/maryan-dehipitiarachchi/", icon: FaUniversity },
   ].sort((a, b) => a.classYear - b.classYear);
+
+  const activeMembers = [
+    { name: "Andrew Babatunde", title: "Delta · Computer Science", avatarKey: "Andrew.jpg", fallbackInitials: "AB", instagramUrl: "https://www.instagram.com/andrvew/", linkedinUrl: "https://www.linkedin.com/in/andrewbabatunde/" },
+    { name: "Ariya", title: "Delta · Computer Science", avatarKey: "Ariya.jpg", fallbackInitials: "AL", instagramUrl: "https://www.instagram.com/aidan.lee_/", linkedinUrl: "https://www.linkedin.com/in/aidan-lee-9bba79220/" },
+  ];
 
   const [mobile, setMobile] = useState(false);
   const [scrolled, setScrolled] = useState(false);
@@ -269,7 +276,6 @@ export default function MembersPage() {
             { href: "/#about", label: "About", hideOnMobile: true },
             { href: "/members-list", label: "Members" },
             { href: "/hackathon", label: "Hackathon" },
-            { href: "/#contact", label: "Contact" },
           ]
             .filter((l) => !(mobile && l.hideOnMobile))
             .map((l) => (
@@ -294,9 +300,9 @@ export default function MembersPage() {
 
       <main className="flex-1">
         {/* ===============================  HERO  ============================== */}
-        <section className="border-b border-slate-100 py-10 md:py-14">
+        <section className="py-6 md:py-8">
           <div className="container mx-auto max-w-6xl px-4 md:px-6">
-            <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6">
+            <div className="flex flex-col gap-5">
               <div>
                 <p className="inline-flex items-center gap-2 rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-semibold tracking-wider text-blue-600 shadow-sm mb-4">
                   University of Georgia&apos;s Professional Technology Fraternity
@@ -308,145 +314,120 @@ export default function MembersPage() {
                   Meet the executive board, active brothers, and alumni of KTP Phi Chapter.
                 </p>
               </div>
+              <nav className="flex gap-2 overflow-x-auto pb-1">
+                {dirLinks.map(({ id, label }) => (
+                  <button
+                    key={id}
+                    onClick={() => switchTab(id)}
+                    className={`whitespace-nowrap px-5 py-2 text-sm font-medium rounded-full border transition-all duration-200 ${
+                      activeTab === id
+                        ? "bg-blue-900 text-white border-blue-900 shadow-sm"
+                        : "bg-white text-slate-600 border-slate-200 hover:border-blue-900 hover:text-blue-900"
+                    }`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </nav>
             </div>
           </div>
         </section>
 
-        {/* ===============================  DIRECTORY + CONTENT  ================ */}
-        <section className="py-10 md:py-14">
+        {/* ===============================  CONTENT  ========================== */}
+        <section className="py-6 md:py-8">
           <div className="container mx-auto max-w-6xl px-4 md:px-6">
-            <div className="flex flex-col md:flex-row gap-8">
-
-              {/* ----- Sidebar directory nav (desktop) / tab row (mobile) ----- */}
-              <aside className="md:w-52 shrink-0">
-                {/* Mobile: horizontal pill tabs */}
-                <div className="flex md:hidden gap-2 mb-6 overflow-x-auto pb-1">
-                  {dirLinks.map(({ id, label }) => (
-                    <button
-                      key={id}
-                      onClick={() => switchTab(id)}
-                      className={`whitespace-nowrap px-4 py-2 text-sm font-medium rounded-full border transition-all duration-200 ${
-                        activeTab === id
-                          ? "bg-blue-900 text-white border-blue-900 shadow-sm"
-                          : "bg-white text-slate-600 border-slate-200 hover:border-blue-900 hover:text-blue-900"
-                      }`}
-                    >
-                      {label}
-                    </button>
-                  ))}
+            <div style={{ opacity: visible ? 1 : 0, transition: "opacity 150ms ease" }}>
+              {/* EXEC BOARD */}
+              {activeTab === "exec-board" && (
+                <div>
+                  <div className="mb-7 pb-5 border-b border-slate-100">
+                    <h2 className="text-2xl md:text-3xl font-bold tracking-tight text-slate-900">
+                      Executive Board
+                    </h2>
+                    <p className="mt-1 text-slate-500 text-sm">
+                      The leaders driving KTP forward this semester.
+                    </p>
+                  </div>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-x-5 gap-y-8">
+                    {execMembers.map((member) => (
+                      <MemberCard
+                        key={member.name}
+                        name={member.name}
+                        title={member.title}
+                        avatarSrc={
+                          member.avatarKey && executiveImages[member.avatarKey]
+                            ? executiveImages[member.avatarKey].default.src
+                            : null
+                        }
+                        fallbackInitials={member.fallbackInitials}
+                        instagramUrl={member.instagramUrl}
+                        linkedinUrl={member.linkedinUrl}
+                      />
+                    ))}
+                  </div>
                 </div>
+              )}
 
-                {/* Desktop: vertical card nav */}
-                <nav className="hidden md:flex sticky top-24 flex-col gap-1 rounded-2xl border border-slate-200 bg-slate-50 p-3 shadow-sm">
-                  <p className="px-3 pb-2 pt-1 text-xs font-semibold uppercase tracking-widest text-slate-400">
-                    Directory
-                  </p>
-                  {dirLinks.map(({ id, label }) => (
-                    <button
-                      key={id}
-                      onClick={() => switchTab(id)}
-                      className={`w-full px-4 py-3 text-sm font-medium rounded-xl text-left transition-all duration-200 ${
-                        activeTab === id
-                          ? "bg-blue-900 text-white shadow-sm"
-                          : "text-slate-600 hover:text-blue-900 hover:bg-white"
-                      }`}
-                    >
-                      {label}
-                    </button>
-                  ))}
-                </nav>
-              </aside>
-
-              {/* ----- Content panel ----- */}
-              <div className="flex-1 min-w-0">
-                <div
-                  style={{ opacity: visible ? 1 : 0, transition: "opacity 150ms ease" }}
-                >
-                  {/* EXEC BOARD */}
-                  {activeTab === "exec-board" && (
-                    <div>
-                      <div className="mb-7 pb-5 border-b border-slate-100">
-                        <h2 className="text-2xl md:text-3xl font-bold tracking-tight text-slate-900">
-                          Executive Board
-                        </h2>
-                        <p className="mt-1 text-slate-500 text-sm">
-                          The leaders driving KTP forward this semester.
-                        </p>
-                      </div>
-                      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-x-5 gap-y-8">
-                        {execMembers.map((member) => (
-                          <MemberCard
-                            key={member.name}
-                            name={member.name}
-                            title={member.title}
-                            avatarSrc={
-                              member.avatarKey && allImages[member.avatarKey]
-                                ? allImages[member.avatarKey].default.src
-                                : null
-                            }
-                            fallbackInitials={member.fallbackInitials}
-                            instagramUrl={member.instagramUrl}
-                            linkedinUrl={member.linkedinUrl}
-                          />
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* MEMBERS */}
-                  {activeTab === "members" && (
-                    <div>
-                      <div className="mb-7 pb-5 border-b border-slate-100">
-                        <h2 className="text-2xl md:text-3xl font-bold tracking-tight text-slate-900">
-                          Members
-                        </h2>
-                        <p className="mt-1 text-slate-500 text-sm">
-                          Active brothers of KTP Phi Chapter.
-                        </p>
-                      </div>
-                      <div className="flex items-center justify-center rounded-2xl border border-dashed border-slate-300 bg-slate-50 py-32">
-                        <div className="text-center px-4">
-                          <p className="text-slate-400 font-medium">Active member profiles coming soon.</p>
-                          <p className="mt-1 text-xs text-slate-300">
-                            Check back after the next pledge class is initiated.
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* ALUMNI */}
-                  {activeTab === "alumni" && (
-                    <div>
-                      <div className="mb-7 pb-5 border-b border-slate-100">
-                        <h2 className="text-2xl md:text-3xl font-bold tracking-tight text-slate-900">
-                          Alumni
-                        </h2>
-                        <p className="mt-1 text-slate-500 text-sm">
-                          Celebrating KTP alumni and their ongoing impact.
-                        </p>
-                      </div>
-                      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-x-5 gap-y-8">
-                        {alumniData.map((alum) => (
-                          <AlumniCard
-                            key={alum.name}
-                            alum={{
-                              ...alum,
-                              avatarSrc:
-                                alum.avatarSrc !== undefined
-                                  ? alum.avatarSrc
-                                  : alum.avatarKey && allImages[alum.avatarKey]
-                                  ? allImages[alum.avatarKey].default.src
-                                  : null,
-                            }}
-                          />
-                        ))}
-                      </div>
-                    </div>
-                  )}
+              {/* MEMBERS */}
+              {activeTab === "members" && (
+                <div>
+                  <div className="mb-7 pb-5 border-b border-slate-100">
+                    <h2 className="text-2xl md:text-3xl font-bold tracking-tight text-slate-900">
+                      Members
+                    </h2>
+                    <p className="mt-1 text-slate-500 text-sm">
+                      Active brothers of KTP Phi Chapter.
+                    </p>
+                  </div>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-x-5 gap-y-8">
+                    {activeMembers.map((member) => (
+                      <MemberCard
+                        key={member.name}
+                        name={member.name}
+                        title={member.title}
+                        avatarSrc={
+                          member.avatarKey && activeImages[member.avatarKey]
+                            ? activeImages[member.avatarKey].default.src
+                            : null
+                        }
+                        fallbackInitials={member.fallbackInitials}
+                        instagramUrl={member.instagramUrl}
+                        linkedinUrl={member.linkedinUrl}
+                      />
+                    ))}
+                  </div>
                 </div>
-              </div>
+              )}
 
+              {/* ALUMNI */}
+              {activeTab === "alumni" && (
+                <div>
+                  <div className="mb-7 pb-5 border-b border-slate-100">
+                    <h2 className="text-2xl md:text-3xl font-bold tracking-tight text-slate-900">
+                      Alumni
+                    </h2>
+                    <p className="mt-1 text-slate-500 text-sm">
+                      Celebrating KTP alumni and their ongoing impact.
+                    </p>
+                  </div>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-x-5 gap-y-8">
+                    {alumniData.map((alum) => (
+                      <AlumniCard
+                        key={alum.name}
+                        alum={{
+                          ...alum,
+                          avatarSrc:
+                            alum.avatarSrc !== undefined
+                              ? alum.avatarSrc
+                              : alum.avatarKey && alumniImages[alum.avatarKey]
+                              ? alumniImages[alum.avatarKey].default.src
+                              : null,
+                        }}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </section>
