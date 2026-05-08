@@ -1,6 +1,6 @@
 import { groq } from 'next-sanity';
 import { NextResponse } from 'next/server';
-import { client } from '../../sanity/client'; // or '@/sanity/client'
+import { client } from '../../public/sanity/client'; // or '@/sanity/client'
                                                    
 export const revalidate = 30;                            // <= ISR window
 

@@ -1,8 +1,0 @@
-{
-  "compilerOptions": {
-    "baseUrl": ".",        // project root
-    "paths": {
-      "@/*": ["./*"]       // 👈 tells TS/VS Code that "@/foo" == "./foo"
-    }
-  }
-}

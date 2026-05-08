@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(node scripts/convert-tsx-to-jsx.js)",
+      "Bash(node -e \"require\\('@radix-ui/react-tabs'\\)\")"
+    ]
+  }
+}

@@ -5,7 +5,7 @@ import { ArrowRight } from 'lucide-react';
 import { groq, type SanityDocument } from 'next-sanity';
 import Link from 'next/link';
 
-import { client } from '../../sanity/client';
+import { client } from '../../public/sanity/client';
 
 /* ---------- 1. Build an image URL (no external helper) ---------- */
 const { projectId, dataset } = client.config();

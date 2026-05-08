@@ -22,11 +22,11 @@ export default function Page() {
           )}
         </Link>
         <nav className="ml-auto flex gap-4 sm:gap-6">
+          <Link className="text-sm font-medium hover:text-cyan-400 hover:underline transition-colors" href="/">Home</Link>
           <Link className="text-sm font-medium hover:text-cyan-400 hover:underline transition-colors" href="/rush">Rush</Link>
           <Link className="text-sm font-medium hover:text-cyan-400 hover:underline transition-colors" href="/#about">About</Link>
-          <Link className="text-sm font-medium hover:text-cyan-400 hover:underline transition-colors" href="/#leadership">Leadership</Link>
-          <Link className="text-sm font-medium hover:text-cyan-400 hover:underline transition-colors" href="/hackathon">Hackathon</Link>
-          <Link className="text-sm font-medium hover:text-cyan-400 hover:underline transition-colors" href="/#contact">Contact</Link>
+          <Link className="text-sm font-medium hover:text-cyan-400 hover:underline transition-colors" href="/members-list">Members</Link>
+          <Link className="text-sm font-medium hover:text-cyan-400 hover:underline transition-colors" href="/ktp-life">KTP Life</Link>
         </nav>
       </header>
 
