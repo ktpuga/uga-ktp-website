@@ -1,4 +1,4 @@
-npm"use client";
+npm"use client"; {/* what the fuck was I doin here? */}
 
 import {
   Card,

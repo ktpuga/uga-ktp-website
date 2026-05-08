@@ -102,10 +102,11 @@ export default function HackathonPage() {
         </Link>
         <nav className="ml-auto flex gap-4 sm:gap-6">
           {[
+            ['Home', '/'],
             ['Rush', '/rush'],
             ['About', '/#about'],
-            ['Leadership', '/#leadership'],
-            ['Hackathon', '/hackathon']
+            ['Members', '/members-list'],
+            ['KTP Life', '/ktp-life'],
           ].map(([label, href]) => (
             <Link
               key={label}

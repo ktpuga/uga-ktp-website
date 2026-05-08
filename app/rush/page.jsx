@@ -50,10 +50,12 @@ export default function Page () {
         </Link>
         <nav className='ml-auto flex gap-4 sm:gap-6'>
           {[
+            { href: '/', label: 'Home' },
             { href: '/rush', label: 'Rush' },
             { href: '/#about', label: 'About', hideOnMobile: true },
             { href: '/members-list', label: 'Members' },
-            { href: '/hackathon', label: 'Hackathon' },
+            { href: '/ktp-life', label: 'KTP Life' },
+            // { href: '/hackathon', label: 'Hackathon' },
           ]
             .filter((l) => !(mobile && l.hideOnMobile))
             .map((l) => (
@@ -68,12 +70,14 @@ export default function Page () {
               </Link>
             ))}
         </nav>
+        {/* hide until we have a login page ready 
         <Link
           href='/login'
           className='ml-6 text-sm font-medium px-3 py-1.5 rounded-md bg-blue-900 text-white border border-blue-900 transition-colors duration-300 hover:bg-blue-800 hover:border-blue-800'
         >
           Portal Login
         </Link>
+        */}
       </header>
 
       <main className='flex-1'>
