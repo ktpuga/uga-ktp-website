@@ -39,7 +39,8 @@ export async function generateMetadata(
         data?.mainImage &&
         imageUrlBuilder({ projectId, dataset }).image(data.mainImage).width(1200).height(630).url();
 
-    const base = 'https://ktpgeorgia.com';
+    const base =
+        process.env.NEXT_PUBLIC_SITE_URL || 'https://ugaktp.com';
     const url = `${base}/blog/${slug}`;
 
     return {
@@ -148,7 +149,7 @@ export default async function PostPage(
         datePublished: post.publishedAt,
         author: { '@type': 'Person', name: post.author?.name },
         image: coverUrl ? [coverUrl] : undefined,
-        url: `${process.env.NEXT_PUBLIC_SITE_URL}/blog/${slug}`,
+        url: `${(process.env.NEXT_PUBLIC_SITE_URL || 'https://ugaktp.com').replace(/\/$/, '')}/blog/${slug}`,
     };
     /* 4.  Render ---------------------------------------------------------- */
     return (

@@ -3,7 +3,7 @@ User-agent: *
 Allow: /
 
 # Host
-Host: https://ktpgeorgia.com
+Host: https://ugaktp.com
 
 # Sitemaps
-Sitemap: https://ktpgeorgia.com/sitemap.xml
+Sitemap: https://ugaktp.com/sitemap.xml

@@ -1,6 +1,9 @@
 /** @type {import('next-sitemap').IConfig} */
+const siteUrl =
+    process.env.NEXT_PUBLIC_SITE_URL || 'https://ugaktp.com';
+
 const config = {
-    siteUrl: 'https://ktpgeorgia.com', // Your production website domain
+    siteUrl,
     generateRobotsTxt: true,           // (optional) Generate a robots.txt file
     // Exclude specific (optional)
     // exclude: ['/secret-page', '/admin/*'],
