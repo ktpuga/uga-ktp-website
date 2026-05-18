@@ -1,0 +1,27 @@
+name: Continuous Deployment
+
+on:
+  push:
+    branches:
+      - main
+
+concurrency:
+  group: production-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy to Server
+    runs-on: self-hosted 
+    
+    steps:
+      - name: Pull latest code and restart containers
+        run: |
+          cd /home/ktpgeorgia/uga-ktp-website
+          
+          git fetch origin main
+          git reset --hard origin/main
+          
+          docker compose up --build -d
+          
+          docker image prune -f
