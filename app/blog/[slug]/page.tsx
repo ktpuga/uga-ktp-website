@@ -4,6 +4,7 @@ import imageUrlBuilder from '@sanity/image-url';
 import type { SanityImageSource } from '@sanity/image-url/lib/types/types';
 import type { Metadata } from 'next';
 import { groq } from 'next-sanity';
+import Image from 'next/image';
 import Link from 'next/link';
 import { client } from '../../../sanity/client';
 const META_QUERY = groq`
@@ -157,7 +158,7 @@ export default async function PostPage(
             {/* ---------- NAV ---------- */}
             <header className="sticky top-0 z-50 flex h-16 items-center border-b border-indigo-900 bg-black/70 backdrop-blur-md px-4 lg:px-6 shadow-lg">
                 <Link href="/" className="flex items-center font-bold text-cyan-400 drop-shadow-neon">
-                    <span className="text-2xl md:text-3xl tracking-tight bg-gradient-to-tr from-indigo-400 via-cyan-400 to-fuchsia-500 bg-clip-text text-transparent animate-pulse">ΚΘΠ</span>
+                    <Image src="/KTP PHI CHAPTER.svg" alt="KTP Phi Chapter" width={100} height={40} className="h-8 w-auto" style={{filter: 'brightness(0) invert(1)'}} />
                     <span className="ml-2 hidden text-sm font-semibold text-fuchsia-300 sm:inline">| Blog</span>
                 </Link>
                 <nav className="ml-auto flex gap-4 sm:gap-6">
