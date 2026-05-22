@@ -4,7 +4,7 @@ WORKDIR /app
 
 FROM base AS deps
 COPY package.json package-lock.json ./
-RUN npm ci
+RUN npm install --legacy-peer-deps --os=linux --libc=musl --cpu=x64 --include=optional
 
 FROM base AS builder
 WORKDIR /app
