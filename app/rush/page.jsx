@@ -1,15 +1,23 @@
 'use client'
 import Footer from '@/components/ui/footer'
+import Image from 'next/image'
 import Link from 'next/link'
-import React from 'react'
+import React, { useEffect, useState } from 'react'
 
 export default function Page () {
+  const [scrolled, setScrolled] = useState(false)
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 10)
+    window.addEventListener('scroll', onScroll)
+    return () => window.removeEventListener('scroll', onScroll)
+  }, [])
+
   return (
     <div className='flex min-h-screen flex-col font-sans bg-gradient-to-br from-slate-950 via-indigo-950 to-sky-950 text-sky-100'>
-      <header className='sticky top-0 z-50 flex h-16 items-center border-b border-indigo-800 bg-black/60 px-4 backdrop-blur-md lg:px-6 shadow-md'>
-        <Link href='/' className='flex items-center font-bold text-sky-300'>
-          <span className="text-2xl md:text-3xl tracking-tight bg-gradient-to-tr from-sky-400 via-indigo-400 to-cyan-400 bg-clip-text text-transparent drop-shadow-lg">ΚΘΠ</span>
-          <span className='ml-2 hidden text-lg font-semibold md:inline text-indigo-300'>Phi Chapter at UGA</span>
+      <header className={`sticky top-0 z-50 flex h-16 items-center px-4 lg:px-6 transition-all duration-300 border-b ${scrolled ? 'bg-black/80 border-indigo-800 shadow-md backdrop-blur-md' : 'bg-transparent border-transparent'}`}>
+        <Link href='/' className='flex items-center gap-2'>
+          <Image src="/KTP PHI CHAPTER.svg" alt="KTP Phi Chapter" width={100} height={40} className="h-8 w-auto" style={{filter: 'brightness(0) invert(1)'}} />
+          <span className='hidden text-lg font-semibold md:inline text-indigo-300'>Phi Chapter at UGA</span>
         </Link>
         <nav className='ml-auto flex gap-4 sm:gap-6'>
           <Link href='/' className='text-sm font-medium transition-colors hover:text-sky-300'>Home</Link>

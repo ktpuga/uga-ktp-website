@@ -92,16 +92,29 @@ export default function TemplatePage() {
     return () => window.removeEventListener("resize", updateMobile);
   }, []);
 
+  const [scrolled, setScrolled] = useState(false);
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 10);
+    window.addEventListener("scroll", onScroll);
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
   return (
     <div className="flex min-h-screen flex-col scroll-smooth font-sans bg-gradient-to-br from-slate-50 via-white to-slate-100 text-slate-900">
       <AOSInit />
 
       {/* ===============================  NAVBAR  ============================== */}
-      <header className="sticky top-0 z-50 flex h-16 items-center border-b border-slate-200 bg-white/70 px-4 backdrop-blur-md lg:px-6">
+      <header
+        className={`sticky top-0 z-50 flex h-16 items-center px-4 lg:px-6 transition-all duration-300 border-b ${scrolled ? "bg-white/90 border-slate-200 shadow-sm backdrop-blur-md" : "bg-transparent border-transparent"}`}
+      >
         <Link href="#" className="flex items-center gap-2">
-          <span className="bg-gradient-to-tr from-indigo-600 via-sky-500 to-teal-400 bg-clip-text text-2xl font-extrabold tracking-tight text-transparent">
-            ΚΘΠ
-          </span>
+          <Image
+            src="/KTP PHI CHAPTER.svg"
+            alt="KTP Phi Chapter"
+            width={100}
+            height={40}
+            className="h-8 w-auto"
+          />
           {!mobile && (
             <span className="text-lg font-semibold text-slate-800/80">
               Phi Chapter at UGA
@@ -113,7 +126,6 @@ export default function TemplatePage() {
             { href: "/rush", label: "Rush" },
             { href: "#about", label: "About", hideOnMobile: true },
             { href: "#leadership", label: "Leadership" },
-            { href: "#alumni", label: "Alumni", hideOnMobile: true },
             { href: "/hackathon", label: "Hackathon" },
             { href: "#contact", label: "Contact" },
           ]
@@ -128,6 +140,16 @@ export default function TemplatePage() {
               </Link>
             ))}
         </nav>
+        {/*
+        <Link
+            href="/login"
+            className="ml-6 text-sm font-medium px-3 py-1.5 rounded-md bg-blue-900 text-white border border-blue-900 transition-colors duration-300 hover:bg-blue-800 hover:border-blue-800"
+          >
+            <span className="relative before:absolute before:-bottom-0.5 before:left-0 before:h-0.5 before:w-full before:origin-left before:scale-x-0 before:bg-white before:transition-transform before:duration-300 [a:hover_&]:before:scale-x-100">
+              Portal Login
+            </span>
+          </Link>
+          */}
       </header>
 
       <main className="flex-1">
@@ -206,7 +228,7 @@ export default function TemplatePage() {
                       key={i}
                       unoptimized
                       src={src}
-                      alt={`ΚΘΠ collage ${i + 1}`}
+                      alt={`KTP collage ${i + 1}`}
                       width={400}
                       height={300}
                       className={`h-36 w-full rounded-xl object-cover shadow-2xl transition-transform duration-500 hover:scale-110 ${rotation[i % rotation.length]}`}
@@ -295,7 +317,7 @@ export default function TemplatePage() {
                   src={main.src}
                   width={420}
                   height={420}
-                  alt="About ΚΘΠ"
+                  alt="About KTP"
                   className="rounded-2xl shadow-xl"
                 />
                 <span className="absolute -inset-2 -z-10 animate-pulse rounded-3xl bg-gradient-to-br from-blue-400 via-teal-400 to-green-300 opacity-10 blur-2xl" />
@@ -303,7 +325,7 @@ export default function TemplatePage() {
 
               <div className="space-y-6">
                 <h2 className="text-3xl font-bold tracking-tight md:text-4xl text-primary">
-                  About ΚΘΠ Phi Chapter
+                  About KTP Phi Chapter
                 </h2>
                 <p className="text-lg text-foreground">
                   KTP develops technical skills and professionalism while
@@ -344,7 +366,7 @@ export default function TemplatePage() {
                 Our Values
               </h2>
               <p className="mx-auto mt-3 max-w-2xl text-lg text-foreground">
-                The pillars that guide and shape every ΚΘΠ member.
+                The pillars that guide and shape every KTP member.
               </p>
             </div>
 
@@ -360,7 +382,7 @@ export default function TemplatePage() {
                 },
                 {
                   title: "Community",
-                  desc: "The friendships built in ΚΘΠ last well beyond college & span the globe through countless events.",
+                  desc: "The friendships built in KTP last well beyond college & span the globe through countless events.",
                 },
               ].map((v, i) => (
                 <div
@@ -391,7 +413,7 @@ export default function TemplatePage() {
                 Meet the Exec Board
               </h2>
               <p className="mx-auto mt-3 max-w-2xl text-lg text-foreground">
-                The leaders driving ΚΘΠ forward.
+                The leaders driving KTP forward.
               </p>
             </div>
             <div className="mt-6 grid grid-cols-2 gap-6 text-sm p-0 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4">

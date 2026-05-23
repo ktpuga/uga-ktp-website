@@ -23,6 +23,7 @@ import React, { useEffect, useState } from 'react'
 
 export default function HackathonPage() {
   const [mobile, setMobile] = useState(false)
+  const [scrolled, setScrolled] = useState(false)
   const phrases = [
     'WELCOME_TO_KTP_HACKS',
     'SECOND_EVER • FALL_2025',
@@ -79,8 +80,12 @@ export default function HackathonPage() {
     startScramble()
     switchTimer = setInterval(switchPhrase, 2000) // change every 2 s
 
+    const onScroll = () => setScrolled(window.scrollY > 10)
+    window.addEventListener('scroll', onScroll)
+
     return () => {
       window.removeEventListener('resize', updateMobile)
+      window.removeEventListener('scroll', onScroll)
       clearInterval(scrambleTimer)
       clearInterval(switchTimer)
     }
@@ -89,9 +94,9 @@ export default function HackathonPage() {
   return (
     <div className="flex min-h-screen flex-col font-sans bg-gradient-to-br from-gray-950 via-indigo-950 to-black text-gray-100 relative overflow-hidden">
       {/* ---------- NAV ---------- */}
-      <header className="sticky top-0 z-50 flex h-16 items-center border-b border-indigo-800 bg-black/70 px-4 backdrop-blur-md lg:px-6 shadow-lg">
-        <Link href="/" className="flex items-center font-bold text-cyan-400 drop-shadow-neon">
-          <span className="text-2xl md:text-3xl tracking-tight bg-gradient-to-tr from-indigo-400 via-cyan-400 to-fuchsia-500 bg-clip-text text-transparent animate-pulse">ΚΘΠ</span>
+      <header className={`sticky top-0 z-50 flex h-16 items-center px-4 lg:px-6 transition-all duration-300 border-b ${scrolled ? 'bg-black/80 border-indigo-800 shadow-lg backdrop-blur-md' : 'bg-transparent border-transparent'}`}>
+        <Link href="/" className="flex items-center gap-2">
+          <Image src="/KTP PHI CHAPTER.svg" alt="KTP Phi Chapter" width={100} height={40} className="h-8 w-auto" style={{filter: 'brightness(0) invert(1)'}} />
           {!mobile && <span className="ml-2 text-sm font-semibold text-fuchsia-300">Phi Chapter at UGA</span>}
         </Link>
         <nav className="ml-auto flex gap-4 sm:gap-6">
