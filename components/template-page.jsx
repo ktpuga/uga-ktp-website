@@ -104,9 +104,17 @@ export default function TemplatePage() {
       <AOSInit />
 
       {/* ===============================  NAVBAR  ============================== */}
-      <header className={`sticky top-0 z-50 flex h-16 items-center px-4 lg:px-6 transition-all duration-300 border-b ${scrolled ? 'bg-white/90 border-slate-200 shadow-sm backdrop-blur-md' : 'bg-transparent border-transparent'}`}>
+      <header
+        className={`sticky top-0 z-50 flex h-16 items-center px-4 lg:px-6 transition-all duration-300 border-b ${scrolled ? "bg-white/90 border-slate-200 shadow-sm backdrop-blur-md" : "bg-transparent border-transparent"}`}
+      >
         <Link href="#" className="flex items-center gap-2">
-          <Image src="/KTP PHI CHAPTER.svg" alt="KTP Phi Chapter" width={100} height={40} className="h-8 w-auto" />
+          <Image
+            src="/KTP PHI CHAPTER.svg"
+            alt="KTP Phi Chapter"
+            width={100}
+            height={40}
+            className="h-8 w-auto"
+          />
           {!mobile && (
             <span className="text-lg font-semibold text-slate-800/80">
               Phi Chapter at UGA
@@ -133,13 +141,13 @@ export default function TemplatePage() {
             ))}
         </nav>
         <Link
-            href="/login"
-            className="ml-6 text-sm font-medium px-3 py-1.5 rounded-md bg-blue-900 text-white border border-blue-900 transition-colors duration-300 hover:bg-blue-800 hover:border-blue-800"
-          >
-            <span className="relative before:absolute before:-bottom-0.5 before:left-0 before:h-0.5 before:w-full before:origin-left before:scale-x-0 before:bg-white before:transition-transform before:duration-300 [a:hover_&]:before:scale-x-100">
-              Portal Login
-            </span>
-          </Link>
+          href="/login"
+          className="ml-6 text-sm font-medium px-3 py-1.5 rounded-md bg-blue-900 text-white border border-blue-900 transition-colors duration-300 hover:bg-blue-800 hover:border-blue-800"
+        >
+          <span className="relative before:absolute before:-bottom-0.5 before:left-0 before:h-0.5 before:w-full before:origin-left before:scale-x-0 before:bg-white before:transition-transform before:duration-300 [a:hover_&]:before:scale-x-100">
+            Portal Login
+          </span>
+        </Link>
       </header>
 
       <main className="flex-1">
