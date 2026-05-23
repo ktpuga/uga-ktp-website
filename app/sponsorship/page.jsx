@@ -1,4 +1,4 @@
-import Card from '@/components/ui/Card';
+import Card from '@/components/ui/card';
 import Image from 'next/image';
 import Link from 'next/link';
 import manya from '../../public/leadership/manya.jpeg';
