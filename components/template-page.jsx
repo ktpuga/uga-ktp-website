@@ -171,10 +171,10 @@ export default function TemplatePage() {
               data-aos="fade-up"
               data-aos-duration="600"
             >
-              <p className="inline-flex items-center gap-2 rounded-full border border-indigo-200 bg-white/60 px-3 py-1 text-xs font-semibold tracking-wider text-indigo-700 shadow-sm">
+              <p className="inline-flex items-center gap-2 rounded-full border border-indigo-200 bg-white/60 px-3 py-1 text-xs font-semibold tracking-wider text-blue-900 shadow-sm">
                 UGA's Professional Technology Fraternity
               </p>
-              <h1 className="text-5xl md:text-7xl font-extrabold tracking-tight leading-tight bg-gradient-to-tr from-indigo-500 via-fuchsia-600 to-cyan-500 bg-clip-text text-transparent drop-shadow-xl">
+              <h1 className="text-5xl md:text-7xl font-extrabold tracking-tight leading-tight bg-gradient-to-tr text-blue-900 bg-clip-text  drop-shadow-xl">
                 Kappa Theta Pi
               </h1>
               <p className="max-w-prose text-lg md:text-xl text-slate-700">
