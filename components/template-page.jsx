@@ -125,7 +125,7 @@ export default function TemplatePage() {
           {[
             { href: "/rush", label: "Rush" },
             { href: "#about", label: "About", hideOnMobile: true },
-            { href: "/members", label: "Members"},
+            { href: "/members-list", label: "Members"},
             { href: "#leadership", label: "Leadership" },
             { href: "/hackathon", label: "Hackathon" },
             { href: "#contact", label: "Contact" },
