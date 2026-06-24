@@ -80,7 +80,7 @@ export default function Page () {
               <span className="sr-only">Kappa Theta Pi Poker Night</span>
               <span
                 aria-hidden
-                className="aspect-[378/150] w-full max-w-[14rem] bg-[#d4af37] drop-shadow-xl sm:max-w-xs md:max-w-sm lg:max-w-lg xl:max-w-xl"
+                className="aspect-[378/150] w-full max-w-[10rem] bg-[#d4af37] drop-shadow-xl sm:max-w-[12rem] md:max-w-[14rem] lg:max-w-xs xl:max-w-sm"
                 style={{
                   WebkitMaskImage: 'url(/KTP%20PHI%20CHAPTER.svg)',
                   maskImage: 'url(/KTP%20PHI%20CHAPTER.svg)',
