@@ -184,7 +184,7 @@ export default function TemplatePage() {
               </p>
               <div className="flex flex-col gap-4 sm:flex-row">
                 <Link href="/rush">
-                  <Button className="relative px-8 py-4 text-lg font-semibold rounded-2xl bg-gradient-to-r from-indigo-600 via-fuchsia-500 to-cyan-500 shadow-xl text-white hover:scale-105 transition-transform duration-300">
+                  <Button className="rounded-full border-2 border-[#d4af37] bg-[#1a1a1a] px-8 py-4 text-lg font-semibold text-white shadow-none transition-colors hover:border-[#f0d060] hover:bg-[#6b1c2a] hover:text-white">
                     Fall Rush 2026
                   </Button>
                 </Link>
