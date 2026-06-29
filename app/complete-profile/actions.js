@@ -4,7 +4,9 @@ import { auth } from "@/auth"
 
 export async function saveProfile(formData) {
   const session = await auth()
+  console.log("[saveProfile] session:", JSON.stringify(session, null, 2))
   if (!session) return { error: "Not authenticated" }
+  if (!session.access_token) return { error: "No access token in session" }
 
   const payload = {
     first_name: formData.get("first_name"),

@@ -11,33 +11,10 @@ services:
     ports:
       - "${WEB_PORT:-3000}:3000"
     environment:
-      API_URL: http://api:4000
+      API_URL: ${API_URL}
       AUTH_SECRET: ${AUTH_SECRET}
       AUTH_URL: ${AUTH_URL}
       AUTHENTIK_CLIENT_ID: ${AUTHENTIK_CLIENT_ID}
       AUTHENTIK_CLIENT_SECRET: ${AUTHENTIK_CLIENT_SECRET}
-    depends_on:
-      - api
-    restart: unless-stopped
-    networks:
-      - ktp
-
-  api:
-    build:
-      context: ./ktp-api
-      dockerfile: Dockerfile
-    ports:
-      # Exposed externally so the iOS app can reach it
-      - "${API_PORT:-4000}:4000"
-    environment:
-      PORT: 4000
-      NODE_ENV: production
-      DATABASE_URL: ${DATABASE_URL}
       AUTHENTIK_ISSUER: ${AUTHENTIK_ISSUER}
     restart: unless-stopped
-    networks:
-      - ktp
-
-networks:
-  ktp:
-    driver: bridge
