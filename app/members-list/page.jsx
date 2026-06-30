@@ -7,14 +7,19 @@ import { AOSInit } from "@/components/ui/timeline";
 import { FaGoogle, FaUniversity, FaUps } from "react-icons/fa";
 
 /* -------------------------------------------------------------------------- */
-/*                             UTILITY: IMPORT ALL                            */
+/*                             UTILITY: PHOTO PATHS                           */
 /* -------------------------------------------------------------------------- */
-function importAll(r) {
-  const images = {};
-  r.keys().forEach((item) => {
-    images[item.replace("./", "")] = r(item);
-  });
-  return images;
+function photoUrl(folder, filename) {
+  return filename ? `/${folder}/${filename}` : null;
+}
+
+function alumniPhotoUrl(filename) {
+  if (!filename) return null;
+  const leadershipPhotos = new Set([
+    "gargee.jpeg", "siya.jpeg", "jiya.jpeg", "khushi.jpeg",
+    "stephen.jpeg", "hayden.jpeg",
+  ]);
+  return photoUrl(leadershipPhotos.has(filename) ? "leadership" : "members", filename);
 }
 
 /* -------------------------------------------------------------------------- */
@@ -183,16 +188,6 @@ function AlumniCard({ alum }) {
 /*                               MAIN PAGE                                    */
 /* -------------------------------------------------------------------------- */
 export default function MembersPage() {
-  const executiveImages = importAll(
-    require.context("../../public/members/executive/", false, /\.(png|jpe?g|svg)$/),
-  );
-  const alumniImages = importAll(
-    require.context("../../public/members/alumni/", false, /\.(png|jpe?g|svg)$/),
-  );
-  const activeImages = importAll(
-    require.context("../../public/members/active/", false, /\.(png|jpe?g|svg)$/),
-  );
-
   const execMembers = [
     { name: "Daniel Rifai", title: "President", avatarKey: "danny.jpeg", fallbackInitials: "DR", instagramUrl: "https://www.instagram.com/drifai2", linkedinUrl: "https://www.linkedin.com/in/daniel-rifai-19226a292/" },
     { name: "William Tomaszewski", title: "VP of Membership", avatarKey: "will.jpg", fallbackInitials: "WT", instagramUrl: "https://www.instagram.com/will_.tom/" },
@@ -358,11 +353,7 @@ export default function MembersPage() {
                         key={member.name}
                         name={member.name}
                         title={member.title}
-                        avatarSrc={
-                          member.avatarKey && executiveImages[member.avatarKey]
-                            ? executiveImages[member.avatarKey].default.src
-                            : null
-                        }
+                        avatarSrc={photoUrl("leadership", member.avatarKey)}
                         fallbackInitials={member.fallbackInitials}
                         instagramUrl={member.instagramUrl}
                         linkedinUrl={member.linkedinUrl}
@@ -389,11 +380,7 @@ export default function MembersPage() {
                         key={member.name}
                         name={member.name}
                         title={member.title}
-                        avatarSrc={
-                          member.avatarKey && activeImages[member.avatarKey]
-                            ? activeImages[member.avatarKey].default.src
-                            : null
-                        }
+                        avatarSrc={photoUrl("members", member.avatarKey)}
                         fallbackInitials={member.fallbackInitials}
                         instagramUrl={member.instagramUrl}
                         linkedinUrl={member.linkedinUrl}
@@ -423,9 +410,7 @@ export default function MembersPage() {
                           avatarSrc:
                             alum.avatarSrc !== undefined
                               ? alum.avatarSrc
-                              : alum.avatarKey && alumniImages[alum.avatarKey]
-                              ? alumniImages[alum.avatarKey].default.src
-                              : null,
+                              : alumniPhotoUrl(alum.avatarKey),
                         }}
                       />
                     ))}

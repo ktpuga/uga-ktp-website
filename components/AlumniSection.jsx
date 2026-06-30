@@ -7,23 +7,7 @@ import Card from "@/components/ui/card";
 import React, { useEffect, useState } from "react";
 import { FaGoogle, FaUniversity, FaUps } from "react-icons/fa";
 
-// ⬇️ Headshot images
-function importAll(r) {
-    const images = {};
-    r.keys().forEach((item) => {
-        images[item.replace("./", "")] = r(item);
-    });
-    return images;
-}
-const leadershipImages = importAll(
-    require.context("../public/leadership/", false, /\.(png|jpe?g|svg)$/),
-);
-const memberImages = importAll(
-    require.context("../public/members/", false, /\.(png|jpe?g|svg)$/),
-);
-const images = { ...leadershipImages, ...memberImages };
-
-// 🔗 Remote company / university logos (use any URL or local static file)
+// 🔗 Remote company / university logos (use any URL or local static file)
 const logos = {
     invesco:
         "https://images.seeklogo.com/logo-png/32/1/invesco-logo-png_seeklogo-321428.png",
@@ -35,17 +19,20 @@ const logos = {
         "https://images.icon-icons.com/2699/PNG/512/lexisnexis_logo_icon_169270.png",
     georgiaTech:
         "https://upload.wikimedia.org/wikipedia/commons/8/84/Georgia_Tech_logo_2021_Cropped.png",
-
 };
 
-// 🗂️ Alumni data
+// 🗂️ Alumni data — photos live in /public/leadership or /public/members
+function alumniPhoto(filename, folder = "leadership") {
+    return filename ? `/${folder}/${filename}` : null;
+}
+
 const alumniData = [
     {
         name: "Gargee Jamadagni",
         classYear: 2025,
         bio: "",
         class: "Founder",
-        avatarSrc: images["gargee.jpeg"].default.src,
+        avatarSrc: alumniPhoto("gargee.jpeg"),
         fallbackInitials: "GJ",
         instagramUrl: "https://www.instagram.com/gargee.jam/",
         linkedinUrl: "https://www.linkedin.com/in/gargeejamadagni/",
@@ -56,7 +43,7 @@ const alumniData = [
         classYear: 2025,
         bio: "",
         class: "Founder",
-        avatarSrc: images["siya.jpeg"].default.src,
+        avatarSrc: alumniPhoto("siya.jpeg"),
         fallbackInitials: "SS",
         instagramUrl: "https://www.instagram.com/siyasharma.03/",
         linkedinUrl: "https://www.linkedin.com/in/siya-sharma-ss2025/",
@@ -67,7 +54,7 @@ const alumniData = [
         classYear: 2024,
         class: "Founder",
         bio: "Jiya Patel is a recent graduate with a degree in computer science from UGA and is currently doing a master's in Cybersecurity. She is involved in UGAHacks and GDG. In her free time she enjoys painting, shopping, working out and watching Netflix.",
-        avatarSrc: images["jiya.jpeg"].default.src,
+        avatarSrc: alumniPhoto("jiya.jpeg"),
         fallbackInitials: "JP",
         instagramUrl: "https://www.instagram.com/jiyanpatel31/",
         linkedinUrl: "https://www.linkedin.com/in/jiya-patel-422615228/",
@@ -78,7 +65,7 @@ const alumniData = [
         classYear: 2025,
         class: "Founder",
         bio: "Khushi Bhatamrekar is a senior studying Computer Science and Cognitive Science at UGA. She is a part of UGAHacks, GDG and enjoys dancing, running, and spending time with her friends",
-        avatarSrc: images["khushi.jpeg"].default.src,
+        avatarSrc: alumniPhoto("khushi.jpeg"),
         fallbackInitials: "KB",
         instagramUrl: "https://www.instagram.com/khuxhix/",
         linkedinUrl: "https://www.linkedin.com/in/khushibhat/",
@@ -89,7 +76,7 @@ const alumniData = [
         classYear: 2025,
         class: "Alpha",
         bio: "",
-        avatarSrc: images["ShriyaR.jpeg"].default.src,
+        avatarSrc: alumniPhoto("ShriyaR.jpeg", "members"),
         fallbackInitials: "SB",
         instagramUrl: "https://www.instagram.com/shriya_rasale/",
         linkedinUrl: "https://www.linkedin.com/in/shriya-rasale",
@@ -100,7 +87,7 @@ const alumniData = [
         classYear: 2025,
         class: "Affiliate",
         bio: "",
-        avatarSrc: images["venn.jpeg"].default.src,
+        avatarSrc: alumniPhoto("venn.jpeg", "members"),
         fallbackInitials: "VR",
         instagramUrl: "https://www.instagram.com/venn.reddy/",
         linkedinUrl: "https://www.linkedin.com/in/venn-reddy/",
@@ -111,7 +98,7 @@ const alumniData = [
         classYear: 2025,
         class: "Affiliate",
         bio: "",
-        avatarSrc: images["yushus.jpeg"].default.src,
+        avatarSrc: alumniPhoto("yushus.jpeg", "members"),
         fallbackInitials: "YK",
         instagramUrl: "https://www.instagram.com/yushus_komarlu/",
         linkedinUrl: "https://www.linkedin.com/in/yushuskomarlu/",
@@ -123,7 +110,7 @@ const alumniData = [
         classYear: 2025,
         class: "Founder",
         bio: "",
-        avatarSrc: images["stephen.jpeg"].default.src,
+        avatarSrc: alumniPhoto("stephen.jpeg"),
         fallbackInitials: "SS",
         instagramUrl: "https://www.instagram.com/stephensulimani/",
         linkedinUrl: "https://www.linkedin.com/in/stephensulimani/",
@@ -135,7 +122,7 @@ const alumniData = [
         classYear: 2025,
         class: "Founder",
         bio: "",
-        avatarSrc: images["hayden.jpeg"].default.src,
+        avatarSrc: alumniPhoto("hayden.jpeg"),
         fallbackInitials: "HC",
         instagramUrl: "https://www.instagram.com/haydencranee/",
         linkedinUrl: "https://www.linkedin.com/in/haydencrane/",

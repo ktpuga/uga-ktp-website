@@ -21,7 +21,7 @@ function FaqItem ({ question, answer, isOpen, onToggle }) {
         </span>
       </button>
       {isOpen && (
-        <p className="pb-4 text-sm leading-relaxed text-[#c9b896] sm:pb-5 sm:text-base lg:pb-6 lg:text-lg">
+        <p className="pb-4 text-sm leading-relaxed text-[#c9b896] whitespace-pre-line sm:pb-5 sm:text-base lg:pb-6 lg:text-lg">
           {answer}
         </p>
       )}
@@ -97,10 +97,10 @@ export default function Page () {
               </span>
             </h1>
 
-            <CountdownTimer targetDate="2026-08-20T18:00:00" />
+            <CountdownTimer targetDate="2026-08-31T18:00:00" />
 
             <p className="mt-4 w-full max-w-lg text-balance text-base leading-relaxed text-[#e8e0d5] sm:mt-6 sm:text-lg lg:max-w-3xl md:text-xl">
-              Rush schedule, events, and signups will be posted here soon. Check back later, or reach out on Instagram if you have questions.
+              Intrest Forms and Applications will be posted here soon. Check back later, or reach out on Instagram if you have questions.
             </p>
 
             <div className="mt-8 flex w-full max-w-xs flex-col items-stretch gap-3 sm:mt-10 sm:max-w-none sm:w-auto sm:flex-row sm:items-center sm:justify-center sm:gap-6">
@@ -170,10 +170,8 @@ export default function Page () {
           </div>
 
           <div id="faq" className="mt-16 border-t border-[#6b1c2a] pt-16 sm:mt-20 sm:pt-20">
-            <SectionHeading
-              label="Questions"
+            <SectionHeading   
               title="Frequently Asked Questions"
-              description="More details will be added as fall rush approaches."
             />
 
             <div className="mt-8 w-full sm:mt-10">
