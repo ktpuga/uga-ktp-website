@@ -37,7 +37,11 @@ const logos = {
     "https://upload.wikimedia.org/wikipedia/commons/8/84/Georgia_Tech_logo_2021_Cropped.png",
 };
 
-// 🗂️ Alumni data
+// 🗂️ Alumni data — photos live in /public/leadership or /public/members
+function alumniPhoto(filename, folder = "leadership") {
+    return filename ? `/${folder}/${filename}` : null;
+}
+
 const alumniData = [
   {
     name: "Gargee Jamadagni",
