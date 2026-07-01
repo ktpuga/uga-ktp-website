@@ -125,6 +125,7 @@ export default function TemplatePage() {
           {[
             { href: "/rush", label: "Rush" },
             { href: "#about", label: "About", hideOnMobile: true },
+           // { href: "/members-list", label: "Members"},
             { href: "#leadership", label: "Leadership" },
             { href: "/hackathon", label: "Hackathon" },
             { href: "#contact", label: "Contact" },
@@ -169,10 +170,10 @@ export default function TemplatePage() {
               data-aos="fade-up"
               data-aos-duration="600"
             >
-              <p className="inline-flex items-center gap-2 rounded-full border border-indigo-200 bg-white/60 px-3 py-1 text-xs font-semibold tracking-wider text-indigo-700 shadow-sm">
+              <p className="inline-flex items-center gap-2 rounded-full border border-indigo-200 bg-white/60 px-3 py-1 text-xs font-semibold tracking-wider text-blue-900 shadow-sm">
                 UGA's Professional Technology Fraternity
               </p>
-              <h1 className="text-5xl md:text-7xl font-extrabold tracking-tight leading-tight bg-gradient-to-tr from-indigo-500 via-fuchsia-600 to-cyan-500 bg-clip-text text-transparent drop-shadow-xl">
+              <h1 className="text-5xl md:text-7xl font-extrabold tracking-tight leading-tight bg-gradient-to-tr text-blue-900 bg-clip-text  drop-shadow-xl">
                 Kappa Theta Pi
               </h1>
               <p className="max-w-prose text-lg md:text-xl text-slate-700">
@@ -181,7 +182,7 @@ export default function TemplatePage() {
               </p>
               <div className="flex flex-col gap-4 sm:flex-row">
                 <Link href="/rush">
-                  <Button className="relative px-8 py-4 text-lg font-semibold rounded-2xl bg-gradient-to-r from-indigo-600 via-fuchsia-500 to-cyan-500 shadow-xl text-white hover:scale-105 transition-transform duration-300">
+                  <Button className="rounded-full border-2 border-[#d4af37] bg-[#1a1a1a] px-8 py-4 text-lg font-semibold text-white shadow-none transition-colors hover:border-[#f0d060] hover:bg-[#6b1c2a] hover:text-white">
                     Fall Rush 2026
                   </Button>
                 </Link>
