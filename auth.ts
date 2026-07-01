@@ -14,7 +14,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     },
   ],
   callbacks: {
-    async jwt({ token, profile, account, trigger }) {
+    async jwt({ token, profile, account, trigger, session }) {
       // First sign-in: profile and account are present
       if (profile && account) {
         token.sub = profile.sub as string
@@ -52,20 +52,9 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         }
       }
 
-      // Client called update() — re-fetch profile_complete from the API
-      // so the session reflects the latest state without a full re-login
-      if (trigger === "update" && token.access_token) {
-        try {
-          const res = await fetch(`${process.env.API_URL}/users/me`, {
-            headers: { Authorization: `Bearer ${token.access_token}` },
-          })
-          if (res.ok) {
-            const data = await res.json()
-            token.profile_complete = data.profile_complete
-          }
-        } catch (err) {
-          console.error("[auth] failed to refresh profile_complete:", err)
-        }
+      // Client called update({ profile_complete: true }) after saving profile
+      if (trigger === "update" && session?.profile_complete !== undefined) {
+        token.profile_complete = session.profile_complete
       }
 
       return token

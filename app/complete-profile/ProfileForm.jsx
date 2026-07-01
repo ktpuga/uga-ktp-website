@@ -2,7 +2,6 @@
 
 import { useState } from "react"
 import { useSession } from "next-auth/react"
-import { useRouter } from "next/navigation"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { saveProfile } from "./actions"
@@ -20,7 +19,6 @@ function Field({ label, required, children }) {
 
 export default function ProfileForm() {
   const { update } = useSession()
-  const router = useRouter()
   const [error, setError] = useState(null)
   const [loading, setLoading] = useState(false)
 
@@ -39,8 +37,8 @@ export default function ProfileForm() {
 
     // Refresh the JWT so profile_complete flips to true in the session,
     // which tells the middleware to stop redirecting here
-    await update()
-    router.push("/auth/redirect")
+    await update({ profile_complete: true })
+    window.location.href = "/auth/redirect"
   }
 
   const inputClass = "bg-white/10 border-white/20 text-white placeholder:text-white/30 focus-visible:ring-white/50"
