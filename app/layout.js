@@ -2,6 +2,7 @@ import { Inter } from "next/font/google";
 import Script from "next/script";
 import React from "react";
 import "./globals.css";
+import SessionProviderWrapper from "@/components/auth/SessionProviderWrapper";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata = {
@@ -39,7 +40,7 @@ export default function RootLayout({ children }) {
             style={{ display: 'none', visibility: 'hidden' }}
           ></iframe>
         </noscript>
-        {children}
+        <SessionProviderWrapper>{children}</SessionProviderWrapper>
       </body>
     </html>
   );

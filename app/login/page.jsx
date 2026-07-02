@@ -1,32 +1,10 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
-
-const ROLES = [
-  { id: 'member', label: 'Member' },
-  { id: 'Leadership', label: 'Leadership' },
-];
+import { signIn } from 'next-auth/react';
 
 export default function Login() {
-  const router = useRouter();
-  const [activeRole, setActiveRole] = useState('member');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [keepSignedIn, setKeepSignedIn] = useState(true);
-
-  const handleLogin = (role) => {
-    if (role === 'member') {
-      router.push('/member');
-    } else if (role === 'alumni') {
-      router.push('/alumni');
-    } else {
-      router.push('/admin');
-    }
-  };
-
   return (
     <div
       className="min-h-screen flex items-center justify-center p-4"
@@ -34,7 +12,7 @@ export default function Login() {
     >
       <div className="w-full max-w-md">
         {/* Logo */}
-        <div className="flex flex-col items-center mb-8">
+        <div className="flex flex-col items-center mb-10">
           <Link href="/" className="inline-flex items-center justify-center mb-6">
             <Image
               src="/KTP PHI CHAPTER.svg"
@@ -50,107 +28,18 @@ export default function Login() {
           <h1 className="text-2xl font-semibold text-white text-center">
             Sign in to your KTP Account
           </h1>
+          <p className="text-white/60 text-sm mt-2 text-center">
+            Use your KTP organization account to access the member portal.
+          </p>
         </div>
 
-        {/* Role selector (styled like EA's social row) */}
-        <div className="flex justify-center gap-3 mb-6">
-          {ROLES.map((role) => (
-            <button
-              key={role.id}
-              type="button"
-              onClick={() => setActiveRole(role.id)}
-              className={`px-4 py-3 rounded-lg text-sm font-medium transition-all min-w-[88px] ${
-                activeRole === role.id
-                  ? 'bg-white text-[#14326E] shadow-md'
-                  : 'bg-[#1d4090] text-white/80 hover:bg-[#244da8]'
-              }`}
-            >
-              {role.label}
-            </button>
-          ))}
-        </div>
-
-        {/* "or" divider */}
-        <div className="flex items-center gap-3 mb-6">
-          <div className="flex-1 h-px bg-white/20" />
-          <span className="text-white/60 text-sm">or</span>
-          <div className="flex-1 h-px bg-white/20" />
-        </div>
-
-        {/* Form */}
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            handleLogin(activeRole);
-          }}
-          className="space-y-5"
+        <button
+          type="button"
+          onClick={() => signIn('authentik', { callbackUrl: '/auth/redirect' })}
+          className="w-full bg-[#2A5CCA] hover:bg-[#3570DB] text-white font-semibold tracking-wider py-3 rounded-md uppercase transition-colors shadow-lg"
         >
-          <div className="space-y-2">
-            <label
-              htmlFor="email"
-              className="block text-xs font-semibold tracking-wider text-white/80 uppercase"
-            >
-              Email
-            </label>
-            <input
-              id="email"
-              type="email"
-              placeholder="Enter your email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              className="w-full bg-transparent border border-white/40 rounded-md px-4 py-3 text-white placeholder:text-white/40 focus:outline-none focus:border-white focus:ring-1 focus:ring-white/60 transition-colors"
-            />
-          </div>
-
-            <div className="space-y-2">
-            <label
-              htmlFor="email"
-              className="block text-xs font-semibold tracking-wider text-white/80 uppercase"
-            >
-              Password
-            </label>
-            <input
-              id="password"
-              type="password"
-              placeholder="Enter your password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              className="w-full bg-transparent border border-white/40 rounded-md px-4 py-3 text-white placeholder:text-white/40 focus:outline-none focus:border-white focus:ring-1 focus:ring-white/60 transition-colors"
-            />
-          </div>
-
-          <label className="flex items-center gap-2 text-white/90 text-sm cursor-pointer select-none">
-            <input
-              type="checkbox"
-              checked={keepSignedIn}
-              onChange={(e) => setKeepSignedIn(e.target.checked)}
-              className="w-4 h-4 accent-blue-500 cursor-pointer"
-            />
-            <span>Keep me signed in</span>
-            <span
-              aria-hidden
-              className="inline-flex items-center justify-center w-4 h-4 rounded-full border border-white/40 text-white/60 text-[10px]"
-            >
-              ?
-            </span>
-          </label>
-
-          <button
-            type="submit"
-            className="w-full bg-[#2A5CCA] hover:bg-[#3570DB] text-white font-semibold tracking-wider py-3 rounded-md uppercase transition-colors shadow-lg"
-          >
-            Next
-          </button>
-
-          <button
-            type="button"
-            className="w-full border border-[#2A5CCA] text-white font-semibold tracking-wider py-3 rounded-md uppercase hover:bg-[#2A5CCA]/20 transition-colors"
-          >
-            Create Account
-          </button>
-        </form>
+          Sign in with KTP SSO
+        </button>
 
         <div className="mt-8 text-center">
           <Link href="/" className="text-sm text-white/70 hover:text-white hover:underline">

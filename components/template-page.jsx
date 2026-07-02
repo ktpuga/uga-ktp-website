@@ -141,7 +141,6 @@ export default function TemplatePage() {
               </Link>
             ))}
         </nav>
-        {/*
         <Link
             href="/login"
             className="ml-6 text-sm font-medium px-3 py-1.5 rounded-md bg-blue-900 text-white border border-blue-900 transition-colors duration-300 hover:bg-blue-800 hover:border-blue-800"
@@ -150,7 +149,6 @@ export default function TemplatePage() {
               Portal Login
             </span>
           </Link>
-          */}
       </header>
 
       <main className="flex-1">
