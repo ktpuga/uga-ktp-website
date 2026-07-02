@@ -17,4 +17,6 @@ services:
       AUTHENTIK_CLIENT_ID: ${AUTHENTIK_CLIENT_ID}
       AUTHENTIK_CLIENT_SECRET: ${AUTHENTIK_CLIENT_SECRET}
       AUTHENTIK_ISSUER: ${AUTHENTIK_ISSUER}
+    extra_hosts:
+      - "auth.ugaktp.com:10.0.0.4"
     restart: unless-stopped
