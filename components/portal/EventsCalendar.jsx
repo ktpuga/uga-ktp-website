@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Calendar as CalendarIcon, Clock, MapPin } from 'lucide-react';
 import { getEvents } from '@/lib/portal-api';
-import { formatEventDate, formatEventTimeRange } from '@/lib/portal-format';
+import { formatEventDate, formatEventTimeRange, sortEventsChronologically, getEventStartDate, getEventEndDate } from '@/lib/portal-format';
 
 export default function EventsCalendar({ title, description }) {
   const [events, setEvents] = useState([]);
@@ -18,6 +18,8 @@ export default function EventsCalendar({ title, description }) {
       .catch((err) => setError(err.message ?? 'Could not load events'))
       .finally(() => setLoading(false));
   }, []);
+
+  const sortedEvents = sortEventsChronologically(events);
 
   return (
     <div className="space-y-6">
@@ -34,7 +36,7 @@ export default function EventsCalendar({ title, description }) {
 
       {loading ? (
         <p className="text-center text-sm text-gray-500 py-12">Loading events…</p>
-      ) : events.length === 0 ? (
+      ) : sortedEvents.length === 0 ? (
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12">
             <CalendarIcon className="w-12 h-12 text-gray-400 mb-4" />
@@ -43,7 +45,7 @@ export default function EventsCalendar({ title, description }) {
         </Card>
       ) : (
         <div className="grid gap-4">
-          {events.map((event) => (
+          {sortedEvents.map((event) => (
             <Card key={event.id} className="hover:shadow-md transition-shadow">
               <CardHeader>
                 <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
@@ -62,12 +64,12 @@ export default function EventsCalendar({ title, description }) {
                 <div className="grid sm:grid-cols-2 gap-4">
                   <div className="flex items-center gap-2 text-sm">
                     <CalendarIcon className="w-4 h-4 text-gray-500" />
-                    <span className="text-gray-700">{formatEventDate(event.startDate)}</span>
+                    <span className="text-gray-700">{formatEventDate(getEventStartDate(event))}</span>
                   </div>
                   <div className="flex items-center gap-2 text-sm">
                     <Clock className="w-4 h-4 text-gray-500" />
                     <span className="text-gray-700">
-                      {formatEventTimeRange(event.startDate, event.endDate)}
+                      {formatEventTimeRange(getEventStartDate(event), getEventEndDate(event))}
                     </span>
                   </div>
                 </div>

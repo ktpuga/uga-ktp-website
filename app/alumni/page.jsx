@@ -7,8 +7,7 @@ export default function AlumniDashboard() {
     <PortalDashboard
       welcomeTitle="Welcome back, Alumni!"
       welcomeSubtitle="Stay connected with KTP Phi Chapter"
-      memberGroup="alumni"
-      memberGroupLabel="Alumni Network"
+      memberGroupLabel="Members"
       calendarHref="/alumni/calendar"
       filesHref="/alumni/files"
       theme="amber"

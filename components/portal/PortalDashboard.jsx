@@ -6,19 +6,18 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Calendar, Users, Megaphone, ImageIcon, ArrowRight, Bell } from 'lucide-react';
 import { getEvents, getMembers, getPhotos } from '@/lib/portal-api';
-import { formatEventTimeRange, upcomingEvents } from '@/lib/portal-format';
+import { formatEventTimeRange, upcomingEvents, countUpcomingEvents, getEventStartDate, getEventEndDate } from '@/lib/portal-format';
 
 export default function PortalDashboard({
   welcomeTitle,
   welcomeSubtitle,
-  memberGroup,
   memberGroupLabel,
   calendarHref,
   filesHref,
   theme = 'blue',
 }) {
   const [events, setEvents] = useState([]);
-  const [memberCount, setMemberCount] = useState(null);
+  const [members, setMembers] = useState([]);
   const [photos, setPhotos] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -41,24 +40,26 @@ export default function PortalDashboard({
   useEffect(() => {
     Promise.all([
       getEvents(),
-      getMembers(memberGroup),
+      getMembers(),
       getPhotos(),
     ])
       .then(([eventsData, membersData, photosData]) => {
-        setEvents(eventsData);
-        setMemberCount(membersData.length);
-        setPhotos(photosData);
+        setEvents(Array.isArray(eventsData) ? eventsData : []);
+        setMembers(membersData);
+        setPhotos(Array.isArray(photosData) ? photosData : []);
       })
       .catch((err) => setError(err.message ?? 'Could not load dashboard data'))
       .finally(() => setLoading(false));
-  }, [memberGroup]);
+  }, []);
 
   const nextEvents = upcomingEvents(events, 3);
-  const upcomingCount = events.filter((e) => new Date(e.startDate).getTime() >= Date.now()).length;
+  const upcomingCount = countUpcomingEvents(events);
+  const totalEvents = events.length;
+  const memberCount = members.length;
 
   const stats = [
-    { label: 'Upcoming Events', value: loading ? '—' : String(upcomingCount), sub: 'On the chapter calendar', icon: Calendar },
-    { label: memberGroupLabel, value: loading ? '—' : String(memberCount ?? 0), sub: `Alumni and Members`, icon: Users },
+    { label: 'Upcoming Events', value: loading ? '—' : String(upcomingCount), sub: loading ? 'On the chapter calendar' : `${totalEvents} on the calendar`, icon: Calendar },
+    { label: memberGroupLabel, value: loading ? '—' : String(memberCount), sub: loading ? 'From chapter directory' : `${memberCount} listed`, icon: Users },
     { label: 'Announcements', value: '0', sub: 'N/A', icon: Megaphone },
     { label: 'Photos', value: loading ? '—' : String(photos.length), sub: 'In the gallery', icon: ImageIcon },
   ];
@@ -104,7 +105,7 @@ export default function PortalDashboard({
             <CardHeader>
               <div className="flex items-center justify-between">
                 <div>
-                  <CardTitle>Upcoming Events</CardTitle>
+                  <CardTitle>Upcoming Events{!loading && upcomingCount > 0 ? ` (${upcomingCount})` : ''}</CardTitle>
                   <CardDescription>What&apos;s coming up next</CardDescription>
                 </div>
                 <Link href={calendarHref}>
@@ -128,16 +129,16 @@ export default function PortalDashboard({
                     >
                       <div className={`flex flex-col items-center justify-center rounded-lg px-3 py-2 min-w-16 ${eventBadge}`}>
                         <div className="text-xs font-medium">
-                          {new Date(event.startDate).toLocaleDateString('en-US', { month: 'short' })}
+                          {new Date(getEventStartDate(event)).toLocaleDateString('en-US', { month: 'short' })}
                         </div>
                         <div className="text-2xl font-bold">
-                          {new Date(event.startDate).getDate()}
+                          {new Date(getEventStartDate(event)).getDate()}
                         </div>
                       </div>
                       <div className="flex-1 min-w-0">
                         <h4 className="font-semibold text-gray-900 mb-1">{event.title}</h4>
                         <p className="text-sm text-gray-600">
-                          {formatEventTimeRange(event.startDate, event.endDate)}
+                          {formatEventTimeRange(getEventStartDate(event), getEventEndDate(event))}
                         </p>
                         {event.description && (
                           <p className="text-sm text-gray-500 mt-1 line-clamp-2">{event.description}</p>

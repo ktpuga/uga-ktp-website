@@ -3,12 +3,13 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import Image from 'next/image';
-import { LayoutDashboard, Calendar, FolderOpen, LogOut } from 'lucide-react';
+import { LayoutDashboard, Calendar, FolderOpen, Users, LogOut } from 'lucide-react';
 import { signOut } from 'next-auth/react';
 
 const NAV = [
   { href: '/member', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/member/calendar', label: 'Calendar', icon: Calendar },
+  { href: '/member/directory', label: 'Directory', icon: Users },
   { href: '/member/files', label: 'Files & Photos', icon: FolderOpen },
 ];
 
