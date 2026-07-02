@@ -55,14 +55,19 @@ export default function AdminUsers() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="relative space-y-6">
+      <div aria-hidden className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
+        <div className="absolute -left-32 -top-32 h-[28rem] w-[28rem] rounded-full bg-gradient-to-br from-red-500 via-rose-400 to-orange-300 opacity-10 blur-[120px]" />
+        <div className="absolute -bottom-32 right-0 h-[26rem] w-[26rem] rounded-full bg-gradient-to-tr from-orange-300 via-red-400 to-rose-500 opacity-10 blur-[110px]" />
+      </div>
+
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">User Management</h1>
+          <h1 className="text-3xl font-bold text-red-900 mb-2">User Management</h1>
           <p className="text-gray-600">Manage member and alumni accounts</p>
         </div>
-        <Button className="bg-blue-900 hover:bg-blue-800" onClick={() => setIsAdding(true)}>
+        <Button className="bg-red-900 hover:bg-red-800" onClick={() => setIsAdding(true)}>
           <UserPlus className="w-4 h-4 mr-2" /> Add User
         </Button>
       </div>
@@ -94,7 +99,7 @@ export default function AdminUsers() {
                 <select
                   value={newUser.type}
                   onChange={(e) => setNewUser({ ...newUser, type: e.target.value })}
-                  className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-red-500"
                 >
                   <option value="member">Member</option>
                   <option value="alumni">Alumni</option>
@@ -105,7 +110,7 @@ export default function AdminUsers() {
                 <select
                   value={newUser.role}
                   onChange={(e) => setNewUser({ ...newUser, role: e.target.value })}
-                  className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-red-500"
                 >
                   <option value="Member">Member</option>
                   <option value="President">President</option>
@@ -115,7 +120,7 @@ export default function AdminUsers() {
               </div>
             </div>
             <div className="flex gap-2 pt-2">
-              <Button className="flex-1 bg-blue-900 hover:bg-blue-800" onClick={handleAddUser} disabled={!newUser.name || !newUser.email}>
+              <Button className="flex-1 bg-red-900 hover:bg-red-800" onClick={handleAddUser} disabled={!newUser.name || !newUser.email}>
                 Create Account
               </Button>
               <Button variant="outline" onClick={() => setIsAdding(false)}>Cancel</Button>
@@ -160,7 +165,7 @@ export default function AdminUsers() {
                 <select
                   value={filterRole}
                   onChange={(e) => setFilterRole(e.target.value)}
-                  className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-red-500"
                 >
                   <option value="all">All Roles</option>
                   <option value="President">President</option>
@@ -171,7 +176,7 @@ export default function AdminUsers() {
                 <select
                   value={filterStatus}
                   onChange={(e) => setFilterStatus(e.target.value)}
-                  className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-red-500"
                 >
                   <option value="all">All Status</option>
                   <option value="active">Active</option>
@@ -188,7 +193,7 @@ export default function AdminUsers() {
                 <CardContent className="flex items-center justify-between p-6">
                   <div className="flex items-center gap-4 flex-1 min-w-0">
                     <Avatar className="w-12 h-12">
-                      <AvatarFallback className="bg-blue-900 text-white">{member.initials}</AvatarFallback>
+                      <AvatarFallback className="bg-red-900 text-white">{member.initials}</AvatarFallback>
                     </Avatar>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1 flex-wrap">
