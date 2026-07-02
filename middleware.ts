@@ -41,8 +41,8 @@ export default auth((req) => {
 export const config = {
   // List both the exact path and the wildcard so /member (no slash) is also protected
   matcher: [
-    //"/member",
-    //"/member/:path*",
+    "/member",
+    "/member/:path*",
     "/admin",
     "/admin/:path*",
     "/alumni",
