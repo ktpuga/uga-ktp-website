@@ -97,7 +97,7 @@ export default function ProfileForm() {
       </div>
 
       <Field label="LinkedIn URL">
-        <Input type="url" name="linkedin_url" placeholder="https://linkedin.com/in/..." className={inputClass} />
+        <Input name="linkedin_url" placeholder="https://linkedin.com/in/..." className={inputClass} />
       </Field>
 
       <Field label="Pledge Class">
