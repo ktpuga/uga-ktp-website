@@ -2,7 +2,7 @@
 
 import EventsCalendar from '@/components/portal/EventsCalendar';
 
-export default function MemberCalendar() {
+export default function AlumniCalendar() {
   return (
     <EventsCalendar
       title="Calendar"

@@ -23,9 +23,9 @@ const eventAttendanceData = [
 ];
 
 const engagementData = [
-  { name: 'Highly Active', value: 35, color: 'bg-blue-900' },
-  { name: 'Active', value: 45, color: 'bg-blue-600' },
-  { name: 'Moderately Active', value: 15, color: 'bg-blue-300' },
+  { name: 'Highly Active', value: 35, color: 'bg-red-900' },
+  { name: 'Active', value: 45, color: 'bg-red-700' },
+  { name: 'Moderately Active', value: 15, color: 'bg-red-400' },
   { name: 'Inactive', value: 5, color: 'bg-slate-300' },
 ];
 
@@ -47,19 +47,19 @@ export default function AdminAnalytics() {
     <div className="relative space-y-6">
       {/* Ambient gradient blobs matching main site hero */}
       <div aria-hidden className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
-        <div className="absolute -left-32 -top-32 h-[28rem] w-[28rem] rounded-full bg-gradient-to-br from-indigo-500 via-fuchsia-500 to-cyan-400 opacity-10 blur-[120px]" />
-        <div className="absolute -bottom-32 right-0 h-[26rem] w-[26rem] rounded-full bg-gradient-to-tr from-cyan-400 via-indigo-500 to-fuchsia-500 opacity-10 blur-[110px]" />
+        <div className="absolute -left-32 -top-32 h-[28rem] w-[28rem] rounded-full bg-gradient-to-br from-red-500 via-rose-400 to-orange-300 opacity-10 blur-[120px]" />
+        <div className="absolute -bottom-32 right-0 h-[26rem] w-[26rem] rounded-full bg-gradient-to-tr from-orange-300 via-red-400 to-rose-500 opacity-10 blur-[110px]" />
       </div>
 
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-blue-900 mb-2">Analytics</h1>
+          <h1 className="text-3xl font-bold text-red-900 mb-2">Analytics</h1>
           <p className="text-slate-600">Track chapter metrics and engagement</p>
         </div>
         <select
           value={range}
           onChange={(e) => setRange(e.target.value)}
-          className="w-48 rounded-md border border-slate-300 px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="w-48 rounded-md border border-slate-300 px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-red-500"
         >
           <option value="week">Last Week</option>
           <option value="month">Last Month</option>
@@ -76,15 +76,15 @@ export default function AdminAnalytics() {
           { label: 'Events Hosted', value: '24', trend: '8 this month', icon: Target },
           { label: 'Retention Rate', value: '94%', trend: '+2% from last year', icon: Award },
         ].map(({ label, value, trend, icon: Icon }) => (
-          <Card key={label} className="ring-1 ring-slate-100 shadow-sm hover:shadow-indigo-200/50 hover:-translate-y-0.5 transition-all duration-300">
+          <Card key={label} className="ring-1 ring-slate-100 shadow-sm hover:shadow-red-200/50 hover:-translate-y-0.5 transition-all duration-300">
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-sm font-medium text-slate-600">{label}</CardTitle>
-                <Icon className="w-4 h-4 text-blue-800" />
+                <Icon className="w-4 h-4 text-red-800" />
               </div>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-blue-900">{value}</div>
+              <div className="text-2xl font-bold text-red-900">{value}</div>
               <div className="flex items-center gap-1 mt-1 text-sm text-green-600">
                 <TrendingUp className="w-3 h-3" />
                 <span className="text-slate-500">{trend}</span>
@@ -115,7 +115,7 @@ export default function AdminAnalytics() {
                   <div key={d.month} className="flex-1 flex flex-col items-center gap-1">
                     <span className="text-xs font-medium text-gray-700">{d.members}</span>
                     <div
-                      className="w-full bg-blue-800 rounded-t"
+                      className="w-full bg-red-800 rounded-t"
                       style={{ height: `${(d.members / maxMembers) * 160}px` }}
                     />
                     <span className="text-xs text-gray-500">{d.month}</span>
@@ -141,7 +141,7 @@ export default function AdminAnalytics() {
                   </div>
                   <div className="w-full bg-slate-100 rounded-full h-3">
                     <div
-                      className="bg-blue-800 h-3 rounded-full"
+                      className="bg-red-800 h-3 rounded-full"
                       style={{ width: `${(d.attendance / maxAttendance) * 100}%` }}
                     />
                   </div>
@@ -187,9 +187,9 @@ export default function AdminAnalytics() {
                   <h4 className="font-semibold text-amber-900 mb-1">Re-engagement Needed</h4>
                   <p className="text-sm text-amber-800">5% of members are inactive. Consider reaching out with personalized engagement.</p>
                 </div>
-                <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
-                  <h4 className="font-semibold text-blue-900 mb-1">Recognition Opportunity</h4>
-                  <p className="text-sm text-blue-800">35% highly active members could be candidates for leadership positions.</p>
+                <div className="p-4 bg-red-50 rounded-lg border border-red-200">
+                  <h4 className="font-semibold text-red-900 mb-1">Recognition Opportunity</h4>
+                  <p className="text-sm text-red-800">35% highly active members could be candidates for leadership positions.</p>
                 </div>
               </CardContent>
             </Card>
@@ -211,14 +211,14 @@ export default function AdminAnalytics() {
                       <div className="flex items-center gap-3">
                         <span className="text-xs text-gray-500 w-16">Pledges</span>
                         <div className="flex-1 bg-slate-100 rounded-full h-3">
-                          <div className="bg-blue-900 h-3 rounded-full" style={{ width: `${(d.pledges / maxPledges) * 100}%` }} />
+                          <div className="bg-red-900 h-3 rounded-full" style={{ width: `${(d.pledges / maxPledges) * 100}%` }} />
                         </div>
                         <span className="text-xs font-medium w-6 text-right">{d.pledges}</span>
                       </div>
                       <div className="flex items-center gap-3">
                         <span className="text-xs text-gray-500 w-16">Initiated</span>
                         <div className="flex-1 bg-slate-100 rounded-full h-3">
-                          <div className="bg-blue-500 h-3 rounded-full" style={{ width: `${(d.initiated / maxPledges) * 100}%` }} />
+                          <div className="bg-red-500 h-3 rounded-full" style={{ width: `${(d.initiated / maxPledges) * 100}%` }} />
                         </div>
                         <span className="text-xs font-medium w-6 text-right">{d.initiated}</span>
                       </div>

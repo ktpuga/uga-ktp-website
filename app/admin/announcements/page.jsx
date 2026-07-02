@@ -9,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Plus, Edit, Trash2, Send, Eye, X } from 'lucide-react';
 
 const priorityColor = (p) => p === 'high' ? 'bg-red-100 text-red-800' : 'bg-gray-100 text-gray-800';
-const statusColor = (s) => ({ published: 'bg-green-100 text-green-800', scheduled: 'bg-blue-100 text-blue-800', draft: 'bg-gray-100 text-gray-800' }[s] ?? 'bg-gray-100 text-gray-800');
+const statusColor = (s) => ({ published: 'bg-green-100 text-green-800', scheduled: 'bg-red-100 text-red-800', draft: 'bg-gray-100 text-gray-800' }[s] ?? 'bg-gray-100 text-gray-800');
 
 const initial = [
   { id: 1, title: 'Spring Rush Applications Open', message: 'Applications for Spring 2026 rush are now open. Share with interested students!', audience: 'Members', priority: 'high', status: 'published', publishedDate: '2026-02-26', views: 156 },
@@ -48,7 +48,12 @@ export default function AdminAnnouncements() {
   const scheduled = announcements.filter((a) => a.status === 'scheduled');
 
   return (
-    <div className="space-y-6">
+    <div className="relative space-y-6">
+      <div aria-hidden className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
+        <div className="absolute -left-32 -top-32 h-[28rem] w-[28rem] rounded-full bg-gradient-to-br from-red-500 via-rose-400 to-orange-300 opacity-10 blur-[120px]" />
+        <div className="absolute -bottom-32 right-0 h-[26rem] w-[26rem] rounded-full bg-gradient-to-tr from-orange-300 via-red-400 to-rose-500 opacity-10 blur-[110px]" />
+      </div>
+
       {/* Toast */}
       {toast && (
         <div className="fixed bottom-6 right-6 z-50 bg-slate-900 text-white px-4 py-3 rounded-lg shadow-lg text-sm">
@@ -59,10 +64,10 @@ export default function AdminAnnouncements() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Announcements</h1>
+          <h1 className="text-3xl font-bold text-red-900 mb-2">Announcements</h1>
           <p className="text-gray-600">Create and manage chapter announcements</p>
         </div>
-        <Button className="bg-blue-900 hover:bg-blue-800" onClick={() => setIsCreating(true)}>
+        <Button className="bg-red-900 hover:bg-red-800" onClick={() => setIsCreating(true)}>
           <Plus className="w-4 h-4 mr-2" /> New Announcement
         </Button>
       </div>
@@ -91,7 +96,7 @@ export default function AdminAnnouncements() {
                 placeholder="Write your announcement message..."
                 value={form.message}
                 onChange={(e) => setForm({ ...form, message: e.target.value })}
-                className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
               />
             </div>
             <div className="grid grid-cols-2 gap-4">
@@ -100,7 +105,7 @@ export default function AdminAnnouncements() {
                 <select
                   value={form.audience}
                   onChange={(e) => setForm({ ...form, audience: e.target.value })}
-                  className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-red-500"
                 >
                   <option value="Members">Members Only</option>
                   <option value="Alumni">Alumni Only</option>
@@ -112,7 +117,7 @@ export default function AdminAnnouncements() {
                 <select
                   value={form.priority}
                   onChange={(e) => setForm({ ...form, priority: e.target.value })}
-                  className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-red-500"
                 >
                   <option value="normal">Normal</option>
                   <option value="high">High Priority</option>
@@ -121,7 +126,7 @@ export default function AdminAnnouncements() {
             </div>
             <div className="flex gap-2 pt-2">
               <Button
-                className="flex-1 bg-blue-900 hover:bg-blue-800"
+                className="flex-1 bg-red-900 hover:bg-red-800"
                 onClick={handleCreate}
                 disabled={!form.title || !form.message}
               >
