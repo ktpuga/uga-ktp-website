@@ -2,14 +2,67 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { useSession } from 'next-auth/react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Calendar, Users, Megaphone, ImageIcon, ArrowRight, Bell } from 'lucide-react';
 import { getEvents, getMembers, getPhotos } from '@/lib/portal-api';
 import { formatEventTimeRange, upcomingEvents, countUpcomingEvents, getEventStartDate, getEventEndDate } from '@/lib/portal-format';
 
+function cleanName(value) {
+  return typeof value === 'string' && value.trim() ? value.trim() : null;
+}
+
+function memberWelcomeName(member) {
+  return cleanName(member?.preferred_name)
+    ?? cleanName(member?.preferredName)
+    ?? cleanName(member?.first_name)
+    ?? cleanName(member?.firstName)
+    ?? cleanName(member?.name)
+    ?? cleanName(member?.username);
+}
+
+function sessionWelcomeName(session) {
+  const user = session?.user ?? {};
+  const name = cleanName(user.preferredName)
+    ?? cleanName(user.preferred_name)
+    ?? cleanName(user.firstName)
+    ?? cleanName(user.first_name);
+
+  if (name) return name;
+
+  const fullName = cleanName(user.name);
+  if (fullName) return fullName.split(/\s+/)[0];
+
+  return cleanName(user.username);
+}
+
+function resolveWelcomeName(session, members) {
+  const user = session?.user ?? {};
+  const userIds = new Set(
+    [user.authentik_id, user.id, user.sub]
+      .map((value) => String(value ?? '').trim())
+      .filter(Boolean),
+  );
+  const usernames = new Set(
+    [user.username, user.email?.split('@')[0]]
+      .map((value) => String(value ?? '').trim().toLowerCase())
+      .filter(Boolean),
+  );
+
+  const currentMember = members.find((member) => {
+    const memberIds = [member.authentik_id, member.id]
+      .map((value) => String(value ?? '').trim())
+      .filter(Boolean);
+    const memberUsername = String(member.username ?? '').trim().toLowerCase();
+
+    return memberIds.some((id) => userIds.has(id)) || usernames.has(memberUsername);
+  });
+
+  return memberWelcomeName(currentMember) ?? sessionWelcomeName(session);
+}
+
 export default function PortalDashboard({
-  welcomeTitle,
   welcomeSubtitle,
   memberGroupLabel,
   calendarHref,
@@ -21,6 +74,7 @@ export default function PortalDashboard({
   const [photos, setPhotos] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const { data: session } = useSession();
 
   const isAmber = theme === 'amber';
   const heading = isAmber ? 'text-amber-900' : 'text-blue-900';
@@ -56,24 +110,26 @@ export default function PortalDashboard({
   const upcomingCount = countUpcomingEvents(events);
   const totalEvents = events.length;
   const memberCount = members.length;
+  const welcomeName = resolveWelcomeName(session, members);
+  const welcomeTitle = welcomeName ? `Welcome, ${welcomeName}!` : 'Welcome!';
 
   const stats = [
-    { label: 'Upcoming Events', value: loading ? '—' : String(upcomingCount), sub: loading ? 'On the chapter calendar' : `${totalEvents} on the calendar`, icon: Calendar },
-    { label: memberGroupLabel, value: loading ? '—' : String(memberCount), sub: loading ? 'From chapter directory' : `${memberCount} listed`, icon: Users },
+    { label: 'Upcoming Events', value: loading ? '-' : String(upcomingCount), sub: loading ? 'On the chapter calendar' : `${totalEvents} on the calendar`, icon: Calendar },
+    { label: memberGroupLabel, value: loading ? '-' : String(memberCount), sub: loading ? 'From chapter directory' : `${memberCount} listed`, icon: Users },
     { label: 'Announcements', value: '0', sub: 'N/A', icon: Megaphone },
-    { label: 'Photos', value: loading ? '—' : String(photos.length), sub: 'In the gallery', icon: ImageIcon },
+    { label: 'Photos', value: loading ? '-' : String(photos.length), sub: 'In the gallery', icon: ImageIcon },
   ];
 
   return (
-    <div className="relative space-y-8">
-      <div aria-hidden className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
+    <div className="relative space-y-6 overflow-x-hidden sm:space-y-8">
+      <div aria-hidden className="pointer-events-none fixed inset-0 -z-10 hidden overflow-hidden sm:block">
         <div className={`absolute -left-32 -top-32 h-[28rem] w-[28rem] rounded-full bg-gradient-to-br ${blobA} opacity-10 blur-[120px]`} />
         <div className={`absolute -bottom-32 right-0 h-[26rem] w-[26rem] rounded-full bg-gradient-to-tr ${blobB} opacity-10 blur-[110px]`} />
       </div>
 
       <div>
-        <h1 className={`text-3xl font-bold ${heading} mb-2`}>{welcomeTitle}</h1>
-        <p className="text-slate-600">{welcomeSubtitle}</p>
+        <h1 className={`mb-2 text-2xl font-bold sm:text-3xl ${heading}`}>{welcomeTitle}</h1>
+        <p className="text-sm text-slate-600 sm:text-base">{welcomeSubtitle}</p>
       </div>
 
       {error && (
@@ -82,16 +138,16 @@ export default function PortalDashboard({
         </Card>
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4 sm:gap-6">
         {stats.map(({ label, value, sub, icon: Icon }) => (
-          <Card key={label} className={`ring-1 ring-slate-100 shadow-sm ${statHover} hover:-translate-y-0.5 transition-all duration-300`}>
-            <CardHeader className="pb-3">
+          <Card key={label} className={`ring-1 ring-slate-100 shadow-sm ${statHover} transition-all duration-300 sm:hover:-translate-y-0.5`}>
+            <CardHeader className="p-4 pb-2 sm:p-6 sm:pb-3">
               <div className="flex items-center justify-between">
-                <CardTitle className="text-sm font-medium text-slate-600">{label}</CardTitle>
-                <Icon className={`w-4 h-4 ${icon}`} />
+                <CardTitle className="truncate pr-2 text-xs font-medium text-slate-600 sm:text-sm">{label}</CardTitle>
+                <Icon className={`h-4 w-4 shrink-0 ${icon}`} />
               </div>
             </CardHeader>
-            <CardContent>
+            <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
               <div className={`text-2xl font-bold ${heading}`}>{value}</div>
               <p className="text-xs text-slate-500 mt-1">{sub}</p>
             </CardContent>
@@ -99,25 +155,25 @@ export default function PortalDashboard({
         ))}
       </div>
 
-      <div className="grid lg:grid-cols-3 gap-6">
+      <div className="grid gap-4 lg:grid-cols-3 sm:gap-6">
         <div className="lg:col-span-2">
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
+          <Card className="overflow-hidden">
+            <CardHeader className="p-4 sm:p-6">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                  <CardTitle>Upcoming Events{!loading && upcomingCount > 0 ? ` (${upcomingCount})` : ''}</CardTitle>
+                  <CardTitle className="text-lg sm:text-xl">Upcoming Events{!loading && upcomingCount > 0 ? ` (${upcomingCount})` : ''}</CardTitle>
                   <CardDescription>What&apos;s coming up next</CardDescription>
                 </div>
-                <Link href={calendarHref}>
-                  <Button variant="outline" size="sm">
+                <Link href={calendarHref} className="w-full sm:w-auto">
+                  <Button variant="outline" size="sm" className="w-full sm:w-auto">
                     View All <ArrowRight className="ml-2 w-4 h-4" />
                   </Button>
                 </Link>
               </div>
             </CardHeader>
-            <CardContent>
+            <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
               {loading ? (
-                <p className="text-sm text-gray-500 py-4">Loading events…</p>
+                <p className="text-sm text-gray-500 py-4">Loading events...</p>
               ) : nextEvents.length === 0 ? (
                 <p className="text-sm text-gray-500 py-4">No upcoming events scheduled.</p>
               ) : (
@@ -125,9 +181,9 @@ export default function PortalDashboard({
                   {nextEvents.map((event) => (
                     <div
                       key={event.id}
-                      className={`flex gap-4 p-4 rounded-lg border border-gray-200 ${eventHover} transition-colors`}
+                      className={`flex gap-3 rounded-lg border border-gray-200 p-3 transition-colors sm:gap-4 sm:p-4 ${eventHover}`}
                     >
-                      <div className={`flex flex-col items-center justify-center rounded-lg px-3 py-2 min-w-16 ${eventBadge}`}>
+                      <div className={`flex w-14 shrink-0 flex-col items-center justify-center rounded-lg px-3 py-2 sm:w-16 ${eventBadge}`}>
                         <div className="text-xs font-medium">
                           {new Date(getEventStartDate(event)).toLocaleDateString('en-US', { month: 'short' })}
                         </div>
@@ -136,7 +192,7 @@ export default function PortalDashboard({
                         </div>
                       </div>
                       <div className="flex-1 min-w-0">
-                        <h4 className="font-semibold text-gray-900 mb-1">{event.title}</h4>
+                        <h4 className="mb-1 break-words font-semibold text-gray-900">{event.title}</h4>
                         <p className="text-sm text-gray-600">
                           {formatEventTimeRange(getEventStartDate(event), getEventEndDate(event))}
                         </p>
@@ -153,9 +209,9 @@ export default function PortalDashboard({
         </div>
 
         <div>
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
+          <Card className="overflow-hidden">
+            <CardHeader className="p-4 sm:p-6">
+              <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
                 <Bell className="w-5 h-5" /> Announcements
               </CardTitle>
               <CardDescription>Announcements will appear here once the messages API is enabled on the backend.</CardDescription>
@@ -164,27 +220,27 @@ export default function PortalDashboard({
         </div>
       </div>
 
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
+      <Card className="overflow-hidden">
+        <CardHeader className="p-4 sm:p-6">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <CardTitle>Recent Photos</CardTitle>
+              <CardTitle className="text-lg sm:text-xl">Recent Photos</CardTitle>
               <CardDescription>Latest from the chapter</CardDescription>
             </div>
-            <Link href={filesHref}>
-              <Button variant="outline" size="sm">
+            <Link href={filesHref} className="w-full sm:w-auto">
+              <Button variant="outline" size="sm" className="w-full sm:w-auto">
                 View Gallery <ArrowRight className="ml-2 w-4 h-4" />
               </Button>
             </Link>
           </div>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
           {loading ? (
-            <p className="text-sm text-gray-500 py-4">Loading photos…</p>
+            <p className="text-sm text-gray-500 py-4">Loading photos...</p>
           ) : photos.length === 0 ? (
             <p className="text-sm text-gray-500 py-4">No photos uploaded yet.</p>
           ) : (
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
               {photos.slice(0, 4).map((photo) => (
                 <div
                   key={photo.id}

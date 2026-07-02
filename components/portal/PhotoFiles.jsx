@@ -11,7 +11,7 @@ import { formatPhotoDate } from '@/lib/portal-format';
 function EmptyTab({ icon: Icon, message }) {
   return (
     <Card>
-      <CardContent className="flex flex-col items-center justify-center py-12">
+      <CardContent className="flex flex-col items-center justify-center px-4 py-10 text-center sm:py-12">
         <Icon className="w-12 h-12 text-gray-400 mb-4" />
         <p className="text-gray-600 text-center max-w-sm">{message}</p>
       </CardContent>
@@ -37,10 +37,10 @@ export default function PhotoFiles({ title, description, accentClass = 'bg-blue-
   );
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 overflow-x-hidden">
       <div>
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">{title}</h1>
-        <p className="text-gray-600">{description}</p>
+        <h1 className="mb-2 text-2xl font-bold text-gray-900 sm:text-3xl">{title}</h1>
+        <p className="text-sm text-gray-600 sm:text-base">{description}</p>
       </div>
 
       {error && (
@@ -59,16 +59,16 @@ export default function PhotoFiles({ title, description, accentClass = 'bg-blue-
         />
       </div>
 
-      <Tabs defaultValue="photos" className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="photos">Photos</TabsTrigger>
-          <TabsTrigger value="documents">Documents</TabsTrigger>
-          <TabsTrigger value="folders">Folders</TabsTrigger>
+      <Tabs defaultValue="photos" className="w-full min-w-0">
+        <TabsList className="grid h-auto w-full grid-cols-3 gap-1">
+          <TabsTrigger value="photos" className="min-w-0 px-2 py-2 text-xs sm:text-sm">Photos</TabsTrigger>
+          <TabsTrigger value="documents" className="min-w-0 px-2 py-2 text-xs sm:text-sm">Documents</TabsTrigger>
+          <TabsTrigger value="folders" className="min-w-0 px-2 py-2 text-xs sm:text-sm">Folders</TabsTrigger>
         </TabsList>
 
         <TabsContent value="photos" className="mt-6">
           {loading ? (
-            <p className="text-center text-sm text-gray-500 py-12">Loading photos…</p>
+            <p className="py-10 text-center text-sm text-gray-500 sm:py-12">Loading photos...</p>
           ) : filteredPhotos.length === 0 ? (
             <EmptyTab icon={Search} message="No photos yet. Uploaded images will appear here." />
           ) : (
@@ -76,15 +76,15 @@ export default function PhotoFiles({ title, description, accentClass = 'bg-blue-
               {filteredPhotos.map((photo) => (
                 <Card key={photo.id} className="overflow-hidden">
                   <div className={`aspect-square flex items-center justify-center p-4 ${accentClass} bg-opacity-20`}>
-                    <span className="text-sm font-medium text-center text-gray-700">
+                    <span className="line-clamp-4 break-words text-center text-sm font-medium text-gray-700">
                       {photo.title || 'Untitled'}
                     </span>
                   </div>
-                  <CardHeader className="pb-3">
+                  <CardHeader className="p-4 pb-3 sm:p-6 sm:pb-3">
                     <CardTitle className="text-sm truncate">{photo.title || 'Untitled'}</CardTitle>
-                    <CardDescription className="text-xs">
-                      {photo.created_at ? formatPhotoDate(photo.created_at) : '—'}
-                      {photo.caption ? ` • ${photo.caption}` : ''}
+                    <CardDescription className="break-words text-xs">
+                      {photo.created_at ? formatPhotoDate(photo.created_at) : '-'}
+                      {photo.caption ? ` - ${photo.caption}` : ''}
                     </CardDescription>
                   </CardHeader>
                 </Card>
