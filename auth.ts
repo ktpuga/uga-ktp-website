@@ -11,6 +11,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       clientId: process.env.AUTHENTIK_CLIENT_ID,
       clientSecret: process.env.AUTHENTIK_CLIENT_SECRET,
       authorization: { params: { scope: "openid email profile groups" } },
+      checks: ["state"],
     },
   ],
   callbacks: {
