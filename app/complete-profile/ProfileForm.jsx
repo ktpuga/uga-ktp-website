@@ -27,7 +27,16 @@ export default function ProfileForm() {
     setLoading(true)
     setError(null)
 
-    const result = await saveProfile(new FormData(e.target))
+    const formData = new FormData(e.target)
+    const semester = formData.get("graduation_semester")
+    const year = formData.get("graduation_year")
+    if (semester && year) {
+      formData.set("graduation_date", `${semester} ${year}`)
+    }
+    formData.delete("graduation_semester")
+    formData.delete("graduation_year")
+
+    const result = await saveProfile(formData)
 
     if (result.error) {
       setError(result.error)
@@ -62,8 +71,15 @@ export default function ProfileForm() {
         <Field label="Date of Birth">
           <Input type="date" name="dob" className={inputClass} />
         </Field>
-        <Field label="Graduation Date">
-          <Input type="date" name="graduation_date" className={inputClass} />
+        <Field label="Graduation">
+          <div className="flex gap-2">
+            <select name="graduation_semester" className={`${inputClass} flex-1 h-10 rounded-md border px-3 py-2 text-sm`}>
+              <option value="" className="bg-[#14326E]">Semester</option>
+              <option value="Spring" className="bg-[#14326E]">Spring</option>
+              <option value="Fall" className="bg-[#14326E]">Fall</option>
+            </select>
+            <Input name="graduation_year" placeholder="2026" maxLength={4} className={`${inputClass} w-24`} />
+          </div>
         </Field>
       </div>
 
