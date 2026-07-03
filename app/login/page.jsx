@@ -1,10 +1,13 @@
-'use client';
-
 import Image from 'next/image';
 import Link from 'next/link';
-import { signIn } from 'next-auth/react';
+import { redirect } from 'next/navigation';
+import { auth } from '@/auth';
+import SignInButton from '@/components/auth/SignInButton';
 
-export default function Login() {
+export default async function Login() {
+  const session = await auth();
+  if (session) redirect('/auth/redirect');
+
   return (
     <div
       className="min-h-screen flex items-center justify-center p-4"
@@ -33,13 +36,7 @@ export default function Login() {
           </p>
         </div>
 
-        <button
-          type="button"
-          onClick={() => signIn('authentik', { callbackUrl: '/auth/redirect' })}
-          className="w-full bg-[#2A5CCA] hover:bg-[#3570DB] text-white font-semibold tracking-wider py-3 rounded-md uppercase transition-colors shadow-lg"
-        >
-          Sign in with KTP SSO
-        </button>
+        <SignInButton />
 
         <div className="mt-8 text-center">
           <Link href="/" className="text-sm text-white/70 hover:text-white hover:underline">
