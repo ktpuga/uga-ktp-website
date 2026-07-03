@@ -1,11 +1,13 @@
 "use server"
 
 import { auth } from "@/auth"
+import { getAccessToken } from "@/lib/access-token"
 
 export async function saveProfile(formData) {
   const session = await auth()
   if (!session) return { error: "Not authenticated" }
-  if (!session.access_token) return { error: "No access token in session" }
+  const accessToken = await getAccessToken()
+  if (!accessToken) return { error: "No access token in session" }
 
   const payload = {
     first_name: formData.get("first_name"),
@@ -25,7 +27,7 @@ export async function saveProfile(formData) {
       method: "PUT",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${session.access_token}`,
+        Authorization: `Bearer ${accessToken}`,
       },
       body: JSON.stringify(payload),
     })

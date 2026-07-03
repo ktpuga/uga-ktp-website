@@ -67,9 +67,9 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       user.authentik_id = token.sub
       user.groups = (token.groups as string[]) ?? []
       user.profile_complete = token.profile_complete ?? false
-      // Kept on the session object (not user) so it stays server-side accessible
-      // but is not part of the public user profile
-      ;(session as any).access_token = token.access_token
+      // access_token intentionally left off the session object — this callback
+      // backs both useSession() and auth(), so anything added here is shipped
+      // to the browser. Server code reads it via lib/access-token.js instead.
       return session
     },
   },
