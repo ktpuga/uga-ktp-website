@@ -1,6 +1,8 @@
 @import 'tailwindcss';
 @plugin 'tailwindcss-animate';
 
+@custom-variant dark (&:where(.portal-dark, .portal-dark *));
+
 @theme {
   --font-game-of-squids: 'Game of Squids', sans-serif;
 
@@ -41,29 +43,29 @@
   --color-dark-primary: #0d6efd;
   --color-dark-primary-foreground: #ffffff;
 
-  --color-dark-secondary: #1e1e2c;
-  --color-dark-secondary-foreground: #fafafb;
+  --color-dark-secondary: #1a1c21;
+  --color-dark-secondary-foreground: #e8e9ed;
 
-  --color-dark-accent: #6d7074;
-  --color-dark-accent-foreground: #fafafb;
+  --color-dark-accent: #8b909a;
+  --color-dark-accent-foreground: #e8e9ed;
 
-  --color-dark-background: #020817;
-  --color-dark-foreground: #fafafb;
+  --color-dark-background: #121316;
+  --color-dark-foreground: #e8e9ed;
 
-  --color-dark-card: #121212;
-  --color-dark-card-foreground: #fafafb;
+  --color-dark-card: #1a1c21;
+  --color-dark-card-foreground: #e8e9ed;
 
-  --color-dark-popover: #121212;
-  --color-dark-popover-foreground: #fafafb;
+  --color-dark-popover: #1a1c21;
+  --color-dark-popover-foreground: #e8e9ed;
 
-  --color-dark-muted: #1e1e2c;
-  --color-dark-muted-foreground: #6d7074;
+  --color-dark-muted: #22252b;
+  --color-dark-muted-foreground: #9aa0ab;
 
   --color-dark-destructive: #ff4c4c;
   --color-dark-destructive-foreground: #ffffff;
 
-  --color-dark-border: #3c3c3c;
-  --color-dark-input: #3c3c3c;
+  --color-dark-border: #2a2d35;
+  --color-dark-input: #2a2d35;
   --color-dark-ring: #0d6efd;
 
   --background-image-gradient-radial: radial-gradient(var(--tw-gradient-stops));
@@ -181,5 +183,23 @@
   }
   body {
     @apply bg-background text-foreground;
+  }
+/* this changes all the current themes used within the system to dark mode hence the -dark class */
+  .portal-dark {
+    --color-background: var(--color-dark-background);
+    --color-foreground: var(--color-dark-foreground);
+    --color-card: var(--color-dark-card);
+    --color-card-foreground: var(--color-dark-card-foreground);
+    --color-popover: var(--color-dark-popover);
+    --color-popover-foreground: var(--color-dark-popover-foreground);
+    --color-muted: var(--color-dark-muted);
+    --color-muted-foreground: var(--color-dark-muted-foreground);
+    --color-border: var(--color-dark-border);
+    --color-input: var(--color-dark-input);
+    --color-ring: var(--color-dark-ring);
+    --color-secondary: var(--color-dark-secondary);
+    --color-secondary-foreground: var(--color-dark-secondary-foreground);
+    --color-accent: var(--color-dark-accent);
+    --color-accent-foreground: var(--color-dark-accent-foreground);
   }
 }

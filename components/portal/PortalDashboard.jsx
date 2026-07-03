@@ -77,13 +77,13 @@ export default function PortalDashboard({
   const { data: session } = useSession();
 
   const isAmber = theme === 'amber';
-  const heading = isAmber ? 'text-amber-900' : 'text-blue-900';
-  const icon = isAmber ? 'text-amber-800' : 'text-blue-800';
-  const statHover = isAmber ? 'hover:shadow-amber-200/50' : 'hover:shadow-indigo-200/50';
+  const heading = isAmber ? 'text-amber-900 dark:text-amber-100' : 'text-blue-900 dark:text-blue-100';
+  const icon = isAmber ? 'text-amber-800 dark:text-amber-300' : 'text-blue-800 dark:text-blue-300';
+  const statHover = isAmber ? 'hover:shadow-amber-200/50 dark:hover:shadow-amber-900/30' : 'hover:shadow-indigo-200/50 dark:hover:shadow-indigo-900/30';
   const eventHover = isAmber
-    ? 'hover:border-amber-200 hover:bg-amber-50/50'
-    : 'hover:border-blue-200 hover:bg-blue-50/50';
-  const eventBadge = isAmber ? 'bg-amber-100 text-amber-900' : 'bg-blue-100 text-blue-900';
+    ? 'hover:border-amber-200 hover:bg-amber-50/50 dark:hover:border-amber-800 dark:hover:bg-amber-950/30'
+    : 'hover:border-blue-200 hover:bg-blue-50/50 dark:hover:border-blue-800 dark:hover:bg-blue-950/30';
+  const eventBadge = isAmber ? 'bg-amber-100 text-amber-900 dark:bg-[#22252b] dark:text-amber-100' : 'bg-blue-100 text-blue-900 dark:bg-[#22252b] dark:text-blue-100';
   const blobA = isAmber
     ? 'from-amber-400 via-orange-300 to-yellow-200'
     : 'from-indigo-500 via-fuchsia-500 to-cyan-400';
@@ -122,34 +122,34 @@ export default function PortalDashboard({
 
   return (
     <div className="relative space-y-6 overflow-x-hidden sm:space-y-8">
-      <div aria-hidden className="pointer-events-none fixed inset-0 -z-10 hidden overflow-hidden sm:block">
+      <div aria-hidden className="pointer-events-none fixed inset-0 -z-10 hidden overflow-hidden sm:block dark:hidden">
         <div className={`absolute -left-32 -top-32 h-[28rem] w-[28rem] rounded-full bg-gradient-to-br ${blobA} opacity-10 blur-[120px]`} />
         <div className={`absolute -bottom-32 right-0 h-[26rem] w-[26rem] rounded-full bg-gradient-to-tr ${blobB} opacity-10 blur-[110px]`} />
       </div>
 
       <div>
         <h1 className={`mb-2 text-2xl font-bold sm:text-3xl ${heading}`}>{welcomeTitle}</h1>
-        <p className="text-sm text-slate-600 sm:text-base">{welcomeSubtitle}</p>
+        <p className="text-sm text-slate-600 dark:text-slate-400 sm:text-base">{welcomeSubtitle}</p>
       </div>
 
       {error && (
-        <Card className="border-red-200 bg-red-50">
-          <CardContent className="pt-6 text-sm text-red-700">{error}</CardContent>
+        <Card className="border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-950/40">
+          <CardContent className="pt-6 text-sm text-red-700 dark:text-red-300">{error}</CardContent>
         </Card>
       )}
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4 sm:gap-6">
         {stats.map(({ label, value, sub, icon: Icon }) => (
-          <Card key={label} className={`ring-1 ring-slate-100 shadow-sm ${statHover} transition-all duration-300 sm:hover:-translate-y-0.5`}>
+          <Card key={label} className={`ring-1 ring-slate-100 dark:ring-slate-800 shadow-sm ${statHover} transition-all duration-300 sm:hover:-translate-y-0.5`}>
             <CardHeader className="p-4 pb-2 sm:p-6 sm:pb-3">
               <div className="flex items-center justify-between">
-                <CardTitle className="truncate pr-2 text-xs font-medium text-slate-600 sm:text-sm">{label}</CardTitle>
+                <CardTitle className="truncate pr-2 text-xs font-medium text-slate-600 dark:text-slate-400 sm:text-sm">{label}</CardTitle>
                 <Icon className={`h-4 w-4 shrink-0 ${icon}`} />
               </div>
             </CardHeader>
             <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
               <div className={`text-2xl font-bold ${heading}`}>{value}</div>
-              <p className="text-xs text-slate-500 mt-1">{sub}</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">{sub}</p>
             </CardContent>
           </Card>
         ))}
@@ -173,15 +173,15 @@ export default function PortalDashboard({
             </CardHeader>
             <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
               {loading ? (
-                <p className="text-sm text-gray-500 py-4">Loading events...</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400 py-4">Loading events...</p>
               ) : nextEvents.length === 0 ? (
-                <p className="text-sm text-gray-500 py-4">No upcoming events scheduled.</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400 py-4">No upcoming events scheduled.</p>
               ) : (
                 <div className="space-y-4">
                   {nextEvents.map((event) => (
                     <div
                       key={event.id}
-                      className={`flex gap-3 rounded-lg border border-gray-200 p-3 transition-colors sm:gap-4 sm:p-4 ${eventHover}`}
+                      className={`flex gap-3 rounded-lg border border-gray-200 dark:border-slate-700 p-3 transition-colors sm:gap-4 sm:p-4 ${eventHover}`}
                     >
                       <div className={`flex w-14 shrink-0 flex-col items-center justify-center rounded-lg px-3 py-2 sm:w-16 ${eventBadge}`}>
                         <div className="text-xs font-medium">
@@ -192,12 +192,12 @@ export default function PortalDashboard({
                         </div>
                       </div>
                       <div className="flex-1 min-w-0">
-                        <h4 className="mb-1 break-words font-semibold text-gray-900">{event.title}</h4>
-                        <p className="text-sm text-gray-600">
+                        <h4 className="mb-1 break-words font-semibold text-gray-900 dark:text-gray-100">{event.title}</h4>
+                        <p className="text-sm text-gray-600 dark:text-gray-400">
                           {formatEventTimeRange(getEventStartDate(event), getEventEndDate(event))}
                         </p>
                         {event.description && (
-                          <p className="text-sm text-gray-500 mt-1 line-clamp-2">{event.description}</p>
+                          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 line-clamp-2">{event.description}</p>
                         )}
                       </div>
                     </div>
@@ -236,9 +236,9 @@ export default function PortalDashboard({
         </CardHeader>
         <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
           {loading ? (
-            <p className="text-sm text-gray-500 py-4">Loading photos...</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400 py-4">Loading photos...</p>
           ) : photos.length === 0 ? (
-            <p className="text-sm text-gray-500 py-4">No photos uploaded yet.</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400 py-4">No photos uploaded yet.</p>
           ) : (
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
               {photos.slice(0, 4).map((photo) => (
@@ -246,7 +246,7 @@ export default function PortalDashboard({
                   key={photo.id}
                   className={`aspect-square rounded-lg flex items-center justify-center p-3 ${eventBadge}`}
                 >
-                  <span className="text-xs font-medium text-center text-gray-700 line-clamp-3">
+                  <span className="text-xs font-medium text-center text-gray-700 dark:text-gray-300 line-clamp-3">
                     {photo.title || 'Untitled'}
                   </span>
                 </div>

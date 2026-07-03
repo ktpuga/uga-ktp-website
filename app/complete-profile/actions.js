@@ -1,32 +1,37 @@
 "use server"
 
 import { auth } from "@/auth"
+import { buildProfilePayload } from "@/lib/profile"
+
+// if you need to figure the order this goes in
+
+// check components/profile/ProfileForm.jsx line 65-72
+// then lib/profile.js
+// then check here?
+// or just use ai ask where everything goes
 
 export async function saveProfile(formData) {
   const session = await auth()
   if (!session) return { error: "Not authenticated" }
   if (!session.access_token) return { error: "No access token in session" }
 
-  const payload = {
-    first_name: formData.get("first_name"),
-    last_name: formData.get("last_name"),
-    preferred_name: formData.get("preferred_name") || null,
-    dob: formData.get("dob") || null,
-    major: formData.get("major") || null,
-    graduation_date: formData.get("graduation_date") || null,
-    phone: formData.get("phone") || null,
-    email: formData.get("email") || null,
-    linkedin_url: formData.get("linkedin_url") || null,
-    pledge_class: formData.get("pledge_class") || null,
-  }
+  // 
+  const payload = buildProfilePayload(formData)
 
+  // I mean this is straight forward 
   try {
+    // trys to fetch the profile part of the api
     const res = await fetch(`${process.env.API_URL}/users/me/profile`, {
+      // we use PUT to not get members but instead update the user information
       method: "PUT",
+      // we are updating the information with json based text
+      // and we also need the authorazation of the users session so no random can go and edit our stuff
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${session.access_token}`,
       },
+      // the "payload" is just the information we got from when the user tried to update their information
+      // kinda stupid to call it payload just sounds like overwatch
       body: JSON.stringify(payload),
     })
 
