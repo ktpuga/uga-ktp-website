@@ -1,3 +1,4 @@
+// Archived — rename back to page.jsx to re-enable /members-list
 "use client";
 import Image from "next/image";
 import Link from "next/link";

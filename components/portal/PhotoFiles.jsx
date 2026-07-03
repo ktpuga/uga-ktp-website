@@ -13,7 +13,7 @@ function EmptyTab({ icon: Icon, message }) {
     <Card>
       <CardContent className="flex flex-col items-center justify-center px-4 py-10 text-center sm:py-12">
         <Icon className="w-12 h-12 text-gray-400 mb-4" />
-        <p className="text-gray-600 text-center max-w-sm">{message}</p>
+        <p className="text-gray-600 dark:text-gray-400 text-center max-w-sm">{message}</p>
       </CardContent>
     </Card>
   );
@@ -39,13 +39,13 @@ export default function PhotoFiles({ title, description, accentClass = 'bg-blue-
   return (
     <div className="space-y-6 overflow-x-hidden">
       <div>
-        <h1 className="mb-2 text-2xl font-bold text-gray-900 sm:text-3xl">{title}</h1>
-        <p className="text-sm text-gray-600 sm:text-base">{description}</p>
+        <h1 className="mb-2 text-2xl font-bold text-gray-900 dark:text-gray-100 sm:text-3xl">{title}</h1>
+        <p className="text-sm text-gray-600 dark:text-gray-400 sm:text-base">{description}</p>
       </div>
 
       {error && (
-        <Card className="border-red-200 bg-red-50">
-          <CardContent className="pt-6 text-sm text-red-700">{error}</CardContent>
+        <Card className="border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-950/40">
+          <CardContent className="pt-6 text-sm text-red-700 dark:text-red-300">{error}</CardContent>
         </Card>
       )}
 
@@ -68,7 +68,7 @@ export default function PhotoFiles({ title, description, accentClass = 'bg-blue-
 
         <TabsContent value="photos" className="mt-6">
           {loading ? (
-            <p className="py-10 text-center text-sm text-gray-500 sm:py-12">Loading photos...</p>
+            <p className="py-10 text-center text-sm text-gray-500 dark:text-gray-400 sm:py-12">Loading photos...</p>
           ) : filteredPhotos.length === 0 ? (
             <EmptyTab icon={Search} message="No photos yet. Uploaded images will appear here." />
           ) : (
@@ -76,7 +76,7 @@ export default function PhotoFiles({ title, description, accentClass = 'bg-blue-
               {filteredPhotos.map((photo) => (
                 <Card key={photo.id} className="overflow-hidden">
                   <div className={`aspect-square flex items-center justify-center p-4 ${accentClass} bg-opacity-20`}>
-                    <span className="line-clamp-4 break-words text-center text-sm font-medium text-gray-700">
+                    <span className="line-clamp-4 break-words text-center text-sm font-medium text-gray-700 dark:text-gray-300">
                       {photo.title || 'Untitled'}
                     </span>
                   </div>

@@ -1,0 +1,1 @@
+These Component Pages are used across all 3 directories, meaning if you change one file it changes for all 3 groups, for the most part this is fine, but if we are making rush specific elements or elements that include sensitive information that only admins should have access to please make sure that you create the component within the specified fo

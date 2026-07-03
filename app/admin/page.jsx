@@ -1,231 +1,447 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { TrendingUp, Users, Calendar, Target, Award } from 'lucide-react';
+import { Calendar, CheckCircle2, ImageIcon, Target, Users } from 'lucide-react';
+import { getEvents, getMembers, getPhotos } from '@/lib/portal-api';
+import {
+  countUpcomingEvents,
+  formatMemberGroup,
+  formatPhotoDate,
+  getEventStartDate,
+  normalizeApiList,
+} from '@/lib/portal-format';
 
-const membershipData = [
-  { month: 'Sep', members: 142 },
-  { month: 'Oct', members: 145 },
-  { month: 'Nov', members: 148 },
-  { month: 'Dec', members: 150 },
-  { month: 'Jan', members: 152 },
-  { month: 'Feb', members: 156 },
-];
+const ACTIVE_MEMBER_GROUPS = new Set(['eboard', 'chair', 'active']);
+const LEADERSHIP_GROUPS = new Set(['eboard', 'chair']);
+const KNOWN_MEMBER_GROUPS = ['eboard', 'chair', 'active', 'pledge', 'alumni'];
 
-const eventAttendanceData = [
-  { event: 'GBM', attendance: 92 },
-  { event: 'Tech Talk', attendance: 78 },
-  { event: 'Social', attendance: 85 },
-  { event: 'Workshop', attendance: 65 },
-  { event: 'Service', attendance: 45 },
-];
+const GROUP_BAR_CLASS = {
+  eboard: 'bg-red-900',
+  chair: 'bg-red-700',
+  active: 'bg-blue-700',
+  pledge: 'bg-green-700',
+  alumni: 'bg-amber-700',
+  unknown: 'bg-slate-500',
+};
 
-const engagementData = [
-  { name: 'Highly Active', value: 35, color: 'bg-red-900' },
-  { name: 'Active', value: 45, color: 'bg-red-700' },
-  { name: 'Moderately Active', value: 15, color: 'bg-red-400' },
-  { name: 'Inactive', value: 5, color: 'bg-slate-300' },
-];
+function cleanValue(value) {
+  return typeof value === 'string' && value.trim() ? value.trim() : null;
+}
 
-const recruitmentData = [
-  { semester: 'Fall 2024', pledges: 22, initiated: 20 },
-  { semester: 'Spring 2025', pledges: 18, initiated: 17 },
-  { semester: 'Fall 2025', pledges: 25, initiated: 24 },
-  { semester: 'Spring 2026', pledges: 20, initiated: 19 },
-];
+function memberGroup(member) {
+  return cleanValue(member?.member_group) ?? cleanValue(member?.memberGroup) ?? 'unknown';
+}
 
-const maxMembers = Math.max(...membershipData.map((d) => d.members));
-const maxAttendance = 100;
-const maxPledges = Math.max(...recruitmentData.map((d) => d.pledges));
+function memberHasAny(member, fields) {
+  return fields.some((field) => cleanValue(member?.[field]));
+}
+
+function eventTimestamp(event) {
+  const start = getEventStartDate(event);
+  if (!start) return NaN;
+  const time = new Date(start).getTime();
+  return Number.isNaN(time) ? NaN : time;
+}
+
+function photoTimestamp(photo) {
+  const value = photo?.created_at ?? photo?.createdAt ?? photo?.uploaded_at ?? photo?.uploadedAt ?? photo?.date;
+  if (!value) return NaN;
+  const time = new Date(value).getTime();
+  return Number.isNaN(time) ? NaN : time;
+}
+
+function buildMemberGroupData(members) {
+  const counts = new Map();
+
+  members.forEach((member) => {
+    const group = memberGroup(member);
+    counts.set(group, (counts.get(group) ?? 0) + 1);
+  });
+
+  const knownRows = KNOWN_MEMBER_GROUPS.map((group) => ({
+    group,
+    label: formatMemberGroup(group),
+    count: counts.get(group) ?? 0,
+  })).filter((row) => row.count > 0);
+
+  const extraRows = [...counts.entries()]
+    .filter(([group]) => !KNOWN_MEMBER_GROUPS.includes(group))
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([group, count]) => ({
+      group,
+      label: formatMemberGroup(group),
+      count,
+    }));
+
+  return [...knownRows, ...extraRows];
+}
+
+function buildMonthlyEventData(events) {
+  const buckets = new Map();
+
+  events.forEach((event) => {
+    const time = eventTimestamp(event);
+    if (Number.isNaN(time)) return;
+
+    const date = new Date(time);
+    const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+    const label = date.toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
+    const bucket = buckets.get(key) ?? { key, label, count: 0 };
+    bucket.count += 1;
+    buckets.set(key, bucket);
+  });
+
+  return [...buckets.values()]
+    .sort((a, b) => a.key.localeCompare(b.key))
+    .slice(-6);
+}
+
+function buildProfileCoverage(members) {
+  const total = members.length;
+  const percent = (count) => (total === 0 ? 0 : Math.round((count / total) * 100));
+
+  const rows = [
+    {
+      label: 'Name listed',
+      count: members.filter((member) =>
+        memberHasAny(member, ['preferred_name', 'preferredName', 'first_name', 'firstName', 'last_name', 'lastName', 'username']),
+      ).length,
+    },
+    {
+      label: 'Major listed',
+      count: members.filter((member) => memberHasAny(member, ['major'])).length,
+    },
+    {
+      label: 'Pledge class listed',
+      count: members.filter((member) => memberHasAny(member, ['pledge_class', 'pledgeClass'])).length,
+    },
+    {
+      label: 'Graduation listed',
+      count: members.filter((member) => memberHasAny(member, ['graduation_date', 'graduationDate'])).length,
+    },
+  ];
+
+  return rows.map((row) => ({ ...row, percent: percent(row.count) }));
+}
 
 export default function AdminAnalytics() {
-  const [range, setRange] = useState('semester');
+  const [events, setEvents] = useState([]);
+  const [members, setMembers] = useState([]);
+  const [photos, setPhotos] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    let active = true;
+
+    Promise.all([
+      getEvents(),
+      getMembers(),
+      getPhotos(),
+    ])
+      .then(([eventsData, membersData, photosData]) => {
+        if (!active) return;
+        setEvents(normalizeApiList(eventsData));
+        setMembers(normalizeApiList(membersData));
+        setPhotos(normalizeApiList(photosData));
+      })
+      .catch((err) => {
+        if (!active) return;
+        setError(err.message ?? 'Could not load analytics data');
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const analytics = useMemo(() => {
+    const now = Date.now();
+    const memberCount = members.length;
+    const activeMemberCount = members.filter((member) => ACTIVE_MEMBER_GROUPS.has(memberGroup(member))).length;
+    const leadershipCount = members.filter((member) => LEADERSHIP_GROUPS.has(memberGroup(member))).length;
+    const upcomingCount = countUpcomingEvents(events);
+    const pastEventCount = events.filter((event) => {
+      const time = eventTimestamp(event);
+      return !Number.isNaN(time) && time < now;
+    }).length;
+    const undatedEventCount = events.filter((event) => Number.isNaN(eventTimestamp(event))).length;
+    const memberGroupData = buildMemberGroupData(members);
+    const monthlyEventData = buildMonthlyEventData(events);
+    const profileCoverage = buildProfileCoverage(members);
+    const latestPhotos = [...photos]
+      .sort((a, b) => {
+        const bTime = photoTimestamp(b);
+        const aTime = photoTimestamp(a);
+        if (Number.isNaN(bTime) && Number.isNaN(aTime)) return 0;
+        if (Number.isNaN(bTime)) return 1;
+        if (Number.isNaN(aTime)) return -1;
+        return bTime - aTime;
+      })
+      .slice(0, 5);
+
+    return {
+      activeMemberCount,
+      leadershipCount,
+      latestPhotos,
+      memberCount,
+      memberGroupData,
+      monthlyEventData,
+      pastEventCount,
+      photoCount: photos.length,
+      profileCoverage,
+      totalEventCount: events.length,
+      undatedEventCount,
+      upcomingCount,
+    };
+  }, [events, members, photos]);
+
+  const maxGroupCount = Math.max(1, ...analytics.memberGroupData.map((row) => row.count));
+  const maxMonthlyEvents = Math.max(1, ...analytics.monthlyEventData.map((row) => row.count));
+
+  const stats = [
+    {
+      label: 'Total Members',
+      value: analytics.memberCount,
+      sub: 'From /members',
+      icon: Users,
+    },
+    {
+      label: 'Active Members',
+      value: analytics.activeMemberCount,
+      sub: 'E-board, chairs, and active members',
+      icon: CheckCircle2,
+    },
+    {
+      label: 'Upcoming Events',
+      value: analytics.upcomingCount,
+      sub: `${analytics.totalEventCount} total events`,
+      icon: Calendar,
+    },
+    {
+      label: 'Photos',
+      value: analytics.photoCount,
+      sub: 'From /photos',
+      icon: ImageIcon,
+    },
+  ];
 
   return (
     <div className="relative space-y-6">
-      {/* Ambient gradient blobs matching main site hero */}
-      <div aria-hidden className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
+      <div aria-hidden className="pointer-events-none fixed inset-0 -z-10 overflow-hidden dark:hidden">
         <div className="absolute -left-32 -top-32 h-[28rem] w-[28rem] rounded-full bg-gradient-to-br from-red-500 via-rose-400 to-orange-300 opacity-10 blur-[120px]" />
         <div className="absolute -bottom-32 right-0 h-[26rem] w-[26rem] rounded-full bg-gradient-to-tr from-orange-300 via-red-400 to-rose-500 opacity-10 blur-[110px]" />
       </div>
 
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-red-900 mb-2">Analytics</h1>
-          <p className="text-slate-600">Track chapter metrics and engagement</p>
+          <h1 className="mb-2 text-3xl font-bold text-red-900 dark:text-red-100">Analytics</h1>
+          <p className="text-slate-600 dark:text-slate-400">Live chapter metrics from the portal API</p>
         </div>
-        <select
-          value={range}
-          onChange={(e) => setRange(e.target.value)}
-          className="w-48 rounded-md border border-slate-300 px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-red-500"
-        >
-          <option value="week">Last Week</option>
-          <option value="month">Last Month</option>
-          <option value="semester">This Semester</option>
-          <option value="year">This Year</option>
-        </select>
+        <div className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm font-medium text-red-900 dark:border-red-900/60 dark:bg-red-950/40 dark:text-red-100">
+          {loading ? 'Syncing API' : error ? 'API issue' : 'API synced'}
+        </div>
       </div>
 
-      {/* Key Metrics */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {[
-          { label: 'Total Members', value: '156', trend: '+4 this month', icon: Users },
-          { label: 'Avg. Attendance', value: '85%', trend: '+3% from last semester', icon: Calendar },
-          { label: 'Events Hosted', value: '24', trend: '8 this month', icon: Target },
-          { label: 'Retention Rate', value: '94%', trend: '+2% from last year', icon: Award },
-        ].map(({ label, value, trend, icon: Icon }) => (
-          <Card key={label} className="ring-1 ring-slate-100 shadow-sm hover:shadow-red-200/50 hover:-translate-y-0.5 transition-all duration-300">
+      {error && (
+        <Card className="border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-950/40">
+          <CardContent className="pt-6 text-sm text-red-700 dark:text-red-300">{error}</CardContent>
+        </Card>
+      )}
+
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4 sm:gap-6">
+        {stats.map(({ label, value, sub, icon: Icon }) => (
+          <Card key={label} className="shadow-sm ring-1 ring-slate-100 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-red-200/50 dark:ring-slate-800 dark:hover:shadow-red-900/30">
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
-                <CardTitle className="text-sm font-medium text-slate-600">{label}</CardTitle>
-                <Icon className="w-4 h-4 text-red-800" />
+                <CardTitle className="text-sm font-medium text-slate-600 dark:text-slate-400">{label}</CardTitle>
+                <Icon className="h-4 w-4 text-red-800 dark:text-red-300" />
               </div>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-red-900">{value}</div>
-              <div className="flex items-center gap-1 mt-1 text-sm text-green-600">
-                <TrendingUp className="w-3 h-3" />
-                <span className="text-slate-500">{trend}</span>
+              <div className="text-2xl font-bold text-red-900 dark:text-red-100">
+                {loading ? '-' : value}
               </div>
+              <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                {loading ? 'Loading from API' : sub}
+              </p>
             </CardContent>
           </Card>
         ))}
       </div>
 
-      {/* Charts */}
-      <Tabs defaultValue="membership" className="w-full">
+      <Tabs defaultValue="members" className="w-full">
         <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="membership">Membership</TabsTrigger>
+          <TabsTrigger value="members">Members</TabsTrigger>
           <TabsTrigger value="events">Events</TabsTrigger>
-          <TabsTrigger value="engagement">Engagement</TabsTrigger>
-          <TabsTrigger value="recruitment">Recruitment</TabsTrigger>
+          <TabsTrigger value="profiles">Profiles</TabsTrigger>
+          <TabsTrigger value="photos">Photos</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="membership" className="mt-6">
+        <TabsContent value="members" className="mt-6">
           <Card>
             <CardHeader>
-              <CardTitle>Membership Growth</CardTitle>
-              <CardDescription>Active member count over the past 6 months</CardDescription>
+              <CardTitle>Member Groups</CardTitle>
+              <CardDescription>Current directory composition from the members API</CardDescription>
             </CardHeader>
-            <CardContent>
-              <div className="flex items-end gap-4 h-48">
-                {membershipData.map((d) => (
-                  <div key={d.month} className="flex-1 flex flex-col items-center gap-1">
-                    <span className="text-xs font-medium text-gray-700">{d.members}</span>
-                    <div
-                      className="w-full bg-red-800 rounded-t"
-                      style={{ height: `${(d.members / maxMembers) * 160}px` }}
-                    />
-                    <span className="text-xs text-gray-500">{d.month}</span>
+            <CardContent className="space-y-4">
+              {loading ? (
+                <p className="py-4 text-sm text-slate-500 dark:text-slate-400">Loading members...</p>
+              ) : analytics.memberGroupData.length === 0 ? (
+                <p className="py-4 text-sm text-slate-500 dark:text-slate-400">No members returned by the API.</p>
+              ) : (
+                analytics.memberGroupData.map((row) => (
+                  <div key={row.group}>
+                    <div className="mb-1 flex justify-between text-sm">
+                      <span className="font-medium text-slate-700 dark:text-slate-300">{row.label}</span>
+                      <span className="text-slate-500 dark:text-slate-400">{row.count}</span>
+                    </div>
+                    <div className="h-3 w-full rounded-full bg-slate-100 dark:bg-slate-800">
+                      <div
+                        className={`h-3 rounded-full ${GROUP_BAR_CLASS[row.group] ?? GROUP_BAR_CLASS.unknown}`}
+                        style={{ width: `${(row.count / maxGroupCount) * 100}%` }}
+                      />
+                    </div>
                   </div>
-                ))}
-              </div>
+                ))
+              )}
             </CardContent>
           </Card>
         </TabsContent>
 
         <TabsContent value="events" className="mt-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Event Attendance</CardTitle>
-              <CardDescription>Average attendance % by event type</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {eventAttendanceData.map((d) => (
-                <div key={d.event}>
-                  <div className="flex justify-between text-sm mb-1">
-                    <span className="font-medium text-gray-700">{d.event}</span>
-                    <span className="text-gray-500">{d.attendance}%</span>
-                  </div>
-                  <div className="w-full bg-slate-100 rounded-full h-3">
-                    <div
-                      className="bg-red-800 h-3 rounded-full"
-                      style={{ width: `${(d.attendance / maxAttendance) * 100}%` }}
-                    />
-                  </div>
-                </div>
-              ))}
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="engagement" className="mt-6">
-          <div className="grid lg:grid-cols-2 gap-6">
+          <div className="grid gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(16rem,1fr)]">
             <Card>
               <CardHeader>
-                <CardTitle>Member Engagement</CardTitle>
-                <CardDescription>Distribution of member activity levels</CardDescription>
+                <CardTitle>Event Volume</CardTitle>
+                <CardDescription>Events grouped by month from the events API</CardDescription>
               </CardHeader>
-              <CardContent className="space-y-4">
-                {engagementData.map((d) => (
-                  <div key={d.name}>
-                    <div className="flex justify-between text-sm mb-1">
-                      <span className="font-medium text-gray-700">{d.name}</span>
-                      <span className="text-gray-500">{d.value}%</span>
-                    </div>
-                    <div className="w-full bg-slate-100 rounded-full h-3">
-                      <div className={`${d.color} h-3 rounded-full`} style={{ width: `${d.value}%` }} />
-                    </div>
+              <CardContent>
+                {loading ? (
+                  <p className="py-4 text-sm text-slate-500 dark:text-slate-400">Loading events...</p>
+                ) : analytics.monthlyEventData.length === 0 ? (
+                  <p className="py-4 text-sm text-slate-500 dark:text-slate-400">No dated events returned by the API.</p>
+                ) : (
+                  <div className="flex h-48 items-end gap-4">
+                    {analytics.monthlyEventData.map((row) => (
+                      <div key={row.key} className="flex flex-1 flex-col items-center gap-1">
+                        <span className="text-xs font-medium text-slate-700 dark:text-slate-300">{row.count}</span>
+                        <div
+                          className="w-full rounded-t bg-red-800"
+                          style={{ height: `${Math.max(12, (row.count / maxMonthlyEvents) * 160)}px` }}
+                        />
+                        <span className="text-xs text-slate-500 dark:text-slate-400">{row.label}</span>
+                      </div>
+                    ))}
                   </div>
-                ))}
+                )}
               </CardContent>
             </Card>
 
             <Card>
               <CardHeader>
-                <CardTitle>Engagement Insights</CardTitle>
-                <CardDescription>Key metrics and recommendations</CardDescription>
+                <CardTitle>Event Status</CardTitle>
+                <CardDescription>Derived from event start dates</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="p-4 bg-green-50 rounded-lg border border-green-200">
-                  <h4 className="font-semibold text-green-900 mb-1">High Engagement</h4>
-                  <p className="text-sm text-green-800">80% of members are active or highly active — exceeding our target of 75%</p>
+                {[
+                  { label: 'Upcoming', value: analytics.upcomingCount },
+                  { label: 'Past', value: analytics.pastEventCount },
+                  { label: 'Undated', value: analytics.undatedEventCount },
+                ].map((row) => (
+                  <div key={row.label} className="flex items-center justify-between rounded-lg border border-slate-200 px-3 py-2 dark:border-slate-700">
+                    <span className="text-sm font-medium text-slate-700 dark:text-slate-300">{row.label}</span>
+                    <span className="text-lg font-semibold text-red-900 dark:text-red-100">
+                      {loading ? '-' : row.value}
+                    </span>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="profiles" className="mt-6">
+          <div className="grid gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(16rem,1fr)]">
+            <Card>
+              <CardHeader>
+                <CardTitle>Profile Coverage</CardTitle>
+                <CardDescription>How complete member directory fields are today</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {loading ? (
+                  <p className="py-4 text-sm text-slate-500 dark:text-slate-400">Loading profiles...</p>
+                ) : analytics.memberCount === 0 ? (
+                  <p className="py-4 text-sm text-slate-500 dark:text-slate-400">No member profiles returned by the API.</p>
+                ) : (
+                  analytics.profileCoverage.map((row) => (
+                    <div key={row.label}>
+                      <div className="mb-1 flex justify-between text-sm">
+                        <span className="font-medium text-slate-700 dark:text-slate-300">{row.label}</span>
+                        <span className="text-slate-500 dark:text-slate-400">{row.count}/{analytics.memberCount}</span>
+                      </div>
+                      <div className="h-3 w-full rounded-full bg-slate-100 dark:bg-slate-800">
+                        <div className="h-3 rounded-full bg-red-800" style={{ width: `${row.percent}%` }} />
+                      </div>
+                    </div>
+                  ))
+                )}
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Leadership</CardTitle>
+                <CardDescription>E-board and chair groups</CardDescription>
+              </CardHeader>
+              <CardContent className="flex items-center gap-4">
+                <div className="flex h-14 w-14 items-center justify-center rounded-lg bg-red-100 text-red-900 dark:bg-red-950/60 dark:text-red-100">
+                  <Target className="h-6 w-6" />
                 </div>
-                <div className="p-4 bg-amber-50 rounded-lg border border-amber-200">
-                  <h4 className="font-semibold text-amber-900 mb-1">Re-engagement Needed</h4>
-                  <p className="text-sm text-amber-800">5% of members are inactive. Consider reaching out with personalized engagement.</p>
-                </div>
-                <div className="p-4 bg-red-50 rounded-lg border border-red-200">
-                  <h4 className="font-semibold text-red-900 mb-1">Recognition Opportunity</h4>
-                  <p className="text-sm text-red-800">35% highly active members could be candidates for leadership positions.</p>
+                <div>
+                  <p className="text-3xl font-bold text-red-900 dark:text-red-100">
+                    {loading ? '-' : analytics.leadershipCount}
+                  </p>
+                  <p className="text-sm text-slate-500 dark:text-slate-400">Current leadership profiles</p>
                 </div>
               </CardContent>
             </Card>
           </div>
         </TabsContent>
 
-        <TabsContent value="recruitment" className="mt-6">
+        <TabsContent value="photos" className="mt-6">
           <Card>
             <CardHeader>
-              <CardTitle>Recruitment & Retention</CardTitle>
-              <CardDescription>Pledge class size and initiation rates</CardDescription>
+              <CardTitle>Photo Library</CardTitle>
+              <CardDescription>Recent records from the photos API</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="space-y-6">
-                {recruitmentData.map((d) => (
-                  <div key={d.semester}>
-                    <p className="text-sm font-medium text-gray-700 mb-2">{d.semester}</p>
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-3">
-                        <span className="text-xs text-gray-500 w-16">Pledges</span>
-                        <div className="flex-1 bg-slate-100 rounded-full h-3">
-                          <div className="bg-red-900 h-3 rounded-full" style={{ width: `${(d.pledges / maxPledges) * 100}%` }} />
-                        </div>
-                        <span className="text-xs font-medium w-6 text-right">{d.pledges}</span>
+              {loading ? (
+                <p className="py-4 text-sm text-slate-500 dark:text-slate-400">Loading photos...</p>
+              ) : analytics.latestPhotos.length === 0 ? (
+                <p className="py-4 text-sm text-slate-500 dark:text-slate-400">No photos returned by the API.</p>
+              ) : (
+                <div className="divide-y divide-slate-100 dark:divide-slate-800">
+                  {analytics.latestPhotos.map((photo) => (
+                    <div key={photo.id ?? photo.title ?? photo.url} className="flex items-center justify-between gap-4 py-3">
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-medium text-slate-900 dark:text-slate-100">
+                          {photo.title || photo.name || 'Untitled photo'}
+                        </p>
+                        <p className="text-xs text-slate-500 dark:text-slate-400">
+                          {Number.isNaN(photoTimestamp(photo)) ? 'No upload date' : formatPhotoDate(new Date(photoTimestamp(photo)).toISOString())}
+                        </p>
                       </div>
-                      <div className="flex items-center gap-3">
-                        <span className="text-xs text-gray-500 w-16">Initiated</span>
-                        <div className="flex-1 bg-slate-100 rounded-full h-3">
-                          <div className="bg-red-500 h-3 rounded-full" style={{ width: `${(d.initiated / maxPledges) * 100}%` }} />
-                        </div>
-                        <span className="text-xs font-medium w-6 text-right">{d.initiated}</span>
-                      </div>
+                      <ImageIcon className="h-4 w-4 shrink-0 text-red-800 dark:text-red-300" />
                     </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>

@@ -6,7 +6,7 @@ const config = {
     siteUrl,
     generateRobotsTxt: true,           // (optional) Generate a robots.txt file
     // Exclude specific (optional)
-    // exclude: ['/secret-page', '/admin/*'],
+    exclude: ['/members-list'],
     // Additional options if needed
     // transform: async (config, path) => {
     //   // Example: automatically remove trailing slash from all paths
