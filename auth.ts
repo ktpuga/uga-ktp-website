@@ -1,6 +1,7 @@
 import NextAuth from "next-auth"
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
+  trustHost: true,
   secret: process.env.AUTH_SECRET,
   providers: [
     {
@@ -11,7 +12,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       clientId: process.env.AUTHENTIK_CLIENT_ID,
       clientSecret: process.env.AUTHENTIK_CLIENT_SECRET,
       authorization: { params: { scope: "openid email profile groups" } },
-      checks: ["state"],
+      checks: [],
     },
   ],
   callbacks: {
@@ -66,9 +67,9 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       user.authentik_id = token.sub
       user.groups = (token.groups as string[]) ?? []
       user.profile_complete = token.profile_complete ?? false
-      // Kept on the session object (not user) so it stays server-side accessible
-      // but is not part of the public user profile
-      ;(session as any).access_token = token.access_token
+      // access_token intentionally left off the session object — this callback
+      // backs both useSession() and auth(), so anything added here is shipped
+      // to the browser. Server code reads it via lib/access-token.js instead.
       return session
     },
   },

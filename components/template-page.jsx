@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import Card from "@/components/ui/card";
 import Image from "next/image";
 import Link from "next/link";
+import { useSession } from "next-auth/react";
 import React, { useEffect, useState } from "react";
 import Footer from "../components/ui/footer";
 import dnTTb from "../public/datenight_x_TT_beta.JPEG";
@@ -42,6 +43,8 @@ function importAll(r) {
 }
 
 export default function TemplatePage() {
+  const { data: session } = useSession();
+
   /* ---------------------- Collect leadership head‑shots --------------------- */
   const images = importAll(
     require.context("../public/leadership/", false, /\.(png|jpe?g|svg)$/),
@@ -142,11 +145,11 @@ export default function TemplatePage() {
             ))}
         </nav>
         <Link
-            href="/login"
+            href={session ? "/auth/redirect" : "/login"}
             className="ml-6 text-sm font-medium px-3 py-1.5 rounded-md bg-blue-900 text-white border border-blue-900 transition-colors duration-300 hover:bg-blue-800 hover:border-blue-800"
           >
             <span className="relative before:absolute before:-bottom-0.5 before:left-0 before:h-0.5 before:w-full before:origin-left before:scale-x-0 before:bg-white before:transition-transform before:duration-300 [a:hover_&]:before:scale-x-100">
-              Portal Login
+              {session ? "My Portal" : "Portal Login"}
             </span>
           </Link>
       </header>

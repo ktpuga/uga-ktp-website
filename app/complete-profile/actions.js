@@ -9,11 +9,13 @@ import { buildProfilePayload } from "@/lib/profile"
 // then lib/profile.js
 // then check here?
 // or just use ai ask where everything goes
+import { getAccessToken } from "@/lib/access-token"
 
 export async function saveProfile(formData) {
   const session = await auth()
   if (!session) return { error: "Not authenticated" }
-  if (!session.access_token) return { error: "No access token in session" }
+  const accessToken = await getAccessToken()
+  if (!accessToken) return { error: "No access token in session" }
 
   // 
   const payload = buildProfilePayload(formData)
@@ -28,7 +30,7 @@ export async function saveProfile(formData) {
       // and we also need the authorazation of the users session so no random can go and edit our stuff
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${session.access_token}`,
+        Authorization: `Bearer ${accessToken}`,
       },
       // the "payload" is just the information we got from when the user tried to update their information
       // kinda stupid to call it payload just sounds like overwatch
