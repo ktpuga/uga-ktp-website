@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Users } from 'lucide-react';
 import { getMemberDirectory } from '@/lib/portal-api';
 import {
@@ -117,6 +117,12 @@ export default function MemberDirectory({
                 >
                   <div className="flex min-w-0 items-center gap-3">
                     <Avatar className="h-9 w-9 shrink-0 sm:h-10 sm:w-10">
+                      {member.id && (
+                        <AvatarImage
+                          src={`/api/users/${member.id}/profile-picture/media`}
+                          alt={directoryDisplayName(member)}
+                        />
+                      )}
                       <AvatarFallback className={avatarClass}>
                         {memberInitials(member)}
                       </AvatarFallback>

@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { GraduationCap, Mail, RefreshCw, Search, Shield, UserCheck, Users } from 'lucide-react';
 import { getAdminUsers } from '@/lib/portal-api';
 import {
@@ -147,6 +147,9 @@ function UserRow({ member, accent = 'red' }) {
       <CardContent className="flex flex-col gap-4 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-6">
         <div className="flex min-w-0 flex-1 items-center gap-4">
           <Avatar className="h-11 w-11 shrink-0 sm:h-12 sm:w-12">
+            {authentikId && (
+              <AvatarImage src={`/api/users/${authentikId}/profile-picture/media`} alt={adminDisplayName(member)} />
+            )}
             <AvatarFallback className={avatarClass}>{adminInitials(member)}</AvatarFallback>
           </Avatar>
           <div className="min-w-0 flex-1">

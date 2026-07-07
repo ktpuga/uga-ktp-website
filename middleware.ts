@@ -8,7 +8,7 @@ function homePortal(groups: string[]): string {
   if (groups.includes("chair") || groups.includes("active")) return "/member"
   if (groups.includes("alumni")) return "/alumni"
   if (groups.includes("pledge")) return "/pledge"
-  return "/login"
+  return "/"
 }
 
 export default auth((req) => {
