@@ -22,6 +22,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         token.sub = profile.sub as string
         token.groups = (profile.groups as string[]) ?? []
         token.access_token = account.access_token
+        token.id_token = account.id_token
 
         // Pick the highest-priority group as member_group in the DB
         const groupPriority = ["eboard", "chair", "active", "pledge", "alumni"]

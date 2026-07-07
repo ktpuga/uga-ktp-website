@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import Image from 'next/image';
 import { LogOut, PanelLeft, PanelLeftClose } from 'lucide-react';
-import { signOut } from 'next-auth/react';
+import { logoutEverywhere } from '@/lib/auth-actions';
 import { PortalThemeProvider } from './PortalThemeProvider';
 import ThemeToggle from './ThemeToggle';
 
@@ -110,7 +110,7 @@ export default function PortalShell({
               <ThemeToggle iconOnly />
               <button
                 type="button"
-                onClick={() => signOut({ callbackUrl: '/login' })}
+                onClick={() => logoutEverywhere()}
                 aria-label="Sign out"
                 className={iconBtnClass}
               >
@@ -158,7 +158,7 @@ export default function PortalShell({
           />
           <button
             type="button"
-            onClick={() => signOut({ callbackUrl: '/login' })}
+            onClick={() => logoutEverywhere()}
             aria-label="Sign out"
             className={`${iconBtnClass} w-full ${collapsed ? 'justify-center' : 'justify-start gap-3 px-3 py-2'}`}
           >
