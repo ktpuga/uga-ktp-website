@@ -69,13 +69,19 @@ export default function AdminAnnouncements() {
     setEventSaving(true);
 
     try {
-      await createEvent({
+      const result = await createEvent({
         title: eventForm.title.trim(),
         description: eventForm.description.trim() || null,
         location: eventForm.location.trim() || 'Location TBD',
         start_date: startDate.toISOString(),
         end_date: endDate.toISOString(),
       });
+
+      if (!result?.ok) {
+        setEventError(result?.error ?? 'Failed to create event.');
+        return;
+      }
+
       setEventForm({ title: '', description: '', location: '', start: '', end: '' });
       setIsCreatingEvent(false);
       showToast('Event created successfully.');
