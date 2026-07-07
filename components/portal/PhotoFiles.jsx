@@ -7,9 +7,10 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Search, FolderOpen, FileText, Trash2, Users, Images, Plus, ArrowLeft } from 'lucide-react';
+import { Search, FolderOpen, FileText, Trash2, Users, Images, Plus, ArrowLeft, Download } from 'lucide-react';
 import { getPhotos, getAlbums, createAlbum, uploadPhoto, deletePhoto } from '@/lib/portal-api';
 import { formatPhotoDate } from '@/lib/portal-format';
+import PhotoMedia from './PhotoMedia';
 
 const GENERAL_ALBUM = { id: null, name: 'Shared Album', description: 'General chapter photos, open to everyone' };
 
@@ -24,19 +25,19 @@ function EmptyTab({ icon: Icon, message }) {
   );
 }
 
-function PhotoMedia({ photo }) {
-  const src = `/api/photos/${photo.id}/media`;
-  if (photo.media_type === 'video') {
-    return <video src={src} controls className="h-full w-full object-cover" />;
-  }
-  return <img src={src} alt={photo.title || 'Photo'} className="h-full w-full object-cover" />;
-}
-
 function PhotoCard({ photo, canDelete, onDelete }) {
   return (
     <Card className="overflow-hidden">
-      <div className="aspect-square bg-gray-100">
+      <div className="relative aspect-square bg-gray-100 dark:bg-slate-800">
         <PhotoMedia photo={photo} />
+        <a
+          href={`/api/photos/${photo.id}/media`}
+          download={photo.title || `photo-${photo.id}`}
+          title="Download"
+          className="absolute right-2 top-2 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-black/60 text-white transition-colors hover:bg-black/80"
+        >
+          <Download className="h-4 w-4" />
+        </a>
       </div>
       <CardHeader className="p-4 pb-3 sm:p-6 sm:pb-3">
         <CardTitle className="text-sm truncate">{photo.title || 'Untitled'}</CardTitle>
