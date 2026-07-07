@@ -243,9 +243,6 @@ export default function AdminAnalytics() {
           <h1 className="mb-2 text-3xl font-bold text-red-900 dark:text-red-100">Analytics</h1>
           <p className="text-slate-600 dark:text-slate-400">Live chapter metrics from the portal API</p>
         </div>
-        <div className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm font-medium text-red-900 dark:border-red-900/60 dark:bg-red-950/40 dark:text-red-100">
-          {loading ? 'Syncing API' : error ? 'API issue' : 'API synced'}
-        </div>
       </div>
 
       {error && (
