@@ -13,9 +13,67 @@ import { useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
+import { User } from 'lucide-react';
 import { buildProfilePayload, parseGraduationDate } from '@/lib/profile';
-import { updateProfile } from '@/lib/portal-api';
+import { updateProfile, uploadProfilePicture } from '@/lib/portal-api';
 import { saveProfile } from '@/app/complete-profile/actions';
+
+function ProfilePictureField({ authentikId, variant }) {
+  const [uploading, setUploading] = useState(false);
+  const [error, setError] = useState(null);
+  const [version, setVersion] = useState(0);
+
+  async function handleFileChange(e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploading(true);
+    setError(null);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      await uploadProfilePicture(formData);
+      setVersion((v) => v + 1);
+    } catch (err) {
+      setError(err.message ?? 'Failed to upload photo');
+    } finally {
+      setUploading(false);
+      e.target.value = '';
+    }
+  }
+
+  const labelClass = variant === 'onboarding' ? 'text-white/80' : 'text-foreground';
+
+  return (
+    <div className="flex items-center gap-4">
+      <Avatar className="h-16 w-16">
+        {authentikId && (
+          <AvatarImage
+            src={`/api/users/${authentikId}/profile-picture/media?v=${version}`}
+            alt="Profile picture"
+          />
+        )}
+        <AvatarFallback>
+          <User className="h-6 w-6 text-muted-foreground" />
+        </AvatarFallback>
+      </Avatar>
+      <div>
+        <label className={`inline-block cursor-pointer text-sm font-medium underline ${labelClass}`}>
+          {uploading ? 'Uploading...' : 'Change photo'}
+          <input
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            onChange={handleFileChange}
+            disabled={uploading}
+            className="hidden"
+          />
+        </label>
+        {error && <p className="mt-1 text-xs text-red-500">{error}</p>}
+      </div>
+    </div>
+  );
+}
 
 const ACCENT_BUTTON = {
   blue: 'bg-blue-800 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600',
@@ -48,7 +106,8 @@ export default function ProfileForm({
   accent = 'blue',
   onSuccess,
 }) {
-  const { update } = useSession();
+  const { data: session, update } = useSession();
+  const authentikId = session?.user?.authentik_id ?? defaultValues.authentik_id;
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -126,6 +185,8 @@ export default function ProfileForm({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
+      <ProfilePictureField authentikId={authentikId} variant={variant} />
+
       {readOnly.username != null && (
         <Field label="Username" variant={variant}>
           <Input value={readOnly.username} readOnly disabled className={inputClass} />
