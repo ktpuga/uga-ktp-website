@@ -14,6 +14,7 @@ import pcAlpha from "../public/PCalpha.jpg";
 import retreat1 from "../public/retreat_1_whiteshirts.JPEG";
 import tg from "../public/tailgate.JPEG";
 import AlumniSection from "./AlumniSection";
+import GallerySection from "./GallerySection";
 import { AOSInit } from "./ui/timeline";
 
 // NEW: Hackathon photos (same set used on /hackathon)
@@ -304,6 +305,8 @@ export default function TemplatePage() {
             </div>
           </div>
         </section>
+
+        <GallerySection />
 
         {/* ===============================  ABOUT  ============================= */}
         <section id="about" className="bg-card py-16 md:py-24">

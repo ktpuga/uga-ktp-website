@@ -2,7 +2,7 @@
 
 import PhotoFiles from '@/components/portal/PhotoFiles';
 
-export default function AlumniFiles() {
+export default function AdminFiles() {
   return (
     <PhotoFiles
       title="Files & Photos"

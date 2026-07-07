@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Calendar, Users, Megaphone, ImageIcon, ArrowRight, Bell } from 'lucide-react';
 import { getEvents, getMembers, getPhotos } from '@/lib/portal-api';
 import { formatEventTimeRange, upcomingEvents, countUpcomingEvents, getEventStartDate, getEventEndDate } from '@/lib/portal-format';
+import PhotoMedia from './PhotoMedia';
 
 function cleanName(value) {
   return typeof value === 'string' && value.trim() ? value.trim() : null;
@@ -242,13 +243,8 @@ export default function PortalDashboard({
           ) : (
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
               {photos.slice(0, 4).map((photo) => (
-                <div
-                  key={photo.id}
-                  className={`aspect-square rounded-lg flex items-center justify-center p-3 ${eventBadge}`}
-                >
-                  <span className="text-xs font-medium text-center text-gray-700 dark:text-gray-300 line-clamp-3">
-                    {photo.title || 'Untitled'}
-                  </span>
+                <div key={photo.id} className="aspect-square overflow-hidden rounded-lg bg-gray-100 dark:bg-slate-800">
+                  <PhotoMedia photo={photo} />
                 </div>
               ))}
             </div>

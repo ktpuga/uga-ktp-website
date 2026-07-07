@@ -1,5 +1,6 @@
 "use server"
 
+import { redirect } from "next/navigation"
 import { auth } from "@/auth"
 import { buildProfilePayload } from "@/lib/profile"
 
@@ -13,17 +14,18 @@ import { getAccessToken } from "@/lib/access-token"
 
 export async function saveProfile(formData) {
   const session = await auth()
-  if (!session) return { error: "Not authenticated" }
+  if (!session) redirect("/login")
   const accessToken = await getAccessToken()
-  if (!accessToken) return { error: "No access token in session" }
+  if (!accessToken) redirect("/login")
 
-  // 
+  //
   const payload = buildProfilePayload(formData)
 
-  // I mean this is straight forward 
+  // I mean this is straight forward
+  let res
   try {
     // trys to fetch the profile part of the api
-    const res = await fetch(`${process.env.API_URL}/users/me/profile`, {
+    res = await fetch(`${process.env.API_URL}/users/me/profile`, {
       // we use PUT to not get members but instead update the user information
       method: "PUT",
       // we are updating the information with json based text
@@ -36,14 +38,16 @@ export async function saveProfile(formData) {
       // kinda stupid to call it payload just sounds like overwatch
       body: JSON.stringify(payload),
     })
-
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}))
-      return { error: err.message ?? "Failed to save profile. Please try again." }
-    }
-
-    return { success: true }
   } catch {
     return { error: "Could not reach the server. Please try again." }
   }
+
+  if (res.status === 401) redirect("/login")
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}))
+    return { error: err.message ?? "Failed to save profile. Please try again." }
+  }
+
+  return { success: true }
 }
