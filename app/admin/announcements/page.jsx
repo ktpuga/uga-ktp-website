@@ -5,8 +5,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Plus, Edit, Trash2, Send, Eye, X } from 'lucide-react';
+import { Plus, Edit, Trash2, Send, Eye, X, CalendarPlus } from 'lucide-react';
+import { createEvent } from '@/lib/portal-api';
 
 const priorityColor = (p) => p === 'high' ? 'bg-red-100 text-red-800' : 'bg-gray-100 text-gray-800';
 const statusColor = (s) => ({ published: 'bg-green-100 text-green-800', scheduled: 'bg-red-100 text-red-800', draft: 'bg-gray-100 text-gray-800' }[s] ?? 'bg-gray-100 text-gray-800');
@@ -21,8 +23,12 @@ const initial = [
 export default function AdminAnnouncements() {
   const [announcements, setAnnouncements] = useState(initial);
   const [isCreating, setIsCreating] = useState(false);
+  const [isCreatingEvent, setIsCreatingEvent] = useState(false);
   const [toast, setToast] = useState('');
   const [form, setForm] = useState({ title: '', message: '', audience: 'Members', priority: 'normal' });
+  const [eventForm, setEventForm] = useState({ title: '', description: '', location: '', start: '', end: '' });
+  const [eventError, setEventError] = useState(null);
+  const [eventSaving, setEventSaving] = useState(false);
 
   const showToast = (msg) => {
     setToast(msg);
@@ -44,6 +50,42 @@ export default function AdminAnnouncements() {
     showToast('Announcement deleted');
   };
 
+  const handleCreateEvent = async () => {
+    setEventError(null);
+
+    const startDate = new Date(eventForm.start);
+    const endDate = new Date(eventForm.end);
+
+    if (Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime())) {
+      setEventError('Enter a valid start and end time.');
+      return;
+    }
+
+    if (endDate <= startDate) {
+      setEventError('End time must be after start time.');
+      return;
+    }
+
+    setEventSaving(true);
+
+    try {
+      await createEvent({
+        title: eventForm.title.trim(),
+        description: eventForm.description.trim() || null,
+        location: eventForm.location.trim() || 'Location TBD',
+        start_date: startDate.toISOString(),
+        end_date: endDate.toISOString(),
+      });
+      setEventForm({ title: '', description: '', location: '', start: '', end: '' });
+      setIsCreatingEvent(false);
+      showToast('Event created successfully.');
+    } catch (err) {
+      setEventError(err.message ?? 'Failed to create event.');
+    } finally {
+      setEventSaving(false);
+    }
+  };
+
   const published = announcements.filter((a) => a.status === 'published');
   const scheduled = announcements.filter((a) => a.status === 'scheduled');
 
@@ -62,15 +104,122 @@ export default function AdminAnnouncements() {
       )}
 
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
         <div>
           <h1 className="text-3xl font-bold text-red-900 mb-2">Announcements</h1>
-          <p className="text-gray-600">Create and manage chapter announcements</p>
+          <p className="text-gray-600">Create chapter announcements and calendar events</p>
         </div>
-        <Button className="bg-red-900 hover:bg-red-800" onClick={() => setIsCreating(true)}>
-          <Plus className="w-4 h-4 mr-2" /> New Announcement
-        </Button>
+        <div className="flex flex-col gap-2 sm:flex-row">
+          <Button
+            variant="outline"
+            onClick={() => {
+              setIsCreatingEvent(true);
+              setIsCreating(false);
+            }}
+          >
+            <CalendarPlus className="w-4 h-4 mr-2" /> New Event
+          </Button>
+          <Button
+            className="bg-red-900 hover:bg-red-800"
+            onClick={() => {
+              setIsCreating(true);
+              setIsCreatingEvent(false);
+            }}
+          >
+            <Plus className="w-4 h-4 mr-2" /> New Announcement
+          </Button>
+        </div>
       </div>
+
+      {isCreatingEvent && (
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle>Create New Event</CardTitle>
+              <button
+                onClick={() => {
+                  setIsCreatingEvent(false);
+                  setEventError(null);
+                }}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <CardDescription>Add an event to the chapter calendar</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-1">
+              <label className="text-sm font-medium text-slate-700">Title</label>
+              <Input
+                placeholder="Event title"
+                value={eventForm.title}
+                onChange={(e) => setEventForm({ ...eventForm, title: e.target.value })}
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="text-sm font-medium text-slate-700">Description</label>
+              <Textarea
+                rows={4}
+                placeholder="Optional event details..."
+                value={eventForm.description}
+                onChange={(e) => setEventForm({ ...eventForm, description: e.target.value })}
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="text-sm font-medium text-slate-700">Location</label>
+              <Input
+                placeholder="Location TBD"
+                value={eventForm.location}
+                onChange={(e) => setEventForm({ ...eventForm, location: e.target.value })}
+              />
+            </div>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div className="space-y-1">
+                <label className="text-sm font-medium text-slate-700">Start</label>
+                <Input
+                  type="datetime-local"
+                  value={eventForm.start}
+                  onChange={(e) => setEventForm({ ...eventForm, start: e.target.value })}
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-sm font-medium text-slate-700">End</label>
+                <Input
+                  type="datetime-local"
+                  value={eventForm.end}
+                  onChange={(e) => setEventForm({ ...eventForm, end: e.target.value })}
+                />
+              </div>
+            </div>
+            {eventError && (
+              <p className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+                {eventError}
+              </p>
+            )}
+            <div className="flex flex-col gap-2 pt-2 sm:flex-row">
+              <Button
+                className="flex-1 bg-red-900 hover:bg-red-800"
+                onClick={handleCreateEvent}
+                disabled={eventSaving || !eventForm.title.trim() || !eventForm.start || !eventForm.end}
+              >
+                <CalendarPlus className="w-4 h-4 mr-2" />
+                {eventSaving ? 'Creating...' : 'Create Event'}
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setIsCreatingEvent(false);
+                  setEventError(null);
+                }}
+                disabled={eventSaving}
+              >
+                Cancel
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Create form (inline modal) */}
       {isCreating && (
@@ -91,12 +240,11 @@ export default function AdminAnnouncements() {
             </div>
             <div className="space-y-1">
               <label className="text-sm font-medium text-slate-700">Message</label>
-              <textarea
+              <Textarea
                 rows={4}
                 placeholder="Write your announcement message..."
                 value={form.message}
                 onChange={(e) => setForm({ ...form, message: e.target.value })}
-                className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
               />
             </div>
             <div className="grid grid-cols-2 gap-4">
