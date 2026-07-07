@@ -2,12 +2,13 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
-import { LayoutDashboard, LogOut } from 'lucide-react';
+import { LayoutDashboard, FolderOpen, LogOut } from 'lucide-react';
 import { signOut } from 'next-auth/react';
 import { usePathname } from 'next/navigation';
 
 const NAV = [
   { href: '/pledge', label: 'Dashboard', icon: LayoutDashboard },
+  { href: '/pledge/files', label: 'Files & Photos', icon: FolderOpen },
 ];
 
 export default function PledgeLayout({ children }) {
