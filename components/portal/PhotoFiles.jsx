@@ -7,9 +7,22 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Search, FolderOpen, FileText, Trash2, Users, Images, Plus, ArrowLeft, Download } from 'lucide-react';
-import { getPhotos, getAlbums, createAlbum, uploadPhoto, deletePhoto } from '@/lib/portal-api';
+import { Search, FolderOpen, FileText, Trash2, Users, Images, Plus, ArrowLeft, Download, X } from 'lucide-react';
+import {
+  getPhotos,
+  getAlbums,
+  createAlbum,
+  uploadPhoto,
+  deletePhoto,
+  getDocumentFolders,
+  getDocuments,
+  createDocumentFolder,
+  deleteDocumentFolder,
+  uploadDocument,
+  deleteDocument,
+} from '@/lib/portal-api';
 import { formatPhotoDate } from '@/lib/portal-format';
+import { isRedirectError } from '@/lib/is-redirect-error';
 import PhotoMedia from './PhotoMedia';
 
 const GENERAL_ALBUM = { id: null, name: 'Shared Album', description: 'General chapter photos, open to everyone' };
@@ -91,6 +104,7 @@ function UploadForm({ albumId, onUploaded }) {
       setCaption('');
       e.target.reset();
     } catch (err) {
+      if (isRedirectError(err)) throw err;
       setError(err.message ?? 'Failed to upload photo');
     } finally {
       setSubmitting(false);
@@ -143,6 +157,7 @@ function CreateAlbumForm({ onCreated }) {
       setDescription('');
       setOpen(false);
     } catch (err) {
+      if (isRedirectError(err)) throw err;
       setError(err.message ?? 'Failed to create album');
     } finally {
       setSubmitting(false);
@@ -222,7 +237,10 @@ function AlbumView({ album, currentUserId, isEboard, onBack }) {
     setLoading(true);
     getPhotos(album.id ?? undefined)
       .then(setPhotos)
-      .catch((err) => setError(err.message ?? 'Could not load photos'))
+      .catch((err) => {
+        if (isRedirectError(err)) throw err;
+        setError(err.message ?? 'Could not load photos');
+      })
       .finally(() => setLoading(false));
   }, [album.id]);
 
@@ -236,6 +254,7 @@ function AlbumView({ album, currentUserId, isEboard, onBack }) {
       await deletePhoto(id);
       setPhotos((prev) => prev.filter((p) => p.id !== id));
     } catch (err) {
+      if (isRedirectError(err)) throw err;
       window.alert(err.message ?? 'Failed to delete photo');
     }
   }
@@ -299,7 +318,10 @@ function AlbumsSection({ currentUserId, isEboard }) {
   useEffect(() => {
     getAlbums()
       .then(setAlbums)
-      .catch((err) => setError(err.message ?? 'Could not load albums'))
+      .catch((err) => {
+        if (isRedirectError(err)) throw err;
+        setError(err.message ?? 'Could not load albums');
+      })
       .finally(() => setLoading(false));
   }, []);
 
@@ -335,6 +357,401 @@ function AlbumsSection({ currentUserId, isEboard }) {
   );
 }
 
+function formatFileSize(bytes) {
+  if (bytes === null || bytes === undefined) return '';
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function CreateFolderForm({ parentId, onCreated }) {
+  const [open, setOpen] = useState(false);
+  const [name, setName] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState(null);
+
+  async function handleSubmit(e) {
+    e.preventDefault();
+    if (!name.trim()) return;
+
+    setSubmitting(true);
+    setError(null);
+    try {
+      const folder = await createDocumentFolder(name.trim(), parentId);
+      onCreated(folder);
+      setName('');
+      setOpen(false);
+    } catch (err) {
+      if (isRedirectError(err)) throw err;
+      setError('Failed to create folder');
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  if (!open) {
+    return (
+      <Button type="button" variant="outline" onClick={() => setOpen(true)} className="gap-2">
+        <Plus className="h-4 w-4" /> New Folder
+      </Button>
+    );
+  }
+
+  return (
+    <Card>
+      <CardContent className="pt-6">
+        <form onSubmit={handleSubmit} className="flex flex-col gap-3 sm:flex-row sm:items-start">
+          <Input
+            placeholder="Folder name"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            className="sm:flex-1"
+          />
+          <div className="flex gap-2">
+            <Button type="submit" disabled={!name.trim() || submitting}>
+              {submitting ? 'Creating...' : 'Create'}
+            </Button>
+            <Button type="button" variant="ghost" onClick={() => setOpen(false)}>
+              Cancel
+            </Button>
+          </div>
+        </form>
+        {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
+      </CardContent>
+    </Card>
+  );
+}
+
+function UploadDocumentForm({ folderId, onUploaded }) {
+  const [file, setFile] = useState(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState(null);
+
+  async function handleSubmit(e) {
+    e.preventDefault();
+    if (!file) return;
+
+    setSubmitting(true);
+    setError(null);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      if (folderId) formData.append('folder_id', folderId);
+
+      const result = await uploadDocument(formData);
+      if (result?.error) {
+        setError(result.error);
+      } else {
+        onUploaded(result);
+        setFile(null);
+        e.target.reset();
+      }
+    } catch (err) {
+      if (isRedirectError(err)) throw err;
+      setError('Failed to upload document');
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  return (
+    <Card>
+      <CardContent className="pt-6">
+        <form onSubmit={handleSubmit} className="flex flex-col gap-3 sm:flex-row sm:items-center">
+          <input
+            type="file"
+            onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+            className="block w-full text-sm text-gray-600 file:mr-3 file:rounded-md file:border-0 file:bg-blue-50 file:px-3 file:py-2 file:text-sm file:font-medium file:text-blue-900 hover:file:bg-blue-100 sm:flex-1"
+          />
+          <Button type="submit" disabled={!file || submitting}>
+            {submitting ? 'Uploading...' : 'Upload file'}
+          </Button>
+        </form>
+        {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
+      </CardContent>
+    </Card>
+  );
+}
+
+function FolderCard({ folder, isEboard, onOpen, onDelete }) {
+  return (
+    <Card className="cursor-pointer transition-shadow hover:shadow-md">
+      <CardContent className="flex items-center justify-between gap-2 p-4">
+        <button
+          type="button"
+          onClick={() => onOpen(folder)}
+          className="flex min-w-0 flex-1 items-center gap-2 text-left"
+        >
+          <FolderOpen className="h-5 w-5 shrink-0 text-blue-800" />
+          <span className="truncate text-sm font-medium text-gray-900 dark:text-slate-100">{folder.name}</span>
+        </button>
+        {isEboard && (
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={() => onDelete(folder.id)}
+            className="h-8 w-8 shrink-0 p-0 text-red-600 hover:bg-red-50 hover:text-red-700"
+          >
+            <Trash2 className="h-4 w-4" />
+          </Button>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+function isPreviewable(mimeType) {
+  return mimeType?.startsWith('image/') || mimeType === 'application/pdf';
+}
+
+function DocumentIcon({ doc }) {
+  if (doc.mime_type?.startsWith('image/')) {
+    return (
+      <img
+        src={`/api/documents/${doc.id}/preview`}
+        alt=""
+        className="h-10 w-10 shrink-0 rounded object-cover"
+      />
+    );
+  }
+  return (
+    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded bg-gray-100 dark:bg-slate-800">
+      <FileText className="h-5 w-5 text-gray-500" />
+    </div>
+  );
+}
+
+function DocumentRow({ doc, isEboard, onPreview, onDelete }) {
+  return (
+    <Card>
+      <CardContent className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
+        <button
+          type="button"
+          onClick={() => onPreview(doc)}
+          className="flex min-w-0 flex-1 items-center gap-3 text-left"
+        >
+          <DocumentIcon doc={doc} />
+          <div className="min-w-0">
+            <p className="truncate text-sm font-medium text-gray-900 hover:underline dark:text-slate-100">
+              {doc.filename}
+            </p>
+            <p className="text-xs text-gray-500 dark:text-slate-400">
+              {formatFileSize(doc.file_size)}
+              {doc.created_at ? ` • ${formatPhotoDate(doc.created_at)}` : ''}
+            </p>
+          </div>
+        </button>
+        <div className="flex shrink-0 gap-2">
+          <Button type="button" variant="outline" size="sm" asChild>
+            <a href={`/api/documents/${doc.id}/download`} download={doc.filename}>
+              <Download className="mr-2 h-4 w-4" /> Download
+            </a>
+          </Button>
+          {isEboard && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => onDelete(doc.id)}
+              className="text-red-600 hover:bg-red-50 hover:text-red-700"
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          )}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function DocumentPreviewModal({ doc, onClose }) {
+  useEffect(() => {
+    function handleKeyDown(e) {
+      if (e.key === 'Escape') onClose();
+    }
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [onClose]);
+
+  const previewUrl = `/api/documents/${doc.id}/preview`;
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4"
+      onClick={onClose}
+    >
+      <div
+        className="flex max-h-full w-full max-w-4xl flex-col overflow-hidden rounded-lg bg-white dark:bg-slate-900"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between gap-3 border-b border-gray-200 p-4 dark:border-slate-700">
+          <p className="min-w-0 truncate text-sm font-medium text-gray-900 dark:text-slate-100">{doc.filename}</p>
+          <div className="flex shrink-0 items-center gap-2">
+            <Button type="button" variant="outline" size="sm" asChild>
+              <a href={`/api/documents/${doc.id}/download`} download={doc.filename}>
+                <Download className="mr-2 h-4 w-4" /> Download
+              </a>
+            </Button>
+            <Button type="button" variant="ghost" size="sm" onClick={onClose} className="h-8 w-8 p-0">
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+        <div className="flex-1 overflow-auto bg-gray-50 dark:bg-slate-950">
+          {isPreviewable(doc.mime_type) ? (
+            doc.mime_type.startsWith('image/') ? (
+              <img src={previewUrl} alt={doc.filename} className="mx-auto max-h-[75vh] w-auto object-contain" />
+            ) : (
+              <iframe src={previewUrl} title={doc.filename} className="h-[75vh] w-full" />
+            )
+          ) : (
+            <div className="flex flex-col items-center justify-center gap-3 px-4 py-20 text-center">
+              <FileText className="h-12 w-12 text-gray-400" />
+              <p className="text-sm text-gray-600 dark:text-slate-400">
+                Preview isn't available for this file type — download it to view.
+              </p>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function DocumentsSection({ isEboard }) {
+  const [path, setPath] = useState([]); // [{ id, name }, ...] — empty means the top level
+  const [folders, setFolders] = useState([]);
+  const [documents, setDocuments] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [previewDoc, setPreviewDoc] = useState(null);
+
+  const currentFolderId = path.length ? path[path.length - 1].id : null;
+
+  useEffect(() => {
+    setLoading(true);
+    setError(null);
+    Promise.all([getDocumentFolders(currentFolderId), getDocuments(currentFolderId)])
+      .then(([folderList, documentList]) => {
+        setFolders(folderList);
+        setDocuments(documentList);
+      })
+      .catch((err) => {
+        if (isRedirectError(err)) throw err;
+        setError('Could not load this folder');
+      })
+      .finally(() => setLoading(false));
+  }, [currentFolderId]);
+
+  function handleFolderCreated(folder) {
+    setFolders((prev) => [...prev, folder]);
+  }
+
+  function handleDocumentUploaded(doc) {
+    setDocuments((prev) => [doc, ...prev]);
+  }
+
+  function handleOpenFolder(folder) {
+    setPath((prev) => [...prev, { id: folder.id, name: folder.name }]);
+  }
+
+  function handleBreadcrumb(index) {
+    setPath((prev) => prev.slice(0, index + 1));
+  }
+
+  async function handleDeleteFolder(id) {
+    if (!window.confirm('Delete this folder and everything inside it? This cannot be undone.')) return;
+    try {
+      await deleteDocumentFolder(id);
+      setFolders((prev) => prev.filter((f) => f.id !== id));
+    } catch (err) {
+      if (isRedirectError(err)) throw err;
+      window.alert('Failed to delete folder');
+    }
+  }
+
+  async function handleDeleteDocument(id) {
+    if (!window.confirm('Delete this document? This cannot be undone.')) return;
+    try {
+      await deleteDocument(id);
+      setDocuments((prev) => prev.filter((d) => d.id !== id));
+    } catch (err) {
+      if (isRedirectError(err)) throw err;
+      window.alert('Failed to delete document');
+    }
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="flex flex-wrap items-center gap-1 text-sm text-gray-600 dark:text-slate-400">
+        <button type="button" onClick={() => setPath([])} className="hover:underline">
+          Documents
+        </button>
+        {path.map((crumb, index) => (
+          <span key={crumb.id} className="flex items-center gap-1">
+            <span>/</span>
+            <button type="button" onClick={() => handleBreadcrumb(index)} className="hover:underline">
+              {crumb.name}
+            </button>
+          </span>
+        ))}
+      </div>
+
+      {isEboard && (
+        <div className="flex flex-wrap gap-2">
+          <CreateFolderForm parentId={currentFolderId} onCreated={handleFolderCreated} />
+        </div>
+      )}
+
+      {isEboard && <UploadDocumentForm folderId={currentFolderId} onUploaded={handleDocumentUploaded} />}
+
+      {error && (
+        <Card className="border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-950/40">
+          <CardContent className="pt-6 text-sm text-red-700 dark:text-red-300">{error}</CardContent>
+        </Card>
+      )}
+
+      {loading ? (
+        <p className="py-10 text-center text-sm text-gray-500 sm:py-12">Loading...</p>
+      ) : folders.length === 0 && documents.length === 0 ? (
+        <EmptyTab icon={FolderOpen} message="Nothing here yet." />
+      ) : (
+        <div className="space-y-4">
+          {folders.length > 0 && (
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {folders.map((folder) => (
+                <FolderCard
+                  key={folder.id}
+                  folder={folder}
+                  isEboard={isEboard}
+                  onOpen={handleOpenFolder}
+                  onDelete={handleDeleteFolder}
+                />
+              ))}
+            </div>
+          )}
+          {documents.length > 0 && (
+            <div className="space-y-2">
+              {documents.map((doc) => (
+                <DocumentRow
+                  key={doc.id}
+                  doc={doc}
+                  isEboard={isEboard}
+                  onPreview={setPreviewDoc}
+                  onDelete={handleDeleteDocument}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {previewDoc && <DocumentPreviewModal doc={previewDoc} onClose={() => setPreviewDoc(null)} />}
+    </div>
+  );
+}
+
 export default function PhotoFiles({ title, description }) {
   const { data: session } = useSession();
   const currentUserId = session?.user?.authentik_id;
@@ -348,10 +765,9 @@ export default function PhotoFiles({ title, description }) {
       </div>
 
       <Tabs defaultValue="albums" className="w-full min-w-0">
-        <TabsList className="grid h-auto w-full grid-cols-3 gap-1">
+        <TabsList className="grid h-auto w-full grid-cols-2 gap-1">
           <TabsTrigger value="albums" className="min-w-0 px-2 py-2 text-xs sm:text-sm">Albums</TabsTrigger>
           <TabsTrigger value="documents" className="min-w-0 px-2 py-2 text-xs sm:text-sm">Documents</TabsTrigger>
-          <TabsTrigger value="folders" className="min-w-0 px-2 py-2 text-xs sm:text-sm">Folders</TabsTrigger>
         </TabsList>
 
         <TabsContent value="albums" className="mt-6">
@@ -359,11 +775,7 @@ export default function PhotoFiles({ title, description }) {
         </TabsContent>
 
         <TabsContent value="documents" className="mt-6">
-          <EmptyTab icon={FileText} message="Document storage is not available yet." />
-        </TabsContent>
-
-        <TabsContent value="folders" className="mt-6">
-          <EmptyTab icon={FolderOpen} message="Folders are not available yet. There is no folders API." />
+          <DocumentsSection isEboard={isEboard} />
         </TabsContent>
       </Tabs>
     </div>

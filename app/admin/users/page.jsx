@@ -16,6 +16,7 @@ import {
   memberInitials,
   normalizeApiList,
 } from '@/lib/portal-format';
+import { isRedirectError } from '@/lib/is-redirect-error';
 
 const LEADERSHIP_GROUPS = new Set(['eboard', 'chair']);
 
@@ -224,6 +225,7 @@ export default function AdminUsers() {
       const data = await getAdminUsers();
       setMembers(normalizeApiList(data));
     } catch (err) {
+      if (isRedirectError(err)) throw err;
       setError(err.message ?? 'Could not load users from the API');
     } finally {
       setLoading(false);

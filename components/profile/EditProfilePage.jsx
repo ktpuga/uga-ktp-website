@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { getProfile } from '@/lib/portal-api';
 import { normalizeUserProfile } from '@/lib/profile';
 import { formatMemberGroup } from '@/lib/portal-format';
+import { isRedirectError } from '@/lib/is-redirect-error';
 import ProfileForm from './ProfileForm';
 
 const ACCENT_HEADING = {
@@ -21,7 +22,10 @@ export default function EditProfilePage({ accent = 'blue', portalLabel = 'Portal
   useEffect(() => {
     getProfile()
       .then((data) => setProfile(normalizeUserProfile(data)))
-      .catch((err) => setError(err.message ?? 'Could not load your profile'))
+      .catch((err) => {
+        if (isRedirectError(err)) throw err;
+        setError(err.message ?? 'Could not load your profile');
+      })
       .finally(() => setLoading(false));
   }, []);
 

@@ -12,6 +12,7 @@ import {
   formatMemberGroup,
   formatGraduationDate,
 } from '@/lib/portal-format';
+import { isRedirectError } from '@/lib/is-redirect-error';
 
 const GROUP_BADGE = {
   eboard: 'bg-red-100 text-red-800',
@@ -57,7 +58,10 @@ export default function MemberDirectory({
   useEffect(() => {
     getMemberDirectory()
       .then(setMembers)
-      .catch((err) => setError(err.message ?? 'Could not load directory'))
+      .catch((err) => {
+        if (isRedirectError(err)) throw err;
+        setError(err.message ?? 'Could not load directory');
+      })
       .finally(() => setLoading(false));
   }, []);
 

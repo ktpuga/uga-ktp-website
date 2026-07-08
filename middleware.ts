@@ -12,8 +12,10 @@ function homePortal(groups: string[]): string {
 }
 
 export default auth((req) => {
-  // Not logged in — send to login page
-  if (!req.auth)
+  // Not logged in, or a token refresh already failed (see auth.ts) — send to
+  // login page rather than letting the page load and hit the same dead
+  // access token when it tries to fetch data.
+  if (!req.auth || (req.auth as any).error)
     return NextResponse.redirect(new URL("/login", req.url))
 
   const user = req.auth.user as any

@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Calendar, Users, Megaphone, ImageIcon, ArrowRight, Bell } from 'lucide-react';
 import { getEvents, getMembers, getPhotos } from '@/lib/portal-api';
 import { formatEventTimeRange, upcomingEvents, countUpcomingEvents, getEventStartDate, getEventEndDate } from '@/lib/portal-format';
+import { isRedirectError } from '@/lib/is-redirect-error';
 import PhotoMedia from './PhotoMedia';
 
 function cleanName(value) {
@@ -103,7 +104,10 @@ export default function PortalDashboard({
         setMembers(membersData);
         setPhotos(Array.isArray(photosData) ? photosData : []);
       })
-      .catch((err) => setError(err.message ?? 'Could not load dashboard data'))
+      .catch((err) => {
+        if (isRedirectError(err)) throw err;
+        setError(err.message ?? 'Could not load dashboard data');
+      })
       .finally(() => setLoading(false));
   }, []);
 

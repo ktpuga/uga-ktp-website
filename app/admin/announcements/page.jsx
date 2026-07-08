@@ -9,6 +9,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Plus, Edit, Trash2, Send, Eye, X, CalendarPlus } from 'lucide-react';
 import { createEvent } from '@/lib/portal-api';
+import { isRedirectError } from '@/lib/is-redirect-error';
 
 const priorityColor = (p) => p === 'high' ? 'bg-red-100 text-red-800' : 'bg-gray-100 text-gray-800';
 const statusColor = (s) => ({ published: 'bg-green-100 text-green-800', scheduled: 'bg-red-100 text-red-800', draft: 'bg-gray-100 text-gray-800' }[s] ?? 'bg-gray-100 text-gray-800');
@@ -86,6 +87,7 @@ export default function AdminAnnouncements() {
       setIsCreatingEvent(false);
       showToast('Event created successfully.');
     } catch (err) {
+      if (isRedirectError(err)) throw err;
       setEventError(err.message ?? 'Failed to create event.');
     } finally {
       setEventSaving(false);

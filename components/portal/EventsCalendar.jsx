@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Calendar as CalendarIcon, Clock, MapPin } from 'lucide-react';
 import { getEvents } from '@/lib/portal-api';
 import { formatEventDate, formatEventTimeRange, sortEventsChronologically, getEventStartDate, getEventEndDate } from '@/lib/portal-format';
+import { isRedirectError } from '@/lib/is-redirect-error';
 
 export default function EventsCalendar({ title, description }) {
   const [events, setEvents] = useState([]);
@@ -15,7 +16,10 @@ export default function EventsCalendar({ title, description }) {
   useEffect(() => {
     getEvents()
       .then(setEvents)
-      .catch((err) => setError(err.message ?? 'Could not load events'))
+      .catch((err) => {
+        if (isRedirectError(err)) throw err;
+        setError(err.message ?? 'Could not load events');
+      })
       .finally(() => setLoading(false));
   }, []);
 

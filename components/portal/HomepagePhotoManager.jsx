@@ -14,6 +14,7 @@ import {
   removeHomepagePhoto,
   reorderHomepagePhotos,
 } from '@/lib/portal-api';
+import { isRedirectError } from '@/lib/is-redirect-error';
 
 function PhotoMedia({ photo }) {
   const src = `/api/homepage-photos/${photo.id}/media`;
@@ -49,6 +50,7 @@ function UploadTab({ onAdded }) {
       setCaption('');
       e.target.reset();
     } catch (err) {
+      if (isRedirectError(err)) throw err;
       setError(err.message ?? 'Failed to upload photo');
     } finally {
       setSubmitting(false);
@@ -108,6 +110,7 @@ function RegisterTab({ onAdded }) {
       setTitle('');
       setCaption('');
     } catch (err) {
+      if (isRedirectError(err)) throw err;
       setError(err.message ?? 'Failed to add photo');
     } finally {
       setSubmitting(false);
@@ -160,7 +163,10 @@ export default function HomepagePhotoManager() {
   useEffect(() => {
     getHomepagePhotos()
       .then(setPhotos)
-      .catch((err) => setError(err.message ?? 'Could not load homepage photos'))
+      .catch((err) => {
+        if (isRedirectError(err)) throw err;
+        setError(err.message ?? 'Could not load homepage photos');
+      })
       .finally(() => setLoading(false));
   }, []);
 
@@ -174,6 +180,7 @@ export default function HomepagePhotoManager() {
       await removeHomepagePhoto(id);
       setPhotos((prev) => prev.filter((p) => p.id !== id));
     } catch (err) {
+      if (isRedirectError(err)) throw err;
       window.alert(err.message ?? 'Failed to remove photo');
     }
   }
@@ -189,9 +196,12 @@ export default function HomepagePhotoManager() {
     try {
       await reorderHomepagePhotos(reordered.map((p) => p.id));
     } catch (err) {
+      if (isRedirectError(err)) throw err;
       window.alert(err.message ?? 'Failed to save the new order');
       // Revert on failure by re-fetching the server's actual order.
-      getHomepagePhotos().then(setPhotos).catch(() => {});
+      getHomepagePhotos().then(setPhotos).catch((revertErr) => {
+        if (isRedirectError(revertErr)) throw revertErr;
+      });
     } finally {
       setReordering(false);
     }

@@ -6,7 +6,11 @@ import SignInButton from '@/components/auth/SignInButton';
 
 export default async function Login() {
   const session = await auth();
-  if (session) redirect('/auth/redirect');
+  // session.error means a token refresh already failed (see auth.ts) — treat
+  // that as not really logged in, otherwise this bounces straight back into
+  // the app, which immediately hits the same dead token and redirects here
+  // again, looping forever instead of just showing the sign-in button.
+  if (session && !session.error) redirect('/auth/redirect');
 
   return (
     <div
