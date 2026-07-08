@@ -13,9 +13,23 @@ import NextAuth from "next-auth"
 // rotates refresh tokens on use, so whichever request wins invalidates the
 // refresh token for the others — they'd fail and flag an error even though
 // one of them actually succeeded, and depending on response ordering the
-// browser could end up with the failed result. in-flight de-dupes concurrent
-// refreshes for the same refresh_token into a single request so this can't
-// happen — everyone awaits the same outcome instead of racing.
+// browser could end up with the failed result.
+//
+// A second, separate race: middleware refreshes and updates the cookie
+// before a page's own Server Components/Actions run, but those *within the
+// same request* still see the original (pre-refresh) cookie — Next.js
+// doesn't let middleware's Set-Cookie retroactively affect what the same
+// request's page rendering reads, only future requests. So the page's own
+// auth() call sees the same stale expires_at, tries to refresh *again*, and
+// gets rejected because Authentik already rotated that refresh token out
+// from under it moments earlier — a false failure even though the browser
+// is about to receive a perfectly valid session from middleware's update.
+//
+// Keeping a completed result (success or failure) cached for a few seconds
+// after it resolves — not just de-duping truly concurrent calls — fixes
+// both: any call using the same (now-rotated) refresh token within that
+// window reuses the already-resolved outcome instead of hitting Authentik
+// again and hitting a false "already used" rejection.
 const inFlightRefreshes = new Map<string, Promise<any>>()
 
 async function refreshAccessToken(token: any) {
@@ -49,12 +63,14 @@ async function refreshAccessToken(token: any) {
     } catch (err) {
       console.error("[auth] failed to refresh access token:", err)
       return { ...token, error: "RefreshAccessTokenError" }
-    } finally {
-      inFlightRefreshes.delete(refreshToken)
     }
   })()
 
   inFlightRefreshes.set(refreshToken, promise)
+  // Delay cleanup instead of removing immediately — see comment above.
+  promise.finally(() => {
+    setTimeout(() => inFlightRefreshes.delete(refreshToken), 10000)
+  })
   return promise
 }
 
@@ -133,7 +149,14 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         return refreshAccessToken(token)
       }
 
-      return token
+      // No refresh_token at all — either a session from before this refresh
+      // mechanism existed, or the IdP never issued one. We can't confirm the
+      // access token is still valid and can't renew it, so force a real
+      // re-login instead of silently trusting an unverifiable token forever
+      // (which otherwise loops: middleware lets it through with no error,
+      // the stale token 401s against ktp-api, /login sees the same
+      // no-error token and bounces right back in).
+      return { ...token, error: "RefreshAccessTokenError" }
     },
 
     session({ session, token }) {
