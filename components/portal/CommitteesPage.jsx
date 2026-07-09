@@ -23,6 +23,7 @@ import {
 } from '@/lib/portal-api';
 import { memberDisplayName, memberInitials } from '@/lib/portal-format';
 import { isRedirectError } from '@/lib/is-redirect-error';
+import { useConfirm } from '@/components/ui/confirm-dialog';
 
 const ACCENTS = {
   blue: { heading: 'text-blue-900 dark:text-blue-100', button: 'bg-blue-800 hover:bg-blue-700' },
@@ -393,6 +394,7 @@ function CommitteeDetail({ committee, isEboard, accentClass, onBack, onChanged }
 }
 
 export default function CommitteesPage({ accent = 'blue' }) {
+  const confirm = useConfirm();
   const { data: session } = useSession();
   const isEboard = session?.user?.groups?.includes('eboard') ?? false;
   const styles = ACCENTS[accent] ?? ACCENTS.blue;
@@ -416,7 +418,7 @@ export default function CommitteesPage({ accent = 'blue' }) {
   useEffect(loadCommittees, []);
 
   async function handleDelete(id) {
-    if (!window.confirm('Delete this committee? This cannot be undone.')) return;
+    if (!(await confirm('Delete this committee? This cannot be undone.'))) return;
     try {
       await deleteCommittee(id);
       setCommittees((prev) => prev.filter((c) => c.id !== id));

@@ -32,6 +32,7 @@ import {
 } from '@/lib/portal-api';
 import { memberDisplayName, memberInitials, formatMemberGroup, formatMessageTime } from '@/lib/portal-format';
 import { isRedirectError } from '@/lib/is-redirect-error';
+import { useConfirm } from '@/components/ui/confirm-dialog';
 
 function EmptyState({ icon: Icon, message }) {
   return (
@@ -555,6 +556,7 @@ function CreateGroupChatForm({ onCreated }) {
 }
 
 function GroupChatThread({ chat, currentUserId, isEboard, onBack, onDeleted }) {
+  const confirm = useConfirm();
   const [messages, setMessages] = useState([]);
   const [members, setMembers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -629,7 +631,7 @@ function GroupChatThread({ chat, currentUserId, isEboard, onBack, onDeleted }) {
   }
 
   async function handleDeleteChat() {
-    if (!window.confirm(`Delete "${chat.name}"? This cannot be undone.`)) return;
+    if (!(await confirm(`Delete "${chat.name}"? This cannot be undone.`))) return;
     try {
       await deleteGroupChat(chat.id);
       onDeleted(chat.id);

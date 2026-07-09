@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { GraduationCap, Mail, RefreshCw, Search, Shield, UserCheck, Users } from 'lucide-react';
-import { getAdminUsers } from '@/lib/portal-api';
+import { getAdminUsers, updateUserGroup } from '@/lib/portal-api';
 import {
   formatGraduationDate,
   formatMemberGroup,
@@ -20,6 +20,8 @@ import { isRedirectError } from '@/lib/is-redirect-error';
 
 const LEADERSHIP_GROUPS = new Set(['eboard', 'chair']);
 
+const GROUP_OPTIONS = ['eboard', 'chair', 'active', 'pledge', 'alumni'];
+
 const GROUP_BADGE = {
   eboard: 'bg-red-100 text-red-800',
   chair: 'bg-purple-100 text-purple-800',
@@ -27,6 +29,15 @@ const GROUP_BADGE = {
   pledge: 'bg-green-100 text-green-800',
   alumni: 'bg-amber-100 text-amber-800',
   unknown: 'bg-slate-100 text-slate-800',
+};
+
+const AVATAR_ACCENT = {
+  eboard: 'bg-red-900 text-white',
+  chair: 'bg-purple-800 text-white',
+  active: 'bg-blue-800 text-white',
+  pledge: 'bg-green-800 text-white',
+  alumni: 'bg-amber-800 text-white',
+  unknown: 'bg-slate-700 text-white',
 };
 
 const PROFILE_BADGE = {
@@ -51,6 +62,10 @@ function readField(member, fields) {
 
 function getMemberGroup(member) {
   return readField(member, ['member_group', 'memberGroup', 'group']) ?? 'unknown';
+}
+
+function getAuthentikId(member) {
+  return readField(member, ['authentik_id', 'authentikId']);
 }
 
 function isProfileComplete(member) {
@@ -104,7 +119,7 @@ function searchText(member) {
   return [
     adminDisplayName(member),
     readField(member, ['username']),
-    readField(member, ['authentik_id', 'authentikId']),
+    getAuthentikId(member),
     userEmail(member),
     readField(member, ['major']),
     readField(member, ['pledge_class', 'pledgeClass']),
@@ -132,7 +147,63 @@ function stableMemberKey(member, index) {
     ?? `${adminDisplayName(member)}-${index}`;
 }
 
-function UserRow({ member, accent = 'red' }) {
+// Lets eboard pull an existing user (currently in some other group, or
+// unassigned) into this group — the reverse direction of a row's own "Move
+// to" control, initiated from the group instead of the person.
+function AddMemberControl({ group, candidates, onAdd }) {
+  const [selected, setSelected] = useState('');
+  const [adding, setAdding] = useState(false);
+  const [error, setError] = useState(null);
+
+  async function handleAdd() {
+    if (!selected) return;
+
+    setAdding(true);
+    setError(null);
+    try {
+      await onAdd(selected, group);
+      setSelected('');
+    } catch (err) {
+      if (isRedirectError(err)) throw err;
+      setError(err.message ?? 'Failed to add member');
+    } finally {
+      setAdding(false);
+    }
+  }
+
+  return (
+    <Card>
+      <CardContent className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:p-6">
+        <select
+          value={selected}
+          onChange={(e) => setSelected(e.target.value)}
+          disabled={adding || candidates.length === 0}
+          className="h-10 w-full min-w-0 rounded-md border border-slate-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-500 disabled:opacity-60 dark:border-slate-700 dark:bg-slate-950 sm:max-w-sm"
+        >
+          <option value="">
+            {candidates.length === 0 ? 'No other members to add' : 'Select a member to add...'}
+          </option>
+          {candidates.map((member, index) => (
+            <option key={getAuthentikId(member) ?? index} value={getAuthentikId(member)}>
+              {adminDisplayName(member)} — currently {formatMemberGroup(getMemberGroup(member))}
+            </option>
+          ))}
+        </select>
+        <Button
+          size="sm"
+          className="bg-red-900 hover:bg-red-800 sm:shrink-0"
+          onClick={handleAdd}
+          disabled={!selected || adding}
+        >
+          {adding ? 'Adding...' : `+ Add to ${formatMemberGroup(group)}`}
+        </Button>
+        {error && <span className="text-xs text-red-600 dark:text-red-400">{error}</span>}
+      </CardContent>
+    </Card>
+  );
+}
+
+function UserRow({ member, onGroupChange }) {
   const group = getMemberGroup(member);
   const email = userEmail(member);
   const graduation = graduationLabel(member);
@@ -140,8 +211,28 @@ function UserRow({ member, accent = 'red' }) {
   const major = readField(member, ['major']);
   const pledgeClass = readField(member, ['pledge_class', 'pledgeClass']);
   const username = readField(member, ['username']);
-  const authentikId = readField(member, ['authentik_id', 'authentikId']);
-  const avatarClass = accent === 'amber' ? 'bg-amber-800 text-white' : 'bg-red-900 text-white';
+  const authentikId = getAuthentikId(member);
+  const avatarClass = AVATAR_ACCENT[group] ?? AVATAR_ACCENT.unknown;
+
+  const [saving, setSaving] = useState(false);
+  const [groupError, setGroupError] = useState(null);
+
+  async function handleMoveTo(e) {
+    const newGroup = e.target.value;
+    if (!newGroup || !authentikId) return;
+
+    e.target.value = '';
+    setSaving(true);
+    setGroupError(null);
+    try {
+      await onGroupChange(authentikId, newGroup);
+    } catch (err) {
+      if (isRedirectError(err)) throw err;
+      setGroupError(err.message ?? 'Failed to update group in Authentik');
+    } finally {
+      setSaving(false);
+    }
+  }
 
   return (
     <Card className="overflow-hidden transition-shadow hover:shadow-md">
@@ -171,9 +262,24 @@ function UserRow({ member, accent = 'red' }) {
               {pledgeClass && <span>{pledgeClass}</span>}
               {graduation && <span>{graduation}</span>}
             </div>
+            {groupError && (
+              <p className="mt-1 text-xs text-red-600 dark:text-red-400">{groupError}</p>
+            )}
           </div>
         </div>
-        <div className="flex shrink-0 gap-2">
+        <div className="flex shrink-0 items-center gap-2">
+          <select
+            defaultValue=""
+            onChange={handleMoveTo}
+            disabled={saving || !authentikId}
+            title={authentikId ? "Move this member to a different group" : "Can't change group — missing Authentik ID"}
+            className="h-9 rounded-md border border-slate-300 bg-white px-2 text-xs focus:outline-none focus:ring-2 focus:ring-red-500 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-700 dark:bg-slate-950"
+          >
+            <option value="" disabled>{saving ? 'Moving…' : 'Move to…'}</option>
+            {GROUP_OPTIONS.filter((value) => value !== group).map((value) => (
+              <option key={value} value={value}>{formatMemberGroup(value)}</option>
+            ))}
+          </select>
           {email ? (
             <Button variant="outline" size="sm" asChild>
               <a href={`mailto:${email}`}>
@@ -207,7 +313,6 @@ function EmptyState({ message }) {
 export default function AdminUsers() {
   const [members, setMembers] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
-  const [groupFilter, setGroupFilter] = useState('all');
   const [profileFilter, setProfileFilter] = useState('all');
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -237,37 +342,62 @@ export default function AdminUsers() {
     loadMembers();
   }, []);
 
-  const { activeUsers, alumniUsers, filteredActive, filteredAlumni, stats } = useMemo(() => {
+  async function handleGroupChange(authentikId, group) {
+    const updated = await updateUserGroup(authentikId, group);
+    setMembers((prev) => prev.map((member) => (
+      getAuthentikId(member) === authentikId ? { ...member, member_group: updated.member_group } : member
+    )));
+  }
+
+  const { byGroup, filteredByGroup, unassigned, filteredUnassigned, stats } = useMemo(() => {
     const sorted = [...members].sort(sortMembers);
-    const active = sorted.filter((member) => getMemberGroup(member) !== 'alumni');
-    const alumni = sorted.filter((member) => getMemberGroup(member) === 'alumni');
+
     const matchesFilters = (member) => {
       const q = searchQuery.trim().toLowerCase();
-      const group = getMemberGroup(member);
       const complete = isProfileComplete(member);
 
       return (
         (!q || searchText(member).includes(q))
-        && (groupFilter === 'all' || group === groupFilter)
         && (profileFilter === 'all'
           || (profileFilter === 'complete' && complete)
           || (profileFilter === 'incomplete' && !complete))
       );
     };
 
+    const grouped = {};
+    for (const group of GROUP_OPTIONS) grouped[group] = [];
+    const unassignedMembers = [];
+
+    for (const member of sorted) {
+      const group = getMemberGroup(member);
+      if (GROUP_OPTIONS.includes(group)) {
+        grouped[group].push(member);
+      } else {
+        unassignedMembers.push(member);
+      }
+    }
+
+    const filteredGrouped = {};
+    for (const group of GROUP_OPTIONS) {
+      filteredGrouped[group] = grouped[group].filter(matchesFilters);
+    }
+
     return {
-      activeUsers: active,
-      alumniUsers: alumni,
-      filteredActive: active.filter(matchesFilters),
-      filteredAlumni: alumni.filter(matchesFilters),
+      byGroup: grouped,
+      filteredByGroup: filteredGrouped,
+      unassigned: unassignedMembers,
+      filteredUnassigned: unassignedMembers.filter(matchesFilters),
       stats: {
         total: sorted.length,
-        active: active.length,
-        alumni: alumni.length,
+        active: grouped.active.length,
+        alumni: grouped.alumni.length,
         leadership: sorted.filter((member) => LEADERSHIP_GROUPS.has(getMemberGroup(member))).length,
       },
     };
-  }, [members, searchQuery, groupFilter, profileFilter]);
+  }, [members, searchQuery, profileFilter]);
+
+  const showUnassignedTab = unassigned.length > 0;
+  const tabCount = GROUP_OPTIONS.length + (showUnassignedTab ? 1 : 0);
 
   return (
     <div className="relative space-y-6">
@@ -279,7 +409,7 @@ export default function AdminUsers() {
       <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
         <div>
           <h1 className="mb-2 text-3xl font-bold text-red-900 dark:text-red-100">User Management</h1>
-          <p className="text-gray-600 dark:text-slate-400">Manage member and alumni accounts from the admin API</p>
+          <p className="text-gray-600 dark:text-slate-400">Manage members by group — add existing members or move them between groups</p>
         </div>
         <Button
           className="bg-red-900 hover:bg-red-800"
@@ -300,7 +430,7 @@ export default function AdminUsers() {
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         {[
           { label: 'Total Users', value: stats.total, icon: Users },
-          { label: 'Members', value: stats.active, icon: UserCheck },
+          { label: 'Active', value: stats.active, icon: UserCheck },
           { label: 'Alumni', value: stats.alumni, icon: GraduationCap },
           { label: 'Leadership', value: stats.leadership, icon: Shield },
         ].map(({ label, value, icon: Icon }) => (
@@ -318,29 +448,16 @@ export default function AdminUsers() {
 
       <Card>
         <CardContent className="p-4 sm:p-6">
-          <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_12rem_12rem]">
+          <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_12rem]">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
               <Input
-                placeholder="Search by name, email, username, group, or major..."
+                placeholder="Search by name, email, username, or major..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-10"
               />
             </div>
-            <select
-              value={groupFilter}
-              onChange={(e) => setGroupFilter(e.target.value)}
-              className="h-10 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-500 dark:border-slate-700 dark:bg-slate-950"
-            >
-              <option value="all">All Groups</option>
-              <option value="eboard">E-Board</option>
-              <option value="chair">Chair</option>
-              <option value="active">Active</option>
-              <option value="pledge">Pledge</option>
-              <option value="alumni">Alumni</option>
-              <option value="unknown">Unknown</option>
-            </select>
             <select
               value={profileFilter}
               onChange={(e) => setProfileFilter(e.target.value)}
@@ -354,43 +471,70 @@ export default function AdminUsers() {
         </CardContent>
       </Card>
 
-      <Tabs defaultValue="members" className="w-full">
-        <TabsList className="grid h-auto w-full grid-cols-2 gap-1">
-          <TabsTrigger value="members" className="min-w-0 px-2 py-2 text-xs sm:text-sm">
-            Members ({activeUsers.length})
-          </TabsTrigger>
-          <TabsTrigger value="alumni" className="min-w-0 px-2 py-2 text-xs sm:text-sm">
-            Alumni ({alumniUsers.length})
-          </TabsTrigger>
+      <Tabs defaultValue="active" className="w-full">
+        <TabsList
+          className="grid h-auto w-full gap-1"
+          style={{ gridTemplateColumns: `repeat(${tabCount}, minmax(0, 1fr))` }}
+        >
+          {GROUP_OPTIONS.map((group) => (
+            <TabsTrigger key={group} value={group} className="min-w-0 px-2 py-2 text-xs sm:text-sm">
+              {formatMemberGroup(group)} ({byGroup[group].length})
+            </TabsTrigger>
+          ))}
+          {showUnassignedTab && (
+            <TabsTrigger value="unassigned" className="min-w-0 px-2 py-2 text-xs sm:text-sm">
+              Unassigned ({unassigned.length})
+            </TabsTrigger>
+          )}
         </TabsList>
 
-        <TabsContent value="members" className="mt-6 space-y-4">
-          {loading ? (
-            <p className="py-10 text-center text-sm text-slate-500 dark:text-slate-400">Loading users from the API...</p>
-          ) : filteredActive.length === 0 ? (
-            <EmptyState message="No member accounts match the current filters." />
-          ) : (
-            <div className="grid gap-4">
-              {filteredActive.map((member, index) => (
-                <UserRow key={stableMemberKey(member, index)} member={member} />
-              ))}
-            </div>
-          )}
-        </TabsContent>
+        {GROUP_OPTIONS.map((group) => {
+          const candidates = members
+            .filter((member) => getMemberGroup(member) !== group && getAuthentikId(member))
+            .sort(sortMembers);
+          const rows = filteredByGroup[group];
 
-        <TabsContent value="alumni" className="mt-6 space-y-4">
-          {loading ? (
-            <p className="py-10 text-center text-sm text-slate-500 dark:text-slate-400">Loading users from the API...</p>
-          ) : filteredAlumni.length === 0 ? (
-            <EmptyState message="No alumni accounts match the current filters." />
-          ) : (
-            <div className="grid gap-4">
-              {filteredAlumni.map((member, index) => (
-                <UserRow key={stableMemberKey(member, index)} member={member} accent="amber" />
-              ))}
-            </div>
-          )}
-        </TabsContent>
+          return (
+            <TabsContent key={group} value={group} className="mt-6 space-y-4">
+              <AddMemberControl group={group} candidates={candidates} onAdd={handleGroupChange} />
+              {loading ? (
+                <p className="py-10 text-center text-sm text-slate-500 dark:text-slate-400">Loading users from the API...</p>
+              ) : rows.length === 0 ? (
+                <EmptyState message={`No ${formatMemberGroup(group)} accounts match the current filters.`} />
+              ) : (
+                <div className="grid gap-4">
+                  {rows.map((member, index) => (
+                    <UserRow
+                      key={stableMemberKey(member, index)}
+                      member={member}
+                      onGroupChange={handleGroupChange}
+                    />
+                  ))}
+                </div>
+              )}
+            </TabsContent>
+          );
+        })}
+
+        {showUnassignedTab && (
+          <TabsContent value="unassigned" className="mt-6 space-y-4">
+            {loading ? (
+              <p className="py-10 text-center text-sm text-slate-500 dark:text-slate-400">Loading users from the API...</p>
+            ) : filteredUnassigned.length === 0 ? (
+              <EmptyState message="No unassigned accounts match the current filters." />
+            ) : (
+              <div className="grid gap-4">
+                {filteredUnassigned.map((member, index) => (
+                  <UserRow
+                    key={stableMemberKey(member, index)}
+                    member={member}
+                    onGroupChange={handleGroupChange}
+                  />
+                ))}
+              </div>
+            )}
+          </TabsContent>
+        )}
       </Tabs>
     </div>
   );

@@ -24,6 +24,7 @@ import {
 } from '@/lib/portal-api';
 import { formatPhotoDate } from '@/lib/portal-format';
 import { isRedirectError } from '@/lib/is-redirect-error';
+import { useConfirm } from '@/components/ui/confirm-dialog';
 import PhotoMedia from './PhotoMedia';
 
 const GENERAL_ALBUM = { id: null, name: 'Shared Album', description: 'General chapter photos, open to everyone' };
@@ -245,6 +246,7 @@ function AlbumList({ albums, isEboard, onSelect, onCreated, onDelete }) {
 }
 
 function AlbumView({ album, currentUserId, isEboard, onBack }) {
+  const confirm = useConfirm();
   const [photos, setPhotos] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -266,7 +268,7 @@ function AlbumView({ album, currentUserId, isEboard, onBack }) {
   }
 
   async function handleDelete(id) {
-    if (!window.confirm('Delete this photo? This cannot be undone.')) return;
+    if (!(await confirm('Delete this photo? This cannot be undone.'))) return;
     try {
       await deletePhoto(id);
       setPhotos((prev) => prev.filter((p) => p.id !== id));
@@ -327,6 +329,7 @@ function AlbumView({ album, currentUserId, isEboard, onBack }) {
 }
 
 function AlbumsSection({ currentUserId, isEboard }) {
+  const confirm = useConfirm();
   const [albums, setAlbums] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -347,7 +350,7 @@ function AlbumsSection({ currentUserId, isEboard }) {
   }
 
   async function handleDelete(id) {
-    if (!window.confirm('Delete this album? Its photos will move to the Shared Album, not be deleted.')) return;
+    if (!(await confirm('Delete this album? Its photos will move to the Shared Album, not be deleted.'))) return;
     try {
       await deleteAlbum(id);
       setAlbums((prev) => prev.filter((a) => a.id !== id));
@@ -654,6 +657,7 @@ function DocumentPreviewModal({ doc, onClose }) {
 }
 
 function DocumentsSection({ isEboard }) {
+  const confirm = useConfirm();
   const [path, setPath] = useState([]); // [{ id, name }, ...] — empty means the top level
   const [folders, setFolders] = useState([]);
   const [documents, setDocuments] = useState([]);
@@ -699,7 +703,7 @@ function DocumentsSection({ isEboard }) {
   }
 
   async function handleDeleteFolder(id) {
-    if (!window.confirm('Delete this folder and everything inside it? This cannot be undone.')) return;
+    if (!(await confirm('Delete this folder and everything inside it? This cannot be undone.'))) return;
     try {
       await deleteDocumentFolder(id);
       setFolders((prev) => prev.filter((f) => f.id !== id));
@@ -710,7 +714,7 @@ function DocumentsSection({ isEboard }) {
   }
 
   async function handleDeleteDocument(id) {
-    if (!window.confirm('Delete this document? This cannot be undone.')) return;
+    if (!(await confirm('Delete this document? This cannot be undone.'))) return;
     try {
       await deleteDocument(id);
       setDocuments((prev) => prev.filter((d) => d.id !== id));

@@ -15,6 +15,7 @@ import {
   reorderHomepagePhotos,
 } from '@/lib/portal-api';
 import { isRedirectError } from '@/lib/is-redirect-error';
+import { useConfirm } from '@/components/ui/confirm-dialog';
 
 function PhotoMedia({ photo }) {
   const src = `/api/homepage-photos/${photo.id}/media`;
@@ -155,6 +156,7 @@ function RegisterTab({ onAdded }) {
 }
 
 export default function HomepagePhotoManager() {
+  const confirm = useConfirm();
   const [photos, setPhotos] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -175,7 +177,7 @@ export default function HomepagePhotoManager() {
   }
 
   async function handleRemove(id) {
-    if (!window.confirm('Remove this photo from the homepage? (It stays in Immich.)')) return;
+    if (!(await confirm('Remove this photo from the homepage? (It stays in Immich.)'))) return;
     try {
       await removeHomepagePhoto(id);
       setPhotos((prev) => prev.filter((p) => p.id !== id));

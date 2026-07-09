@@ -27,6 +27,7 @@ import {
   getEventEndDate,
 } from '@/lib/portal-format';
 import { isRedirectError } from '@/lib/is-redirect-error';
+import { useConfirm } from '@/components/ui/confirm-dialog';
 import AudienceSelect from '@/components/portal/AudienceSelect';
 
 const EMPTY_ANNOUNCEMENT_FORM = { title: '', body: '', audience: [], committeeId: '' };
@@ -49,6 +50,7 @@ function toDatetimeLocal(iso) {
 }
 
 function AnnouncementsSection() {
+  const confirm = useConfirm();
   const [announcements, setAnnouncements] = useState([]);
   const [committees, setCommittees] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -115,7 +117,7 @@ function AnnouncementsSection() {
   }
 
   async function handleDelete(id) {
-    if (!window.confirm('Delete this announcement?')) return;
+    if (!(await confirm('Delete this announcement?'))) return;
     try {
       await deleteAnnouncement(id);
       setAnnouncements((prev) => prev.filter((a) => a.id !== id));
@@ -261,6 +263,7 @@ function AnnouncementsSection() {
 }
 
 function EventsSection() {
+  const confirm = useConfirm();
   const [events, setEvents] = useState([]);
   const [committees, setCommittees] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -360,7 +363,7 @@ function EventsSection() {
   }
 
   async function handleDelete(id) {
-    if (!window.confirm('Delete this event? This cannot be undone.')) return;
+    if (!(await confirm('Delete this event? This cannot be undone.'))) return;
     try {
       await deleteEvent(id);
       setEvents((prev) => prev.filter((e) => e.id !== id));

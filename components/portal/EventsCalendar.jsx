@@ -9,6 +9,7 @@ import { ChevronLeft, ChevronRight, Clock, MapPin, CalendarDays, Trash2, X } fro
 import { getEvents, deleteEvent } from '@/lib/portal-api';
 import { formatEventTimeRange, getEventStartDate, getEventEndDate, formatAudience } from '@/lib/portal-format';
 import { isRedirectError } from '@/lib/is-redirect-error';
+import { useConfirm } from '@/components/ui/confirm-dialog';
 
 const WEEKDAY_LABELS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
 
@@ -120,6 +121,7 @@ function DayPopover({ date, dayEvents, align, isEboard, currentUserId, onDelete,
 }
 
 export default function EventsCalendar({ title, description }) {
+  const confirm = useConfirm();
   const { data: session } = useSession();
   const currentUserId = session?.user?.authentik_id;
   const isEboard = session?.user?.groups?.includes('eboard') ?? false;
@@ -141,7 +143,7 @@ export default function EventsCalendar({ title, description }) {
   }, []);
 
   async function handleDelete(id) {
-    if (!window.confirm('Delete this event? This cannot be undone.')) return;
+    if (!(await confirm('Delete this event? This cannot be undone.'))) return;
     try {
       await deleteEvent(id);
       setEvents((prev) => prev.filter((e) => e.id !== id));
