@@ -12,6 +12,7 @@ import {
   getEventStartDate,
   normalizeApiList,
 } from '@/lib/portal-format';
+import { isRedirectError } from '@/lib/is-redirect-error';
 
 const ACTIVE_MEMBER_GROUPS = new Set(['eboard', 'chair', 'active']);
 const LEADERSHIP_GROUPS = new Set(['eboard', 'chair']);
@@ -148,6 +149,7 @@ export default function AdminAnalytics() {
         setPhotos(normalizeApiList(photosData));
       })
       .catch((err) => {
+        if (isRedirectError(err)) throw err;
         if (!active) return;
         setError(err.message ?? 'Could not load analytics data');
       })

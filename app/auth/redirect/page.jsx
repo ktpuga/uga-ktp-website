@@ -3,7 +3,7 @@ import { redirect } from "next/navigation"
 
 export default async function AuthRedirect() {
   const session = await auth()
-  if (!session) redirect("/login")
+  if (!session || session.error) redirect("/login")
 
   const groups = (session.user?.groups ?? [])
 

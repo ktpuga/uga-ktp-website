@@ -18,6 +18,7 @@ import { User } from 'lucide-react';
 import { buildProfilePayload, parseGraduationDate } from '@/lib/profile';
 import { updateProfile, uploadProfilePicture } from '@/lib/portal-api';
 import { saveProfile } from '@/app/complete-profile/actions';
+import { isRedirectError } from '@/lib/is-redirect-error';
 
 function ProfilePictureField({ authentikId, variant }) {
   const [uploading, setUploading] = useState(false);
@@ -33,9 +34,14 @@ function ProfilePictureField({ authentikId, variant }) {
     try {
       const formData = new FormData();
       formData.append('file', file);
-      await uploadProfilePicture(formData);
-      setVersion((v) => v + 1);
+      const result = await uploadProfilePicture(formData);
+      if (result?.error) {
+        setError(result.error);
+      } else {
+        setVersion((v) => v + 1);
+      }
     } catch (err) {
+      if (isRedirectError(err)) throw err;
       setError(err.message ?? 'Failed to upload photo');
     } finally {
       setUploading(false);
@@ -155,6 +161,7 @@ export default function ProfileForm({
         await updateProfile(buildProfilePayload(formData));
         result = { success: true };
       } catch (err) {
+        if (isRedirectError(err)) throw err;
         result = { error: err.message ?? 'Failed to save profile. Please try again.' };
       }
     }
