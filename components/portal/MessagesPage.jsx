@@ -218,10 +218,12 @@ function AttachmentContent({ attachment, mediaUrl }) {
   );
 }
 
-function EmojiPickerPopover({ onPick, onClose }) {
+function EmojiPickerPopover({ onPick, onClose, align = 'left' }) {
   return (
     <div
-      className="absolute bottom-full z-10 mb-1 flex gap-1 rounded-full border border-gray-200 bg-white p-1.5 shadow-lg dark:border-slate-700 dark:bg-slate-900"
+      className={`absolute bottom-full z-10 mb-1 flex gap-1 rounded-full border border-gray-200 bg-white p-1.5 shadow-lg dark:border-slate-700 dark:bg-slate-900 ${
+        align === 'right' ? 'right-0' : 'left-0'
+      }`}
       onMouseLeave={onClose}
     >
       {QUICK_EMOJI.map((emoji) => (
@@ -300,7 +302,7 @@ function MessageBubble({ message, isMine, attachmentUrl, onReact, canDelete, onD
                   <SmilePlus className="h-3.5 w-3.5" />
                 </button>
                 {pickerOpen && (
-                  <EmojiPickerPopover onPick={onReact} onClose={() => setPickerOpen(false)} />
+                  <EmojiPickerPopover onPick={onReact} onClose={() => setPickerOpen(false)} align={isMine ? 'right' : 'left'} />
                 )}
               </div>
             )}
