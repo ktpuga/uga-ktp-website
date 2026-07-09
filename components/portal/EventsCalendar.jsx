@@ -210,27 +210,27 @@ export default function EventsCalendar({ title, description }) {
             <div className="fixed inset-0 z-40" onClick={() => setOpenDate(null)} />
           )}
 
-          <Card className="mx-auto w-full max-w-xs overflow-visible sm:max-w-sm">
-            <CardContent className="p-2 sm:p-3">
-              <div className="mb-2 flex items-center justify-between">
-                <Button type="button" variant="ghost" size="sm" onClick={() => goToMonth(-1)} aria-label="Previous month" className="h-7 w-7 p-0">
+          <Card className="mx-auto w-full max-w-sm overflow-visible sm:max-w-md">
+            <CardContent className="p-3 sm:p-4">
+              <div className="mb-3 flex items-center justify-between">
+                <Button type="button" variant="ghost" size="sm" onClick={() => goToMonth(-1)} aria-label="Previous month" className="h-8 w-8 p-0">
                   <ChevronLeft className="h-4 w-4" />
                 </Button>
-                <p className="text-xs font-semibold text-gray-900 dark:text-gray-100 sm:text-sm">
+                <p className="text-sm font-semibold text-gray-900 dark:text-gray-100 sm:text-base">
                   {month.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
                 </p>
-                <Button type="button" variant="ghost" size="sm" onClick={() => goToMonth(1)} aria-label="Next month" className="h-7 w-7 p-0">
+                <Button type="button" variant="ghost" size="sm" onClick={() => goToMonth(1)} aria-label="Next month" className="h-8 w-8 p-0">
                   <ChevronRight className="h-4 w-4" />
                 </Button>
               </div>
 
-              <div className="grid grid-cols-7 gap-0.5 text-center text-[10px] font-medium text-gray-500 dark:text-gray-400">
+              <div className="grid grid-cols-7 gap-1 text-center text-xs font-medium text-gray-500 dark:text-gray-400">
                 {WEEKDAY_LABELS.map((label, i) => (
-                  <div key={i} className="py-0.5">{label}</div>
+                  <div key={i} className="py-1">{label}</div>
                 ))}
               </div>
 
-              <div className="grid grid-cols-7 gap-0.5">
+              <div className="grid grid-cols-7 gap-1">
                 {days.map((day) => {
                   const inMonth = day.getMonth() === month.getMonth();
                   const isToday = dateKey(day) === dateKey(today);
@@ -244,7 +244,7 @@ export default function EventsCalendar({ title, description }) {
                       <button
                         type="button"
                         onClick={() => toggleDay(day)}
-                        className={`flex aspect-square w-full flex-col items-center justify-center gap-0.5 rounded-md text-xs transition-colors ${
+                        className={`flex aspect-square w-full flex-col items-center justify-center gap-1 rounded-md text-sm transition-colors ${
                           isOpen
                             ? 'bg-blue-800 text-white'
                             : isToday
@@ -257,7 +257,7 @@ export default function EventsCalendar({ title, description }) {
                         <span>{day.getDate()}</span>
                         {dayEvents.length > 0 && (
                           <span
-                            className={`h-1 w-1 rounded-full ${isOpen ? 'bg-white' : 'bg-blue-600 dark:bg-blue-400'}`}
+                            className={`h-1.5 w-1.5 rounded-full ${isOpen ? 'bg-white' : 'bg-blue-600 dark:bg-blue-400'}`}
                           />
                         )}
                       </button>

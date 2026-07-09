@@ -27,6 +27,8 @@ import {
   getGroupChatMembers,
   addGroupChatMember,
   removeGroupChatMember,
+  getCommittees,
+  getCommitteeMembers,
 } from '@/lib/portal-api';
 import { memberDisplayName, memberInitials, formatMemberGroup, formatMessageTime } from '@/lib/portal-format';
 import { isRedirectError } from '@/lib/is-redirect-error';
@@ -407,6 +409,7 @@ function CreateGroupChatForm({ onCreated }) {
   const [name, setName] = useState('');
   const [members, setMembers] = useState([]);
   const [loadingMembers, setLoadingMembers] = useState(true);
+  const [committees, setCommittees] = useState([]);
   const [selectedIds, setSelectedIds] = useState(new Set());
   const [query, setQuery] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -421,6 +424,11 @@ function CreateGroupChatForm({ onCreated }) {
         setError(err.message ?? 'Could not load members');
       })
       .finally(() => setLoadingMembers(false));
+    getCommittees()
+      .then(setCommittees)
+      .catch((err) => {
+        if (isRedirectError(err)) throw err;
+      });
   }, [open]);
 
   const filtered = useMemo(() => {
@@ -435,6 +443,23 @@ function CreateGroupChatForm({ onCreated }) {
       else next.add(id);
       return next;
     });
+  }
+
+  // Adds every current member of the chosen committee to the selection —
+  // on top of, not instead of, whoever's already picked.
+  async function handleImportCommittee(committeeId) {
+    if (!committeeId) return;
+    try {
+      const committeeMembers = await getCommitteeMembers(committeeId);
+      setSelectedIds((prev) => {
+        const next = new Set(prev);
+        committeeMembers.forEach((m) => next.add(m.authentik_id));
+        return next;
+      });
+    } catch (err) {
+      if (isRedirectError(err)) throw err;
+      setError(err.message ?? 'Failed to import committee members');
+    }
   }
 
   async function handleSubmit(e) {
@@ -479,6 +504,18 @@ function CreateGroupChatForm({ onCreated }) {
               className="pl-10"
             />
           </div>
+          {committees.length > 0 && (
+            <select
+              value=""
+              onChange={(e) => handleImportCommittee(e.target.value)}
+              className="h-10 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-950"
+            >
+              <option value="">+ Add all members from a committee...</option>
+              {committees.map((c) => (
+                <option key={c.id} value={c.id}>{c.name}</option>
+              ))}
+            </select>
+          )}
           {loadingMembers ? (
             <p className="text-sm text-gray-500">Loading members...</p>
           ) : (

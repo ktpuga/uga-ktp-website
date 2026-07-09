@@ -29,7 +29,7 @@ import {
 import { isRedirectError } from '@/lib/is-redirect-error';
 import AudienceSelect from '@/components/portal/AudienceSelect';
 
-const EMPTY_ANNOUNCEMENT_FORM = { title: '', body: '', audience: [] };
+const EMPTY_ANNOUNCEMENT_FORM = { title: '', body: '', audience: [], committeeId: '' };
 const EMPTY_EVENT_FORM = {
   title: '',
   description: '',
@@ -50,6 +50,7 @@ function toDatetimeLocal(iso) {
 
 function AnnouncementsSection() {
   const [announcements, setAnnouncements] = useState([]);
+  const [committees, setCommittees] = useState([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(null);
 
@@ -60,8 +61,11 @@ function AnnouncementsSection() {
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    getAnnouncements()
-      .then((data) => setAnnouncements(Array.isArray(data) ? data : []))
+    Promise.all([getAnnouncements(), getCommittees()])
+      .then(([announcementsData, committeesData]) => {
+        setAnnouncements(Array.isArray(announcementsData) ? announcementsData : []);
+        setCommittees(Array.isArray(committeesData) ? committeesData : []);
+      })
       .catch((err) => {
         if (isRedirectError(err)) throw err;
         setLoadError(err.message ?? 'Could not load announcements');
@@ -82,6 +86,7 @@ function AnnouncementsSection() {
       title: announcement.title,
       body: announcement.body,
       audience: announcement.audience ?? [],
+      committeeId: announcement.committee_id ?? '',
     });
     setFormError(null);
     setFormOpen(true);
@@ -118,6 +123,14 @@ function AnnouncementsSection() {
       if (isRedirectError(err)) throw err;
       window.alert(err.message ?? 'Failed to delete announcement');
     }
+  }
+
+  function announcementBadgeLabel(announcement) {
+    if (announcement.committee_id) {
+      const committee = committees.find((c) => c.id === announcement.committee_id);
+      return committee ? `Committee: ${committee.name}` : 'Committee';
+    }
+    return formatAudience(announcement.audience);
   }
 
   return (
@@ -158,12 +171,32 @@ function AnnouncementsSection() {
               />
             </div>
             <div className="space-y-1">
-              <label className="text-sm font-medium text-slate-700">Audience</label>
-              <AudienceSelect
-                value={form.audience}
-                onChange={(audience) => setForm({ ...form, audience })}
-              />
+              <label className="text-sm font-medium text-slate-700">Committee announcement (optional)</label>
+              <select
+                value={form.committeeId}
+                onChange={(e) => setForm({ ...form, committeeId: e.target.value })}
+                className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
+              >
+                <option value="">Not a committee announcement</option>
+                {committees.map((c) => (
+                  <option key={c.id} value={c.id}>{c.name}</option>
+                ))}
+              </select>
+              {form.committeeId ? (
+                <p className="text-xs text-slate-500">
+                  Visible only to that committee&apos;s members — audience targeting below is disabled.
+                </p>
+              ) : null}
             </div>
+            {!form.committeeId && (
+              <div className="space-y-1">
+                <label className="text-sm font-medium text-slate-700">Audience</label>
+                <AudienceSelect
+                  value={form.audience}
+                  onChange={(audience) => setForm({ ...form, audience })}
+                />
+              </div>
+            )}
             {formError && <p className="text-sm text-red-600">{formError}</p>}
             <div className="flex gap-2 pt-2">
               <Button
@@ -202,7 +235,7 @@ function AnnouncementsSection() {
                   <div className="flex-1">
                     <div className="mb-2 flex flex-wrap items-center gap-2">
                       <CardTitle className="text-lg">{a.title}</CardTitle>
-                      <Badge variant="outline">{formatAudience(a.audience)}</Badge>
+                      <Badge variant="outline">{announcementBadgeLabel(a)}</Badge>
                     </div>
                     <CardDescription>{a.body}</CardDescription>
                   </div>

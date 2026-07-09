@@ -253,7 +253,9 @@ export default function PortalDashboard({
                         <span className="shrink-0 text-xs text-gray-500 dark:text-gray-400">{formatMessageTime(a.created_at)}</span>
                       </div>
                       <p className="line-clamp-2 text-sm text-gray-600 dark:text-gray-400">{a.body}</p>
-                      <span className="mt-1 inline-block text-xs text-gray-500 dark:text-gray-400">{formatAudience(a.audience)}</span>
+                      <span className="mt-1 inline-block text-xs text-gray-500 dark:text-gray-400">
+                        {a.committee_id ? 'Committee' : formatAudience(a.audience)}
+                      </span>
                     </div>
                   ))}
                 </div>

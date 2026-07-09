@@ -32,9 +32,6 @@ export default function AudienceSelect({ value, onChange }) {
   return (
     <div className="space-y-2">
       <div className="flex flex-wrap gap-2">
-        <button type="button" onClick={() => onChange([])} className={presetClass(isAll)}>
-          All Members
-        </button>
         <button type="button" onClick={() => onChange(ACTIVES_ONLY)} className={presetClass(isActivesOnly)}>
           Actives Only
         </button>
