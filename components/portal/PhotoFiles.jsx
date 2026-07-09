@@ -12,6 +12,7 @@ import {
   getPhotos,
   getAlbums,
   createAlbum,
+  deleteAlbum,
   uploadPhoto,
   deletePhoto,
   getDocumentFolders,
@@ -198,7 +199,7 @@ function CreateAlbumForm({ onCreated }) {
   );
 }
 
-function AlbumList({ albums, isEboard, onSelect, onCreated }) {
+function AlbumList({ albums, isEboard, onSelect, onCreated, onDelete }) {
   const allAlbums = [GENERAL_ALBUM, ...albums];
 
   return (
@@ -212,10 +213,26 @@ function AlbumList({ albums, isEboard, onSelect, onCreated }) {
             onClick={() => onSelect(album)}
           >
             <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-base">
-                <Images className="h-4 w-4 shrink-0 text-blue-800" />
-                <span className="truncate">{album.name}</span>
-              </CardTitle>
+              <div className="flex items-start justify-between gap-2">
+                <CardTitle className="flex min-w-0 items-center gap-2 text-base">
+                  <Images className="h-4 w-4 shrink-0 text-blue-800" />
+                  <span className="truncate">{album.name}</span>
+                </CardTitle>
+                {isEboard && album.id != null && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onDelete(album.id);
+                    }}
+                    className="h-8 w-8 shrink-0 p-0 text-red-600 hover:bg-red-50 hover:text-red-700"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                )}
+              </div>
               {album.description && (
                 <CardDescription className="line-clamp-2">{album.description}</CardDescription>
               )}
@@ -329,6 +346,17 @@ function AlbumsSection({ currentUserId, isEboard }) {
     setAlbums((prev) => [album, ...prev]);
   }
 
+  async function handleDelete(id) {
+    if (!window.confirm('Delete this album? Its photos will move to the Shared Album, not be deleted.')) return;
+    try {
+      await deleteAlbum(id);
+      setAlbums((prev) => prev.filter((a) => a.id !== id));
+    } catch (err) {
+      if (isRedirectError(err)) throw err;
+      window.alert(err.message ?? 'Failed to delete album');
+    }
+  }
+
   if (selectedAlbum) {
     return (
       <AlbumView
@@ -353,7 +381,13 @@ function AlbumsSection({ currentUserId, isEboard }) {
   }
 
   return (
-    <AlbumList albums={albums} isEboard={isEboard} onSelect={setSelectedAlbum} onCreated={handleCreated} />
+    <AlbumList
+      albums={albums}
+      isEboard={isEboard}
+      onSelect={setSelectedAlbum}
+      onCreated={handleCreated}
+      onDelete={handleDelete}
+    />
   );
 }
 
