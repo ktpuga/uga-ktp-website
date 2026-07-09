@@ -1,13 +1,15 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Users, Plus, Trash2, ArrowLeft, Star, UserPlus, X, CalendarPlus, Search } from 'lucide-react';
+import { Users, Plus, Trash2, ArrowLeft, Star, UserPlus, X, CalendarPlus, MessageSquare, Search } from 'lucide-react';
 import {
   getCommittees,
   createCommittee,
@@ -222,6 +224,8 @@ function ScheduleMeetingForm({ committeeId, accentClass, onScheduled, onCancel }
 }
 
 function CommitteeDetail({ committee, isEboard, accentClass, onBack, onChanged }) {
+  const pathname = usePathname();
+  const portalRoot = '/' + (pathname.split('/')[1] || 'member');
   const [members, setMembers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -295,6 +299,13 @@ function CommitteeDetail({ committee, isEboard, accentClass, onBack, onChanged }
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
+          {committee.is_member && committee.group_chat_id && (
+            <Button type="button" variant="outline" size="sm" asChild>
+              <Link href={`${portalRoot}/messages?groupChat=${committee.group_chat_id}`}>
+                <MessageSquare className="mr-2 h-4 w-4" /> Group Chat
+              </Link>
+            </Button>
+          )}
           {committee.is_chair && (
             <Button type="button" size="sm" className={accentClass} onClick={() => setScheduling((v) => !v)}>
               <CalendarPlus className="mr-2 h-4 w-4" /> Schedule Meeting

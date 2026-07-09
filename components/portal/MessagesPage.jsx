@@ -727,7 +727,7 @@ function GroupChatThread({ chat, currentUserId, isEboard, onBack, onDeleted }) {
   );
 }
 
-function GroupChatsTab({ currentUserId, isEboard }) {
+function GroupChatsTab({ currentUserId, isEboard, initialGroupChatId }) {
   const [chats, setChats] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -757,6 +757,15 @@ function GroupChatsTab({ currentUserId, isEboard }) {
       clearInterval(interval);
     };
   }, []);
+
+  // Deep link from a committee's "Group Chat" button (?groupChat=<id>) —
+  // jump straight into that chat once its data has loaded.
+  useEffect(() => {
+    if (!initialGroupChatId) return;
+    const match = chats.find((c) => c.id === initialGroupChatId);
+    if (match) setSelected(match);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialGroupChatId, chats]);
 
   function handleCreated(chat) {
     setChats((prev) => [chat, ...prev]);
@@ -909,6 +918,7 @@ function MessagesPageContent() {
   const { data: session } = useSession();
   const searchParams = useSearchParams();
   const withId = searchParams.get('with');
+  const groupChatId = searchParams.get('groupChat');
   const currentUserId = session?.user?.authentik_id;
   const isEboard = session?.user?.groups?.includes('eboard') ?? false;
 
@@ -921,7 +931,7 @@ function MessagesPageContent() {
         </p>
       </div>
 
-      <Tabs defaultValue="messages" className="w-full min-w-0">
+      <Tabs defaultValue={groupChatId ? 'groups' : 'messages'} className="w-full min-w-0">
         <TabsList className="grid h-auto w-full grid-cols-2 gap-1">
           <TabsTrigger value="messages" className="min-w-0 px-2 py-2 text-xs sm:text-sm">Messages</TabsTrigger>
           <TabsTrigger value="groups" className="min-w-0 px-2 py-2 text-xs sm:text-sm">Group Chats</TabsTrigger>
@@ -932,7 +942,7 @@ function MessagesPageContent() {
         </TabsContent>
 
         <TabsContent value="groups" className="mt-6">
-          <GroupChatsTab currentUserId={currentUserId} isEboard={isEboard} />
+          <GroupChatsTab currentUserId={currentUserId} isEboard={isEboard} initialGroupChatId={groupChatId} />
         </TabsContent>
       </Tabs>
     </div>
