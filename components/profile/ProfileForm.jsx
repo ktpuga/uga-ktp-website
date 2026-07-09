@@ -291,6 +291,15 @@ export default function ProfileForm({
         />
       </Field>
 
+      <Field label="Calendly URL" variant={variant}>
+        <Input
+          name="calendly_url"
+          placeholder="https://calendly.com/..."
+          defaultValue={defaultValues.calendly_url}
+          className={inputClass}
+        />
+      </Field>
+
       <Field label="Pledge Class" variant={variant}>
         <Input
           name="pledge_class"

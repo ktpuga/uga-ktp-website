@@ -5,9 +5,10 @@ import Link from 'next/link';
 import { useSession } from 'next-auth/react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Calendar, Users, Megaphone, ImageIcon, ArrowRight, Bell } from 'lucide-react';
-import { getEvents, getMembers, getPhotos } from '@/lib/portal-api';
-import { formatEventTimeRange, upcomingEvents, countUpcomingEvents, getEventStartDate, getEventEndDate } from '@/lib/portal-format';
+import { Calendar, Users, Megaphone, ImageIcon, ArrowRight, Bell, MapPin, CalendarDays } from 'lucide-react';
+import { getEvents, getMembers, getPhotos, getAnnouncements } from '@/lib/portal-api';
+import { formatEventTimeRange, upcomingEvents, countUpcomingEvents, getEventStartDate, getEventEndDate, formatAudience, formatMessageTime } from '@/lib/portal-format';
+import { isRedirectError } from '@/lib/is-redirect-error';
 import PhotoMedia from './PhotoMedia';
 
 function cleanName(value) {
@@ -73,6 +74,7 @@ export default function PortalDashboard({
   const [events, setEvents] = useState([]);
   const [members, setMembers] = useState([]);
   const [photos, setPhotos] = useState([]);
+  const [announcements, setAnnouncements] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const { data: session } = useSession();
@@ -97,13 +99,18 @@ export default function PortalDashboard({
       getEvents(),
       getMembers(),
       getPhotos(),
+      getAnnouncements(),
     ])
-      .then(([eventsData, membersData, photosData]) => {
+      .then(([eventsData, membersData, photosData, announcementsData]) => {
         setEvents(Array.isArray(eventsData) ? eventsData : []);
         setMembers(membersData);
         setPhotos(Array.isArray(photosData) ? photosData : []);
+        setAnnouncements(Array.isArray(announcementsData) ? announcementsData : []);
       })
-      .catch((err) => setError(err.message ?? 'Could not load dashboard data'))
+      .catch((err) => {
+        if (isRedirectError(err)) throw err;
+        setError(err.message ?? 'Could not load dashboard data');
+      })
       .finally(() => setLoading(false));
   }, []);
 
@@ -117,7 +124,7 @@ export default function PortalDashboard({
   const stats = [
     { label: 'Upcoming Events', value: loading ? '-' : String(upcomingCount), sub: loading ? 'On the chapter calendar' : `${totalEvents} on the calendar`, icon: Calendar },
     { label: memberGroupLabel, value: loading ? '-' : String(memberCount), sub: loading ? 'From chapter directory' : `${memberCount} listed`, icon: Users },
-    { label: 'Announcements', value: '0', sub: 'N/A', icon: Megaphone },
+    { label: 'Announcements', value: loading ? '-' : String(announcements.length), sub: loading ? 'Posted by eboard' : `${announcements.length} posted`, icon: Megaphone },
     { label: 'Photos', value: loading ? '-' : String(photos.length), sub: 'In the gallery', icon: ImageIcon },
   ];
 
@@ -197,8 +204,23 @@ export default function PortalDashboard({
                         <p className="text-sm text-gray-600 dark:text-gray-400">
                           {formatEventTimeRange(getEventStartDate(event), getEventEndDate(event))}
                         </p>
+                        {event.location && (
+                          <p className="mt-1 flex items-center gap-1 text-sm text-gray-500 dark:text-gray-400">
+                            <MapPin className="h-3.5 w-3.5 shrink-0" /> {event.location}
+                          </p>
+                        )}
                         {event.description && (
                           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 line-clamp-2">{event.description}</p>
+                        )}
+                        {event.calendlyUrl && (
+                          <a
+                            href={event.calendlyUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="mt-2 inline-flex items-center gap-1 text-sm font-medium text-blue-700 hover:underline dark:text-blue-400"
+                          >
+                            <CalendarDays className="h-3.5 w-3.5" /> Schedule / RSVP
+                          </a>
                         )}
                       </div>
                     </div>
@@ -215,8 +237,28 @@ export default function PortalDashboard({
               <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
                 <Bell className="w-5 h-5" /> Announcements
               </CardTitle>
-              <CardDescription>Announcements will appear here once the messages API is enabled on the backend.</CardDescription>
+              <CardDescription>Latest from eboard</CardDescription>
             </CardHeader>
+            <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
+              {loading ? (
+                <p className="py-4 text-sm text-gray-500 dark:text-gray-400">Loading announcements...</p>
+              ) : announcements.length === 0 ? (
+                <p className="py-4 text-sm text-gray-500 dark:text-gray-400">No announcements yet.</p>
+              ) : (
+                <div className="space-y-3">
+                  {announcements.slice(0, 4).map((a) => (
+                    <div key={a.id} className="border-b border-gray-100 pb-3 last:border-0 last:pb-0 dark:border-slate-800">
+                      <div className="mb-1 flex items-start justify-between gap-2">
+                        <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">{a.title}</p>
+                        <span className="shrink-0 text-xs text-gray-500 dark:text-gray-400">{formatMessageTime(a.created_at)}</span>
+                      </div>
+                      <p className="line-clamp-2 text-sm text-gray-600 dark:text-gray-400">{a.body}</p>
+                      <span className="mt-1 inline-block text-xs text-gray-500 dark:text-gray-400">{formatAudience(a.audience)}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
           </Card>
         </div>
       </div>

@@ -2,13 +2,15 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
-import { LayoutDashboard, FolderOpen, LogOut } from 'lucide-react';
-import { signOut } from 'next-auth/react';
+import { LayoutDashboard, FolderOpen, MessageSquare, UsersRound, LogOut } from 'lucide-react';
+import { logoutEverywhere } from '@/lib/auth-actions';
 import { usePathname } from 'next/navigation';
 
 const NAV = [
   { href: '/pledge', label: 'Dashboard', icon: LayoutDashboard },
+  { href: '/pledge/committees', label: 'Committees', icon: UsersRound },
   { href: '/pledge/files', label: 'Files & Photos', icon: FolderOpen },
+  { href: '/pledge/messages', label: 'Messages', icon: MessageSquare },
 ];
 
 export default function PledgeLayout({ children }) {
@@ -46,7 +48,7 @@ export default function PledgeLayout({ children }) {
 
         <div className="px-3 py-4 border-t border-slate-200">
           <button
-            onClick={() => signOut({ callbackUrl: '/login' })}
+            onClick={() => logoutEverywhere()}
             className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition-colors w-full"
           >
             <LogOut className="w-4 h-4 shrink-0" />

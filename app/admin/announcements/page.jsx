@@ -1,56 +1,105 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Plus, Edit, Trash2, Send, Eye, X, CalendarPlus } from 'lucide-react';
-import { createEvent } from '@/lib/portal-api';
+import { Plus, Trash2, Send, X, CalendarPlus } from 'lucide-react';
+import {
+  getAnnouncements,
+  createAnnouncement,
+  deleteAnnouncement,
+  createEvent,
+  getCommittees,
+} from '@/lib/portal-api';
+import { formatAudience, formatMessageTime } from '@/lib/portal-format';
+import { isRedirectError } from '@/lib/is-redirect-error';
+import AudienceSelect from '@/components/portal/AudienceSelect';
 
-const priorityColor = (p) => p === 'high' ? 'bg-red-100 text-red-800' : 'bg-gray-100 text-gray-800';
-const statusColor = (s) => ({ published: 'bg-green-100 text-green-800', scheduled: 'bg-red-100 text-red-800', draft: 'bg-gray-100 text-gray-800' }[s] ?? 'bg-gray-100 text-gray-800');
-
-const initial = [
-  { id: 1, title: 'Spring Rush Applications Open', message: 'Applications for Spring 2026 rush are now open. Share with interested students!', audience: 'Members', priority: 'high', status: 'published', publishedDate: '2026-02-26', views: 156 },
-  { id: 2, title: 'New Partnership with Google', message: 'Excited to announce our new partnership with Google for exclusive tech talks.', audience: 'All', priority: 'normal', status: 'published', publishedDate: '2026-02-23', views: 203 },
-  { id: 3, title: "Hackathon Team Formation", message: "Looking to form teams for UGA's upcoming hackathon. DM leadership if interested!", audience: 'Members', priority: 'normal', status: 'published', publishedDate: '2026-02-21', views: 98 },
-  { id: 4, title: 'Alumni Networking Event - March 15', message: 'Save the date for our upcoming alumni networking event at The Georgian Hotel.', audience: 'Alumni', priority: 'normal', status: 'scheduled', publishedDate: '2026-03-10', views: 0 },
-];
+const EMPTY_ANNOUNCEMENT_FORM = { title: '', body: '', audience: [] };
+const EMPTY_EVENT_FORM = {
+  title: '',
+  description: '',
+  location: '',
+  start: '',
+  end: '',
+  audience: [],
+  committeeId: '',
+  calendlyUrl: '',
+};
 
 export default function AdminAnnouncements() {
-  const [announcements, setAnnouncements] = useState(initial);
+  const [announcements, setAnnouncements] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(null);
+  const [committees, setCommittees] = useState([]);
+
   const [isCreating, setIsCreating] = useState(false);
   const [isCreatingEvent, setIsCreatingEvent] = useState(false);
   const [toast, setToast] = useState('');
-  const [form, setForm] = useState({ title: '', message: '', audience: 'Members', priority: 'normal' });
-  const [eventForm, setEventForm] = useState({ title: '', description: '', location: '', start: '', end: '' });
+
+  const [form, setForm] = useState(EMPTY_ANNOUNCEMENT_FORM);
+  const [formError, setFormError] = useState(null);
+  const [formSaving, setFormSaving] = useState(false);
+
+  const [eventForm, setEventForm] = useState(EMPTY_EVENT_FORM);
   const [eventError, setEventError] = useState(null);
   const [eventSaving, setEventSaving] = useState(false);
+
+  useEffect(() => {
+    Promise.all([getAnnouncements(), getCommittees()])
+      .then(([announcementsData, committeesData]) => {
+        setAnnouncements(Array.isArray(announcementsData) ? announcementsData : []);
+        setCommittees(Array.isArray(committeesData) ? committeesData : []);
+      })
+      .catch((err) => {
+        if (isRedirectError(err)) throw err;
+        setLoadError(err.message ?? 'Could not load announcements');
+      })
+      .finally(() => setLoading(false));
+  }, []);
 
   const showToast = (msg) => {
     setToast(msg);
     setTimeout(() => setToast(''), 3000);
   };
 
-  const handleCreate = () => {
-    setAnnouncements([
-      { id: Date.now(), ...form, status: 'published', publishedDate: new Date().toISOString().split('T')[0], views: 0 },
-      ...announcements,
-    ]);
-    setForm({ title: '', message: '', audience: 'Members', priority: 'normal' });
-    setIsCreating(false);
-    showToast('Announcement published successfully!');
-  };
+  async function handleCreateAnnouncement() {
+    setFormError(null);
+    setFormSaving(true);
+    try {
+      const announcement = await createAnnouncement({
+        title: form.title.trim(),
+        body: form.body.trim(),
+        audience: form.audience,
+      });
+      setAnnouncements((prev) => [announcement, ...prev]);
+      setForm(EMPTY_ANNOUNCEMENT_FORM);
+      setIsCreating(false);
+      showToast('Announcement published successfully!');
+    } catch (err) {
+      if (isRedirectError(err)) throw err;
+      setFormError(err.message ?? 'Failed to create announcement');
+    } finally {
+      setFormSaving(false);
+    }
+  }
 
-  const handleDelete = (id) => {
-    setAnnouncements(announcements.filter((a) => a.id !== id));
-    showToast('Announcement deleted');
-  };
+  async function handleDelete(id) {
+    if (!window.confirm('Delete this announcement?')) return;
+    try {
+      await deleteAnnouncement(id);
+      setAnnouncements((prev) => prev.filter((a) => a.id !== id));
+      showToast('Announcement deleted');
+    } catch (err) {
+      if (isRedirectError(err)) throw err;
+      window.alert(err.message ?? 'Failed to delete announcement');
+    }
+  }
 
-  const handleCreateEvent = async () => {
+  async function handleCreateEvent() {
     setEventError(null);
 
     const startDate = new Date(eventForm.start);
@@ -72,9 +121,12 @@ export default function AdminAnnouncements() {
       const result = await createEvent({
         title: eventForm.title.trim(),
         description: eventForm.description.trim() || null,
-        location: eventForm.location.trim() || 'Location TBD',
-        start_date: startDate.toISOString(),
-        end_date: endDate.toISOString(),
+        location: eventForm.location.trim() || null,
+        startDate: startDate.toISOString(),
+        endDate: endDate.toISOString(),
+        audience: eventForm.committeeId ? [] : eventForm.audience,
+        committeeId: eventForm.committeeId || null,
+        calendlyUrl: eventForm.calendlyUrl.trim() || null,
       });
 
       if (!result?.ok) {
@@ -82,18 +134,18 @@ export default function AdminAnnouncements() {
         return;
       }
 
-      setEventForm({ title: '', description: '', location: '', start: '', end: '' });
+      setEventForm(EMPTY_EVENT_FORM);
       setIsCreatingEvent(false);
       showToast('Event created successfully.');
     } catch (err) {
+      if (isRedirectError(err)) throw err;
       setEventError(err.message ?? 'Failed to create event.');
     } finally {
       setEventSaving(false);
     }
-  };
+  }
 
-  const published = announcements.filter((a) => a.status === 'published');
-  const scheduled = announcements.filter((a) => a.status === 'scheduled');
+  const untargetedCount = announcements.filter((a) => !a.audience || a.audience.length === 0).length;
 
   return (
     <div className="relative space-y-6">
@@ -102,17 +154,15 @@ export default function AdminAnnouncements() {
         <div className="absolute -bottom-32 right-0 h-[26rem] w-[26rem] rounded-full bg-gradient-to-tr from-orange-300 via-red-400 to-rose-500 opacity-10 blur-[110px]" />
       </div>
 
-      {/* Toast */}
       {toast && (
-        <div className="fixed bottom-6 right-6 z-50 bg-slate-900 text-white px-4 py-3 rounded-lg shadow-lg text-sm">
+        <div className="fixed bottom-6 right-6 z-50 rounded-lg bg-slate-900 px-4 py-3 text-sm text-white shadow-lg">
           {toast}
         </div>
       )}
 
-      {/* Header */}
       <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
         <div>
-          <h1 className="text-3xl font-bold text-red-900 mb-2">Announcements</h1>
+          <h1 className="mb-2 text-3xl font-bold text-red-900">Announcements</h1>
           <p className="text-gray-600">Create chapter announcements and calendar events</p>
         </div>
         <div className="flex flex-col gap-2 sm:flex-row">
@@ -123,7 +173,7 @@ export default function AdminAnnouncements() {
               setIsCreating(false);
             }}
           >
-            <CalendarPlus className="w-4 h-4 mr-2" /> New Event
+            <CalendarPlus className="mr-2 h-4 w-4" /> New Event
           </Button>
           <Button
             className="bg-red-900 hover:bg-red-800"
@@ -132,7 +182,7 @@ export default function AdminAnnouncements() {
               setIsCreatingEvent(false);
             }}
           >
-            <Plus className="w-4 h-4 mr-2" /> New Announcement
+            <Plus className="mr-2 h-4 w-4" /> New Announcement
           </Button>
         </div>
       </div>
@@ -149,7 +199,7 @@ export default function AdminAnnouncements() {
                 }}
                 className="text-gray-400 hover:text-gray-600"
               >
-                <X className="w-5 h-5" />
+                <X className="h-5 w-5" />
               </button>
             </div>
             <CardDescription>Add an event to the chapter calendar</CardDescription>
@@ -198,6 +248,41 @@ export default function AdminAnnouncements() {
                 />
               </div>
             </div>
+            <div className="space-y-1">
+              <label className="text-sm font-medium text-slate-700">Calendly link (optional)</label>
+              <Input
+                placeholder="https://calendly.com/..."
+                value={eventForm.calendlyUrl}
+                onChange={(e) => setEventForm({ ...eventForm, calendlyUrl: e.target.value })}
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="text-sm font-medium text-slate-700">Committee meeting (optional)</label>
+              <select
+                value={eventForm.committeeId}
+                onChange={(e) => setEventForm({ ...eventForm, committeeId: e.target.value })}
+                className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
+              >
+                <option value="">Not a committee meeting</option>
+                {committees.map((c) => (
+                  <option key={c.id} value={c.id}>{c.name}</option>
+                ))}
+              </select>
+              {eventForm.committeeId ? (
+                <p className="text-xs text-slate-500">
+                  Visible only to that committee&apos;s members — audience targeting below is disabled.
+                </p>
+              ) : null}
+            </div>
+            {!eventForm.committeeId && (
+              <div className="space-y-1">
+                <label className="text-sm font-medium text-slate-700">Audience</label>
+                <AudienceSelect
+                  value={eventForm.audience}
+                  onChange={(audience) => setEventForm({ ...eventForm, audience })}
+                />
+              </div>
+            )}
             {eventError && (
               <p className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
                 {eventError}
@@ -209,7 +294,7 @@ export default function AdminAnnouncements() {
                 onClick={handleCreateEvent}
                 disabled={eventSaving || !eventForm.title.trim() || !eventForm.start || !eventForm.end}
               >
-                <CalendarPlus className="w-4 h-4 mr-2" />
+                <CalendarPlus className="mr-2 h-4 w-4" />
                 {eventSaving ? 'Creating...' : 'Create Event'}
               </Button>
               <Button
@@ -227,64 +312,50 @@ export default function AdminAnnouncements() {
         </Card>
       )}
 
-      {/* Create form (inline modal) */}
       {isCreating && (
         <Card>
           <CardHeader>
             <div className="flex items-center justify-between">
               <CardTitle>Create New Announcement</CardTitle>
               <button onClick={() => setIsCreating(false)} className="text-gray-400 hover:text-gray-600">
-                <X className="w-5 h-5" />
+                <X className="h-5 w-5" />
               </button>
             </div>
-            <CardDescription>Send a message to members, alumni, or all users</CardDescription>
+            <CardDescription>Post an announcement to the dashboard</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-1">
               <label className="text-sm font-medium text-slate-700">Title</label>
-              <Input placeholder="Announcement title" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} />
+              <Input
+                placeholder="Announcement title"
+                value={form.title}
+                onChange={(e) => setForm({ ...form, title: e.target.value })}
+              />
             </div>
             <div className="space-y-1">
               <label className="text-sm font-medium text-slate-700">Message</label>
               <Textarea
                 rows={4}
                 placeholder="Write your announcement message..."
-                value={form.message}
-                onChange={(e) => setForm({ ...form, message: e.target.value })}
+                value={form.body}
+                onChange={(e) => setForm({ ...form, body: e.target.value })}
               />
             </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-1">
-                <label className="text-sm font-medium text-slate-700">Audience</label>
-                <select
-                  value={form.audience}
-                  onChange={(e) => setForm({ ...form, audience: e.target.value })}
-                  className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-red-500"
-                >
-                  <option value="Members">Members Only</option>
-                  <option value="Alumni">Alumni Only</option>
-                  <option value="All">All Users</option>
-                </select>
-              </div>
-              <div className="space-y-1">
-                <label className="text-sm font-medium text-slate-700">Priority</label>
-                <select
-                  value={form.priority}
-                  onChange={(e) => setForm({ ...form, priority: e.target.value })}
-                  className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-red-500"
-                >
-                  <option value="normal">Normal</option>
-                  <option value="high">High Priority</option>
-                </select>
-              </div>
+            <div className="space-y-1">
+              <label className="text-sm font-medium text-slate-700">Audience</label>
+              <AudienceSelect
+                value={form.audience}
+                onChange={(audience) => setForm({ ...form, audience })}
+              />
             </div>
+            {formError && <p className="text-sm text-red-600">{formError}</p>}
             <div className="flex gap-2 pt-2">
               <Button
                 className="flex-1 bg-red-900 hover:bg-red-800"
-                onClick={handleCreate}
-                disabled={!form.title || !form.message}
+                onClick={handleCreateAnnouncement}
+                disabled={!form.title.trim() || !form.body.trim() || formSaving}
               >
-                <Send className="w-4 h-4 mr-2" /> Publish Now
+                <Send className="mr-2 h-4 w-4" /> {formSaving ? 'Publishing...' : 'Publish Now'}
               </Button>
               <Button variant="outline" onClick={() => setIsCreating(false)}>Cancel</Button>
             </div>
@@ -292,68 +363,62 @@ export default function AdminAnnouncements() {
         </Card>
       )}
 
-      {/* Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
         {[
           { label: 'Total', value: announcements.length },
-          { label: 'Published', value: published.length },
-          { label: 'Scheduled', value: scheduled.length },
-          { label: 'Total Views', value: announcements.reduce((s, a) => s + a.views, 0) },
+          { label: 'All Members', value: untargetedCount },
+          { label: 'Targeted', value: announcements.length - untargetedCount },
         ].map(({ label, value }) => (
           <Card key={label}>
             <CardHeader className="pb-3">
               <CardDescription>{label}</CardDescription>
-              <CardTitle className="text-2xl">{value}</CardTitle>
+              <CardTitle className="text-2xl">{loading ? '-' : value}</CardTitle>
             </CardHeader>
           </Card>
         ))}
       </div>
 
-      {/* List */}
-      <Tabs defaultValue="published" className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="published">Published ({published.length})</TabsTrigger>
-          <TabsTrigger value="scheduled">Scheduled ({scheduled.length})</TabsTrigger>
-        </TabsList>
+      {loadError && (
+        <Card className="border-red-200 bg-red-50">
+          <CardContent className="pt-6 text-sm text-red-700">{loadError}</CardContent>
+        </Card>
+      )}
 
-        {[{ key: 'published', items: published }, { key: 'scheduled', items: scheduled }].map(({ key, items }) => (
-          <TabsContent key={key} value={key} className="mt-6 space-y-4">
-            {items.map((a) => (
-              <Card key={a.id} className="hover:shadow-md transition-shadow">
-                <CardHeader>
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-2 flex-wrap">
-                        <CardTitle className="text-lg">{a.title}</CardTitle>
-                        {a.priority === 'high' && <Badge className={priorityColor(a.priority)}>High Priority</Badge>}
-                        <Badge variant="outline">{a.audience}</Badge>
-                        <Badge className={statusColor(a.status)}>{a.status}</Badge>
-                      </div>
-                      <CardDescription>{a.message}</CardDescription>
+      <div className="space-y-4">
+        {loading ? (
+          <p className="py-10 text-center text-sm text-gray-500">Loading announcements...</p>
+        ) : announcements.length === 0 ? (
+          <Card>
+            <CardContent className="flex flex-col items-center justify-center px-4 py-10 text-center">
+              <p className="text-gray-600">No announcements yet.</p>
+            </CardContent>
+          </Card>
+        ) : (
+          announcements.map((a) => (
+            <Card key={a.id} className="transition-shadow hover:shadow-md">
+              <CardHeader>
+                <div className="flex items-start justify-between gap-4">
+                  <div className="flex-1">
+                    <div className="mb-2 flex flex-wrap items-center gap-2">
+                      <CardTitle className="text-lg">{a.title}</CardTitle>
+                      <Badge variant="outline">{formatAudience(a.audience)}</Badge>
                     </div>
-                    <div className="flex gap-1 shrink-0">
-                      <Button variant="ghost" size="sm"><Edit className="w-4 h-4" /></Button>
-                      <Button variant="ghost" size="sm" onClick={() => handleDelete(a.id)}>
-                        <Trash2 className="w-4 h-4 text-red-600" />
-                      </Button>
-                    </div>
+                    <CardDescription>{a.body}</CardDescription>
                   </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex items-center gap-6 text-sm text-gray-600">
-                    <span>{key === 'scheduled' ? 'Scheduled for' : 'Published'} {a.publishedDate}</span>
-                    {key === 'published' && (
-                      <span className="flex items-center gap-1">
-                        <Eye className="w-4 h-4" /> {a.views} views
-                      </span>
-                    )}
+                  <div className="flex shrink-0 gap-1">
+                    <Button variant="ghost" size="sm" onClick={() => handleDelete(a.id)}>
+                      <Trash2 className="h-4 w-4 text-red-600" />
+                    </Button>
                   </div>
-                </CardContent>
-              </Card>
-            ))}
-          </TabsContent>
-        ))}
-      </Tabs>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <span className="text-sm text-gray-600">Posted {formatMessageTime(a.created_at)}</span>
+              </CardContent>
+            </Card>
+          ))
+        )}
+      </div>
     </div>
   );
 }
