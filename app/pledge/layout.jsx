@@ -4,6 +4,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { LayoutDashboard, FolderOpen, MessageSquare, UsersRound, LogOut } from 'lucide-react';
 import { logoutEverywhere } from '@/lib/auth-actions';
+import { useUnreadCounts } from '@/lib/use-unread-counts';
 import { usePathname } from 'next/navigation';
 
 const NAV = [
@@ -15,6 +16,7 @@ const NAV = [
 
 export default function PledgeLayout({ children }) {
   const pathname = usePathname();
+  const { total: unreadTotal } = useUnreadCounts();
 
   return (
     <div className="flex min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100">
@@ -29,6 +31,7 @@ export default function PledgeLayout({ children }) {
         <nav className="flex-1 px-3 py-4 space-y-1">
           {NAV.map(({ href, label, icon: Icon }) => {
             const active = pathname === href;
+            const showBadge = href.endsWith('/messages') && unreadTotal > 0;
             return (
               <Link
                 key={href}
@@ -39,7 +42,14 @@ export default function PledgeLayout({ children }) {
                     : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
                 }`}
               >
-                <Icon className="w-4 h-4 shrink-0" />
+                <span className="relative shrink-0">
+                  <Icon className="w-4 h-4" />
+                  {showBadge && (
+                    <span className="absolute -right-1.5 -top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-600 px-1 text-[9px] font-semibold leading-none text-white">
+                      {unreadTotal > 99 ? '99+' : unreadTotal}
+                    </span>
+                  )}
+                </span>
                 {label}
               </Link>
             );

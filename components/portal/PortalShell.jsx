@@ -6,6 +6,7 @@ import { usePathname } from 'next/navigation';
 import Image from 'next/image';
 import { LogOut, PanelLeft, PanelLeftClose } from 'lucide-react';
 import { logoutEverywhere } from '@/lib/auth-actions';
+import { useUnreadCounts } from '@/lib/use-unread-counts';
 import { PortalThemeProvider } from './PortalThemeProvider';
 import ThemeToggle from './ThemeToggle';
 
@@ -43,6 +44,7 @@ export default function PortalShell({
   const styles = ACCENTS[accent] ?? ACCENTS.blue;
   const [collapsed, setCollapsed] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const { total: unreadTotal } = useUnreadCounts();
 
   useEffect(() => {
     const stored = window.localStorage.getItem(STORAGE_KEY);
@@ -129,6 +131,7 @@ export default function PortalShell({
         >
           {nav.map(({ href, label, icon: Icon }) => {
             const active = pathname === href;
+            const showBadge = href.endsWith('/messages') && unreadTotal > 0;
             return (
               <Link
                 key={href}
@@ -136,7 +139,14 @@ export default function PortalShell({
                 className={navLinkClass(active)}
                 title={collapsed ? label : undefined}
               >
-                <Icon className="h-4 w-4 shrink-0" />
+                <span className="relative shrink-0">
+                  <Icon className="h-4 w-4" />
+                  {showBadge && (
+                    <span className="absolute -right-1.5 -top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-600 px-1 text-[9px] font-semibold leading-none text-white">
+                      {unreadTotal > 99 ? '99+' : unreadTotal}
+                    </span>
+                  )}
+                </span>
                 {responsive ? (
                   <span className={collapsed ? 'md:hidden' : ''}>{label}</span>
                 ) : (
