@@ -694,6 +694,10 @@ function DocumentsSection({ isEboard }) {
     setPath((prev) => prev.slice(0, index + 1));
   }
 
+  function handleBack() {
+    setPath((prev) => prev.slice(0, -1));
+  }
+
   async function handleDeleteFolder(id) {
     if (!window.confirm('Delete this folder and everything inside it? This cannot be undone.')) return;
     try {
@@ -718,6 +722,12 @@ function DocumentsSection({ isEboard }) {
 
   return (
     <div className="space-y-4">
+      {path.length > 0 && (
+        <Button type="button" variant="ghost" size="sm" onClick={handleBack} className="-ml-2 gap-1.5">
+          <ArrowLeft className="h-4 w-4" /> Back
+        </Button>
+      )}
+
       <div className="flex flex-wrap items-center gap-1 text-sm text-gray-600 dark:text-slate-400">
         <button type="button" onClick={() => setPath([])} className="hover:underline">
           Documents
