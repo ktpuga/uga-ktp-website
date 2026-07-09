@@ -245,7 +245,7 @@ function ReactionBar({ reactions, onReact }) {
   if (!reactions || reactions.length === 0) return null;
 
   return (
-    <div className="mt-1 flex flex-wrap gap-1">
+    <>
       {reactions.map((r) => (
         <button
           key={r.emoji}
@@ -261,7 +261,7 @@ function ReactionBar({ reactions, onReact }) {
           <span className="text-gray-600 dark:text-slate-400">{r.count}</span>
         </button>
       ))}
-    </div>
+    </>
   );
 }
 
@@ -287,7 +287,8 @@ function MessageBubble({ message, isMine, attachmentUrl, onReact, canDelete, onD
         </div>
 
         {(onReact || canDelete) && (
-          <div className="mt-0.5 flex items-center gap-1">
+          <div className="mt-1 flex flex-wrap items-center gap-1">
+            {onReact && <ReactionBar reactions={message.reactions} onReact={onReact} />}
             {onReact && (
               <div className="relative">
                 <button
@@ -315,8 +316,6 @@ function MessageBubble({ message, isMine, attachmentUrl, onReact, canDelete, onD
             )}
           </div>
         )}
-
-        {onReact && <ReactionBar reactions={message.reactions} onReact={onReact} />}
       </div>
     </div>
   );
