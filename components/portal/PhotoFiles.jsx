@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Search, FolderOpen, FileText, Trash2, Users, Images, Plus, ArrowLeft, Download, X } from 'lucide-react';
+import { Search, FolderOpen, FileText, Trash2, Users, Images, Plus, ArrowLeft, Download, ExternalLink, X } from 'lucide-react';
 import {
   getPhotos,
   getAlbums,
@@ -20,6 +20,7 @@ import {
   createDocumentFolder,
   deleteDocumentFolder,
   uploadDocument,
+  createDocumentLink,
   deleteDocument,
 } from '@/lib/portal-api';
 import { formatPhotoDate } from '@/lib/portal-format';
@@ -510,6 +511,52 @@ function UploadDocumentForm({ folderId, onUploaded }) {
   );
 }
 
+function AddLinkForm({ folderId, onAdded }) {
+  const [name, setName] = useState('');
+  const [url, setUrl] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState(null);
+
+  async function handleSubmit(e) {
+    e.preventDefault();
+    if (!name.trim() || !url.trim()) return;
+
+    setSubmitting(true);
+    setError(null);
+    try {
+      const doc = await createDocumentLink({ folderId, filename: name.trim(), url: url.trim() });
+      onAdded(doc);
+      setName('');
+      setUrl('');
+    } catch (err) {
+      if (isRedirectError(err)) throw err;
+      setError(err.message ?? 'Failed to add link');
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  return (
+    <Card>
+      <CardContent className="pt-6">
+        <form onSubmit={handleSubmit} className="flex flex-col gap-3 sm:flex-row sm:items-center">
+          <Input placeholder="Name (e.g. Meeting Notes)" value={name} onChange={(e) => setName(e.target.value)} className="sm:flex-1" />
+          <Input
+            placeholder="https://docs.google.com/..."
+            value={url}
+            onChange={(e) => setUrl(e.target.value)}
+            className="sm:flex-1"
+          />
+          <Button type="submit" disabled={!name.trim() || !url.trim() || submitting}>
+            {submitting ? 'Adding...' : 'Add link'}
+          </Button>
+        </form>
+        {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
+      </CardContent>
+    </Card>
+  );
+}
+
 function FolderCard({ folder, isEboard, onOpen, onDelete }) {
   return (
     <Card className="cursor-pointer transition-shadow hover:shadow-md">
@@ -543,6 +590,13 @@ function isPreviewable(mimeType) {
 }
 
 function DocumentIcon({ doc }) {
+  if (doc.kind === 'link') {
+    return (
+      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded bg-blue-50 dark:bg-blue-950/40">
+        <ExternalLink className="h-5 w-5 text-blue-700 dark:text-blue-400" />
+      </div>
+    );
+  }
   if (doc.mime_type?.startsWith('image/')) {
     return (
       <img
@@ -560,31 +614,60 @@ function DocumentIcon({ doc }) {
 }
 
 function DocumentRow({ doc, isEboard, onPreview, onDelete }) {
+  const isLink = doc.kind === 'link';
+
   return (
     <Card>
       <CardContent className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
-        <button
-          type="button"
-          onClick={() => onPreview(doc)}
-          className="flex min-w-0 flex-1 items-center gap-3 text-left"
-        >
-          <DocumentIcon doc={doc} />
-          <div className="min-w-0">
-            <p className="truncate text-sm font-medium text-gray-900 hover:underline dark:text-slate-100">
-              {doc.filename}
-            </p>
-            <p className="text-xs text-gray-500 dark:text-slate-400">
-              {formatFileSize(doc.file_size)}
-              {doc.created_at ? ` • ${formatPhotoDate(doc.created_at)}` : ''}
-            </p>
-          </div>
-        </button>
+        {isLink ? (
+          <a
+            href={doc.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex min-w-0 flex-1 items-center gap-3 text-left"
+          >
+            <DocumentIcon doc={doc} />
+            <div className="min-w-0">
+              <p className="truncate text-sm font-medium text-gray-900 hover:underline dark:text-slate-100">
+                {doc.filename}
+              </p>
+              <p className="truncate text-xs text-gray-500 dark:text-slate-400">
+                {doc.url}
+              </p>
+            </div>
+          </a>
+        ) : (
+          <button
+            type="button"
+            onClick={() => onPreview(doc)}
+            className="flex min-w-0 flex-1 items-center gap-3 text-left"
+          >
+            <DocumentIcon doc={doc} />
+            <div className="min-w-0">
+              <p className="truncate text-sm font-medium text-gray-900 hover:underline dark:text-slate-100">
+                {doc.filename}
+              </p>
+              <p className="text-xs text-gray-500 dark:text-slate-400">
+                {formatFileSize(doc.file_size)}
+                {doc.created_at ? ` • ${formatPhotoDate(doc.created_at)}` : ''}
+              </p>
+            </div>
+          </button>
+        )}
         <div className="flex shrink-0 gap-2">
-          <Button type="button" variant="outline" size="sm" asChild>
-            <a href={`/api/documents/${doc.id}/download`} download={doc.filename}>
-              <Download className="mr-2 h-4 w-4" /> Download
-            </a>
-          </Button>
+          {isLink ? (
+            <Button type="button" variant="outline" size="sm" asChild>
+              <a href={doc.url} target="_blank" rel="noopener noreferrer">
+                <ExternalLink className="mr-2 h-4 w-4" /> Open
+              </a>
+            </Button>
+          ) : (
+            <Button type="button" variant="outline" size="sm" asChild>
+              <a href={`/api/documents/${doc.id}/download`} download={doc.filename}>
+                <Download className="mr-2 h-4 w-4" /> Download
+              </a>
+            </Button>
+          )}
           {isEboard && (
             <Button
               type="button"
@@ -690,6 +773,10 @@ function DocumentsSection({ isEboard }) {
     setDocuments((prev) => [doc, ...prev]);
   }
 
+  function handleLinkAdded(doc) {
+    setDocuments((prev) => [doc, ...prev]);
+  }
+
   function handleOpenFolder(folder) {
     setPath((prev) => [...prev, { id: folder.id, name: folder.name }]);
   }
@@ -753,6 +840,7 @@ function DocumentsSection({ isEboard }) {
       )}
 
       {isEboard && <UploadDocumentForm folderId={currentFolderId} onUploaded={handleDocumentUploaded} />}
+      {isEboard && <AddLinkForm folderId={currentFolderId} onAdded={handleLinkAdded} />}
 
       {error && (
         <Card className="border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-950/40">
