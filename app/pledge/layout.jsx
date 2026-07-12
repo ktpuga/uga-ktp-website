@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
-import { LayoutDashboard, FolderOpen, MessageSquare, UsersRound, LogOut } from 'lucide-react';
+import { LayoutDashboard, FolderOpen, MessageSquare, UsersRound, Vote, LogOut } from 'lucide-react';
 import { logoutEverywhere } from '@/lib/auth-actions';
 import { useUnreadCounts } from '@/lib/use-unread-counts';
 import { usePathname } from 'next/navigation';
@@ -10,6 +10,7 @@ import { usePathname } from 'next/navigation';
 const NAV = [
   { href: '/pledge', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/pledge/committees', label: 'Committees', icon: UsersRound },
+  { href: '/pledge/polls', label: 'Polls', icon: Vote },
   { href: '/pledge/files', label: 'Files & Photos', icon: FolderOpen },
   { href: '/pledge/messages', label: 'Messages', icon: MessageSquare },
 ];
