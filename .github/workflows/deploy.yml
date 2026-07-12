@@ -25,6 +25,46 @@ jobs:
           docker compose build 
 
           docker compose up -d
-          
-          
+
+
           docker image prune -f
+
+      - name: Notify Discord (success)
+        if: success()
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          BRANCH: ${{ github.ref_name }}
+          SHA: ${{ github.sha }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          curl -sf -H "Content-Type: application/json" -X POST "$DISCORD_WEBHOOK_URL" -d "{
+            \"embeds\": [{
+              \"title\": \"✅ website deployed\",
+              \"color\": 3066993,
+              \"url\": \"$RUN_URL\",
+              \"fields\": [
+                {\"name\": \"Branch\", \"value\": \"$BRANCH\", \"inline\": true},
+                {\"name\": \"Commit\", \"value\": \"${SHA:0:7}\", \"inline\": true}
+              ]
+            }]
+          }"
+
+      - name: Notify Discord (failure)
+        if: failure()
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          BRANCH: ${{ github.ref_name }}
+          SHA: ${{ github.sha }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          curl -sf -H "Content-Type: application/json" -X POST "$DISCORD_WEBHOOK_URL" -d "{
+            \"embeds\": [{
+              \"title\": \"❌ website deploy FAILED\",
+              \"color\": 15158332,
+              \"url\": \"$RUN_URL\",
+              \"fields\": [
+                {\"name\": \"Branch\", \"value\": \"$BRANCH\", \"inline\": true},
+                {\"name\": \"Commit\", \"value\": \"${SHA:0:7}\", \"inline\": true}
+              ]
+            }]
+          }"
