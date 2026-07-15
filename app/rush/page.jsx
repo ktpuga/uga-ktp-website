@@ -77,7 +77,7 @@ export default function Page () {
             </p>
 
             <h1 className="flex w-full flex-col items-center">
-              <span className="sr-only">Kappa Theta Pi Poker Night</span>
+              <span className="sr-only">Kappa Theta Pi Fall Rush</span>
               <span
                 aria-hidden
                 className="aspect-[378/150] w-full max-w-[10rem] bg-[#d4af37] drop-shadow-xl sm:max-w-[12rem] md:max-w-[14rem] lg:max-w-xs xl:max-w-sm"
@@ -93,14 +93,14 @@ export default function Page () {
                 }}
               />
               <span className="mt-3 text-3xl font-extrabold tracking-tight text-[#d4af37] drop-shadow-xl sm:mt-4 sm:text-4xl md:text-5xl lg:text-6xl">
-                Poker Night
+                Fall Rush
               </span>
             </h1>
 
             <CountdownTimer targetDate="2026-08-31T18:00:00" />
 
             <p className="mt-4 w-full max-w-lg text-balance text-base leading-relaxed text-[#e8e0d5] sm:mt-6 sm:text-lg lg:max-w-3xl md:text-xl">
-              Intrest Forms and Applications will be posted here soon. Check back later, or reach out on Instagram if you have questions.
+              Interest Forms and Applications will be posted here soon. Check back later, or reach out on Instagram if you have questions.
             </p>
 
             <div className="mt-8 flex w-full max-w-xs flex-col items-stretch gap-3 sm:mt-10 sm:max-w-none sm:w-auto sm:flex-row sm:items-center sm:justify-center sm:gap-6">
@@ -123,9 +123,9 @@ export default function Page () {
 
           <div id="timeline" className="mt-16 border-t border-[#6b1c2a] pt-16 sm:mt-20 sm:pt-20">
             <SectionHeading
-              label="Rush Week"
+              label="Two-Week Rush"
               title="Event Timeline"
-              description="Dates and locations are not finalized yet. This is the expected flow — details will be updated here."
+              description="Dates and locations are not finalized yet. Rush typically happens around the beginning of the semester and spans about two weeks."
             />
 
             <ol className="relative mt-10 space-y-0 sm:mt-12">
