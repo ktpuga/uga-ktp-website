@@ -44,6 +44,7 @@ import { useConfirm } from '@/components/ui/confirm-dialog';
 import { useUnreadCounts } from '@/lib/use-unread-counts';
 import ReportButton from './ReportButton';
 import BlockButton from './BlockButton';
+import ProfileActionsMenu from './ProfileActionsMenu';
 
 const QUICK_EMOJI = ['👍', '❤️', '😂', '😮', '😢', '🎉', '🙏', '🔥'];
 const ROLE_GROUPS = [
@@ -1085,15 +1086,17 @@ function GroupChatInfoModal({ chat, members, messages, isEboard, onAddMember, on
             <div className="space-y-1">
               {members.map((member) => (
                 <div key={member.authentik_id} className="flex items-center justify-between gap-2 rounded-lg p-1.5 hover:bg-gray-50 dark:hover:bg-slate-800">
-                  <div className="flex min-w-0 items-center gap-2.5">
-                    <Avatar className="h-8 w-8 shrink-0">
-                      {member.authentik_id && (
-                        <AvatarImage src={`/api/users/${member.authentik_id}/profile-picture/media`} alt={memberDisplayName(member)} />
-                      )}
-                      <AvatarFallback className="bg-blue-900 text-xs text-white">{memberInitials(member)}</AvatarFallback>
-                    </Avatar>
-                    <span className="truncate text-sm text-gray-900 dark:text-slate-100">{memberDisplayName(member)}</span>
-                  </div>
+                  <ProfileActionsMenu userId={member.authentik_id}>
+                    <div className="flex min-w-0 items-center gap-2.5">
+                      <Avatar className="h-8 w-8 shrink-0">
+                        {member.authentik_id && (
+                          <AvatarImage src={`/api/users/${member.authentik_id}/profile-picture/media`} alt={memberDisplayName(member)} />
+                        )}
+                        <AvatarFallback className="bg-blue-900 text-xs text-white">{memberInitials(member)}</AvatarFallback>
+                      </Avatar>
+                      <span className="truncate text-sm text-gray-900 dark:text-slate-100">{memberDisplayName(member)}</span>
+                    </div>
+                  </ProfileActionsMenu>
                   {isEboard && (
                     <Button
                       type="button"
@@ -1356,7 +1359,9 @@ function GroupChatThread({ chat, currentUserId, isEboard, onBack, onDeleted, onC
           messages.map((message) => (
             <div key={message.id}>
               {message.sender_id !== currentUserId && (
-                <p className="mb-0.5 ml-1 text-xs text-gray-500 dark:text-slate-400">{senderName(message.sender_id)}</p>
+                <ProfileActionsMenu userId={message.sender_id}>
+                  <p className="mb-0.5 ml-1 text-xs text-gray-500 hover:underline dark:text-slate-400">{senderName(message.sender_id)}</p>
+                </ProfileActionsMenu>
               )}
               <MessageBubble
                 message={message}

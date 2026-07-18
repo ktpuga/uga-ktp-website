@@ -42,15 +42,23 @@ function EmptyTab({ icon: Icon, message }) {
   );
 }
 
-function PhotoCard({ photo, canDelete, onDelete, currentUserId }) {
+function PhotoCard({ photo, canDelete, onDelete, currentUserId, onOpen }) {
   return (
     <Card className="overflow-hidden">
-      <div className="relative aspect-square bg-gray-100 dark:bg-slate-800">
+      <div
+        role="button"
+        tabIndex={0}
+        onClick={onOpen}
+        onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && onOpen()}
+        title="View larger"
+        className="relative aspect-square cursor-zoom-in bg-gray-100 dark:bg-slate-800"
+      >
         <PhotoMedia photo={photo} />
         <a
           href={`/api/photos/${photo.id}/media`}
           download={photo.title || `photo-${photo.id}`}
           title="Download"
+          onClick={(e) => e.stopPropagation()}
           className="absolute right-2 top-2 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-black/60 text-white transition-colors hover:bg-black/80"
         >
           <Download className="h-4 w-4" />
@@ -89,6 +97,76 @@ function PhotoCard({ photo, canDelete, onDelete, currentUserId }) {
         )}
       </CardHeader>
     </Card>
+  );
+}
+
+// Full-size view — same actions as the thumbnail card (download, report,
+// delete) plus a close button, opened by clicking a photo instead of just
+// the small overlay icons. Mirrors DocumentPreviewModal's pattern.
+function PhotoLightbox({ photo, canDelete, currentUserId, onClose, onDelete }) {
+  useEffect(() => {
+    function handleKeyDown(e) {
+      if (e.key === 'Escape') onClose();
+    }
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [onClose]);
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4" onClick={onClose}>
+      <div
+        className="flex max-h-full w-full max-w-5xl flex-col overflow-hidden rounded-lg bg-white dark:bg-slate-900"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between gap-3 border-b border-gray-200 p-4 dark:border-slate-700">
+          <div className="min-w-0">
+            <p className="truncate text-sm font-medium text-gray-900 dark:text-slate-100">{photo.title || 'Untitled'}</p>
+            {photo.caption && <p className="truncate text-xs text-gray-500 dark:text-slate-400">{photo.caption}</p>}
+          </div>
+          <div className="flex shrink-0 items-center gap-2">
+            <Button type="button" variant="outline" size="sm" asChild>
+              <a href={`/api/photos/${photo.id}/media`} download={photo.title || `photo-${photo.id}`}>
+                <Download className="mr-2 h-4 w-4" /> Download
+              </a>
+            </Button>
+            {photo.uploaded_by && photo.uploaded_by !== currentUserId && (
+              <ReportButton
+                contentType="photo"
+                contentId={photo.id}
+                reportedUserId={photo.uploaded_by}
+                iconOnly={false}
+                className="inline-flex h-9 items-center gap-2 rounded-md border border-input bg-background px-3 text-sm text-gray-900 hover:bg-accent dark:text-slate-100"
+              />
+            )}
+            {canDelete && (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => onDelete(photo.id)}
+                className="text-red-600 hover:bg-red-50 hover:text-red-700"
+              >
+                <Trash2 className="mr-2 h-4 w-4" /> Delete
+              </Button>
+            )}
+            <Button type="button" variant="ghost" size="sm" onClick={onClose} className="h-9 w-9 p-0">
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+        <div className="flex flex-1 items-center justify-center overflow-auto bg-gray-50 dark:bg-slate-950">
+          {photo.media_type === 'video' ? (
+            <video src={`/api/photos/${photo.id}/media`} controls autoPlay className="max-h-[75vh] w-auto" />
+          ) : (
+            <img
+              src={`/api/photos/${photo.id}/media`}
+              alt={photo.title || 'Photo'}
+              className="max-h-[75vh] w-auto object-contain"
+            />
+          )}
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -261,6 +339,7 @@ function AlbumView({ album, currentUserId, isEboard, onBack }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [lightboxPhoto, setLightboxPhoto] = useState(null);
 
   useEffect(() => {
     setLoading(true);
@@ -326,7 +405,7 @@ function AlbumView({ album, currentUserId, isEboard, onBack }) {
       ) : filteredPhotos.length === 0 ? (
         <EmptyTab icon={Users} message="No photos yet. Be the first to add one above." />
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4 xl:grid-cols-5">
           {filteredPhotos.map((photo) => {
             const canDelete = photo.uploaded_by === currentUserId || isEboard;
             return (
@@ -336,10 +415,24 @@ function AlbumView({ album, currentUserId, isEboard, onBack }) {
                 canDelete={canDelete}
                 onDelete={handleDelete}
                 currentUserId={currentUserId}
+                onOpen={() => setLightboxPhoto(photo)}
               />
             );
           })}
         </div>
+      )}
+
+      {lightboxPhoto && (
+        <PhotoLightbox
+          photo={lightboxPhoto}
+          currentUserId={currentUserId}
+          canDelete={lightboxPhoto.uploaded_by === currentUserId || isEboard}
+          onClose={() => setLightboxPhoto(null)}
+          onDelete={(id) => {
+            handleDelete(id);
+            setLightboxPhoto(null);
+          }}
+        />
       )}
     </div>
   );
