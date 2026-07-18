@@ -31,6 +31,7 @@ jobs:
 
       - name: Notify Discord (success)
         if: success()
+        continue-on-error: true
         env:
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
           BRANCH: ${{ github.ref_name }}
@@ -51,6 +52,7 @@ jobs:
 
       - name: Notify Discord (failure)
         if: failure()
+        continue-on-error: true
         env:
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
           BRANCH: ${{ github.ref_name }}
