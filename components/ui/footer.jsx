@@ -17,6 +17,20 @@ export class footer extends Component {
               Code of Conduct
             </Link>
             <Link
+              href="/community-guidelines"
+              className="text-xs hover:underline underline-offset-4 font-['Source Sans Pro']"
+              prefetch={false}
+            >
+              Community Guidelines
+            </Link>
+            <Link
+              href="/privacy"
+              className="text-xs hover:underline underline-offset-4 font-['Source Sans Pro']"
+              prefetch={false}
+            >
+              Privacy Policy
+            </Link>
+            <Link
               href="/blog"
               className="text-xs hover:underline underline-offset-4 font-['Source Sans Pro']"
               prefetch={false}

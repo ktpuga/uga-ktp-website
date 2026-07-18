@@ -42,6 +42,8 @@ import { memberDisplayName, memberInitials, formatMemberGroup, formatMessageTime
 import { isRedirectError } from '@/lib/is-redirect-error';
 import { useConfirm } from '@/components/ui/confirm-dialog';
 import { useUnreadCounts } from '@/lib/use-unread-counts';
+import ReportButton from './ReportButton';
+import BlockButton from './BlockButton';
 
 const QUICK_EMOJI = ['👍', '❤️', '😂', '😮', '😢', '🎉', '🙏', '🔥'];
 const ROLE_GROUPS = [
@@ -267,7 +269,7 @@ function ReactionBar({ reactions, onReact }) {
   );
 }
 
-function MessageBubble({ message, isMine, attachmentUrl, onReact, canDelete, onDelete }) {
+function MessageBubble({ message, isMine, attachmentUrl, onReact, canDelete, onDelete, reportContentType }) {
   const [pickerOpen, setPickerOpen] = useState(false);
   const attachment = message.attachment;
 
@@ -288,7 +290,7 @@ function MessageBubble({ message, isMine, attachmentUrl, onReact, canDelete, onD
           </p>
         </div>
 
-        {(onReact || canDelete) && (
+        {(onReact || canDelete || (reportContentType && !isMine)) && (
           <div className="mt-1 flex flex-wrap items-center gap-1">
             {onReact && <ReactionBar reactions={message.reactions} onReact={onReact} />}
             {onReact && (
@@ -305,6 +307,14 @@ function MessageBubble({ message, isMine, attachmentUrl, onReact, canDelete, onD
                   <EmojiPickerPopover onPick={onReact} onClose={() => setPickerOpen(false)} align={isMine ? 'right' : 'left'} />
                 )}
               </div>
+            )}
+            {reportContentType && !isMine && (
+              <ReportButton
+                contentType={reportContentType}
+                contentId={message.id}
+                reportedUserId={message.sender_id}
+                className="rounded-full p-0.5 text-gray-400 opacity-0 transition-opacity hover:text-red-600 group-hover:opacity-100 dark:hover:text-red-400"
+              />
             )}
             {canDelete && (
               <button
@@ -419,7 +429,8 @@ function ConversationThread({ conversation, currentUserId, isEboard, onBack }) {
           )}
           <AvatarFallback className="bg-blue-900 text-white">{memberInitials(conversation)}</AvatarFallback>
         </Avatar>
-        <p className="font-medium text-gray-900 dark:text-slate-100">{memberDisplayName(conversation)}</p>
+        <p className="flex-1 font-medium text-gray-900 dark:text-slate-100">{memberDisplayName(conversation)}</p>
+        <BlockButton userId={conversation.authentik_id} size="sm" />
       </div>
 
       <div className="flex-1 space-y-2 overflow-y-auto py-4">
@@ -438,6 +449,7 @@ function ConversationThread({ conversation, currentUserId, isEboard, onBack }) {
               onReact={(emoji) => handleReact(message.id, emoji)}
               canDelete={message.sender_id === currentUserId || isEboard}
               onDelete={() => handleDeleteMessage(message.id)}
+              reportContentType="message"
             />
           ))
         )}
@@ -1353,6 +1365,7 @@ function GroupChatThread({ chat, currentUserId, isEboard, onBack, onDeleted, onC
                 onReact={(emoji) => handleReact(message.id, emoji)}
                 canDelete={message.sender_id === currentUserId || isEboard}
                 onDelete={() => handleDeleteMessage(message.id)}
+                reportContentType="group_message"
               />
             </div>
           ))

@@ -16,6 +16,9 @@ import {
   formatGraduationDate,
 } from '@/lib/portal-format';
 import { isRedirectError } from '@/lib/is-redirect-error';
+import { useSession } from 'next-auth/react';
+import ReportButton from './ReportButton';
+import BlockButton from './BlockButton';
 
 const GROUP_BADGE = {
   eboard: 'bg-red-100 text-red-800',
@@ -41,6 +44,8 @@ function directorySortLabel(member) {
 
 function MemberProfileModal({ member, avatarClass, onClose }) {
   const pathname = usePathname();
+  const { data: session } = useSession();
+  const isSelf = session?.user?.authentik_id === member.id;
   const portalRoot = '/' + (pathname.split('/')[1] || 'member');
   const name = directoryDisplayName(member);
   const graduation = formatGraduationDate(member.graduationDate);
@@ -54,7 +59,12 @@ function MemberProfileModal({ member, avatarClass, onClose }) {
         className="w-full max-w-sm overflow-hidden rounded-lg bg-white dark:bg-slate-900"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-end p-2">
+        <div className="flex items-center justify-between p-2">
+          {!isSelf ? (
+            <ReportButton contentType="user" reportedUserId={member.id} />
+          ) : (
+            <span />
+          )}
           <Button type="button" variant="ghost" size="sm" onClick={onClose} className="h-8 w-8 p-0">
             <X className="h-4 w-4" />
           </Button>
@@ -112,6 +122,11 @@ function MemberProfileModal({ member, avatarClass, onClose }) {
               </Button>
             )}
           </div>
+          {!isSelf && (
+            <div className="w-full border-t border-gray-100 pt-3 dark:border-slate-800">
+              <BlockButton userId={member.id} className="w-full" />
+            </div>
+          )}
         </div>
       </div>
     </div>

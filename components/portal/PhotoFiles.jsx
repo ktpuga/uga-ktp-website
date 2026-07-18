@@ -27,6 +27,7 @@ import { formatPhotoDate } from '@/lib/portal-format';
 import { isRedirectError } from '@/lib/is-redirect-error';
 import { useConfirm } from '@/components/ui/confirm-dialog';
 import PhotoMedia from './PhotoMedia';
+import ReportButton from './ReportButton';
 
 const GENERAL_ALBUM = { id: null, name: 'Shared Album', description: 'General chapter photos, open to everyone' };
 
@@ -41,7 +42,7 @@ function EmptyTab({ icon: Icon, message }) {
   );
 }
 
-function PhotoCard({ photo, canDelete, onDelete }) {
+function PhotoCard({ photo, canDelete, onDelete, currentUserId }) {
   return (
     <Card className="overflow-hidden">
       <div className="relative aspect-square bg-gray-100 dark:bg-slate-800">
@@ -54,6 +55,14 @@ function PhotoCard({ photo, canDelete, onDelete }) {
         >
           <Download className="h-4 w-4" />
         </a>
+        {photo.uploaded_by && photo.uploaded_by !== currentUserId && (
+          <ReportButton
+            contentType="photo"
+            contentId={photo.id}
+            reportedUserId={photo.uploaded_by}
+            className="absolute left-2 top-2 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-black/60 text-white transition-colors hover:bg-black/80"
+          />
+        )}
       </div>
       <CardHeader className="p-4 pb-3 sm:p-6 sm:pb-3">
         <CardTitle className="text-sm truncate">{photo.title || 'Untitled'}</CardTitle>
@@ -319,9 +328,16 @@ function AlbumView({ album, currentUserId, isEboard, onBack }) {
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           {filteredPhotos.map((photo) => {
-            const canDelete =
-              photo.uploaded_by === currentUserId || (isEboard && album.created_by === currentUserId);
-            return <PhotoCard key={photo.id} photo={photo} canDelete={canDelete} onDelete={handleDelete} />;
+            const canDelete = photo.uploaded_by === currentUserId || isEboard;
+            return (
+              <PhotoCard
+                key={photo.id}
+                photo={photo}
+                canDelete={canDelete}
+                onDelete={handleDelete}
+                currentUserId={currentUserId}
+              />
+            );
           })}
         </div>
       )}

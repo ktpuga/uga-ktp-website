@@ -1,6 +1,6 @@
 'use client';
 
-import { BarChart2, Megaphone, Calendar, MessageSquare, Users, UsersRound, Vote, FolderOpen, Image as ImageIcon, Settings } from 'lucide-react';
+import { BarChart2, Megaphone, Calendar, MessageSquare, Users, UsersRound, Vote, FolderOpen, Image as ImageIcon, ShieldAlert, Settings } from 'lucide-react';
 import PortalShell from '@/components/portal/PortalShell';
 
 const NAV = [
@@ -10,6 +10,7 @@ const NAV = [
   { href: '/admin/committees', label: 'Committees', icon: UsersRound },
   { href: '/admin/polls', label: 'Polls', icon: Vote },
   { href: '/admin/messages', label: 'Messages', icon: MessageSquare },
+  { href: '/admin/reports', label: 'Reports', icon: ShieldAlert },
   { href: '/admin/users', label: 'User Management', icon: Users },
   { href: '/admin/files', label: 'Files & Photos', icon: FolderOpen },
   { href: '/admin/homepage-photos', label: 'Homepage Photos', icon: ImageIcon },

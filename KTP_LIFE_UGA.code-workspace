@@ -1,0 +1,17 @@
+{
+	"folders": [
+		{
+			"path": "../KTP_LIFE_UGA"
+		},
+		{
+			"path": "."
+		},
+		{
+			"path": "../api/ktp-api"
+		},
+		{
+			"path": "../ktp-docs"
+		}
+	],
+	"settings": {}
+}

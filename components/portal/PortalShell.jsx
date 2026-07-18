@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import Image from 'next/image';
-import { LogOut, PanelLeft, PanelLeftClose } from 'lucide-react';
+import { LogOut, PanelLeft, PanelLeftClose, Menu, X } from 'lucide-react';
 import { logoutEverywhere } from '@/lib/auth-actions';
 import { useUnreadCounts } from '@/lib/use-unread-counts';
 import { PortalThemeProvider } from './PortalThemeProvider';
@@ -44,6 +44,7 @@ export default function PortalShell({
   const styles = ACCENTS[accent] ?? ACCENTS.blue;
   const [collapsed, setCollapsed] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const { total: unreadTotal } = useUnreadCounts();
 
   useEffect(() => {
@@ -56,6 +57,13 @@ export default function PortalShell({
     if (!mounted) return;
     window.localStorage.setItem(STORAGE_KEY, collapsed ? 'collapsed' : 'expanded');
   }, [collapsed, mounted]);
+
+  // Closes the mobile dropdown on every navigation, in case a route change
+  // happens some way other than tapping a link in the dropdown itself
+  // (back/forward, a redirect elsewhere in the app, etc).
+  useEffect(() => {
+    setMobileNavOpen(false);
+  }, [pathname]);
 
   const sidebarWidth = collapsed ? 'w-16' : 'w-60';
   const desktopSidebarWidth = collapsed ? 'md:w-16' : 'md:w-60';
@@ -109,6 +117,15 @@ export default function PortalShell({
 
           {responsive && (
             <div className="flex items-center gap-1 md:hidden">
+              <button
+                type="button"
+                onClick={() => setMobileNavOpen((open) => !open)}
+                aria-label={mobileNavOpen ? 'Close menu' : 'Open menu'}
+                aria-expanded={mobileNavOpen}
+                className={iconBtnClass}
+              >
+                {mobileNavOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
+              </button>
               <ThemeToggle iconOnly />
               <button
                 type="button"
@@ -122,10 +139,40 @@ export default function PortalShell({
           )}
         </div>
 
+        {responsive && mobileNavOpen && (
+          <nav className="flex flex-col gap-1 border-b border-slate-200 bg-white px-2 py-2 md:hidden dark:border-border dark:bg-card">
+            {nav.map(({ href, label, icon: Icon }) => {
+              const active = pathname === href;
+              const showBadge = href.endsWith('/messages') && unreadTotal > 0;
+              return (
+                <Link
+                  key={href}
+                  href={href}
+                  className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+                    active
+                      ? styles.active
+                      : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-[#22252b] dark:hover:text-white'
+                  }`}
+                >
+                  <span className="relative shrink-0">
+                    <Icon className="h-4 w-4" />
+                    {showBadge && (
+                      <span className="absolute -right-1.5 -top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-600 px-1 text-[9px] font-semibold leading-none text-white">
+                        {unreadTotal > 99 ? '99+' : unreadTotal}
+                      </span>
+                    )}
+                  </span>
+                  {label}
+                </Link>
+              );
+            })}
+          </nav>
+        )}
+
         <nav
           className={
             responsive
-              ? `flex flex-1 gap-1 overflow-x-auto px-2 py-2 md:flex-col md:space-y-1 md:overflow-visible md:py-4 ${collapsed ? 'md:px-2' : 'md:px-3'}`
+              ? `hidden flex-1 md:flex md:flex-col md:space-y-1 md:py-4 ${collapsed ? 'md:px-2' : 'md:px-3'}`
               : `flex flex-1 flex-col space-y-1 py-4 ${collapsed ? 'px-2' : 'px-3'}`
           }
         >
