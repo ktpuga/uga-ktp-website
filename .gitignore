@@ -12,7 +12,8 @@
 # next.js
 /.next/
 /out/
-
+.yarn
+.pnp.*
 # production
 /build
 

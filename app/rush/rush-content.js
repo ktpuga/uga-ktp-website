@@ -54,7 +54,12 @@ We focus on career development, technical growth, and building a tight-knit comm
   {
     id: 'who-can-rush',
     question: 'Who can participate in fall rush?',
-    answer: `Any University of Georgia student interested in technology, regardless of major or experience level, is welcome to attend rush events. `,
+    answer: `Any University of Georgia student interested in technology, regardless of major or experience level, is welcome to attend rush events. To be eligible to rush KTP, you must have at least three semesters remaining at UGA, including the semester in which you are rushing.`,
+  },
+  {
+    id: 'when-is-rush',
+    question: 'When does rush happen?',
+    answer: `Fall rush typically happens around the beginning of the semester and spans about two weeks. Exact dates, times, and locations will be posted here once the timeline is finalized.`,
   },
   {
     id: 'cost',
@@ -69,7 +74,7 @@ We focus on career development, technical growth, and building a tight-knit comm
   {
     id: 'poker-night',
     question: 'Do I need to know how to play poker?',
-    answer: `Nope. Poker Night is a social event, you do not need any poker experience to show up and meet the active members.`,
+    answer: `Nope. Poker Night is one social event within the broader rush process, and you do not need any poker experience to show up and meet the active members.`,
   },
   {
     id: 'miss-event',

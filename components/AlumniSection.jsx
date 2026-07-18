@@ -35,6 +35,8 @@ const logos = {
     "https://images.icon-icons.com/2699/PNG/512/lexisnexis_logo_icon_169270.png",
   georgiaTech:
     "https://upload.wikimedia.org/wikipedia/commons/8/84/Georgia_Tech_logo_2021_Cropped.png",
+  lockheedMartin:
+    "https://companieslogo.com/img/orig/LMT-db3de619.png?t=1720244492",
 };
 
 // 🗂️ Alumni data — photos live in /public/leadership or /public/members
@@ -155,6 +157,18 @@ const alumniData = [
     instagramUrl: "https://www.instagram.com/henry.lue/",
     linkedinUrl: "https://www.linkedin.com/in/henry-lue/",
     icon: FaUniversity,
+  },
+  {
+    name: "Ryan Majd",
+    classYear: 2026,
+    class: "Founding President",
+    bio: "",
+    avatarSrc: images["ryan.jpeg"].default.src,
+    fallbackInitials: "RM",
+    instagramUrl: "https://www.instagram.com/TheRyanMajd/",
+    linkedinUrl: "https://www.linkedin.com/in/ryan-majd/",
+    otherUrl: "https://RyanMajd.com",
+    icon: logos.lockheedMartin, // custom image logo
   },
 
   {
