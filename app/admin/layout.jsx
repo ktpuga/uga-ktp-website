@@ -1,6 +1,6 @@
 'use client';
 
-import { BarChart2, Megaphone, Calendar, MessageSquare, Users, UsersRound, Vote, FolderOpen, Image as ImageIcon, ShieldAlert, Settings } from 'lucide-react';
+import { BarChart2, Megaphone, Calendar, MessageSquare, Users, UsersRound, Vote, FolderOpen, Image as ImageIcon, ShieldAlert, Settings, Images } from 'lucide-react';
 import PortalShell from '@/components/portal/PortalShell';
 
 const NAV = [
@@ -14,10 +14,12 @@ const NAV = [
   { href: '/admin/users', label: 'User Management', icon: Users },
   { href: '/admin/files', label: 'Files & Photos', icon: FolderOpen },
   { href: '/admin/homepage-photos', label: 'Homepage Photos', icon: ImageIcon },
+  { href: '/admin/ios-homepage-slideshow', label: 'Homepage Slideshow', icon: Images },
   { href: '/admin/settings', label: 'Settings', icon: Settings },
 ];
 
 export default function AdminLayout({ children }) {
+
   return (
     <PortalShell portalName="Admin Portal" accent="red" nav={NAV} responsive={false}>
       {children}
