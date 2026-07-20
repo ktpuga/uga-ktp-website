@@ -6,7 +6,7 @@ export async function PUT(request) {
   if (!access.ok) return access.response;
 
   const body = await request.json();
-  const response = await proxyAdminApi('/ios-homepage-slides/reorder', {
+  const response = await proxyAdminApi('/ios-homepage-photos/reorder', {
     accessToken: access.accessToken,
     method: 'PUT',
     body: JSON.stringify(body),
