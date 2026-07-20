@@ -14,7 +14,7 @@ export async function GET() {
   const access = await requireEboardAccess();
   if (!access.ok) return access.response;
 
-  const response = await proxyAdminApi('/ios-homepage-slides', { accessToken: access.accessToken });
+  const response = await proxyAdminApi('/ios-homepage-photos', { accessToken: access.accessToken });
   return asJsonResponse(response);
 }
 
@@ -23,7 +23,7 @@ export async function POST(request) {
   if (!access.ok) return access.response;
 
   const formData = await request.formData();
-  const response = await proxyAdminApi('/ios-homepage-slides', {
+  const response = await proxyAdminApi('/ios-homepage-photos', {
     accessToken: access.accessToken,
     method: 'POST',
     body: formData,

@@ -6,7 +6,7 @@ export async function POST(request) {
   if (!access.ok) return access.response;
 
   const body = await request.json();
-  const response = await proxyAdminApi('/ios-homepage-slides/register', {
+  const response = await proxyAdminApi('/ios-homepage-photos/register', {
     accessToken: access.accessToken,
     method: 'POST',
     body: JSON.stringify(body),

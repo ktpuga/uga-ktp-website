@@ -8,7 +8,7 @@ export async function GET(request, { params }) {
 
   const { id } = await params;
   const range = request.headers.get('range') ?? (await headers()).get('range');
-  const response = await proxyAdminMedia(`/ios-homepage-slides/${id}/media`, {
+  const response = await proxyAdminMedia(`/ios-homepage-photos/${id}/media`, {
     accessToken: access.accessToken,
     range,
   });

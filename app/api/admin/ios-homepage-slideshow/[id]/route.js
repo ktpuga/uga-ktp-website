@@ -16,7 +16,7 @@ export async function PUT(request, { params }) {
 
   const { id } = await params;
   const body = await request.json();
-  const response = await proxyAdminApi(`/ios-homepage-slides/${id}`, {
+  const response = await proxyAdminApi(`/ios-homepage-photos/${id}`, {
     accessToken: access.accessToken,
     method: 'PUT',
     body: JSON.stringify(body),
@@ -30,7 +30,7 @@ export async function DELETE(request, { params }) {
   if (!access.ok) return access.response;
 
   const { id } = await params;
-  const response = await proxyAdminApi(`/ios-homepage-slides/${id}`, {
+  const response = await proxyAdminApi(`/ios-homepage-photos/${id}`, {
     accessToken: access.accessToken,
     method: 'DELETE',
   });
