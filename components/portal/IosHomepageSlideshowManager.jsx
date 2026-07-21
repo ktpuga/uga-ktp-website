@@ -13,8 +13,6 @@ const {
   buildCreateSlideFormData,
   buildReorderPayload,
   buildUpdateSlidePayload,
-  clamp01,
-  convertPointerToFocalPoint,
   createEmptySlideForm,
   formatSlideSchedule,
   getSlideScheduleState,
@@ -74,44 +72,20 @@ function FieldError({ id, error }) {
   );
 }
 
-function SlidePreview({ src, alt, focalX = 0.5, focalY = 0.5, editable = false, onPointerPoint, onKeyPoint, emptyLabel = 'No preview yet' }) {
-  const markerLeft = `${clamp01(focalX) * 100}%`;
-  const markerTop = `${clamp01(focalY) * 100}%`;
+function SlidePreview({ src, alt, emptyLabel = 'No preview yet' }) {
+  const [failed, setFailed] = useState(false);
 
+  useEffect(() => setFailed(false), [src]);
   return (
     <div className="space-y-2">
-      <div
-        className={cx('relative aspect-[3/2] overflow-hidden rounded-xl border border-slate-200 bg-slate-100 shadow-sm', editable ? 'cursor-crosshair' : 'cursor-default')}
-        tabIndex={editable ? 0 : undefined}
-        role={editable ? 'group' : undefined}
-        aria-label={editable ? 'Focal point preview' : undefined}
-        onPointerDown={onPointerPoint}
-        onPointerMove={onPointerPoint}
-        onKeyDown={onKeyPoint}
-      >
-        {src ? (
+      <div className="relative aspect-[3/2] overflow-hidden rounded-xl border border-slate-200 bg-slate-100 shadow-sm">
+        {src && !failed ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={src} alt={alt} className="h-full w-full object-cover" style={{ objectPosition: `${markerLeft} ${markerTop}` }} />
+          <img src={src} alt={alt} className="h-full w-full object-contain" onError={() => setFailed(true)} />
         ) : (
-          <div className="flex h-full w-full items-center justify-center px-4 text-center text-sm text-slate-500">{emptyLabel}</div>
-        )}
-        {editable && (
-          <button
-            type="button"
-            className="absolute -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white bg-red-600 shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-2"
-            style={{ left: markerLeft, top: markerTop }}
-            aria-label={`Focal point marker at ${Math.round(clamp01(focalX) * 100)} percent by ${Math.round(clamp01(focalY) * 100)} percent`}
-            onPointerDown={onPointerPoint}
-            onKeyDown={onKeyPoint}
-          >
-            <span className="sr-only">Drag or use arrow keys to adjust the focal point</span>
-            <span className="block h-3 w-3 rounded-full border border-white bg-red-600" />
-          </button>
+          <div className="flex h-full w-full items-center justify-center px-4 text-center text-sm text-slate-500">{failed ? 'This browser cannot preview the selected image, but it can still be uploaded.' : emptyLabel}</div>
         )}
       </div>
-      <p className="text-xs text-slate-500">
-        {editable ? 'Click or drag to set the crop focus. Use the arrow keys when the preview is focused.' : 'Server preview shown at 3:2.'}
-      </p>
     </div>
   );
 }
@@ -133,49 +107,6 @@ function SlideEditorDialog({
   const title = mode === 'create' ? 'Add slide' : 'Edit slide';
   const submitLabel = mode === 'create' ? 'Add slide' : 'Save changes';
   const previewUrl = mode === 'create' ? filePreviewUrl : slidePreviewUrl;
-
-  const handleFocalPointer = (event) => {
-    if (mode !== 'create') return;
-    const rect = event.currentTarget.getBoundingClientRect();
-    const { focalX, focalY } = convertPointerToFocalPoint(rect, event.clientX, event.clientY);
-    onChange({ focalX, focalY });
-  };
-
-  const handleFocalKey = (event) => {
-    if (mode !== 'create') return;
-
-    const step = event.shiftKey ? 0.1 : 0.02;
-    let focalX = form.focalX;
-    let focalY = form.focalY;
-
-    switch (event.key) {
-      case 'ArrowUp':
-        focalY = clamp01(focalY - step);
-        break;
-      case 'ArrowDown':
-        focalY = clamp01(focalY + step);
-        break;
-      case 'ArrowLeft':
-        focalX = clamp01(focalX - step);
-        break;
-      case 'ArrowRight':
-        focalX = clamp01(focalX + step);
-        break;
-      case 'Home':
-        focalX = 0;
-        focalY = 0;
-        break;
-      case 'End':
-        focalX = 1;
-        focalY = 1;
-        break;
-      default:
-        return;
-    }
-
-    event.preventDefault();
-    onChange({ focalX, focalY });
-  };
 
   const handleFileChange = async (file) => {
     await onFileSelected(file);
@@ -362,30 +293,8 @@ function SlideEditorDialog({
             <SlidePreview
               src={previewUrl}
               alt={form.altText || form.title || 'Slide preview'}
-              focalX={form.focalX}
-              focalY={form.focalY}
-              editable={mode === 'create'}
-              onPointerPoint={handleFocalPointer}
-              onKeyPoint={handleFocalKey}
-              emptyLabel={mode === 'create' ? 'Add an image to preview the crop focus.' : 'No slide preview available.'}
+              emptyLabel={mode === 'create' ? 'Choose an image to preview it here.' : 'No slide preview available.'}
             />
-
-            {mode === 'create' && (
-              <div className="rounded-xl border border-slate-200 px-4 py-4 dark:border-slate-800">
-                <div className="flex items-center justify-between gap-3">
-                  <div>
-                    <p className="text-sm font-medium text-slate-900 dark:text-slate-50">Focal point</p>
-                    <p className="text-xs text-slate-500">
-                      x {Math.round(form.focalX * 100)} · y {Math.round(form.focalY * 100)}
-                    </p>
-                  </div>
-                  <Button type="button" variant="outline" size="sm" onClick={() => onChange({ focalX: 0.5, focalY: 0.5 })}>
-                    Center focus
-                  </Button>
-                </div>
-                <p className="mt-3 text-xs text-slate-500">The server performs the actual crop, compression, and metadata stripping.</p>
-              </div>
-            )}
 
             {mode === 'edit' && (
               <div className="rounded-xl border border-slate-200 px-4 py-4 text-sm text-slate-600 dark:border-slate-800 dark:text-slate-300">
@@ -422,6 +331,9 @@ function ExistingImageDialog({ onClose, onAdded }) {
   const [subtitle, setSubtitle] = useState('');
   const [altText, setAltText] = useState('');
   const [linkUrl, setLinkUrl] = useState('');
+  const [linkLabel, setLinkLabel] = useState('');
+  const [startsAt, setStartsAt] = useState('');
+  const [endsAt, setEndsAt] = useState('');
   const [isActive, setIsActive] = useState(true);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -437,7 +349,7 @@ function ExistingImageDialog({ onClose, onAdded }) {
 
   async function submit(event) {
     event.preventDefault();
-    const assetId = selected?.immich_asset_id ?? selected?.asset_id ?? selected?.id;
+    const assetId = selected?.immich_asset_id;
     if (!assetId || !title.trim() || !altText.trim()) {
       setError('Choose an image and provide both a title and alt text.');
       return;
@@ -446,13 +358,17 @@ function ExistingImageDialog({ onClose, onAdded }) {
       setError('Link URL must use HTTPS.');
       return;
     }
+    if (startsAt && endsAt && new Date(startsAt) >= new Date(endsAt)) {
+      setError('End date/time must be after the start date/time.');
+      return;
+    }
     setSubmitting(true);
     setError('');
     try {
       const response = await fetch('/api/admin/ios-homepage-slideshow/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ immich_asset_id: String(assetId), title: title.trim(), subtitle: subtitle.trim(), alt_text: altText.trim(), link_url: linkUrl.trim() || null, is_active: isActive, focal_x: 0.5, focal_y: 0.5 }),
+        body: JSON.stringify({ immich_asset_id: String(assetId), title: title.trim(), subtitle: subtitle.trim() || null, alt_text: altText.trim(), link_url: linkUrl.trim() || null, link_label: linkLabel.trim() || null, is_active: isActive, starts_at: startsAt || null, ends_at: endsAt || null, focal_x: 0.5, focal_y: 0.5 }),
       });
       await readJsonResponse(response);
       await onAdded();
@@ -466,8 +382,8 @@ function ExistingImageDialog({ onClose, onAdded }) {
   return <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-slate-950/60 p-4 backdrop-blur-sm"><form onSubmit={submit} className="w-full max-w-4xl rounded-2xl bg-white p-5 shadow-2xl dark:bg-slate-950">
     <div className="mb-4 flex items-start justify-between"><div><h2 className="text-lg font-semibold">Choose photo-library image</h2><p className="text-sm text-slate-500">Register an existing image as a mobile slideshow slide.</p></div><button type="button" onClick={onClose} aria-label="Close"><X className="h-5 w-5" /></button></div>
     {error && <p className="mb-3 rounded-lg bg-red-50 p-3 text-sm text-red-800">{error}</p>}
-    <div className="grid max-h-56 grid-cols-3 gap-3 overflow-y-auto sm:grid-cols-4">{loading ? <p className="col-span-full text-sm text-slate-500">Loading images…</p> : photos.filter((photo) => !photo.media_type || photo.media_type === 'image').map((photo) => <button key={photo.id} type="button" onClick={() => setSelected(photo)} className={cx('overflow-hidden rounded-lg border text-left', selected?.id === photo.id ? 'border-red-700 ring-2 ring-red-200' : 'border-slate-200')}><img src={`/api/photos/${photo.id}/media`} alt={photo.title || 'Library image'} className="aspect-square w-full object-cover" /><span className="block truncate p-1.5 text-xs">{photo.title || 'Untitled'}</span></button>)}</div>
-    <div className="mt-4 grid gap-3 sm:grid-cols-2"><Input value={title} onChange={(event) => setTitle(event.target.value)} placeholder="Title (required)" /><Input value={altText} onChange={(event) => setAltText(event.target.value)} placeholder="Alt text (required)" /><Textarea value={subtitle} onChange={(event) => setSubtitle(event.target.value)} placeholder="Subtitle (optional)" className="sm:col-span-2" /><Input value={linkUrl} onChange={(event) => setLinkUrl(event.target.value)} placeholder="HTTPS link (optional)" /><label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={isActive} onChange={(event) => setIsActive(event.target.checked)} />Show on homepage</label></div>
+    <div className="grid max-h-56 grid-cols-3 gap-3 overflow-y-auto sm:grid-cols-4">{loading ? <p className="col-span-full text-sm text-slate-500">Loading images…</p> : photos.filter((photo) => (!photo.media_type || photo.media_type === 'image') && photo.immich_asset_id).map((photo) => <button key={photo.id} type="button" onClick={() => setSelected(photo)} className={cx('overflow-hidden rounded-lg border text-left', selected?.id === photo.id ? 'border-red-700 ring-2 ring-red-200' : 'border-slate-200')}><img src={`/api/photos/${photo.id}/media`} alt={photo.title || 'Library image'} className="aspect-square w-full object-cover" /><span className="block truncate p-1.5 text-xs">{photo.title || 'Untitled'}</span></button>)}</div>
+    <div className="mt-4 grid gap-3 sm:grid-cols-2"><Input value={title} onChange={(event) => setTitle(event.target.value)} placeholder="Title (required)" /><Input value={altText} onChange={(event) => setAltText(event.target.value)} placeholder="Alt text (required)" /><Textarea value={subtitle} onChange={(event) => setSubtitle(event.target.value)} placeholder="Subtitle (optional)" className="sm:col-span-2" /><Input value={linkUrl} onChange={(event) => setLinkUrl(event.target.value)} placeholder="HTTPS link (optional)" /><Input value={linkLabel} onChange={(event) => setLinkLabel(event.target.value)} placeholder="Link label (optional)" /><Input type="datetime-local" value={startsAt} onChange={(event) => setStartsAt(event.target.value)} aria-label="Start date/time" /><Input type="datetime-local" value={endsAt} onChange={(event) => setEndsAt(event.target.value)} aria-label="End date/time" /><label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={isActive} onChange={(event) => setIsActive(event.target.checked)} />Show on homepage</label></div>
     <div className="mt-5 flex justify-end gap-2"><Button type="button" variant="outline" onClick={onClose} disabled={submitting}>Cancel</Button><Button type="submit" className="bg-red-900 hover:bg-red-800" disabled={submitting}>{submitting ? 'Adding…' : 'Add slide'}</Button></div>
   </form></div>;
 }
@@ -498,7 +414,7 @@ function SlideRow({ slide, index, total, draggingId, busy, onMove, onEdit, onTog
           </button>
 
           <div className="w-32 shrink-0 sm:w-40">
-            <SlidePreview src={mediaUrl} alt={slide.altText || slide.title || 'Slide preview'} focalX={slide.focalX} focalY={slide.focalY} emptyLabel="No preview" />
+            <SlidePreview src={mediaUrl} alt={slide.altText || slide.title || 'Slide preview'} emptyLabel="No preview" />
           </div>
 
           <div className="min-w-0 flex-1 space-y-2">
@@ -557,6 +473,7 @@ export default function IosHomepageSlideshowManager() {
   const [submitting, setSubmitting] = useState(false);
   const [filePreviewUrl, setFilePreviewUrl] = useState('');
   const [fileDimensions, setFileDimensions] = useState(null);
+  const previewUrlRef = useRef('');
   const [draggingId, setDraggingId] = useState('');
   const [busyOperation, setBusyOperation] = useState(false);
   const flashTimer = useRef(null);
@@ -570,18 +487,9 @@ export default function IosHomepageSlideshowManager() {
     loadSlides();
   }, []);
 
-  useEffect(() => {
-    if (!form.file) {
-      setFilePreviewUrl('');
-      setFileDimensions(null);
-      return undefined;
-    }
-
-    const previewUrl = URL.createObjectURL(form.file);
-    setFilePreviewUrl(previewUrl);
-    inspectImageDimensions(form.file).then((dimensions) => setFileDimensions(dimensions));
-    return () => URL.revokeObjectURL(previewUrl);
-  }, [form.file]);
+  useEffect(() => () => {
+    if (previewUrlRef.current) URL.revokeObjectURL(previewUrlRef.current);
+  }, []);
 
   useEffect(() => {
     if (!flash) return undefined;
@@ -638,8 +546,13 @@ export default function IosHomepageSlideshowManager() {
   }
 
   async function selectFile(file) {
+    if (previewUrlRef.current) URL.revokeObjectURL(previewUrlRef.current);
+    previewUrlRef.current = '';
+
     if (!file) {
       updateForm({ file: null });
+      setFilePreviewUrl('');
+      setFileDimensions(null);
       return;
     }
 
@@ -649,6 +562,10 @@ export default function IosHomepageSlideshowManager() {
     } else if (file.size > 15 * 1024 * 1024) {
       nextErrors.file = 'Image must be 15 MB or smaller.';
     }
+
+    const previewUrl = URL.createObjectURL(file);
+    previewUrlRef.current = previewUrl;
+    setFilePreviewUrl(previewUrl);
 
     const dimensions = await inspectImageDimensions(file);
     if (dimensions && (dimensions.width < 900 || dimensions.height < 600)) {
