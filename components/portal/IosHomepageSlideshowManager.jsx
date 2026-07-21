@@ -573,7 +573,7 @@ export default function IosHomepageSlideshowManager() {
     try {
       const response = await fetch('/api/admin/ios-homepage-slideshow', { cache: 'no-store' });
       const body = await readJsonResponse(response);
-      const list = Array.isArray(body) ? body : body?.items ?? body?.data ?? [];
+      const list = Array.isArray(body) ? body : body?.slides ?? body?.items ?? body?.data ?? [];
       setSlides(list.map(normalizeSlideRecord));
     } catch (requestError) {
       setError(requestError.message || 'Could not load slideshow items.');
