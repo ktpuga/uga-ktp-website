@@ -52,6 +52,40 @@ async function inspectImageDimensions(file) {
   }
 }
 
+function readPreviewSource(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result));
+    reader.onerror = () => reject(new Error('Could not read the selected image.'));
+    reader.readAsDataURL(file);
+  });
+}
+
+async function cropToSlideshowFrame(file, cropLeft, cropTop, cropRight, cropBottom) {
+  const sourceUrl = URL.createObjectURL(file);
+  try {
+    const image = await new Promise((resolve, reject) => {
+      const element = new Image();
+      element.onload = () => resolve(element);
+      element.onerror = () => reject(new Error('This image cannot be cropped in this browser.'));
+      element.src = sourceUrl;
+    });
+    const left = Math.round(image.naturalWidth * (Number(cropLeft) / 100));
+    const top = Math.round(image.naturalHeight * (Number(cropTop) / 100));
+    const sourceWidth = Math.round(image.naturalWidth * ((Number(cropRight) - Number(cropLeft)) / 100));
+    const sourceHeight = Math.round(image.naturalHeight * ((Number(cropBottom) - Number(cropTop)) / 100));
+    const canvas = document.createElement('canvas');
+    canvas.width = sourceWidth;
+    canvas.height = sourceHeight;
+    canvas.getContext('2d').drawImage(image, left, top, sourceWidth, sourceHeight, 0, 0, sourceWidth, sourceHeight);
+    const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/jpeg', 0.92));
+    if (!blob) throw new Error('Could not create the cropped image.');
+    return new File([blob], `${file.name.replace(/\.[^.]+$/, '') || 'slideshow'}.jpg`, { type: 'image/jpeg' });
+  } finally {
+    URL.revokeObjectURL(sourceUrl);
+  }
+}
+
 function StatusBadge({ label, tone }) {
   const toneClass = {
     active: 'border-emerald-200 bg-emerald-50 text-emerald-800',
@@ -88,6 +122,39 @@ function SlidePreview({ src, alt, emptyLabel = 'No preview yet' }) {
       </div>
     </div>
   );
+}
+
+function CropBox({ src, dimensions, form, onChange }) {
+  const stageRef = useRef(null);
+  const dragRef = useRef(null);
+
+  function startDrag(event, edge) {
+    event.preventDefault();
+    event.currentTarget.setPointerCapture?.(event.pointerId);
+    dragRef.current = { edge };
+  }
+
+  function moveDrag(event) {
+    if (!dragRef.current || !stageRef.current) return;
+    const rect = stageRef.current.getBoundingClientRect();
+    const x = Math.max(0, Math.min(100, ((event.clientX - rect.left) / rect.width) * 100));
+    const y = Math.max(0, Math.min(100, ((event.clientY - rect.top) / rect.height) * 100));
+    const minSize = 8;
+    const { edge } = dragRef.current;
+    if (edge === 'left') onChange({ cropLeft: Math.min(x, form.cropRight - minSize) });
+    if (edge === 'right') onChange({ cropRight: Math.max(x, form.cropLeft + minSize) });
+    if (edge === 'top') onChange({ cropTop: Math.min(y, form.cropBottom - minSize) });
+    if (edge === 'bottom') onChange({ cropBottom: Math.max(y, form.cropTop + minSize) });
+  }
+
+  const cropStyle = { left: `${form.cropLeft}%`, top: `${form.cropTop}%`, width: `${form.cropRight - form.cropLeft}%`, height: `${form.cropBottom - form.cropTop}%` };
+  const aspectRatio = dimensions?.width && dimensions?.height ? `${dimensions.width} / ${dimensions.height}` : '3 / 2';
+  return <div className="space-y-2"><div ref={stageRef} className="relative mx-auto w-full max-w-md overflow-hidden rounded-xl bg-slate-950" style={{ aspectRatio }} onPointerMove={moveDrag} onPointerUp={() => { dragRef.current = null; }}>
+    {src && <img src={src} alt="Crop selection" className="h-full w-full select-none object-fill" draggable={false} />}
+    <div className="absolute border-2 border-white shadow-[0_0_0_9999px_rgba(15,23,42,0.55)]" style={cropStyle}>
+      {['left', 'right', 'top', 'bottom'].map((edge) => <button key={edge} type="button" onPointerDown={(event) => startDrag(event, edge)} className={cx('absolute rounded-full border-2 border-slate-900 bg-white shadow', edge === 'left' && 'left-0 top-1/2 h-7 w-3 -translate-x-1/2 -translate-y-1/2 cursor-ew-resize', edge === 'right' && 'right-0 top-1/2 h-7 w-3 translate-x-1/2 -translate-y-1/2 cursor-ew-resize', edge === 'top' && 'left-1/2 top-0 h-3 w-7 -translate-x-1/2 -translate-y-1/2 cursor-ns-resize', edge === 'bottom' && 'bottom-0 left-1/2 h-3 w-7 -translate-x-1/2 translate-y-1/2 cursor-ns-resize')} aria-label={`Drag ${edge} crop edge`} />)}
+    </div>
+  </div><p className="text-xs text-slate-500">Drag any white edge to set the part of the image that will be uploaded.</p></div>;
 }
 
 function SlideEditorDialog({
@@ -296,6 +363,13 @@ function SlideEditorDialog({
               emptyLabel={mode === 'create' ? 'Choose an image to preview it here.' : 'No slide preview available.'}
             />
 
+            {mode === 'create' && (
+              <div className="space-y-3 rounded-xl border border-slate-200 px-4 py-3 dark:border-slate-800">
+                <label className="flex items-center gap-3 text-sm font-medium text-slate-800 dark:text-slate-100"><input type="checkbox" checked={form.cropToFrame} onChange={(event) => onChange({ cropToFrame: event.target.checked })} />Crop image before uploading</label>
+                {form.cropToFrame && <CropBox src={previewUrl} dimensions={fileDimensions} form={form} onChange={onChange} />}
+              </div>
+            )}
+
             {mode === 'edit' && (
               <div className="rounded-xl border border-slate-200 px-4 py-4 text-sm text-slate-600 dark:border-slate-800 dark:text-slate-300">
                 Current schedule: {formatSlideSchedule(form)}
@@ -473,7 +547,6 @@ export default function IosHomepageSlideshowManager() {
   const [submitting, setSubmitting] = useState(false);
   const [filePreviewUrl, setFilePreviewUrl] = useState('');
   const [fileDimensions, setFileDimensions] = useState(null);
-  const previewUrlRef = useRef('');
   const [draggingId, setDraggingId] = useState('');
   const [busyOperation, setBusyOperation] = useState(false);
   const flashTimer = useRef(null);
@@ -485,10 +558,6 @@ export default function IosHomepageSlideshowManager() {
 
   useEffect(() => {
     loadSlides();
-  }, []);
-
-  useEffect(() => () => {
-    if (previewUrlRef.current) URL.revokeObjectURL(previewUrlRef.current);
   }, []);
 
   useEffect(() => {
@@ -546,9 +615,6 @@ export default function IosHomepageSlideshowManager() {
   }
 
   async function selectFile(file) {
-    if (previewUrlRef.current) URL.revokeObjectURL(previewUrlRef.current);
-    previewUrlRef.current = '';
-
     if (!file) {
       updateForm({ file: null });
       setFilePreviewUrl('');
@@ -563,9 +629,7 @@ export default function IosHomepageSlideshowManager() {
       nextErrors.file = 'Image must be 15 MB or smaller.';
     }
 
-    const previewUrl = URL.createObjectURL(file);
-    previewUrlRef.current = previewUrl;
-    setFilePreviewUrl(previewUrl);
+    readPreviewSource(file).then(setFilePreviewUrl).catch(() => setFilePreviewUrl(''));
 
     const dimensions = await inspectImageDimensions(file);
     if (dimensions && (dimensions.width < 900 || dimensions.height < 600)) {
@@ -589,15 +653,26 @@ export default function IosHomepageSlideshowManager() {
     setSubmitting(true);
     setBusyOperation(true);
     try {
+      let uploadFile = form.file;
+      let cropUnavailable = false;
+      if (form.cropToFrame) {
+        try {
+          uploadFile = await cropToSlideshowFrame(form.file, form.cropLeft, form.cropTop, form.cropRight, form.cropBottom);
+        } catch {
+          // Some Safari/HEIC combinations cannot draw into a canvas. Preserve
+          // the original file rather than preventing the upload altogether.
+          cropUnavailable = true;
+        }
+      }
       const response = await fetch('/api/admin/ios-homepage-slideshow', {
         method: 'POST',
-        body: buildCreateSlideFormData(form),
+        body: buildCreateSlideFormData({ ...form, file: uploadFile }),
       });
       await readJsonResponse(response);
       setEditorMode(null);
       setForm(createEmptySlideForm());
       setFieldErrors({});
-      setFlash({ tone: 'success', text: 'Slide added successfully.' });
+      setFlash({ tone: 'success', text: cropUnavailable ? 'Slide uploaded; this browser could not apply the crop.' : 'Slide added successfully.' });
       await loadSlides();
     } catch (requestError) {
       setFieldErrors((current) => ({ ...current, file: requestError.message }));
