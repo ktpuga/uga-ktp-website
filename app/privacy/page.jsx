@@ -101,7 +101,7 @@ export default function PrivacyPolicyPage() {
         <Section title="Questions">
           <p>
             For privacy questions or concerns, contact chapter leadership at{' '}
-            <a href="mailto:postmaster@ugaktp.com" className="text-cyan-400 hover:underline">postmaster@ugaktp.com</a>
+            <a href="mailto:uga.ktp@gmail.com" className="text-cyan-400 hover:underline">uga.ktp@gmail.com</a>
             {' '}— confirm this is the right address to publish before relying on it.
           </p>
         </Section>

@@ -70,7 +70,7 @@ export default function CommunityGuidelinesPage() {
           <p>
             For anything that needs immediate attention rather than waiting on the report queue, contact chapter
             leadership directly at{' '}
-            <a href="mailto:postmaster@ugaktp.com" className="text-cyan-400 hover:underline">postmaster@ugaktp.com</a>
+            <a href="mailto:uga.ktp@gmail.com" className="text-cyan-400 hover:underline">uga.ktp@gmail.com</a>
             {' '}— confirm this is the right contact before publishing.
           </p>
         </Section>
