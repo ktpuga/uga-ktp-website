@@ -38,7 +38,7 @@ import {
   getCommittees,
   getCommitteeMembers,
 } from '@/lib/portal-api';
-import { memberDisplayName, memberInitials, formatMemberGroup, formatMessageTime } from '@/lib/portal-format';
+import { memberDisplayName, memberInitials, formatMemberGroup, formatMessageTime, groupMatches } from '@/lib/portal-format';
 import { isRedirectError } from '@/lib/is-redirect-error';
 import { useConfirm } from '@/components/ui/confirm-dialog';
 import { useUnreadCounts } from '@/lib/use-unread-counts';
@@ -48,7 +48,7 @@ import ProfileActionsMenu from './ProfileActionsMenu';
 
 const QUICK_EMOJI = ['👍', '❤️', '😂', '😮', '😢', '🎉', '🙏', '🔥'];
 const ROLE_GROUPS = [
-  { value: 'active', label: 'Actives' },
+  { value: 'active', label: 'Members' },
   { value: 'chair', label: 'Chairs' },
   { value: 'eboard', label: 'Eboard' },
   { value: 'pledge', label: 'Pledges' },
@@ -581,7 +581,7 @@ function BulkAddByGroupOrCommittee({ excludeIds, onAddMany }) {
   }
 
   async function handleAddGroups() {
-    const matches = members.filter((m) => selectedGroups.has(m.memberGroup) && !excludeIds.includes(m.id));
+    const matches = members.filter((m) => [...selectedGroups].some((g) => groupMatches(m.memberGroup, g)) && !excludeIds.includes(m.id));
     if (matches.length === 0) return;
 
     setBusy(true);
@@ -615,7 +615,7 @@ function BulkAddByGroupOrCommittee({ excludeIds, onAddMany }) {
     }
   }
 
-  const groupMatchCount = members.filter((m) => selectedGroups.has(m.memberGroup) && !excludeIds.includes(m.id)).length;
+  const groupMatchCount = members.filter((m) => [...selectedGroups].some((g) => groupMatches(m.memberGroup, g)) && !excludeIds.includes(m.id)).length;
 
   return (
     <div className="space-y-2 rounded-md border border-dashed border-gray-300 p-2.5 dark:border-slate-700">
@@ -799,7 +799,7 @@ function CreateGroupChatForm({ onCreated }) {
     if (!groupValue) return;
     setSelectedIds((prev) => {
       const next = new Set(prev);
-      members.filter((m) => m.memberGroup === groupValue).forEach((m) => next.add(m.id));
+      members.filter((m) => groupMatches(m.memberGroup, groupValue)).forEach((m) => next.add(m.id));
       return next;
     });
   }

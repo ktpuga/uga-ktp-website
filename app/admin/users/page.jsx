@@ -45,6 +45,8 @@ const PROFILE_BADGE = {
   incomplete: 'bg-slate-100 text-slate-800',
 };
 
+const TEST_ACCOUNT_BADGE = 'bg-yellow-100 text-yellow-800';
+
 function cleanValue(value) {
   return typeof value === 'string' && value.trim() ? value.trim() : null;
 }
@@ -66,6 +68,10 @@ function getMemberGroup(member) {
 
 function getAuthentikId(member) {
   return readField(member, ['authentik_id', 'authentikId']);
+}
+
+function isTestAccount(member) {
+  return Boolean(member?.is_test_account ?? member?.isTestAccount);
 }
 
 function isProfileComplete(member) {
@@ -208,6 +214,7 @@ function UserRow({ member, onGroupChange }) {
   const email = userEmail(member);
   const graduation = graduationLabel(member);
   const complete = isProfileComplete(member);
+  const isTest = isTestAccount(member);
   const major = readField(member, ['major']);
   const pledgeClass = readField(member, ['pledge_class', 'pledgeClass']);
   const username = readField(member, ['username']);
@@ -253,6 +260,7 @@ function UserRow({ member, onGroupChange }) {
               <Badge className={complete ? PROFILE_BADGE.complete : PROFILE_BADGE.incomplete}>
                 {complete ? 'Profile complete' : 'Profile incomplete'}
               </Badge>
+              {isTest && <Badge className={TEST_ACCOUNT_BADGE}>Test</Badge>}
             </div>
             <div className="flex flex-wrap gap-x-2 gap-y-1 text-sm text-gray-600 dark:text-slate-400">
               {email && <span>{email}</span>}
@@ -430,7 +438,7 @@ export default function AdminUsers() {
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         {[
           { label: 'Total Users', value: stats.total, icon: Users },
-          { label: 'Active', value: stats.active, icon: UserCheck },
+          { label: 'Members', value: stats.active, icon: UserCheck },
           { label: 'Alumni', value: stats.alumni, icon: GraduationCap },
           { label: 'Leadership', value: stats.leadership, icon: Shield },
         ].map(({ label, value, icon: Icon }) => (

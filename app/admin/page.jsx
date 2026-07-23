@@ -20,7 +20,7 @@ const KNOWN_MEMBER_GROUPS = ['eboard', 'chair', 'active', 'pledge', 'alumni'];
 
 const GROUP_BAR_CLASS = {
   eboard: 'bg-red-900',
-  chair: 'bg-red-700',
+  chair: 'bg-purple-700',
   active: 'bg-blue-700',
   pledge: 'bg-green-700',
   alumni: 'bg-amber-700',

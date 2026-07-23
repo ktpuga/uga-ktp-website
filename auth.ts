@@ -103,13 +103,10 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         token.refresh_token = account.refresh_token
         token.expires_at = account.expires_at
 
-        // Pick the highest-priority group as member_group in the DB
-        const groupPriority = ["eboard", "chair", "active", "pledge", "alumni"]
-        const memberGroup = groupPriority.find((g) =>
-          (token.groups as string[]).includes(g)
-        ) ?? null
-
-        // Create or update the user row in the DB
+        // Create or update the user row in the DB. member_group isn't sent
+        // here — ktp-api's own syncUser resolves it server-side from the
+        // verified token's groups claim (never trusts a client-submitted
+        // value for anything auth-related).
         try {
           const res = await fetch(`${process.env.API_URL}/users/sync`, {
             method: "POST",
@@ -120,7 +117,6 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
             body: JSON.stringify({
               authentik_id: token.sub,
               username: profile.preferred_username ?? profile.sub,
-              member_group: memberGroup,
             }),
           })
 
