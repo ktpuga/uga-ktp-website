@@ -1,93 +1,112 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { UserX, Ban, AlertTriangle, X } from 'lucide-react';
+import { User, ShieldOff, AlertTriangle, X, UserX, ExternalLink, Info } from 'lucide-react';
 import { getProfile, getBlockedUsers, unblockUser, deleteAccount } from '@/lib/portal-api';
 import { normalizeUserProfile } from '@/lib/profile';
-import { formatMemberGroup, memberDisplayName } from '@/lib/portal-format';
+import { formatMemberGroup, memberDisplayName, memberInitials } from '@/lib/portal-format';
 import { isRedirectError } from '@/lib/is-redirect-error';
 import { logoutEverywhere } from '@/lib/auth-actions';
+import { cn } from '@/lib/utils';
 import ProfileForm from './ProfileForm';
+import LegacyEditProfilePage from './LegacyEditProfilePage';
 
-const ACCENT_HEADING = {
-  blue: 'text-blue-900 dark:text-blue-100',
-  amber: 'text-amber-900 dark:text-amber-100',
-  red: 'text-red-900 dark:text-red-100',
+const ACCENT_THEMES = {
+  blue: { base: '#1e3a8a', gradient: 'linear-gradient(135deg, #1e3a8a 0%, #1d4ed8 100%)', light: '#1d4ed8', muted: 'rgba(30,58,138,0.10)' },
+  red: { base: '#7f1d1d', gradient: 'linear-gradient(135deg, #7f1d1d 0%, #991b1b 100%)', light: '#991b1b', muted: 'rgba(127,29,29,0.10)' },
 };
 
-function BlockedUsersCard() {
-  const [blocked, setBlocked] = useState(null);
-  const [error, setError] = useState(null);
-  const [busyId, setBusyId] = useState(null);
+function tint(hex, alpha) {
+  const h = hex.replace('#', '');
+  const full = h.length === 3 ? h.split('').map((c) => c + c).join('') : h;
+  const n = parseInt(full, 16);
+  return `rgba(${(n >> 16) & 255},${(n >> 8) & 255},${n & 255},${alpha})`;
+}
 
-  function load() {
-    getBlockedUsers()
-      .then(setBlocked)
-      .catch((err) => {
-        if (isRedirectError(err)) throw err;
-        setError(err.message ?? 'Could not load blocked members');
-      });
-  }
+// ─── Section card ───
 
-  useEffect(load, []);
-
-  async function handleUnblock(userId) {
-    setBusyId(userId);
-    try {
-      await unblockUser(userId);
-      setBlocked((prev) => prev.filter((u) => u.id !== userId));
-    } catch (err) {
-      if (isRedirectError(err)) throw err;
-      window.alert(err.message ?? 'Failed to unblock');
-    } finally {
-      setBusyId(null);
-    }
-  }
-
+function SectionCard({ accent, icon, title, description, children, danger = false }) {
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
-          <Ban className="h-4 w-4" /> Blocked Members
-        </CardTitle>
-        <CardDescription>People you've blocked can't message you, and you won't see their messages in group chats.</CardDescription>
-      </CardHeader>
-      <CardContent>
-        {error && <p className="text-sm text-red-600">{error}</p>}
-        {blocked === null ? (
-          <p className="py-4 text-sm text-muted-foreground">Loading...</p>
-        ) : blocked.length === 0 ? (
-          <p className="py-4 text-sm text-muted-foreground">You haven't blocked anyone.</p>
-        ) : (
-          <div className="space-y-2">
-            {blocked.map((user) => (
-              <div key={user.id} className="flex items-center justify-between rounded-md border border-gray-200 px-3 py-2 dark:border-slate-700">
-                <span className="text-sm text-gray-900 dark:text-slate-100">{memberDisplayName(user)}</span>
-                <Button type="button" variant="outline" size="sm" onClick={() => handleUnblock(user.id)} disabled={busyId === user.id}>
-                  {busyId === user.id ? 'Unblocking...' : 'Unblock'}
-                </Button>
-              </div>
-            ))}
-          </div>
-        )}
-      </CardContent>
-    </Card>
+    <div className={cn('overflow-hidden rounded-2xl border bg-card shadow-sm', danger ? 'border-destructive/30' : 'border-border')}>
+      <div
+        className="flex items-start gap-3 border-b px-6 py-5"
+        style={{
+          background: danger ? 'rgba(127,29,29,0.04)' : tint(accent.base, 0.03),
+          borderColor: danger ? 'rgba(127,29,29,0.15)' : undefined,
+        }}
+      >
+        <div
+          className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-white"
+          style={{ background: danger ? 'linear-gradient(135deg,#7f1d1d 0%,#991b1b 100%)' : accent.gradient }}
+        >
+          {icon}
+        </div>
+        <div>
+          <h2 className="text-sm font-semibold" style={{ color: danger ? '#991b1b' : 'inherit' }}>{title}</h2>
+          {description && <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">{description}</p>}
+        </div>
+      </div>
+      <div className="px-6 py-5">{children}</div>
+    </div>
   );
 }
 
-function DeleteAccountDialog({ onClose }) {
-  const [confirmText, setConfirmText] = useState('');
+// ─── Member group badge ───
+
+function MemberGroupBadge({ group, accent }) {
+  return (
+    <span className="inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-semibold text-white" style={{ background: accent.gradient }}>
+      {formatMemberGroup(group)}
+    </span>
+  );
+}
+
+// ─── Avatar circle ───
+
+function Avatar({ member, size = 32, accent }) {
+  const [err, setErr] = useState(false);
+  return (
+    <div className="shrink-0 overflow-hidden rounded-full" style={{ width: size, height: size }} aria-hidden="true">
+      {!err ? (
+        <img
+          src={`/api/users/${member.id}/profile-picture/media`}
+          alt=""
+          width={size}
+          height={size}
+          className="h-full w-full object-cover"
+          onError={() => setErr(true)}
+        />
+      ) : (
+        <div
+          className="flex h-full w-full select-none items-center justify-center font-semibold text-white"
+          style={{ background: accent.gradient, fontSize: size * 0.37 }}
+        >
+          {memberInitials(member)}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Delete Account Modal ───
+
+function DeleteAccountModal({ accent, onClose, onConfirm }) {
+  const [typed, setTyped] = useState('');
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState(null);
+  const confirmed = typed === 'delete';
 
-  async function handleDelete() {
+  useEffect(() => {
+    const h = (e) => { if (e.key === 'Escape') onClose(); };
+    window.addEventListener('keydown', h);
+    return () => window.removeEventListener('keydown', h);
+  }, [onClose]);
+
+  async function handleConfirm() {
     setDeleting(true);
     setError(null);
     try {
-      await deleteAccount();
-      await logoutEverywhere();
+      await onConfirm();
     } catch (err) {
       if (isRedirectError(err)) throw err;
       setError(err.message ?? 'Failed to delete account');
@@ -96,135 +115,241 @@ function DeleteAccountDialog({ onClose }) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={onClose}>
-      <div className="w-full max-w-md rounded-lg bg-white p-5 dark:bg-slate-900" onClick={(e) => e.stopPropagation()}>
-        <div className="mb-3 flex items-center justify-between">
-          <p className="flex items-center gap-2 font-semibold text-red-700 dark:text-red-400">
-            <AlertTriangle className="h-4 w-4" /> Delete your account
-          </p>
-          <button type="button" onClick={onClose} className="text-gray-400 hover:text-gray-600">
-            <X className="h-4 w-4" />
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-label="Delete account">
+      <div className="absolute inset-0 bg-background/80 backdrop-blur-sm" onClick={onClose} aria-hidden="true" />
+      <div className="relative z-10 w-full max-w-md overflow-hidden rounded-2xl border border-destructive/30 bg-card shadow-xl">
+        <div className="flex items-center justify-between border-b border-destructive/15 bg-destructive/5 px-5 py-4">
+          <div className="flex items-center gap-3">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-destructive/15">
+              <AlertTriangle size={14} className="text-destructive" />
+            </div>
+            <p className="text-sm font-semibold text-destructive">Delete My Account</p>
+          </div>
+          <button type="button" onClick={onClose} className="rounded-lg p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground" aria-label="Close">
+            <X size={14} />
           </button>
         </div>
-        <p className="text-sm text-gray-600 dark:text-slate-400">
-          This removes your personal info (name, email, phone, major, and everything else on your profile) and signs
-          you out everywhere. Your existing messages, photos, and committee history stay in place for other members —
-          they'll just show as coming from a deleted user instead of removing them entirely.
-        </p>
-        <p className="mt-2 text-sm text-gray-600 dark:text-slate-400">
-          This does <strong>not</strong> remove you from the fraternity's Authentik account — that's handled
-          separately by eboard. This only deletes your KTP Life profile data.
-        </p>
-        <label className="mt-4 block text-sm font-medium text-slate-700 dark:text-slate-300">
-          Type <span className="font-mono">delete</span> to confirm
-        </label>
-        <input
-          value={confirmText}
-          onChange={(e) => setConfirmText(e.target.value)}
-          className="mt-1 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-500 dark:border-slate-700 dark:bg-slate-950"
-        />
-        {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
-        <div className="mt-4 flex gap-2">
-          <Button
-            className="flex-1 bg-red-700 hover:bg-red-800"
-            onClick={handleDelete}
-            disabled={confirmText.trim().toLowerCase() !== 'delete' || deleting}
+
+        <div className="space-y-4 px-6 py-5">
+          <div className="rounded-xl border border-destructive/20 bg-destructive/5 px-4 py-3">
+            <p className="mb-1.5 text-xs font-semibold uppercase tracking-wider text-destructive">What will be removed</p>
+            <ul className="space-y-1 text-xs text-muted-foreground">
+              <li className="flex items-start gap-1.5"><span className="mt-0.5 text-destructive">•</span> Your name, email, phone, major, and graduation year</li>
+              <li className="flex items-start gap-1.5"><span className="mt-0.5 text-destructive">•</span> Profile photo and bio</li>
+              <li className="flex items-start gap-1.5"><span className="mt-0.5 text-destructive">•</span> LinkedIn and Calendly links</li>
+              <li className="flex items-start gap-1.5"><span className="mt-0.5 text-destructive">•</span> Active sessions on all devices</li>
+            </ul>
+          </div>
+
+          <div className="rounded-xl border border-border bg-muted/30 px-4 py-3">
+            <p className="mb-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">What stays in place</p>
+            <ul className="space-y-1 text-xs text-muted-foreground">
+              <li className="flex items-start gap-1.5"><span className="mt-0.5">•</span> Messages and photos — attributed to &ldquo;Deleted Member&rdquo;</li>
+              <li className="flex items-start gap-1.5"><span className="mt-0.5">•</span> Committee and event history</li>
+            </ul>
+          </div>
+
+          <div
+            className="flex items-start gap-2.5 rounded-xl border px-4 py-3"
+            style={{ background: tint(accent.base, 0.04), borderColor: tint(accent.base, 0.18) }}
+          >
+            <Info size={13} className="mt-0.5 shrink-0" style={{ color: accent.light }} />
+            <p className="text-xs leading-relaxed text-muted-foreground">
+              This only deletes your <span className="font-semibold text-foreground">KTP Life profile</span>. It does <span className="font-semibold text-foreground">not</span> remove your Authentik / SSO account — an eboard officer handles that separately.
+            </p>
+          </div>
+
+          <div>
+            <label className="mb-1.5 block text-xs font-semibold text-muted-foreground">
+              Type <span className="font-mono font-bold text-destructive">delete</span> to confirm
+            </label>
+            <input
+              autoFocus
+              type="text"
+              value={typed}
+              onChange={(e) => setTyped(e.target.value)}
+              placeholder="delete"
+              className="w-full rounded-lg border border-border bg-muted/40 px-3 py-2 font-mono text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2"
+              style={{ ['--tw-ring-color']: 'rgba(220,38,38,0.25)' }}
+            />
+          </div>
+
+          {error && <p className="text-sm text-red-600">{error}</p>}
+        </div>
+
+        <div className="flex items-center justify-end gap-2 border-t border-border px-5 py-4">
+          <button type="button" onClick={onClose} disabled={deleting} className="rounded-lg border border-border px-4 py-2 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground">
+            Cancel
+          </button>
+          <button
+            type="button"
+            onClick={handleConfirm}
+            disabled={!confirmed || deleting}
+            className="rounded-lg bg-destructive px-4 py-2 text-sm font-semibold text-white transition-opacity hover:bg-destructive/90 disabled:opacity-35"
           >
             {deleting ? 'Deleting...' : 'Permanently Delete My Account'}
-          </Button>
-          <Button variant="outline" onClick={onClose} disabled={deleting}>Cancel</Button>
+          </button>
         </div>
       </div>
     </div>
   );
 }
 
-function DangerZoneCard() {
-  const [open, setOpen] = useState(false);
+// ─── Main revamped page ───
 
-  return (
-    <Card className="border-red-200 dark:border-red-900">
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2 text-lg text-red-700 dark:text-red-400 sm:text-xl">
-          <UserX className="h-4 w-4" /> Danger Zone
-        </CardTitle>
-        <CardDescription>Permanently delete your KTP Life account.</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <Button type="button" variant="outline" className="border-red-300 text-red-700 hover:bg-red-50 dark:border-red-800 dark:text-red-400" onClick={() => setOpen(true)}>
-          Delete My Account
-        </Button>
-      </CardContent>
-      {open && <DeleteAccountDialog onClose={() => setOpen(false)} />}
-    </Card>
-  );
-}
-
-export default function EditProfilePage({ accent = 'blue', portalLabel = 'Portal' }) {
+function RevampedEditProfilePage({ accentKey, portalLabel }) {
+  const accent = ACCENT_THEMES[accentKey] ?? ACCENT_THEMES.blue;
   const [profile, setProfile] = useState(null);
+  const [blockedMembers, setBlockedMembers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
 
   useEffect(() => {
-    getProfile()
-      .then((data) => setProfile(normalizeUserProfile(data)))
+    Promise.all([getProfile(), getBlockedUsers()])
+      .then(([profileData, blocked]) => {
+        setProfile(normalizeUserProfile(profileData));
+        setBlockedMembers(Array.isArray(blocked) ? blocked : []);
+      })
       .catch((err) => {
         if (isRedirectError(err)) throw err;
-        setError(err.message ?? 'Could not load your profile');
+        setError(err.message ?? 'Could not load your settings');
       })
       .finally(() => setLoading(false));
   }, []);
 
-  const heading = ACCENT_HEADING[accent] ?? ACCENT_HEADING.blue;
+  async function handleUnblock(userId) {
+    await unblockUser(userId);
+    setBlockedMembers((prev) => prev.filter((m) => m.id !== userId));
+  }
+
+  async function handleDeleteAccount() {
+    await deleteAccount();
+    await logoutEverywhere();
+  }
 
   return (
-    <div className="mx-auto max-w-2xl space-y-6">
-      <div>
-        <h1 className={`mb-2 text-2xl font-bold sm:text-3xl ${heading}`}>Edit Profile</h1>
-        <p className="text-sm text-slate-600 dark:text-slate-400 sm:text-base">
-          Update your {portalLabel} account details. Username and member group are managed by admins.
+    <div className="mx-auto max-w-2xl px-4 pb-16 pt-8 sm:px-6">
+      <div className="mb-8">
+        <p className="mb-1 text-[11px] font-semibold uppercase tracking-[0.22em]" style={{ color: accent.light }}>
+          Alpha Iota Chapter
         </p>
+        <h1 className="font-serif text-3xl font-normal leading-tight tracking-tight text-foreground">Settings</h1>
       </div>
 
-      {error && (
-        <Card className="border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-950/40">
-          <CardContent className="pt-6 text-sm text-red-700 dark:text-red-300">{error}</CardContent>
-        </Card>
+      {error && <p className="mb-4 text-sm text-red-600">{error}</p>}
+
+      {loading ? (
+        <p className="py-12 text-center text-sm text-muted-foreground">Loading settings...</p>
+      ) : (
+        <div className="space-y-6">
+          <SectionCard
+            accent={accent}
+            icon={<User size={14} strokeWidth={1.75} />}
+            title="Profile Information"
+            description={`Update your ${portalLabel} account details. Changes are saved immediately.`}
+          >
+            <div
+              className="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border px-4 py-3"
+              style={{ background: tint(accent.base, 0.03) }}
+            >
+              <div className="flex items-center gap-3">
+                <div
+                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white"
+                  style={{ background: accent.gradient }}
+                  aria-hidden="true"
+                >
+                  {memberInitials(profile)}
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-foreground">@{profile.username}</p>
+                  <p className="text-[11px] text-muted-foreground">Username is managed by Eboard</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <MemberGroupBadge group={profile.member_group} accent={accent} />
+                <span className="text-[11px] text-muted-foreground">Admin-managed</span>
+              </div>
+            </div>
+
+            <ProfileForm mode="edit" variant="portal" accent={accentKey} defaultValues={profile} />
+          </SectionCard>
+
+          <SectionCard
+            accent={accent}
+            icon={<ShieldOff size={14} strokeWidth={1.75} />}
+            title="Blocked Members"
+            description="People you've blocked can't message you, and you won't see their messages in group chats."
+          >
+            {blockedMembers.length === 0 ? (
+              <div className="flex flex-col items-center gap-2 py-6 text-center">
+                <div className="flex h-10 w-10 items-center justify-center rounded-full" style={{ background: tint(accent.base, 0.08) }}>
+                  <UserX size={18} style={{ color: accent.light }} />
+                </div>
+                <p className="text-sm text-muted-foreground">You haven&apos;t blocked anyone.</p>
+              </div>
+            ) : (
+              <ul role="list" className="divide-y divide-border">
+                {blockedMembers.map((member) => (
+                  <li key={member.id} className="flex items-center gap-3 py-3 first:pt-0 last:pb-0">
+                    <Avatar member={member} size={34} accent={accent} />
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-medium text-foreground">{memberDisplayName(member)}</p>
+                      <p className="text-[11px] text-muted-foreground">@{member.username}</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleUnblock(member.id)}
+                      className="shrink-0 rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                    >
+                      Unblock
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </SectionCard>
+
+          <SectionCard accent={accent} icon={<AlertTriangle size={14} strokeWidth={1.75} />} title="Danger Zone" danger>
+            <div className="flex flex-wrap items-center justify-between gap-4">
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-medium text-foreground">Delete My Account</p>
+                <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">
+                  Permanently removes your profile data and signs you out everywhere. Your messages and history stay in place.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowDeleteModal(true)}
+                className="shrink-0 rounded-lg border border-destructive/40 bg-destructive/5 px-4 py-2 text-sm font-medium text-destructive transition-colors hover:bg-destructive/10"
+              >
+                Delete Account
+              </button>
+            </div>
+          </SectionCard>
+        </div>
       )}
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg sm:text-xl">Profile Information</CardTitle>
-          <CardDescription>
-            Changes are saved to your KTP account immediately.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {loading ? (
-            <p className="text-sm text-muted-foreground py-6">Loading profile...</p>
-          ) : profile ? (
-            <ProfileForm
-              mode="edit"
-              variant="portal"
-              accent={accent}
-              defaultValues={profile}
-              readOnly={{
-                username: profile.username ?? '',
-                memberGroup: formatMemberGroup(profile.member_group) ?? profile.member_group ?? '',
-              }}
-            />
-          ) : null}
-        </CardContent>
-      </Card>
+      <div className="mt-10 flex items-center justify-center gap-4">
+        <a href="/community-guidelines" target="_blank" rel="noreferrer" className="flex items-center gap-1 text-xs text-muted-foreground transition-colors hover:text-foreground">
+          Community Guidelines <ExternalLink size={10} />
+        </a>
+        <span className="text-muted-foreground/40" aria-hidden="true">·</span>
+        <a href="/privacy" target="_blank" rel="noreferrer" className="flex items-center gap-1 text-xs text-muted-foreground transition-colors hover:text-foreground">
+          Privacy Policy <ExternalLink size={10} />
+        </a>
+      </div>
 
-      <BlockedUsersCard />
-      <DangerZoneCard />
-
-      <p className="text-center text-xs text-slate-500 dark:text-slate-400">
-        <a href="/community-guidelines" target="_blank" rel="noreferrer" className="hover:underline">Community Guidelines</a>
-        {' · '}
-        <a href="/privacy" target="_blank" rel="noreferrer" className="hover:underline">Privacy Policy</a>
-      </p>
+      {showDeleteModal && (
+        <DeleteAccountModal accent={accent} onClose={() => setShowDeleteModal(false)} onConfirm={handleDeleteAccount} />
+      )}
     </div>
   );
+}
+
+export default function EditProfilePage({ accent = 'blue', portalLabel = 'Portal' }) {
+  if (accent !== 'blue' && accent !== 'red') {
+    return <LegacyEditProfilePage accent={accent} portalLabel={portalLabel} />;
+  }
+  return <RevampedEditProfilePage accentKey={accent} portalLabel={portalLabel} />;
 }
