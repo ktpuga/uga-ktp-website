@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { GraduationCap, Mail, RefreshCw, Search, Shield, UserCheck, Users } from 'lucide-react';
-import { getAdminUsers, updateUserGroup } from '@/lib/portal-api';
+import { getAdminUsers, updateUserGroup, updateExecTitle } from '@/lib/portal-api';
 import {
   formatGraduationDate,
   formatMemberGroup,
@@ -72,6 +72,10 @@ function getAuthentikId(member) {
 
 function isTestAccount(member) {
   return Boolean(member?.is_test_account ?? member?.isTestAccount);
+}
+
+function getExecTitle(member) {
+  return readField(member, ['exec_title', 'execTitle']);
 }
 
 function isProfileComplete(member) {
@@ -209,12 +213,66 @@ function AddMemberControl({ group, candidates, onAdd }) {
   );
 }
 
-function UserRow({ member, onGroupChange }) {
+function ExecTitleControl({ authentikId, execTitle, onExecTitleChange }) {
+  const [editing, setEditing] = useState(false);
+  const [value, setValue] = useState(execTitle ?? '');
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState(null);
+
+  async function handleSave() {
+    setSaving(true);
+    setError(null);
+    try {
+      await onExecTitleChange(authentikId, value.trim() || null);
+      setEditing(false);
+    } catch (err) {
+      if (isRedirectError(err)) throw err;
+      setError(err.message ?? 'Failed to update exec title');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  if (!editing) {
+    return (
+      <button
+        type="button"
+        onClick={() => { setValue(execTitle ?? ''); setEditing(true); }}
+        className="text-left text-xs font-medium text-red-800 hover:underline dark:text-red-300"
+      >
+        {execTitle || '+ Set exec title'}
+      </button>
+    );
+  }
+
+  return (
+    <div className="flex items-center gap-1.5">
+      <input
+        autoFocus
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+        placeholder="e.g. President"
+        disabled={saving}
+        className="h-7 w-40 rounded-md border border-slate-300 bg-white px-2 text-xs focus:outline-none focus:ring-2 focus:ring-red-500 dark:border-slate-700 dark:bg-slate-950"
+      />
+      <Button size="sm" className="h-7 bg-red-900 px-2 text-xs hover:bg-red-800" disabled={saving} onClick={handleSave}>
+        {saving ? '...' : 'Save'}
+      </Button>
+      <button type="button" className="text-xs text-slate-500 hover:underline" onClick={() => setEditing(false)}>
+        Cancel
+      </button>
+      {error && <span className="text-xs text-red-600 dark:text-red-400">{error}</span>}
+    </div>
+  );
+}
+
+function UserRow({ member, onGroupChange, onExecTitleChange }) {
   const group = getMemberGroup(member);
   const email = userEmail(member);
   const graduation = graduationLabel(member);
   const complete = isProfileComplete(member);
   const isTest = isTestAccount(member);
+  const execTitle = getExecTitle(member);
   const major = readField(member, ['major']);
   const pledgeClass = readField(member, ['pledge_class', 'pledgeClass']);
   const username = readField(member, ['username']);
@@ -262,6 +320,11 @@ function UserRow({ member, onGroupChange }) {
               </Badge>
               {isTest && <Badge className={TEST_ACCOUNT_BADGE}>Test</Badge>}
             </div>
+            {group === 'eboard' && authentikId && (
+              <div className="mb-1">
+                <ExecTitleControl authentikId={authentikId} execTitle={execTitle} onExecTitleChange={onExecTitleChange} />
+              </div>
+            )}
             <div className="flex flex-wrap gap-x-2 gap-y-1 text-sm text-gray-600 dark:text-slate-400">
               {email && <span>{email}</span>}
               {username && <span>@{username}</span>}
@@ -354,6 +417,13 @@ export default function AdminUsers() {
     const updated = await updateUserGroup(authentikId, group);
     setMembers((prev) => prev.map((member) => (
       getAuthentikId(member) === authentikId ? { ...member, member_group: updated.member_group } : member
+    )));
+  }
+
+  async function handleExecTitleChange(authentikId, execTitle) {
+    const updated = await updateExecTitle(authentikId, execTitle);
+    setMembers((prev) => prev.map((member) => (
+      getAuthentikId(member) === authentikId ? { ...member, exec_title: updated.exec_title } : member
     )));
   }
 
@@ -516,6 +586,7 @@ export default function AdminUsers() {
                       key={stableMemberKey(member, index)}
                       member={member}
                       onGroupChange={handleGroupChange}
+                      onExecTitleChange={handleExecTitleChange}
                     />
                   ))}
                 </div>

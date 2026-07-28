@@ -57,13 +57,13 @@ const REVAMPED_ACCENTS = {
 const NAV_GROUPING = {
   blue: [
     { heading: 'Main', hrefs: ['/member', '/member/calendar'] },
-    { heading: 'Community', hrefs: ['/member/directory', '/member/committees', '/member/polls'] },
+    { heading: 'Community', hrefs: ['/member/directory', '/member/committees', '/member/polls', '/member/attendance'] },
     { heading: 'Resources', hrefs: ['/member/files', '/member/messages'] },
     { heading: 'Account', hrefs: ['/member/settings'] },
   ],
   red: [
     { heading: 'Overview', hrefs: ['/admin'] },
-    { heading: 'Engagement', hrefs: ['/admin/announcements', '/admin/calendar', '/admin/committees', '/admin/polls', '/admin/messages'] },
+    { heading: 'Engagement', hrefs: ['/admin/announcements', '/admin/calendar', '/admin/committees', '/admin/polls', '/admin/attendance', '/admin/messages'] },
     { heading: 'Moderation', hrefs: ['/admin/reports', '/admin/users'] },
     { heading: 'Content', hrefs: ['/admin/files', '/admin/homepage-photos', '/admin/ios-homepage-slideshow'] },
     { heading: 'Account', hrefs: ['/admin/settings'] },

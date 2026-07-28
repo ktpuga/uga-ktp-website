@@ -30,6 +30,15 @@ function formalInitials(person) {
   return initials || 'M';
 }
 
+// Prefer the real, specific title over the generic per-section fallback —
+// an eboard member's actual position ("President") if set, or which
+// committee(s) a chair runs, otherwise just the section's generic label.
+function personTitle(person, fallbackTitle) {
+  if (person.execTitle) return person.execTitle;
+  if (person.chairedCommittees?.length > 0) return person.chairedCommittees.map((c) => `${c} Committee`).join(' & ');
+  return fallbackTitle;
+}
+
 function RosterCard({ person, title }) {
   const name = formalName(person);
   const initials = formalInitials(person);
@@ -37,7 +46,7 @@ function RosterCard({ person, title }) {
   return (
     <Card
       name={name}
-      title={title}
+      title={personTitle(person, title)}
       avatarSrc={`/api/roster/${person.id}/media`}
       fallbackInitials={initials}
       className="h-full"

@@ -40,6 +40,7 @@ const EMPTY_EVENT_FORM = {
   audience: [],
   committeeId: '',
   calendlyUrl: '',
+  requiresAttendance: false,
 };
 
 function toDatetimeLocal(iso) {
@@ -306,6 +307,7 @@ function EventsSection() {
       audience: event.audience ?? [],
       committeeId: event.committeeId ?? '',
       calendlyUrl: event.calendlyUrl ?? '',
+      requiresAttendance: event.requiresAttendance ?? false,
     });
     setFormError(null);
     setFormOpen(true);
@@ -339,6 +341,7 @@ function EventsSection() {
         audience: form.committeeId ? [] : form.audience,
         committeeId: form.committeeId || null,
         calendlyUrl: form.calendlyUrl.trim() || null,
+        requiresAttendance: form.requiresAttendance,
       };
 
       const result = editingId ? await updateEvent(editingId, payload) : await createEvent(payload);
@@ -452,6 +455,15 @@ function EventsSection() {
                 onChange={(e) => setForm({ ...form, calendlyUrl: e.target.value })}
               />
             </div>
+            <label className="flex items-center gap-2 text-sm font-medium text-slate-700">
+              <input
+                type="checkbox"
+                checked={form.requiresAttendance}
+                onChange={(e) => setForm({ ...form, requiresAttendance: e.target.checked })}
+                className="h-4 w-4 rounded border-slate-300"
+              />
+              Track attendance for this event (QR check-in)
+            </label>
             <div className="space-y-1">
               <label className="text-sm font-medium text-slate-700">Committee meeting (optional)</label>
               <select

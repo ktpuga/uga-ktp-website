@@ -28,6 +28,15 @@ const GROUP_BADGE = {
   alumni: 'bg-amber-100 text-amber-800',
 };
 
+// Specific role/title if there is one (an eboard member's exec_title, or
+// which committee a chair runs) — shown alongside, not instead of, the
+// group badge, since the internal Directory still wants the raw group too.
+function specificRole(member) {
+  if (member.execTitle) return member.execTitle;
+  if (member.chairedCommittees?.length > 0) return `Chair, ${member.chairedCommittees.join(' & ')}`;
+  return null;
+}
+
 function directoryDisplayName(member) {
   const first = member.preferredName ?? member.firstName;
   const last = member.lastName;
@@ -49,6 +58,7 @@ function MemberProfileModal({ member, avatarClass, onClose }) {
   const portalRoot = '/' + (pathname.split('/')[1] || 'member');
   const name = directoryDisplayName(member);
   const graduation = formatGraduationDate(member.graduationDate);
+  const role = specificRole(member);
 
   return (
     <div
@@ -82,9 +92,12 @@ function MemberProfileModal({ member, avatarClass, onClose }) {
               <p className="text-sm text-gray-500 dark:text-slate-400">@{member.username}</p>
             )}
           </div>
-          <Badge className={GROUP_BADGE[member.memberGroup] ?? 'bg-slate-100 text-slate-800'}>
-            {formatMemberGroup(member.memberGroup)}
-          </Badge>
+          <div className="flex flex-wrap items-center justify-center gap-2">
+            <Badge className={GROUP_BADGE[member.memberGroup] ?? 'bg-slate-100 text-slate-800'}>
+              {formatMemberGroup(member.memberGroup)}
+            </Badge>
+            {role && <span className="text-sm font-medium text-gray-700 dark:text-slate-300">{role}</span>}
+          </div>
 
           <div className="w-full space-y-1 rounded-lg bg-gray-50 p-4 text-left text-sm dark:bg-slate-800/50">
             {member.major && (
