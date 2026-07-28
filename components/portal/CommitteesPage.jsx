@@ -162,7 +162,7 @@ function ScheduleMeetingForm({ committeeId, accentClass, onScheduled, onCancel }
         location: form.location.trim() || null,
         startDate: startDate.toISOString(),
         endDate: endDate.toISOString(),
-        committeeId,
+        committeeIds: [committeeId],
         calendlyUrl: form.calendlyUrl.trim() || null,
       });
 
