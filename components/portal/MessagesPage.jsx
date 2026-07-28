@@ -3,40 +3,20 @@
 import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useSession } from 'next-auth/react';
-import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { cn } from '@/lib/utils';
 import {
-  MessageSquare, Search, Send, ArrowLeft, Plus, Trash2, Users, UserPlus, X,
-  Paperclip, SmilePlus, Download, FileText, Layers, Check, Sparkles, Camera,
+  X, ChevronLeft, Send, Paperclip, Search, Plus, Smile, Trash2, Users,
+  ImageIcon, FileIcon, Download, Check, MessageSquare, ChevronDown, Info,
+  UserMinus, AlertCircle, Loader2, Camera, Layers,
 } from 'lucide-react';
 import {
-  getConversations,
-  getConversation,
-  sendMessage,
-  markConversationRead,
+  getConversations, getConversation, sendMessage, markConversationRead, getMember,
+  getGroupChats, createGroupChat, deleteGroupChat, updateGroupChatPhoto,
+  getGroupChatMessages, sendGroupChatMessage, toggleGroupChatReaction, toggleMessageReaction,
+  deleteMessage, deleteGroupChatMessage, markGroupChatRead, getGroupChatMembers,
+  addGroupChatMember, removeGroupChatMember, getCommittees, getCommitteeMembers,
   getMemberDirectory,
-  getMember,
-  getGroupChats,
-  createGroupChat,
-  deleteGroupChat,
-  updateGroupChatPhoto,
-  getGroupChatMessages,
-  sendGroupChatMessage,
-  toggleGroupChatReaction,
-  toggleMessageReaction,
-  deleteMessage,
-  deleteGroupChatMessage,
-  markGroupChatRead,
-  getGroupChatMembers,
-  addGroupChatMember,
-  removeGroupChatMember,
-  getCommittees,
-  getCommitteeMembers,
 } from '@/lib/portal-api';
 import { memberDisplayName, memberInitials, formatMemberGroup, formatMessageTime, groupMatches } from '@/lib/portal-format';
 import { isRedirectError } from '@/lib/is-redirect-error';
@@ -45,15 +25,33 @@ import { useUnreadCounts } from '@/lib/use-unread-counts';
 import ReportButton from './ReportButton';
 import BlockButton from './BlockButton';
 import ProfileActionsMenu from './ProfileActionsMenu';
+import LegacyMessagesPage from './LegacyMessagesPage';
+
+const ACCENT_THEMES = {
+  blue: { base: '#1e3a8a', gradient: 'linear-gradient(135deg, #1e3a8a 0%, #1d4ed8 100%)', light: '#1d4ed8', muted: 'rgba(30,58,138,0.10)' },
+  red: { base: '#7f1d1d', gradient: 'linear-gradient(135deg, #7f1d1d 0%, #991b1b 100%)', light: '#991b1b', muted: 'rgba(127,29,29,0.10)' },
+};
 
 const QUICK_EMOJI = ['👍', '❤️', '😂', '😮', '😢', '🎉', '🙏', '🔥'];
 const ROLE_GROUPS = [
-  { value: 'active', label: 'Members' },
+  { value: 'eboard', label: 'E-Board' },
   { value: 'chair', label: 'Chairs' },
-  { value: 'eboard', label: 'Eboard' },
+  { value: 'active', label: 'Members' },
   { value: 'pledge', label: 'Pledges' },
   { value: 'alumni', label: 'Alumni' },
 ];
+
+const GROUP_COLOR = { eboard: '#7f1d1d', chair: '#7e22ce', active: '#1d4ed8', pledge: '#15803d', alumni: '#b45309' };
+const GROUP_BG = {
+  eboard: 'rgba(127,29,29,0.10)', chair: 'rgba(126,34,206,0.10)', active: 'rgba(29,78,216,0.10)',
+  pledge: 'rgba(21,128,61,0.10)', alumni: 'rgba(180,83,9,0.10)',
+};
+
+function tint(hex, alpha) {
+  const h = hex.replace('#', '');
+  const n = parseInt(h, 16);
+  return `rgba(${(n >> 16) & 255},${(n >> 8) & 255},${n & 255},${alpha})`;
+}
 
 function lastMessagePreview(lastMessage, isMine) {
   if (!lastMessage) return '';
@@ -71,329 +69,450 @@ function formatFileSize(bytes) {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-function EmptyState({ icon: Icon, message }) {
+// ─── Shared atoms ───
+
+function MemberAvatar({ member, size = 36, accent }) {
+  const px = `${size}px`;
+  const userId = member?.id ?? member?.authentik_id;
   return (
-    <Card>
-      <CardContent className="flex flex-col items-center justify-center px-4 py-10 text-center sm:py-12">
-        <Icon className="mb-4 h-12 w-12 text-gray-400" />
-        <p className="max-w-sm text-sm text-gray-600 dark:text-slate-400">{message}</p>
-      </CardContent>
-    </Card>
+    <Avatar style={{ width: px, height: px }} className="shrink-0">
+      {userId && <AvatarImage src={`/api/users/${userId}/profile-picture/media`} alt="" />}
+      <AvatarFallback className="font-semibold text-white" style={{ background: accent.gradient, fontSize: size * 0.37 }}>
+        {member ? memberInitials(member) : '?'}
+      </AvatarFallback>
+    </Avatar>
   );
 }
 
-function ConversationListItem({ conversation, active, currentUserId, onSelect }) {
-  const name = memberDisplayName(conversation);
-  const lastMessage = conversation.last_message;
-  const isMine = lastMessage?.sender_id === currentUserId;
-  const preview = lastMessagePreview(lastMessage, isMine);
-
+function GroupChatAvatar({ chat, size = 36, accent }) {
+  if (chat.photo_asset_id) {
+    return (
+      <div className="shrink-0 overflow-hidden rounded-full" style={{ width: size, height: size }}>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={`/api/group-chats/${chat.id}/photo/media`} alt={chat.name} className="h-full w-full object-cover" />
+      </div>
+    );
+  }
   return (
-    <button
-      type="button"
-      onClick={() => onSelect(conversation)}
-      className={`flex w-full items-center gap-3 rounded-lg p-3 text-left transition-colors hover:bg-gray-100 dark:hover:bg-slate-800 ${
-        active ? 'bg-gray-100 dark:bg-slate-800' : ''
-      }`}
+    <div
+      className="flex shrink-0 items-center justify-center rounded-full"
+      style={{ width: size, height: size, background: tint(accent.base, 0.12) }}
     >
-      <Avatar className="h-10 w-10 shrink-0">
-        {conversation.authentik_id && (
-          <AvatarImage src={`/api/users/${conversation.authentik_id}/profile-picture/media`} alt={name} />
-        )}
-        <AvatarFallback className="bg-blue-900 text-white">{memberInitials(conversation)}</AvatarFallback>
-      </Avatar>
-      <div className="min-w-0 flex-1">
-        <div className="flex items-center justify-between gap-2">
-          <p className="truncate text-sm font-medium text-gray-900 dark:text-slate-100">{name}</p>
-          {lastMessage?.created_at && (
-            <span className="shrink-0 text-xs text-gray-500 dark:text-slate-400">
-              {formatMessageTime(lastMessage.created_at)}
-            </span>
-          )}
-        </div>
-        <p className="truncate text-xs text-gray-500 dark:text-slate-400">{preview}</p>
-      </div>
-      {conversation.unread_count > 0 && (
-        <Badge className="shrink-0 bg-red-600 text-white">{conversation.unread_count}</Badge>
-      )}
-    </button>
-  );
-}
-
-function NewMessagePicker({ onSelect, onCancel }) {
-  const [members, setMembers] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [query, setQuery] = useState('');
-
-  useEffect(() => {
-    getMemberDirectory()
-      .then(setMembers)
-      .catch((err) => {
-        if (isRedirectError(err)) throw err;
-        setError(err.message ?? 'Could not load members');
-      })
-      .finally(() => setLoading(false));
-  }, []);
-
-  const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    return members.filter((m) => !q || memberDisplayName(m).toLowerCase().includes(q));
-  }, [members, query]);
-
-  return (
-    <div className="space-y-4">
-      <Button type="button" variant="ghost" size="sm" onClick={onCancel} className="-ml-2 gap-1.5">
-        <ArrowLeft className="h-4 w-4" /> Back
-      </Button>
-
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-        <Input
-          placeholder="Search members..."
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          className="pl-10"
-        />
-      </div>
-
-      {error && <p className="text-sm text-red-600">{error}</p>}
-
-      {loading ? (
-        <p className="py-10 text-center text-sm text-gray-500">Loading members...</p>
-      ) : (
-        <div className="space-y-1">
-          {filtered.map((member) => (
-            <button
-              key={member.id}
-              type="button"
-              onClick={() => onSelect(member)}
-              className="flex w-full items-center gap-3 rounded-lg p-3 text-left transition-colors hover:bg-gray-100 dark:hover:bg-slate-800"
-            >
-              <Avatar className="h-9 w-9 shrink-0">
-                {member.id && (
-                  <AvatarImage src={`/api/users/${member.id}/profile-picture/media`} alt={memberDisplayName(member)} />
-                )}
-                <AvatarFallback className="bg-blue-900 text-white">{memberInitials(member)}</AvatarFallback>
-              </Avatar>
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-medium text-gray-900 dark:text-slate-100">
-                  {memberDisplayName(member)}
-                </p>
-                <p className="truncate text-xs text-gray-500 dark:text-slate-400">
-                  {formatMemberGroup(member.memberGroup)}
-                </p>
-              </div>
-            </button>
-          ))}
-        </div>
-      )}
+      <Users size={size * 0.44} style={{ color: accent.light }} />
     </div>
   );
 }
 
-function AttachmentContent({ attachment, mediaUrl }) {
+function GroupBadge({ group }) {
+  return (
+    <span
+      className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide"
+      style={{ background: GROUP_BG[group] ?? 'var(--color-muted)', color: GROUP_COLOR[group] ?? 'var(--color-muted-foreground)' }}
+    >
+      {formatMemberGroup(group)}
+    </span>
+  );
+}
+
+function UnreadBadge({ count }) {
+  if (count <= 0) return null;
+  return (
+    <span className="flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white">
+      {count > 99 ? '99+' : count}
+    </span>
+  );
+}
+
+function AttachmentDisplay({ attachment, mediaUrl }) {
   if (attachment.kind === 'image') {
     return (
-      <a href={mediaUrl} target="_blank" rel="noopener noreferrer" className="block">
+      <a href={mediaUrl} target="_blank" rel="noopener noreferrer" className="block overflow-hidden rounded-xl border border-border">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src={mediaUrl}
-          alt={attachment.filename ?? 'Attached image'}
-          className="max-h-64 w-full max-w-xs rounded-lg object-cover"
-        />
+        <img src={mediaUrl} alt={attachment.filename ?? 'Attachment'} className="max-h-52 max-w-[240px] object-cover" />
       </a>
     );
   }
-
   return (
     <a
       href={mediaUrl}
       target="_blank"
       rel="noopener noreferrer"
-      className="flex items-center gap-2 rounded-lg border border-black/10 bg-white/10 px-3 py-2 text-xs hover:bg-white/20"
+      className="flex items-center gap-2 rounded-xl border border-border bg-muted/50 px-3 py-2 text-sm transition-colors hover:bg-muted"
     >
-      <FileText className="h-4 w-4 shrink-0" />
-      <span className="min-w-0 flex-1 truncate">{attachment.filename}</span>
-      <span className="shrink-0 opacity-70">{formatFileSize(attachment.size)}</span>
-      <Download className="h-3.5 w-3.5 shrink-0" />
+      <FileIcon size={16} className="shrink-0 text-muted-foreground" />
+      <span className="min-w-0">
+        <p className="truncate font-medium text-foreground">{attachment.filename}</p>
+        {attachment.size != null && <p className="text-[11px] text-muted-foreground">{formatFileSize(attachment.size)}</p>}
+      </span>
+      <Download size={13} className="ml-1 shrink-0 text-muted-foreground" />
     </a>
   );
 }
 
-function EmojiPickerPopover({ onPick, onClose, align = 'left' }) {
+function StagedAttachmentChip({ file, onRemove }) {
   return (
-    <div
-      className={`absolute bottom-full z-10 mb-1 flex gap-1 rounded-full border border-gray-200 bg-white p-1.5 shadow-lg dark:border-slate-700 dark:bg-slate-900 ${
-        align === 'right' ? 'right-0' : 'left-0'
-      }`}
-      onMouseLeave={onClose}
-    >
-      {QUICK_EMOJI.map((emoji) => (
+    <div className="flex items-center gap-1.5 rounded-lg border border-border bg-muted/60 px-2.5 py-1.5 text-xs">
+      {file.type.startsWith('image/') ? <ImageIcon size={12} className="shrink-0 text-muted-foreground" /> : <FileIcon size={12} className="shrink-0 text-muted-foreground" />}
+      <span className="max-w-[140px] truncate text-foreground">{file.name}</span>
+      <button type="button" onClick={onRemove} className="ml-0.5 text-muted-foreground hover:text-foreground" aria-label="Remove attachment">
+        <X size={11} />
+      </button>
+    </div>
+  );
+}
+
+function ReactionRow({ reactions, onToggle, accent }) {
+  if (!reactions || reactions.length === 0) return null;
+  return (
+    <div className="mt-1 flex flex-wrap gap-1">
+      {reactions.map((r) => (
         <button
-          key={emoji}
+          key={r.emoji}
           type="button"
-          onClick={() => {
-            onPick(emoji);
-            onClose();
-          }}
-          className="rounded-full p-1 text-base transition-transform hover:scale-125"
+          onClick={() => onToggle(r.emoji)}
+          className={cn(
+            'flex items-center gap-1 rounded-full border px-1.5 py-0.5 text-[11px] transition-all',
+            r.reacted ? 'border-transparent font-semibold text-white' : 'border-border bg-card text-foreground hover:bg-muted',
+          )}
+          style={r.reacted ? { background: accent.gradient } : undefined}
+          aria-pressed={r.reacted}
         >
-          {emoji}
+          {r.emoji} <span>{r.count}</span>
         </button>
       ))}
     </div>
   );
 }
 
-function ReactionBar({ reactions, onReact }) {
-  if (!reactions || reactions.length === 0) return null;
+function EmojiPickerPopover({ onPick, onClose, side }) {
+  const ref = useRef(null);
+  useEffect(() => {
+    function handler(e) { if (ref.current && !ref.current.contains(e.target)) onClose(); }
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [onClose]);
 
   return (
-    <>
-      {reactions.map((r) => (
-        <button
-          key={r.emoji}
-          type="button"
-          onClick={() => onReact(r.emoji)}
-          className={`flex items-center gap-1 rounded-full border px-1.5 py-0.5 text-xs transition-colors ${
-            r.reacted
-              ? 'border-blue-400 bg-blue-100 dark:border-blue-600 dark:bg-blue-950'
-              : 'border-gray-200 bg-white hover:bg-gray-50 dark:border-slate-700 dark:bg-slate-900 dark:hover:bg-slate-800'
-          }`}
-        >
-          <span>{r.emoji}</span>
-          <span className="text-gray-600 dark:text-slate-400">{r.count}</span>
+    <div
+      ref={ref}
+      className={cn('absolute bottom-full z-30 mb-1 flex gap-1 rounded-xl border border-border bg-card p-1.5 shadow-lg', side === 'right' ? 'right-0' : 'left-0')}
+      role="dialog"
+      aria-label="Pick reaction"
+    >
+      {QUICK_EMOJI.map((e) => (
+        <button key={e} type="button" onClick={() => { onPick(e); onClose(); }} className="flex h-7 w-7 items-center justify-center rounded-lg text-base transition-colors hover:bg-muted" aria-label={e}>
+          {e}
         </button>
       ))}
-    </>
+    </div>
   );
 }
 
-function MessageBubble({ message, isMine, attachmentUrl, onReact, canDelete, onDelete, reportContentType }) {
-  const [pickerOpen, setPickerOpen] = useState(false);
+// ─── Message bubble ───
+
+function MessageBubble({ message, isMine, isEboard, accent, attachmentUrl, onReact, onDelete, reportContentType }) {
+  const [hovered, setHovered] = useState(false);
+  const [showEmoji, setShowEmoji] = useState(false);
   const attachment = message.attachment;
+  const canDelete = isMine || isEboard;
 
   return (
-    <div className={`group flex ${isMine ? 'justify-end' : 'justify-start'}`}>
-      <div className={`relative max-w-[75%] ${isMine ? 'items-end' : 'items-start'} flex flex-col`}>
+    <div
+      className={cn('group my-1 flex flex-col', isMine ? 'items-end' : 'items-start')}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => { setHovered(false); setShowEmoji(false); }}
+    >
+      <div className={cn('relative flex max-w-[80%] items-end gap-1.5', isMine ? 'flex-row-reverse' : 'flex-row')}>
         <div
-          className={`space-y-1.5 rounded-2xl px-4 py-2 text-sm ${
-            isMine
-              ? 'bg-blue-800 text-white'
-              : 'bg-gray-100 text-gray-900 dark:bg-slate-800 dark:text-slate-100'
-          }`}
+          className={cn('relative space-y-1.5 rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed shadow-sm', isMine ? 'rounded-br-sm text-white' : 'rounded-bl-sm bg-muted text-foreground')}
+          style={isMine ? { background: accent.gradient } : undefined}
         >
-          {attachment && attachmentUrl && <AttachmentContent attachment={attachment} mediaUrl={attachmentUrl} />}
-          {message.body && <p className="whitespace-pre-wrap">{message.body}</p>}
-          <p className={`text-[10px] ${isMine ? 'text-blue-100' : 'text-gray-500 dark:text-slate-400'}`}>
+          {attachment && attachmentUrl && <AttachmentDisplay attachment={attachment} mediaUrl={attachmentUrl} />}
+          {message.body && <p className="whitespace-pre-wrap break-words">{message.body}</p>}
+          <p className={cn('text-right text-[10px]', isMine ? 'text-white/70' : 'text-muted-foreground')}>
             {formatMessageTime(message.created_at)}
           </p>
         </div>
 
-        {(onReact || canDelete || (reportContentType && !isMine)) && (
-          <div className="mt-1 flex flex-wrap items-center gap-1">
-            {onReact && <ReactionBar reactions={message.reactions} onReact={onReact} />}
-            {onReact && (
-              <div className="relative">
-                <button
-                  type="button"
-                  onClick={() => setPickerOpen((v) => !v)}
-                  className="rounded-full p-0.5 text-gray-400 opacity-0 transition-opacity hover:text-gray-700 group-hover:opacity-100 dark:hover:text-slate-200"
-                  aria-label="Add reaction"
-                >
-                  <SmilePlus className="h-3.5 w-3.5" />
-                </button>
-                {pickerOpen && (
-                  <EmojiPickerPopover onPick={onReact} onClose={() => setPickerOpen(false)} align={isMine ? 'right' : 'left'} />
-                )}
-              </div>
-            )}
-            {reportContentType && !isMine && (
+        {hovered && (
+          <div className={cn('relative flex shrink-0 items-center gap-0.5', isMine ? 'flex-row-reverse' : 'flex-row')}>
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setShowEmoji((s) => !s)}
+                className="flex h-6 w-6 items-center justify-center rounded-full border border-border bg-card text-muted-foreground shadow-sm transition-colors hover:text-foreground"
+                aria-label="Add reaction"
+              >
+                <Smile size={12} />
+              </button>
+              {showEmoji && <EmojiPickerPopover onPick={onReact} onClose={() => setShowEmoji(false)} side={isMine ? 'right' : 'left'} />}
+            </div>
+            {!isMine && (
               <ReportButton
                 contentType={reportContentType}
                 contentId={message.id}
                 reportedUserId={message.sender_id}
-                className="rounded-full p-0.5 text-gray-400 opacity-0 transition-opacity hover:text-red-600 group-hover:opacity-100 dark:hover:text-red-400"
+                className="flex h-6 w-6 items-center justify-center rounded-full border border-border bg-card text-muted-foreground shadow-sm transition-colors hover:text-destructive"
               />
             )}
             {canDelete && (
               <button
                 type="button"
                 onClick={onDelete}
-                className="rounded-full p-0.5 text-gray-400 opacity-0 transition-opacity hover:text-red-600 group-hover:opacity-100 dark:hover:text-red-400"
+                className="flex h-6 w-6 items-center justify-center rounded-full border border-border bg-card text-muted-foreground shadow-sm transition-colors hover:text-destructive"
                 aria-label="Delete message"
               >
-                <Trash2 className="h-3.5 w-3.5" />
+                <Trash2 size={11} />
               </button>
             )}
           </div>
         )}
       </div>
+
+      <div className={cn('ml-1 mr-1', isMine ? 'flex justify-end' : '')}>
+        <ReactionRow reactions={message.reactions} onToggle={onReact} accent={accent} />
+      </div>
     </div>
   );
 }
 
-function ConversationThread({ conversation, currentUserId, isEboard, onBack }) {
+// ─── Composer ───
+
+function Composer({ onSend, accent, disabled }) {
+  const [body, setBody] = useState('');
+  const [file, setFile] = useState(null);
+  const fileRef = useRef(null);
+  const textRef = useRef(null);
+
+  const canSend = (body.trim().length > 0 || !!file) && !disabled;
+
+  function submit() {
+    if (!canSend) return;
+    onSend(body.trim(), file);
+    setBody('');
+    setFile(null);
+    if (fileRef.current) fileRef.current.value = '';
+    textRef.current?.focus();
+  }
+
+  function handleKeyDown(e) {
+    if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
+      e.preventDefault();
+      submit();
+    }
+  }
+
+  return (
+    <div className="border-t border-border bg-card px-4 py-3">
+      {file && (
+        <div className="mb-2">
+          <StagedAttachmentChip file={file} onRemove={() => { setFile(null); if (fileRef.current) fileRef.current.value = ''; }} />
+        </div>
+      )}
+      <div className="flex items-end gap-2">
+        <button
+          type="button"
+          onClick={() => fileRef.current?.click()}
+          className="mb-0.5 shrink-0 rounded-lg p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+          aria-label="Attach file"
+          disabled={disabled}
+        >
+          <Paperclip size={16} />
+        </button>
+        <input ref={fileRef} type="file" className="sr-only" onChange={(e) => e.target.files?.[0] && setFile(e.target.files[0])} aria-hidden="true" />
+
+        <div className="relative min-w-0 flex-1">
+          <textarea
+            ref={textRef}
+            rows={1}
+            value={body}
+            onChange={(e) => { setBody(e.target.value); e.target.style.height = 'auto'; e.target.style.height = `${Math.min(e.target.scrollHeight, 120)}px`; }}
+            onKeyDown={handleKeyDown}
+            placeholder="Write a message…"
+            className="max-h-[120px] w-full resize-none rounded-xl border border-border bg-muted/40 px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground/60 transition-colors focus:outline-none focus:ring-2"
+            style={{ '--tw-ring-color': tint(accent.base, 0.3) }}
+            onFocus={(e) => { e.currentTarget.style.borderColor = tint(accent.base, 0.4); }}
+            onBlur={(e) => { e.currentTarget.style.borderColor = ''; }}
+            disabled={disabled}
+          />
+        </div>
+
+        <button
+          type="button"
+          onClick={submit}
+          disabled={!canSend}
+          className="mb-0.5 shrink-0 rounded-xl p-2 text-white transition-opacity disabled:opacity-30"
+          style={{ background: accent.gradient }}
+          aria-label="Send message"
+        >
+          <Send size={16} />
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ─── New DM member picker ───
+
+function MemberPickerModal({ accent, onSelect, onClose }) {
+  const [members, setMembers] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [query, setQuery] = useState('');
+
+  useEffect(() => {
+    getMemberDirectory()
+      .then(setMembers)
+      .catch((err) => { if (isRedirectError(err)) throw err; })
+      .finally(() => setLoading(false));
+  }, []);
+
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    return members.filter((m) => !q || memberDisplayName(m).toLowerCase().includes(q) || m.username?.toLowerCase().includes(q));
+  }, [members, query]);
+
+  useEffect(() => {
+    function handler(e) { if (e.key === 'Escape') onClose(); }
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [onClose]);
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-label="New message">
+      <div className="absolute inset-0 bg-background/80 backdrop-blur-sm" onClick={onClose} aria-hidden="true" />
+      <div className="relative z-10 flex w-full max-w-sm flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-xl">
+        <div className="flex items-center justify-between border-b border-border px-5 py-4" style={{ background: tint(accent.base, 0.03) }}>
+          <div className="flex items-center gap-3">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg text-white" style={{ background: accent.gradient }}>
+              <MessageSquare size={14} strokeWidth={1.75} />
+            </div>
+            <p className="text-sm font-semibold text-foreground">New Message</p>
+          </div>
+          <button type="button" onClick={onClose} className="rounded-lg p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground" aria-label="Close">
+            <X size={14} />
+          </button>
+        </div>
+
+        <div className="px-4 py-3">
+          <div className="relative">
+            <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+            <input
+              autoFocus
+              type="text"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search members…"
+              className="w-full rounded-lg border border-border bg-muted/40 py-2 pl-8 pr-3 text-sm text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2"
+              style={{ '--tw-ring-color': tint(accent.base, 0.3) }}
+            />
+          </div>
+        </div>
+
+        <div className="max-h-72 overflow-y-auto">
+          {loading ? (
+            <p className="px-5 py-6 text-center text-sm text-muted-foreground">Loading members…</p>
+          ) : filtered.length === 0 ? (
+            <p className="px-5 py-6 text-center text-sm text-muted-foreground">No members found</p>
+          ) : (
+            filtered.map((m) => (
+              <button key={m.id} type="button" onClick={() => onSelect(m)} className="flex w-full items-center gap-3 px-4 py-2.5 text-left transition-colors hover:bg-muted/60">
+                <MemberAvatar member={m} size={32} accent={accent} />
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-medium text-foreground">{memberDisplayName(m)}</p>
+                  {m.username && <p className="text-[11px] text-muted-foreground">@{m.username}</p>}
+                </div>
+                <GroupBadge group={m.memberGroup} />
+              </button>
+            ))
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── DM list + thread ───
+
+function ConversationList({ conversations, currentUserId, accent, onSelect, onNewMessage }) {
+  return (
+    <div className="flex h-full flex-col">
+      <div className="flex items-center justify-between border-b border-border px-5 py-4" style={{ background: tint(accent.base, 0.03) }}>
+        <p className="text-sm font-semibold text-foreground">Direct Messages</p>
+        <button type="button" onClick={onNewMessage} className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold text-white transition-opacity hover:opacity-80" style={{ background: accent.gradient }}>
+          <Plus size={12} /> New Message
+        </button>
+      </div>
+
+      {conversations.length === 0 ? (
+        <div className="flex flex-1 flex-col items-center justify-center gap-2 p-8 text-center">
+          <MessageSquare size={28} className="text-muted-foreground" />
+          <p className="text-sm text-muted-foreground">No conversations yet</p>
+          <button type="button" onClick={onNewMessage} className="mt-1 text-xs font-semibold transition-opacity hover:opacity-75" style={{ color: accent.light }}>
+            Start one
+          </button>
+        </div>
+      ) : (
+        <ul className="flex-1 overflow-y-auto" role="list">
+          {conversations.map((c) => {
+            const lastMessage = c.last_message;
+            const isMine = lastMessage?.sender_id === currentUserId;
+            const preview = lastMessagePreview(lastMessage, isMine);
+            return (
+              <li key={c.authentik_id}>
+                <button type="button" onClick={() => onSelect(c)} className="flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-muted/50" aria-label={`Conversation with ${memberDisplayName(c)}`}>
+                  <MemberAvatar member={c} size={40} accent={accent} />
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-baseline justify-between gap-2">
+                      <p className={cn('truncate text-sm', c.unread_count > 0 ? 'font-semibold text-foreground' : 'font-medium text-foreground')}>{memberDisplayName(c)}</p>
+                      {lastMessage?.created_at && <span className="shrink-0 text-[11px] text-muted-foreground">{formatMessageTime(lastMessage.created_at)}</span>}
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <p className={cn('min-w-0 flex-1 truncate text-xs', c.unread_count > 0 ? 'font-medium text-foreground' : 'text-muted-foreground')}>
+                        {preview || <span className="italic">No messages yet</span>}
+                      </p>
+                      <UnreadBadge count={c.unread_count} />
+                    </div>
+                  </div>
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+function DMThread({ conversation, currentUserId, isEboard, accent, onBack }) {
   const confirm = useConfirm();
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [draft, setDraft] = useState('');
-  const [attachedFile, setAttachedFile] = useState(null);
-  const [sending, setSending] = useState(false);
   const bottomRef = useRef(null);
-  const fileInputRef = useRef(null);
 
   useEffect(() => {
     let cancelled = false;
-
     function load() {
       getConversation(conversation.authentik_id)
-        .then((data) => {
-          if (!cancelled) setMessages(data);
-        })
-        .catch((err) => {
-          if (isRedirectError(err)) throw err;
-          if (!cancelled) setError(err.message ?? 'Could not load messages');
-        })
-        .finally(() => {
-          if (!cancelled) setLoading(false);
-        });
+        .then((data) => { if (!cancelled) setMessages(data); })
+        .catch((err) => { if (isRedirectError(err)) throw err; if (!cancelled) setError(err.message ?? 'Could not load messages'); })
+        .finally(() => { if (!cancelled) setLoading(false); });
     }
-
     load();
-    markConversationRead(conversation.authentik_id).catch((err) => {
-      if (isRedirectError(err)) throw err;
-    });
-
+    markConversationRead(conversation.authentik_id).catch((err) => { if (isRedirectError(err)) throw err; });
     const interval = setInterval(load, 5000);
-    return () => {
-      cancelled = true;
-      clearInterval(interval);
-    };
+    return () => { cancelled = true; clearInterval(interval); };
   }, [conversation.authentik_id]);
 
-  useEffect(() => {
-    bottomRef.current?.scrollIntoView({ block: 'end' });
-  }, [messages.length]);
+  useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages.length]);
 
-  async function handleSend(e) {
-    e.preventDefault();
-    if (!draft.trim() && !attachedFile) return;
-
-    setSending(true);
+  async function handleSend(body, file) {
     try {
-      const message = await sendMessage(conversation.authentik_id, { body: draft.trim(), file: attachedFile });
+      const message = await sendMessage(conversation.authentik_id, { body, file });
       setMessages((prev) => [...prev, message]);
-      setDraft('');
-      setAttachedFile(null);
-      if (fileInputRef.current) fileInputRef.current.value = '';
     } catch (err) {
       if (isRedirectError(err)) throw err;
       window.alert(err.message ?? 'Failed to send message');
-    } finally {
-      setSending(false);
     }
   }
 
@@ -407,7 +526,7 @@ function ConversationThread({ conversation, currentUserId, isEboard, onBack }) {
     }
   }
 
-  async function handleDeleteMessage(messageId) {
+  async function handleDelete(messageId) {
     if (!(await confirm('Delete this message? This cannot be undone.'))) return;
     try {
       await deleteMessage(messageId);
@@ -419,37 +538,43 @@ function ConversationThread({ conversation, currentUserId, isEboard, onBack }) {
   }
 
   return (
-    <div className="flex h-[32rem] flex-col">
-      <div className="flex items-center gap-3 border-b border-gray-200 pb-3 dark:border-slate-700">
-        <Button type="button" variant="ghost" size="sm" onClick={onBack} className="-ml-2 gap-1.5">
-          <ArrowLeft className="h-4 w-4" />
-        </Button>
-        <Avatar className="h-9 w-9 shrink-0">
-          {conversation.authentik_id && (
-            <AvatarImage src={`/api/users/${conversation.authentik_id}/profile-picture/media`} alt={memberDisplayName(conversation)} />
-          )}
-          <AvatarFallback className="bg-blue-900 text-white">{memberInitials(conversation)}</AvatarFallback>
-        </Avatar>
-        <p className="flex-1 font-medium text-gray-900 dark:text-slate-100">{memberDisplayName(conversation)}</p>
+    <div className="flex h-full flex-col">
+      <div className="flex items-center gap-3 border-b border-border px-4 py-3" style={{ background: tint(accent.base, 0.03) }}>
+        <button type="button" onClick={onBack} className="shrink-0 rounded-lg p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground" aria-label="Back to conversations">
+          <ChevronLeft size={16} />
+        </button>
+        <MemberAvatar member={conversation} size={32} accent={accent} />
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-sm font-semibold text-foreground">{memberDisplayName(conversation)}</p>
+          {conversation.username && <p className="text-[11px] text-muted-foreground">@{conversation.username}</p>}
+        </div>
         <BlockButton userId={conversation.authentik_id} size="sm" />
       </div>
 
-      <div className="flex-1 space-y-2 overflow-y-auto py-4">
-        {error && <p className="text-sm text-red-600">{error}</p>}
+      <div className="flex-1 overflow-y-auto px-4 py-4">
+        {error && <p className="text-sm text-destructive">{error}</p>}
         {loading ? (
-          <p className="py-10 text-center text-sm text-gray-500">Loading messages...</p>
+          <div className="flex h-full items-center justify-center">
+            <Loader2 size={22} className="animate-spin text-muted-foreground" />
+          </div>
         ) : messages.length === 0 ? (
-          <p className="py-10 text-center text-sm text-gray-500">No messages yet — say hi!</p>
+          <div className="flex h-full flex-col items-center justify-center gap-2 text-center">
+            <div className="flex h-10 w-10 items-center justify-center rounded-full" style={{ background: tint(accent.base, 0.10) }}>
+              <MessageSquare size={18} style={{ color: accent.light }} />
+            </div>
+            <p className="text-sm text-muted-foreground">Start the conversation</p>
+          </div>
         ) : (
           messages.map((message) => (
             <MessageBubble
               key={message.id}
               message={message}
               isMine={message.sender_id === currentUserId}
+              isEboard={isEboard}
+              accent={accent}
               attachmentUrl={message.attachment ? `/api/messages/${message.id}/attachment` : null}
               onReact={(emoji) => handleReact(message.id, emoji)}
-              canDelete={message.sender_id === currentUserId || isEboard}
-              onDelete={() => handleDeleteMessage(message.id)}
+              onDelete={() => handleDelete(message.id)}
               reportContentType="message"
             />
           ))
@@ -457,101 +582,65 @@ function ConversationThread({ conversation, currentUserId, isEboard, onBack }) {
         <div ref={bottomRef} />
       </div>
 
-      {attachedFile && (
-        <div className="mb-2 flex items-center gap-2 rounded-md border border-gray-200 px-2.5 py-1.5 text-xs dark:border-slate-700">
-          <Paperclip className="h-3.5 w-3.5 shrink-0 text-gray-400" />
-          <span className="min-w-0 flex-1 truncate text-gray-700 dark:text-slate-300">{attachedFile.name}</span>
-          <button type="button" onClick={() => { setAttachedFile(null); if (fileInputRef.current) fileInputRef.current.value = ''; }}>
-            <X className="h-3.5 w-3.5 text-gray-400 hover:text-gray-700" />
+      <Composer onSend={handleSend} accent={accent} />
+    </div>
+  );
+}
+
+// ─── Group chat list + thread ───
+
+function GroupChatList({ chats, currentUserId, accent, isEboard, onSelect, onNewChat }) {
+  return (
+    <div className="flex h-full flex-col">
+      <div className="flex items-center justify-between border-b border-border px-5 py-4" style={{ background: tint(accent.base, 0.03) }}>
+        <p className="text-sm font-semibold text-foreground">Group Chats</p>
+        {isEboard && (
+          <button type="button" onClick={onNewChat} className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold text-white transition-opacity hover:opacity-80" style={{ background: accent.gradient }}>
+            <Plus size={12} /> New Group Chat
           </button>
-        </div>
-      )}
-
-      <form onSubmit={handleSend} className="flex items-center gap-2 border-t border-gray-200 pt-3 dark:border-slate-700">
-        <input
-          ref={fileInputRef}
-          type="file"
-          className="hidden"
-          onChange={(e) => setAttachedFile(e.target.files?.[0] ?? null)}
-        />
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          className="shrink-0 px-2"
-          onClick={() => fileInputRef.current?.click()}
-        >
-          <Paperclip className="h-4 w-4" />
-        </Button>
-        <Input
-          placeholder="Type a message..."
-          value={draft}
-          onChange={(e) => setDraft(e.target.value)}
-        />
-        <Button type="submit" disabled={(!draft.trim() && !attachedFile) || sending} className="shrink-0">
-          <Send className="h-4 w-4" />
-        </Button>
-      </form>
-    </div>
-  );
-}
-
-// Shows the chat's own photo if eboard has set one, otherwise the generic
-// icon — shared by the chat list, thread header, and info modal so all
-// three stay in sync automatically once a photo's uploaded.
-function GroupChatAvatar({ chat, className = 'h-10 w-10' }) {
-  return (
-    <div className={`flex shrink-0 items-center justify-center overflow-hidden rounded-full bg-blue-900 text-white ${className}`}>
-      {chat.photo_asset_id ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={`/api/group-chats/${chat.id}/photo/media`}
-          alt={chat.name}
-          className="h-full w-full object-cover"
-        />
-      ) : (
-        <Users className="h-1/2 w-1/2" />
-      )}
-    </div>
-  );
-}
-
-function GroupChatListItem({ chat, currentUserId, onSelect }) {
-  const lastMessage = chat.last_message;
-  const isMine = lastMessage?.sender_id === currentUserId;
-  const preview = lastMessagePreview(lastMessage, isMine) || 'No messages yet';
-
-  return (
-    <button
-      type="button"
-      onClick={() => onSelect(chat)}
-      className="flex w-full items-center gap-3 rounded-lg p-3 text-left transition-colors hover:bg-gray-100 dark:hover:bg-slate-800"
-    >
-      <GroupChatAvatar chat={chat} />
-      <div className="min-w-0 flex-1">
-        <div className="flex items-center justify-between gap-2">
-          <p className="truncate text-sm font-medium text-gray-900 dark:text-slate-100">{chat.name}</p>
-          {lastMessage?.created_at && (
-            <span className="shrink-0 text-xs text-gray-500 dark:text-slate-400">
-              {formatMessageTime(lastMessage.created_at)}
-            </span>
-          )}
-        </div>
-        <p className="truncate text-xs text-gray-500 dark:text-slate-400">{preview}</p>
+        )}
       </div>
-      {chat.unread_count > 0 && (
-        <Badge className="shrink-0 bg-red-600 text-white">{chat.unread_count}</Badge>
+
+      {chats.length === 0 ? (
+        <div className="flex flex-1 flex-col items-center justify-center gap-2 p-8 text-center">
+          <Users size={28} className="text-muted-foreground" />
+          <p className="text-sm text-muted-foreground">No group chats yet</p>
+        </div>
+      ) : (
+        <ul className="flex-1 overflow-y-auto" role="list">
+          {chats.map((c) => {
+            const lastMessage = c.last_message;
+            const isMine = lastMessage?.sender_id === currentUserId;
+            const preview = lastMessagePreview(lastMessage, isMine);
+            return (
+              <li key={c.id}>
+                <button type="button" onClick={() => onSelect(c)} className="flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-muted/50" aria-label={`Group chat: ${c.name}`}>
+                  <GroupChatAvatar chat={c} size={40} accent={accent} />
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-baseline justify-between gap-2">
+                      <p className={cn('truncate text-sm', c.unread_count > 0 ? 'font-semibold' : 'font-medium', 'text-foreground')}>{c.name}</p>
+                      {lastMessage?.created_at && <span className="shrink-0 text-[11px] text-muted-foreground">{formatMessageTime(lastMessage.created_at)}</span>}
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <p className={cn('min-w-0 flex-1 truncate text-xs', c.unread_count > 0 ? 'font-medium text-foreground' : 'text-muted-foreground')}>
+                        {preview || <span className="italic">No messages yet</span>}
+                      </p>
+                      <UnreadBadge count={c.unread_count} />
+                    </div>
+                  </div>
+                </button>
+              </li>
+            );
+          })}
+        </ul>
       )}
-    </button>
+    </div>
   );
 }
 
 // Lets eboard pull in a whole slice of the chapter at once — by Authentik
-// role group (e.g. "everyone in Actives") or by committee — instead of
-// adding people one at a time. Resolves against the already-loaded member
-// directory / committee roster client-side, then hands the resolved id list
-// to the caller in one batch.
-function BulkAddByGroupOrCommittee({ excludeIds, onAddMany }) {
+// role group or by committee — instead of adding people one at a time.
+function BulkAddByGroupOrCommittee({ excludeIds, accent, onAddMany }) {
   const [members, setMembers] = useState([]);
   const [committees, setCommittees] = useState([]);
   const [selectedGroups, setSelectedGroups] = useState(new Set());
@@ -559,35 +648,22 @@ function BulkAddByGroupOrCommittee({ excludeIds, onAddMany }) {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    getMemberDirectory()
-      .then(setMembers)
-      .catch((err) => {
-        if (isRedirectError(err)) throw err;
-      });
-    getCommittees()
-      .then(setCommittees)
-      .catch((err) => {
-        if (isRedirectError(err)) throw err;
-      });
+    getMemberDirectory().then(setMembers).catch((err) => { if (isRedirectError(err)) throw err; });
+    getCommittees().then(setCommittees).catch((err) => { if (isRedirectError(err)) throw err; });
   }, []);
 
   function toggleGroup(value) {
-    setSelectedGroups((prev) => {
-      const next = new Set(prev);
-      if (next.has(value)) next.delete(value);
-      else next.add(value);
-      return next;
-    });
+    setSelectedGroups((prev) => { const next = new Set(prev); next.has(value) ? next.delete(value) : next.add(value); return next; });
   }
 
-  async function handleAddGroups() {
-    const matches = members.filter((m) => [...selectedGroups].some((g) => groupMatches(m.memberGroup, g)) && !excludeIds.includes(m.id));
-    if (matches.length === 0) return;
+  const groupMatches_ = members.filter((m) => [...selectedGroups].some((g) => groupMatches(m.memberGroup, g)) && !excludeIds.includes(m.id));
 
+  async function handleAddGroups() {
+    if (groupMatches_.length === 0) return;
     setBusy(true);
     setError(null);
     try {
-      await onAddMany(matches);
+      await onAddMany(groupMatches_);
       setSelectedGroups(new Set());
     } catch (err) {
       if (isRedirectError(err)) throw err;
@@ -603,9 +679,7 @@ function BulkAddByGroupOrCommittee({ excludeIds, onAddMany }) {
     setError(null);
     try {
       const committeeMembers = await getCommitteeMembers(committeeId);
-      const matches = committeeMembers
-        .filter((m) => !excludeIds.includes(m.authentik_id))
-        .map((m) => ({ id: m.authentik_id, ...m }));
+      const matches = committeeMembers.filter((m) => !excludeIds.includes(m.authentik_id)).map((m) => ({ id: m.authentik_id, ...m }));
       await onAddMany(matches);
     } catch (err) {
       if (isRedirectError(err)) throw err;
@@ -615,145 +689,124 @@ function BulkAddByGroupOrCommittee({ excludeIds, onAddMany }) {
     }
   }
 
-  const groupMatchCount = members.filter((m) => [...selectedGroups].some((g) => groupMatches(m.memberGroup, g)) && !excludeIds.includes(m.id)).length;
-
   return (
-    <div className="space-y-2 rounded-md border border-dashed border-gray-300 p-2.5 dark:border-slate-700">
-      <p className="flex items-center gap-1.5 text-xs font-medium text-gray-600 dark:text-slate-400">
-        <Layers className="h-3.5 w-3.5" /> Add by group
+    <div className="space-y-2 rounded-xl border border-dashed border-border p-3">
+      <p className="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground">
+        <Layers size={13} /> Add by group
       </p>
       <div className="flex flex-wrap gap-1.5">
-        {ROLE_GROUPS.map((g) => (
-          <button
-            key={g.value}
-            type="button"
-            onClick={() => toggleGroup(g.value)}
-            className={`rounded-full border px-2.5 py-1 text-xs transition-colors ${
-              selectedGroups.has(g.value)
-                ? 'border-blue-500 bg-blue-600 text-white'
-                : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-300'
-            }`}
-          >
-            {g.label}
-          </button>
-        ))}
+        {ROLE_GROUPS.map((g) => {
+          const active = selectedGroups.has(g.value);
+          return (
+            <button
+              key={g.value}
+              type="button"
+              onClick={() => toggleGroup(g.value)}
+              className={cn('rounded-full border px-2.5 py-1 text-[11px] font-medium transition-all', active ? 'border-transparent text-white' : 'border-border bg-card text-muted-foreground hover:text-foreground')}
+              style={active ? { background: accent.gradient } : undefined}
+            >
+              {g.label}
+            </button>
+          );
+        })}
       </div>
       {selectedGroups.size > 0 && (
-        <Button type="button" size="sm" variant="outline" disabled={busy || groupMatchCount === 0} onClick={handleAddGroups}>
-          {busy ? 'Adding...' : `+ Add ${groupMatchCount} member${groupMatchCount === 1 ? '' : 's'}`}
-        </Button>
+        <button type="button" disabled={busy || groupMatches_.length === 0} onClick={handleAddGroups} className="rounded-lg border border-border px-3 py-1.5 text-xs font-semibold text-foreground disabled:opacity-50">
+          {busy ? 'Adding…' : `+ Add ${groupMatches_.length} member${groupMatches_.length === 1 ? '' : 's'}`}
+        </button>
       )}
-
       {committees.length > 0 && (
-        <select
-          value=""
-          disabled={busy}
-          onChange={(e) => handleAddCommittee(e.target.value)}
-          className="h-9 w-full rounded-md border border-gray-300 bg-white px-2.5 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-950"
-        >
-          <option value="">+ Add all members from a committee...</option>
-          {committees.map((c) => (
-            <option key={c.id} value={c.id}>{c.name}</option>
-          ))}
-        </select>
+        <div className="relative">
+          <select
+            value=""
+            disabled={busy}
+            onChange={(e) => handleAddCommittee(e.target.value)}
+            className="w-full appearance-none rounded-lg border border-border bg-card px-3 py-2 pr-8 text-xs text-muted-foreground focus:outline-none"
+          >
+            <option value="">+ Add all members from a committee…</option>
+            {committees.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+          </select>
+          <ChevronDown size={13} className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
+        </div>
       )}
-
-      {error && <p className="text-xs text-red-600 dark:text-red-400">{error}</p>}
+      {error && <p className="text-xs text-destructive">{error}</p>}
     </div>
   );
 }
 
-function AddMemberPicker({ excludeIds, onAdd, onCancel }) {
+function AddMemberPicker({ excludeIds, accent, onAdd }) {
   const [members, setMembers] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
   const [query, setQuery] = useState('');
 
   useEffect(() => {
-    getMemberDirectory()
-      .then(setMembers)
-      .catch((err) => {
-        if (isRedirectError(err)) throw err;
-        setError(err.message ?? 'Could not load members');
-      })
-      .finally(() => setLoading(false));
+    getMemberDirectory().then(setMembers).catch((err) => { if (isRedirectError(err)) throw err; }).finally(() => setLoading(false));
   }, []);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    return members
-      .filter((m) => !excludeIds.includes(m.id))
-      .filter((m) => !q || memberDisplayName(m).toLowerCase().includes(q));
+    return members.filter((m) => !excludeIds.includes(m.id)).filter((m) => !q || memberDisplayName(m).toLowerCase().includes(q)).slice(0, 30);
   }, [members, query, excludeIds]);
 
   return (
     <div className="space-y-2">
       <div className="relative">
-        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-        <Input placeholder="Search members..." value={query} onChange={(e) => setQuery(e.target.value)} className="pl-10" />
+        <Search size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
+        <input
+          type="text"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Search…"
+          className="w-full rounded-lg border border-border bg-muted/40 py-1.5 pl-7 pr-3 text-xs focus:outline-none"
+        />
       </div>
-      {error && <p className="text-sm text-red-600">{error}</p>}
       {loading ? (
-        <p className="text-sm text-gray-500">Loading...</p>
+        <p className="py-4 text-center text-xs text-muted-foreground">Loading…</p>
       ) : (
-        <div className="max-h-48 space-y-1 overflow-y-auto">
-          {filtered.map((member) => (
-            <button
-              key={member.id}
-              type="button"
-              onClick={() => onAdd(member)}
-              className="flex w-full items-center gap-2 rounded-md p-2 text-left text-sm transition-colors hover:bg-gray-100 dark:hover:bg-slate-800"
-            >
-              <Avatar className="h-6 w-6 shrink-0">
-                {member.id && (
-                  <AvatarImage src={`/api/users/${member.id}/profile-picture/media`} alt={memberDisplayName(member)} />
-                )}
-                <AvatarFallback className="bg-blue-900 text-xs text-white">{memberInitials(member)}</AvatarFallback>
-              </Avatar>
-              <span className="truncate text-gray-900 dark:text-slate-100">{memberDisplayName(member)}</span>
-            </button>
-          ))}
-          {filtered.length === 0 && <p className="text-sm text-gray-500">No matches.</p>}
+        <div className="max-h-36 overflow-y-auto rounded-xl border border-border">
+          {filtered.length === 0 ? (
+            <p className="py-4 text-center text-xs text-muted-foreground">No matches.</p>
+          ) : (
+            filtered.map((m) => (
+              <button key={m.id} type="button" onClick={() => onAdd(m)} className="flex w-full items-center gap-2 border-b border-border px-3 py-2 text-left last:border-b-0 hover:bg-muted/40">
+                <MemberAvatar member={m} size={24} accent={accent} />
+                <p className="min-w-0 flex-1 truncate text-xs font-medium text-foreground">{memberDisplayName(m)}</p>
+              </button>
+            ))
+          )}
         </div>
       )}
-      <Button type="button" variant="ghost" size="sm" onClick={onCancel}>Cancel</Button>
     </div>
   );
 }
 
-// A selectable member "card" for the grid picker below — click anywhere on
-// it to toggle, rather than hunting for a tiny checkbox.
-function MemberChip({ member, selected, onToggle }) {
+function MemberChip({ member, selected, accent, onToggle }) {
   return (
     <button
       type="button"
       onClick={() => onToggle(member.id)}
-      className={`group relative flex flex-col items-center gap-1.5 rounded-xl border p-2.5 text-center transition-all ${
-        selected
-          ? 'border-blue-500 bg-blue-50 shadow-sm ring-1 ring-blue-500 dark:border-blue-500 dark:bg-blue-950/40'
-          : 'border-gray-200 bg-white hover:border-blue-300 hover:bg-blue-50/50 dark:border-slate-700 dark:bg-slate-900 dark:hover:border-blue-800 dark:hover:bg-slate-800'
-      }`}
-    >
-      {selected && (
-        <span className="absolute right-1 top-1 flex h-4 w-4 items-center justify-center rounded-full bg-blue-600 text-white shadow">
-          <Check className="h-2.5 w-2.5" strokeWidth={3} />
-        </span>
+      className={cn(
+        'flex w-full items-center gap-3 border-b border-border px-3 py-2 text-left last:border-b-0 transition-colors',
+        selected ? 'bg-muted/60' : 'hover:bg-muted/40',
       )}
-      <Avatar className={`h-10 w-10 transition-transform ${selected ? 'scale-105' : 'group-hover:scale-105'}`}>
-        {member.id && (
-          <AvatarImage src={`/api/users/${member.id}/profile-picture/media`} alt={memberDisplayName(member)} />
+    >
+      <div className="relative">
+        <MemberAvatar member={member} size={28} accent={accent} />
+        {selected && (
+          <span className="absolute -right-0.5 -top-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full text-white" style={{ background: accent.base }}>
+            <Check size={8} strokeWidth={3} />
+          </span>
         )}
-        <AvatarFallback className="bg-blue-900 text-xs text-white">{memberInitials(member)}</AvatarFallback>
-      </Avatar>
-      <span className="line-clamp-2 w-full text-xs font-medium leading-tight text-gray-900 dark:text-slate-100">
-        {memberDisplayName(member)}
-      </span>
+      </div>
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-xs font-medium text-foreground">{memberDisplayName(member)}</p>
+      </div>
+      <GroupBadge group={member.memberGroup} />
     </button>
   );
 }
 
-function CreateGroupChatForm({ onCreated }) {
-  const [open, setOpen] = useState(false);
+function NewGroupChatModal({ accent, onClose, onCreate }) {
   const [name, setName] = useState('');
   const [members, setMembers] = useState([]);
   const [loadingMembers, setLoadingMembers] = useState(true);
@@ -764,39 +817,20 @@ function CreateGroupChatForm({ onCreated }) {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    if (!open) return;
-    getMemberDirectory()
-      .then(setMembers)
-      .catch((err) => {
-        if (isRedirectError(err)) throw err;
-        setError(err.message ?? 'Could not load members');
-      })
-      .finally(() => setLoadingMembers(false));
-    getCommittees()
-      .then(setCommittees)
-      .catch((err) => {
-        if (isRedirectError(err)) throw err;
-      });
-  }, [open]);
+    getMemberDirectory().then(setMembers).catch((err) => { if (isRedirectError(err)) throw err; }).finally(() => setLoadingMembers(false));
+    getCommittees().then(setCommittees).catch((err) => { if (isRedirectError(err)) throw err; });
+  }, []);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    return members.filter((m) => !q || memberDisplayName(m).toLowerCase().includes(q));
+    return members.filter((m) => !q || memberDisplayName(m).toLowerCase().includes(q)).slice(0, 40);
   }, [members, query]);
 
   function toggleMember(id) {
-    setSelectedIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
+    setSelectedIds((prev) => { const next = new Set(prev); next.has(id) ? next.delete(id) : next.add(id); return next; });
   }
 
-  // Adds everyone currently in the given Authentik group to the selection —
-  // on top of, not instead of, whoever's already picked.
   function handleImportGroup(groupValue) {
-    if (!groupValue) return;
     setSelectedIds((prev) => {
       const next = new Set(prev);
       members.filter((m) => groupMatches(m.memberGroup, groupValue)).forEach((m) => next.add(m.id));
@@ -804,406 +838,333 @@ function CreateGroupChatForm({ onCreated }) {
     });
   }
 
-  // Adds every current member of the chosen committee to the selection —
-  // on top of, not instead of, whoever's already picked.
   async function handleImportCommittee(committeeId) {
     if (!committeeId) return;
     try {
       const committeeMembers = await getCommitteeMembers(committeeId);
-      setSelectedIds((prev) => {
-        const next = new Set(prev);
-        committeeMembers.forEach((m) => next.add(m.authentik_id));
-        return next;
-      });
+      setSelectedIds((prev) => { const next = new Set(prev); committeeMembers.forEach((m) => next.add(m.authentik_id)); return next; });
     } catch (err) {
       if (isRedirectError(err)) throw err;
       setError(err.message ?? 'Failed to import committee members');
     }
   }
 
-  async function handleSubmit(e) {
-    e.preventDefault();
+  async function handleSubmit() {
     if (!name.trim()) return;
-
     setSubmitting(true);
     setError(null);
     try {
-      const chat = await createGroupChat({ name: name.trim(), memberIds: [...selectedIds] });
-      onCreated(chat);
-      setName('');
-      setSelectedIds(new Set());
-      setOpen(false);
+      await onCreate(name.trim(), [...selectedIds]);
     } catch (err) {
       if (isRedirectError(err)) throw err;
       setError(err.message ?? 'Failed to create group chat');
-    } finally {
       setSubmitting(false);
     }
   }
 
-  if (!open) {
-    return (
-      <Button type="button" variant="outline" onClick={() => setOpen(true)} className="gap-2">
-        <Plus className="h-4 w-4" /> New Group Chat
-      </Button>
-    );
-  }
+  useEffect(() => {
+    function handler(e) { if (e.key === 'Escape') onClose(); }
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [onClose]);
+
+  const canCreate = name.trim().length > 0 && !submitting;
 
   return (
-    <Card className="overflow-hidden border-blue-100 dark:border-blue-950">
-      <div className="border-b border-blue-100 bg-gradient-to-r from-blue-50 via-blue-50/50 to-transparent px-6 py-4 dark:border-blue-950 dark:from-blue-950/40 dark:via-blue-950/10">
-        <div className="flex items-center gap-2">
-          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-blue-600 text-white shadow-sm">
-            <Sparkles className="h-4 w-4" />
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-label="New group chat">
+      <div className="absolute inset-0 bg-background/80 backdrop-blur-sm" onClick={onClose} aria-hidden="true" />
+      <div className="relative z-10 flex w-full max-w-md flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-xl">
+        <div className="flex items-center justify-between border-b border-border px-5 py-4" style={{ background: tint(accent.base, 0.03) }}>
+          <div className="flex items-center gap-3">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg text-white" style={{ background: accent.gradient }}>
+              <Users size={14} strokeWidth={1.75} />
+            </div>
+            <p className="text-sm font-semibold text-foreground">New Group Chat</p>
           </div>
-          <div>
-            <h3 className="font-semibold text-gray-900 dark:text-slate-100">New Group Chat</h3>
-            <p className="text-xs text-gray-500 dark:text-slate-400">Name it, then pick who's in it</p>
-          </div>
+          <button type="button" onClick={onClose} className="rounded-lg p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground" aria-label="Close">
+            <X size={14} />
+          </button>
         </div>
-      </div>
 
-      <CardContent className="space-y-4 pt-5">
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <Input placeholder="Group chat name" value={name} onChange={(e) => setName(e.target.value)} />
+        <div className="flex-1 space-y-5 overflow-y-auto p-5">
+          <div>
+            <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-muted-foreground">Chat Name</label>
+            <input
+              autoFocus
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="e.g. Fall 2026 Pledges"
+              className="w-full rounded-lg border border-border bg-muted/40 px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2"
+              style={{ '--tw-ring-color': tint(accent.base, 0.3) }}
+            />
+          </div>
 
-          <div className="space-y-2">
-            <p className="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-slate-400">Quick add</p>
-            <div className="flex flex-wrap gap-1.5">
+          <div>
+            <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Quick Add by Role</p>
+            <div className="flex flex-wrap gap-2">
               {ROLE_GROUPS.map((g) => (
-                <button
-                  key={g.value}
-                  type="button"
-                  onClick={() => handleImportGroup(g.value)}
-                  className="rounded-full border border-gray-300 bg-white px-2.5 py-1 text-xs font-medium text-gray-700 shadow-sm transition-all hover:border-blue-400 hover:bg-blue-50 hover:text-blue-700 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-300 dark:hover:border-blue-700 dark:hover:bg-blue-950/40"
-                >
-                  + All {g.label}
+                <button key={g.value} type="button" onClick={() => handleImportGroup(g.value)} className="rounded-full border border-border bg-card px-3 py-1 text-xs font-medium text-muted-foreground transition-all hover:text-foreground">
+                  + {g.label}
                 </button>
               ))}
             </div>
-            {committees.length > 0 && (
-              <select
-                value=""
-                onChange={(e) => handleImportCommittee(e.target.value)}
-                className="h-10 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-950"
-              >
-                <option value="">+ Add all members from a committee...</option>
-                {committees.map((c) => (
-                  <option key={c.id} value={c.id}>{c.name}</option>
-                ))}
-              </select>
-            )}
           </div>
 
-          <div className="space-y-2">
-            <div className="flex items-center justify-between gap-2">
-              <p className="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-slate-400">Members</p>
-              {selectedIds.size > 1 && (
-                <button
-                  type="button"
-                  onClick={() => setSelectedIds(new Set())}
-                  className="flex items-center gap-1 text-xs font-medium text-red-600 hover:text-red-700 dark:text-red-400"
+          {committees.length > 0 && (
+            <div>
+              <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Add by Committee</p>
+              <div className="relative">
+                <select
+                  className="w-full appearance-none rounded-lg border border-border bg-card px-3 py-2 pr-8 text-sm text-muted-foreground focus:outline-none"
+                  defaultValue=""
+                  onChange={(e) => { if (e.target.value) handleImportCommittee(e.target.value); }}
                 >
-                  <X className="h-3 w-3" /> Deselect all
-                </button>
-              )}
+                  <option value="" disabled>Select a committee…</option>
+                  {committees.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+                </select>
+                <ChevronDown size={13} className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
+              </div>
             </div>
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-              <Input
-                placeholder="Search members..."
+          )}
+
+          <div>
+            <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              Add Individually
+              {selectedIds.size > 0 && (
+                <span className="ml-2 rounded-full px-1.5 py-0.5 text-[10px] font-bold text-white" style={{ background: accent.base }}>{selectedIds.size}</span>
+              )}
+            </p>
+            <div className="relative mb-2">
+              <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+              <input
+                type="text"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                className="pl-10"
+                placeholder="Search…"
+                className="w-full rounded-lg border border-border bg-muted/40 py-2 pl-8 pr-3 text-sm focus:outline-none focus:ring-2"
+                style={{ '--tw-ring-color': tint(accent.base, 0.3) }}
               />
             </div>
-
             {loadingMembers ? (
-              <p className="py-6 text-center text-sm text-gray-500">Loading members...</p>
+              <p className="py-6 text-center text-sm text-muted-foreground">Loading members…</p>
             ) : (
-              <div className="max-h-64 overflow-y-auto rounded-xl border border-gray-200 bg-gray-50/50 p-2.5 dark:border-slate-700 dark:bg-slate-950/30">
+              <div className="max-h-64 overflow-y-auto rounded-xl border border-border">
                 {filtered.length === 0 ? (
-                  <p className="py-6 text-center text-sm text-gray-500">No matches.</p>
+                  <p className="py-6 text-center text-sm text-muted-foreground">No matches.</p>
                 ) : (
-                  <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
-                    {filtered.map((member) => (
-                      <MemberChip
-                        key={member.id}
-                        member={member}
-                        selected={selectedIds.has(member.id)}
-                        onToggle={toggleMember}
-                      />
-                    ))}
-                  </div>
+                  filtered.map((m) => (
+                    <MemberChip key={m.id} member={m} selected={selectedIds.has(m.id)} accent={accent} onToggle={toggleMember} />
+                  ))
                 )}
               </div>
             )}
-
-            <p className="text-xs text-gray-500 dark:text-slate-400">
-              {selectedIds.size} member{selectedIds.size === 1 ? '' : 's'} selected
-            </p>
           </div>
 
-          {error && <p className="text-sm text-red-600">{error}</p>}
-          <div className="flex gap-2 border-t border-gray-100 pt-4 dark:border-slate-800">
-            <Button type="submit" disabled={!name.trim() || submitting} className="bg-blue-700 hover:bg-blue-800">
-              {submitting ? 'Creating...' : 'Create group chat'}
-            </Button>
-            <Button type="button" variant="ghost" onClick={() => setOpen(false)}>
-              Cancel
-            </Button>
+          {error && <p className="text-sm text-destructive">{error}</p>}
+        </div>
+
+        <div className="flex items-center justify-between border-t border-border px-5 py-4">
+          <p className="text-xs text-muted-foreground">{selectedIds.size} member{selectedIds.size !== 1 ? 's' : ''} selected</p>
+          <div className="flex gap-2">
+            <button type="button" onClick={onClose} className="rounded-lg border border-border px-4 py-2 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground">Cancel</button>
+            <button type="button" onClick={handleSubmit} disabled={!canCreate} className="rounded-lg px-4 py-2 text-sm font-semibold text-white transition-opacity disabled:opacity-40" style={{ background: accent.gradient }}>
+              {submitting ? 'Creating…' : 'Create Chat'}
+            </button>
           </div>
-        </form>
-      </CardContent>
-    </Card>
+        </div>
+      </div>
+    </div>
   );
 }
 
-// Grid tile for the info modal's Attachments tab — distinct from
-// AttachmentContent (which renders inline inside a chat bubble); this one
-// is a compact square tile in a gallery grid.
-function AttachmentTile({ message }) {
+function AttachmentTile({ message, chatId }) {
   const attachment = message.attachment;
-  const mediaUrl = `/api/group-chats/${message.group_chat_id}/messages/${message.id}/attachment`;
+  const mediaUrl = `/api/group-chats/${chatId}/messages/${message.id}/attachment`;
 
   if (attachment.kind === 'image') {
     return (
-      <a
-        href={mediaUrl}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="block aspect-square overflow-hidden rounded-lg border border-gray-200 dark:border-slate-700"
-      >
+      <a href={mediaUrl} target="_blank" rel="noopener noreferrer" className="group relative block aspect-square overflow-hidden rounded-lg border border-border">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={mediaUrl} alt={attachment.filename ?? 'Attachment'} className="h-full w-full object-cover transition-transform hover:scale-105" />
+        <img src={mediaUrl} alt={attachment.filename ?? 'Attachment'} className="h-full w-full object-cover transition-transform group-hover:scale-105" />
       </a>
     );
   }
-
   return (
-    <a
-      href={mediaUrl}
-      target="_blank"
-      rel="noopener noreferrer"
-      className="flex aspect-square flex-col items-center justify-center gap-1.5 rounded-lg border border-gray-200 bg-gray-50 p-2 text-center hover:bg-gray-100 dark:border-slate-700 dark:bg-slate-800 dark:hover:bg-slate-750"
-    >
-      <FileText className="h-6 w-6 text-gray-400" />
-      <span className="line-clamp-2 w-full text-[10px] leading-tight text-gray-600 dark:text-slate-400">{attachment.filename}</span>
+    <a href={mediaUrl} target="_blank" rel="noopener noreferrer" className="flex aspect-square flex-col items-center justify-center gap-1 rounded-lg border border-border bg-muted/40 p-3 text-center transition-colors hover:bg-muted">
+      <FileIcon size={20} className="text-muted-foreground" />
+      <p className="line-clamp-2 text-[10px] font-medium text-foreground">{attachment.filename}</p>
+      <p className="text-[10px] text-muted-foreground">{formatFileSize(attachment.size)}</p>
     </a>
   );
 }
 
-// Click the chat's name in the header to open this — everything about the
-// chat in one place: who's in it (with eboard add/remove folded in here
-// instead of a separate toggle), and every image/file anyone's shared.
-function GroupChatInfoModal({ chat, members, messages, isEboard, onAddMember, onAddMany, onRemoveMember, onChatUpdated, onClose }) {
+function GroupChatInfoModal({ chat, members, messages, isEboard, accent, onAddMember, onAddMany, onRemoveMember, onChatUpdated, onClose }) {
+  const [tab, setTab] = useState('members');
   const [adding, setAdding] = useState(false);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [photoError, setPhotoError] = useState(null);
-  const photoInputRef = useRef(null);
+  const photoRef = useRef(null);
   const attachments = useMemo(() => messages.filter((m) => m.attachment), [messages]);
 
   async function handlePhotoSelected(e) {
     const file = e.target.files?.[0];
     if (!file) return;
-
     setUploadingPhoto(true);
     setPhotoError(null);
     try {
       const formData = new FormData();
       formData.append('file', file);
       const result = await updateGroupChatPhoto(chat.id, formData);
-      if (result?.error) {
-        setPhotoError(result.error);
-        return;
-      }
+      if (result?.error) { setPhotoError(result.error); return; }
       onChatUpdated(result);
     } catch (err) {
       if (isRedirectError(err)) throw err;
       setPhotoError(err.message ?? 'Failed to update photo');
     } finally {
       setUploadingPhoto(false);
-      if (photoInputRef.current) photoInputRef.current.value = '';
+      if (photoRef.current) photoRef.current.value = '';
     }
   }
 
+  useEffect(() => {
+    function handler(e) { if (e.key === 'Escape') onClose(); }
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [onClose]);
+
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
-      role="dialog"
-      aria-modal="true"
-      onClick={onClose}
-    >
-      <div
-        className="flex max-h-[85vh] w-full max-w-md flex-col overflow-hidden rounded-xl bg-white shadow-xl dark:bg-slate-900"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="flex items-center justify-between gap-3 border-b border-gray-200 px-5 py-4 dark:border-slate-700">
-          <div className="flex min-w-0 items-center gap-3">
-            <div className="relative shrink-0">
-              <GroupChatAvatar chat={chat} />
-              {isEboard && (
-                <>
-                  <input
-                    ref={photoInputRef}
-                    type="file"
-                    accept="image/jpeg,image/png,image/webp"
-                    className="hidden"
-                    onChange={handlePhotoSelected}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => photoInputRef.current?.click()}
-                    disabled={uploadingPhoto}
-                    aria-label="Change group photo"
-                    className="absolute -bottom-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-blue-600 text-white shadow ring-2 ring-white hover:bg-blue-700 disabled:opacity-60 dark:ring-slate-900"
-                  >
-                    <Camera className="h-3 w-3" />
-                  </button>
-                </>
-              )}
-            </div>
-            <div className="min-w-0">
-              <p className="truncate font-semibold text-gray-900 dark:text-slate-100">{chat.name}</p>
-              <p className="text-xs text-gray-500 dark:text-slate-400">
-                {members.length} member{members.length === 1 ? '' : 's'}
-              </p>
-              {photoError && <p className="text-xs text-red-600 dark:text-red-400">{photoError}</p>}
-            </div>
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-label="Group chat info">
+      <div className="absolute inset-0 bg-background/80 backdrop-blur-sm" onClick={onClose} aria-hidden="true" />
+      <div className="relative z-10 flex w-full max-w-sm flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-xl">
+        <div className="h-16 w-full" style={{ background: accent.gradient }} aria-hidden="true" />
+        <button type="button" onClick={onClose} className="absolute right-3 top-3 flex h-7 w-7 items-center justify-center rounded-full bg-white/20 text-white hover:bg-white/30" aria-label="Close">
+          <X size={13} strokeWidth={2.5} />
+        </button>
+
+        <div className="flex flex-col items-center px-5 pb-4">
+          <div className="relative -mt-8 mb-2">
+            <GroupChatAvatar chat={chat} size={64} accent={accent} />
+            {isEboard && (
+              <>
+                <button
+                  type="button"
+                  onClick={() => photoRef.current?.click()}
+                  disabled={uploadingPhoto}
+                  className="absolute inset-0 flex items-center justify-center rounded-full bg-black/40 opacity-0 transition-opacity hover:opacity-100"
+                  aria-label="Change group photo"
+                >
+                  <Camera size={18} className="text-white" />
+                </button>
+                <input ref={photoRef} type="file" accept="image/jpeg,image/png,image/webp" className="sr-only" onChange={handlePhotoSelected} />
+              </>
+            )}
           </div>
-          <button type="button" onClick={onClose} className="shrink-0 rounded-full p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-700 dark:hover:bg-slate-800">
-            <X className="h-4 w-4" />
-          </button>
+          <h2 className="text-center text-lg font-bold tracking-tight text-foreground">{chat.name}</h2>
+          <p className="text-xs text-muted-foreground">{members.length} member{members.length !== 1 ? 's' : ''}</p>
+          {photoError && <p className="text-xs text-destructive">{photoError}</p>}
         </div>
 
-        <Tabs defaultValue="members" className="flex min-h-0 flex-1 flex-col">
-          <TabsList className="mx-5 mt-3 grid grid-cols-2">
-            <TabsTrigger value="members">Members</TabsTrigger>
-            <TabsTrigger value="attachments">Attachments ({attachments.length})</TabsTrigger>
-          </TabsList>
+        <div className="flex border-b border-border px-5">
+          {['members', 'attachments'].map((t) => (
+            <button
+              key={t}
+              type="button"
+              onClick={() => setTab(t)}
+              className={cn('relative flex-1 pb-3 pt-1 text-xs font-semibold capitalize transition-colors', tab === t ? 'text-foreground' : 'text-muted-foreground hover:text-foreground')}
+              role="tab"
+              aria-selected={tab === t}
+            >
+              {t === 'attachments' ? `Attachments (${attachments.length})` : t}
+              {tab === t && <span aria-hidden="true" className="absolute inset-x-4 bottom-0 h-0.5 rounded-full" style={{ background: accent.base }} />}
+            </button>
+          ))}
+        </div>
 
-          <TabsContent value="members" className="min-h-0 flex-1 overflow-y-auto px-5 py-3">
-            <div className="space-y-1">
-              {members.map((member) => (
-                <div key={member.authentik_id} className="flex items-center justify-between gap-2 rounded-lg p-1.5 hover:bg-gray-50 dark:hover:bg-slate-800">
-                  <ProfileActionsMenu userId={member.authentik_id}>
+        <div className="max-h-80 overflow-y-auto">
+          {tab === 'members' && (
+            <div>
+              {members.map((m) => (
+                <div key={m.authentik_id} className="flex items-center gap-3 border-b border-border px-4 py-2.5 last:border-b-0">
+                  <ProfileActionsMenu userId={m.authentik_id}>
                     <div className="flex min-w-0 items-center gap-2.5">
-                      <Avatar className="h-8 w-8 shrink-0">
-                        {member.authentik_id && (
-                          <AvatarImage src={`/api/users/${member.authentik_id}/profile-picture/media`} alt={memberDisplayName(member)} />
-                        )}
-                        <AvatarFallback className="bg-blue-900 text-xs text-white">{memberInitials(member)}</AvatarFallback>
-                      </Avatar>
-                      <span className="truncate text-sm text-gray-900 dark:text-slate-100">{memberDisplayName(member)}</span>
+                      <MemberAvatar member={{ id: m.authentik_id, ...m }} size={30} accent={accent} />
+                      <div className="min-w-0">
+                        <p className="truncate text-xs font-medium text-foreground">{memberDisplayName(m)}</p>
+                      </div>
                     </div>
                   </ProfileActionsMenu>
+                  <GroupBadge group={m.memberGroup ?? m.member_group} />
                   {isEboard && (
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => onRemoveMember(member.authentik_id)}
-                      className="h-7 w-7 shrink-0 p-0 text-red-600 hover:bg-red-50"
-                    >
-                      <X className="h-3.5 w-3.5" />
-                    </Button>
+                    <button type="button" onClick={() => onRemoveMember(m.authentik_id)} className="ml-1 shrink-0 rounded-md p-1 text-muted-foreground hover:bg-destructive/10 hover:text-destructive" aria-label={`Remove ${memberDisplayName(m)}`}>
+                      <UserMinus size={12} />
+                    </button>
                   )}
                 </div>
               ))}
-              {members.length === 0 && <p className="py-6 text-center text-sm text-gray-500">No members yet.</p>}
+              {members.length === 0 && <p className="py-6 text-center text-sm text-muted-foreground">No members yet.</p>}
+
+              {isEboard && (
+                <div className="space-y-3 border-t border-border p-4">
+                  <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Add Members</p>
+                  <BulkAddByGroupOrCommittee excludeIds={members.map((m) => m.authentik_id)} accent={accent} onAddMany={onAddMany} />
+                  {adding ? (
+                    <AddMemberPicker excludeIds={members.map((m) => m.authentik_id)} accent={accent} onAdd={(m) => { onAddMember(m); setAdding(false); }} />
+                  ) : (
+                    <button type="button" onClick={() => setAdding(true)} className="w-full rounded-lg border border-border py-2 text-xs font-semibold text-foreground hover:bg-muted">
+                      + Add individually
+                    </button>
+                  )}
+                </div>
+              )}
             </div>
+          )}
 
-            {isEboard && (
-              <div className="mt-3 space-y-2 border-t border-gray-100 pt-3 dark:border-slate-800">
-                <BulkAddByGroupOrCommittee excludeIds={members.map((m) => m.authentik_id)} onAddMany={onAddMany} />
-                {adding ? (
-                  <AddMemberPicker
-                    excludeIds={members.map((m) => m.authentik_id)}
-                    onAdd={(member) => {
-                      onAddMember(member);
-                      setAdding(false);
-                    }}
-                    onCancel={() => setAdding(false)}
-                  />
-                ) : (
-                  <Button type="button" variant="outline" size="sm" onClick={() => setAdding(true)} className="gap-1.5">
-                    <UserPlus className="h-3.5 w-3.5" /> Add individually
-                  </Button>
-                )}
-              </div>
-            )}
-          </TabsContent>
-
-          <TabsContent value="attachments" className="min-h-0 flex-1 overflow-y-auto px-5 py-3">
-            {attachments.length === 0 ? (
-              <p className="py-10 text-center text-sm text-gray-500">No photos or files shared yet.</p>
-            ) : (
-              <div className="grid grid-cols-3 gap-2">
-                {attachments.map((message) => (
-                  <AttachmentTile key={message.id} message={message} />
-                ))}
-              </div>
-            )}
-          </TabsContent>
-        </Tabs>
+          {tab === 'attachments' && (
+            <div className="p-4">
+              {attachments.length === 0 ? (
+                <p className="py-8 text-center text-sm text-muted-foreground">No photos or files shared yet.</p>
+              ) : (
+                <div className="grid grid-cols-3 gap-2">
+                  {attachments.map((m) => <AttachmentTile key={m.id} message={m} chatId={chat.id} />)}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
 }
 
-function GroupChatThread({ chat, currentUserId, isEboard, onBack, onDeleted, onChatUpdated }) {
+function GroupChatThread({ chat, currentUserId, isEboard, accent, onBack, onDeleted, onChatUpdated }) {
   const confirm = useConfirm();
   const [messages, setMessages] = useState([]);
   const [members, setMembers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [draft, setDraft] = useState('');
-  const [attachedFile, setAttachedFile] = useState(null);
-  const [sending, setSending] = useState(false);
   const [infoOpen, setInfoOpen] = useState(false);
   const bottomRef = useRef(null);
-  const fileInputRef = useRef(null);
 
   useEffect(() => {
     let cancelled = false;
-
     function load() {
       getGroupChatMessages(chat.id)
-        .then((data) => {
-          if (!cancelled) setMessages(data);
-        })
-        .catch((err) => {
-          if (isRedirectError(err)) throw err;
-          if (!cancelled) setError(err.message ?? 'Could not load messages');
-        })
-        .finally(() => {
-          if (!cancelled) setLoading(false);
-        });
+        .then((data) => { if (!cancelled) setMessages(data); })
+        .catch((err) => { if (isRedirectError(err)) throw err; if (!cancelled) setError(err.message ?? 'Could not load messages'); })
+        .finally(() => { if (!cancelled) setLoading(false); });
     }
-
     load();
-    markGroupChatRead(chat.id).catch((err) => {
-      if (isRedirectError(err)) throw err;
-    });
-
+    markGroupChatRead(chat.id).catch((err) => { if (isRedirectError(err)) throw err; });
     const interval = setInterval(load, 5000);
-    return () => {
-      cancelled = true;
-      clearInterval(interval);
-    };
+    return () => { cancelled = true; clearInterval(interval); };
   }, [chat.id]);
 
   useEffect(() => {
-    getGroupChatMembers(chat.id)
-      .then(setMembers)
-      .catch((err) => {
-        if (isRedirectError(err)) throw err;
-      });
+    getGroupChatMembers(chat.id).then(setMembers).catch((err) => { if (isRedirectError(err)) throw err; });
   }, [chat.id]);
 
-  useEffect(() => {
-    bottomRef.current?.scrollIntoView({ block: 'end' });
-  }, [messages.length]);
+  useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages.length]);
 
   function senderName(senderId) {
     if (senderId === currentUserId) return 'You';
@@ -1211,22 +1172,13 @@ function GroupChatThread({ chat, currentUserId, isEboard, onBack, onDeleted, onC
     return member ? memberDisplayName(member) : 'Member';
   }
 
-  async function handleSend(e) {
-    e.preventDefault();
-    if (!draft.trim() && !attachedFile) return;
-
-    setSending(true);
+  async function handleSend(body, file) {
     try {
-      const message = await sendGroupChatMessage(chat.id, { body: draft.trim(), file: attachedFile });
+      const message = await sendGroupChatMessage(chat.id, { body, file });
       setMessages((prev) => [...prev, message]);
-      setDraft('');
-      setAttachedFile(null);
-      if (fileInputRef.current) fileInputRef.current.value = '';
     } catch (err) {
       if (isRedirectError(err)) throw err;
       window.alert(err.message ?? 'Failed to send message');
-    } finally {
-      setSending(false);
     }
   }
 
@@ -1240,7 +1192,7 @@ function GroupChatThread({ chat, currentUserId, isEboard, onBack, onDeleted, onC
     }
   }
 
-  async function handleDeleteMessage(messageId) {
+  async function handleDelete(messageId) {
     if (!(await confirm('Delete this message? This cannot be undone.'))) return;
     try {
       await deleteGroupChatMessage(chat.id, messageId);
@@ -1272,19 +1224,11 @@ function GroupChatThread({ chat, currentUserId, isEboard, onBack, onDeleted, onC
     }
   }
 
-  // Adds a whole batch of members (from a group/committee bulk-add) in
-  // parallel, then updates state once with whichever ones actually succeeded
-  // — chapter-size member counts make this fine without a dedicated bulk
-  // endpoint.
   async function handleAddMany(newMembers) {
-    const results = await Promise.allSettled(
-      newMembers.map((member) => addGroupChatMember(chat.id, member.id))
-    );
+    const results = await Promise.allSettled(newMembers.map((member) => addGroupChatMember(chat.id, member.id)));
     const added = newMembers.filter((_, i) => results[i].status === 'fulfilled');
     setMembers((prev) => [...prev, ...added.map((member) => ({ authentik_id: member.id, ...member }))]);
-
-    const failed = results.some((r) => r.status === 'rejected');
-    if (failed) {
+    if (results.some((r) => r.status === 'rejected')) {
       const err = results.find((r) => r.status === 'rejected')?.reason;
       if (isRedirectError(err)) throw err;
       window.alert('Some members could not be added.');
@@ -1302,37 +1246,26 @@ function GroupChatThread({ chat, currentUserId, isEboard, onBack, onDeleted, onC
   }
 
   return (
-    <div className="flex h-[32rem] flex-col">
-      <div className="flex items-center justify-between gap-3 border-b border-gray-200 pb-3 dark:border-slate-700">
-        <div className="flex items-center gap-3">
-          <Button type="button" variant="ghost" size="sm" onClick={onBack} className="-ml-2 gap-1.5">
-            <ArrowLeft className="h-4 w-4" />
-          </Button>
-          <GroupChatAvatar chat={chat} className="h-9 w-9" />
-          <button
-            type="button"
-            onClick={() => setInfoOpen(true)}
-            className="min-w-0 rounded-md text-left transition-opacity hover:opacity-70"
-          >
-            <p className="truncate font-medium text-gray-900 dark:text-slate-100">{chat.name}</p>
-            <p className="text-xs text-gray-500 dark:text-slate-400">
-              {members.length} member{members.length === 1 ? '' : 's'} · tap for info
-            </p>
+    <div className="flex h-full flex-col">
+      <div className="flex items-center gap-3 border-b border-border px-4 py-3" style={{ background: tint(accent.base, 0.03) }}>
+        <button type="button" onClick={onBack} className="shrink-0 rounded-lg p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground" aria-label="Back">
+          <ChevronLeft size={16} />
+        </button>
+        <GroupChatAvatar chat={chat} size={32} accent={accent} />
+        <button type="button" onClick={() => setInfoOpen(true)} className="min-w-0 flex-1 text-left" aria-label="Chat info">
+          <p className="truncate text-sm font-semibold text-foreground hover:underline">{chat.name}</p>
+          <p className="text-[11px] text-muted-foreground">{members.length} member{members.length !== 1 ? 's' : ''} · tap for info</p>
+        </button>
+        <div className="flex items-center gap-1">
+          <button type="button" onClick={() => setInfoOpen(true)} className="rounded-lg p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground" aria-label="Chat info">
+            <Info size={15} />
           </button>
+          {isEboard && (
+            <button type="button" onClick={handleDeleteChat} className="rounded-lg p-1.5 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive" aria-label="Delete chat">
+              <Trash2 size={15} />
+            </button>
+          )}
         </div>
-        {isEboard && (
-          <div className="flex shrink-0 gap-1">
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              onClick={handleDeleteChat}
-              className="text-red-600 hover:bg-red-50"
-            >
-              <Trash2 className="h-4 w-4" />
-            </Button>
-          </div>
-        )}
       </div>
 
       {infoOpen && (
@@ -1341,6 +1274,7 @@ function GroupChatThread({ chat, currentUserId, isEboard, onBack, onDeleted, onC
           members={members}
           messages={messages}
           isEboard={isEboard}
+          accent={accent}
           onAddMember={handleAddMember}
           onAddMany={handleAddMany}
           onRemoveMember={handleRemoveMember}
@@ -1349,103 +1283,128 @@ function GroupChatThread({ chat, currentUserId, isEboard, onBack, onDeleted, onC
         />
       )}
 
-      <div className="flex-1 space-y-2 overflow-y-auto py-4">
-        {error && <p className="text-sm text-red-600">{error}</p>}
+      <div className="flex-1 overflow-y-auto px-4 py-4">
+        {error && <p className="text-sm text-destructive">{error}</p>}
         {loading ? (
-          <p className="py-10 text-center text-sm text-gray-500">Loading messages...</p>
+          <div className="flex h-full items-center justify-center">
+            <Loader2 size={22} className="animate-spin text-muted-foreground" />
+          </div>
         ) : messages.length === 0 ? (
-          <p className="py-10 text-center text-sm text-gray-500">No messages yet — say hi!</p>
-        ) : (
-          messages.map((message) => (
-            <div key={message.id}>
-              {message.sender_id !== currentUserId && (
-                <ProfileActionsMenu userId={message.sender_id}>
-                  <p className="mb-0.5 ml-1 text-xs text-gray-500 hover:underline dark:text-slate-400">{senderName(message.sender_id)}</p>
-                </ProfileActionsMenu>
-              )}
-              <MessageBubble
-                message={message}
-                isMine={message.sender_id === currentUserId}
-                attachmentUrl={message.attachment ? `/api/group-chats/${chat.id}/messages/${message.id}/attachment` : null}
-                onReact={(emoji) => handleReact(message.id, emoji)}
-                canDelete={message.sender_id === currentUserId || isEboard}
-                onDelete={() => handleDeleteMessage(message.id)}
-                reportContentType="group_message"
-              />
+          <div className="flex h-full flex-col items-center justify-center gap-2 text-center">
+            <div className="flex h-10 w-10 items-center justify-center rounded-full" style={{ background: tint(accent.base, 0.10) }}>
+              <Users size={18} style={{ color: accent.light }} />
             </div>
-          ))
+            <p className="text-sm text-muted-foreground">No messages yet</p>
+          </div>
+        ) : (
+          messages.map((message) => {
+            const isMine = message.sender_id === currentUserId;
+            return (
+              <div key={message.id}>
+                {!isMine && (
+                  <ProfileActionsMenu userId={message.sender_id}>
+                    <p className="mb-0.5 ml-1 text-[11px] font-semibold hover:underline" style={{ color: accent.light }}>{senderName(message.sender_id)}</p>
+                  </ProfileActionsMenu>
+                )}
+                <MessageBubble
+                  message={message}
+                  isMine={isMine}
+                  isEboard={isEboard}
+                  accent={accent}
+                  attachmentUrl={message.attachment ? `/api/group-chats/${chat.id}/messages/${message.id}/attachment` : null}
+                  onReact={(emoji) => handleReact(message.id, emoji)}
+                  onDelete={() => handleDelete(message.id)}
+                  reportContentType="group_message"
+                />
+              </div>
+            );
+          })
         )}
         <div ref={bottomRef} />
       </div>
 
-      {attachedFile && (
-        <div className="mb-2 flex items-center gap-2 rounded-md border border-gray-200 px-2.5 py-1.5 text-xs dark:border-slate-700">
-          <Paperclip className="h-3.5 w-3.5 shrink-0 text-gray-400" />
-          <span className="min-w-0 flex-1 truncate text-gray-700 dark:text-slate-300">{attachedFile.name}</span>
-          <button type="button" onClick={() => { setAttachedFile(null); if (fileInputRef.current) fileInputRef.current.value = ''; }}>
-            <X className="h-3.5 w-3.5 text-gray-400 hover:text-gray-700" />
-          </button>
-        </div>
-      )}
-
-      <form onSubmit={handleSend} className="flex items-center gap-2 border-t border-gray-200 pt-3 dark:border-slate-700">
-        <input
-          ref={fileInputRef}
-          type="file"
-          className="hidden"
-          onChange={(e) => setAttachedFile(e.target.files?.[0] ?? null)}
-        />
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          className="shrink-0 px-2"
-          onClick={() => fileInputRef.current?.click()}
-        >
-          <Paperclip className="h-4 w-4" />
-        </Button>
-        <Input placeholder="Type a message..." value={draft} onChange={(e) => setDraft(e.target.value)} />
-        <Button type="submit" disabled={(!draft.trim() && !attachedFile) || sending} className="shrink-0">
-          <Send className="h-4 w-4" />
-        </Button>
-      </form>
+      <Composer onSend={handleSend} accent={accent} />
     </div>
   );
 }
 
-function GroupChatsTab({ currentUserId, isEboard, initialGroupChatId }) {
+// ─── Tabs shells (own their data + polling, matching the rest of the app) ───
+
+function MessagesTab({ currentUserId, isEboard, accent, initialWithId }) {
+  const [conversations, setConversations] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [selected, setSelected] = useState(null);
+  const [showNewMessage, setShowNewMessage] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    function load() {
+      getConversations()
+        .then((data) => { if (!cancelled) setConversations(data); })
+        .catch((err) => { if (isRedirectError(err)) throw err; if (!cancelled) setError(err.message ?? 'Could not load conversations'); })
+        .finally(() => { if (!cancelled) setLoading(false); });
+    }
+    load();
+    const interval = setInterval(load, 7000);
+    return () => { cancelled = true; clearInterval(interval); };
+  }, []);
+
+  useEffect(() => {
+    if (!initialWithId) return;
+    getMember(initialWithId)
+      .then((member) => setSelected({ authentik_id: initialWithId, ...member }))
+      .catch((err) => { if (isRedirectError(err)) throw err; });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialWithId]);
+
+  function handleNewDM(member) {
+    setShowNewMessage(false);
+    setSelected({ authentik_id: member.id, ...member });
+  }
+
+  return (
+    <>
+      {selected ? (
+        <DMThread conversation={selected} currentUserId={currentUserId} isEboard={isEboard} accent={accent} onBack={() => setSelected(null)} />
+      ) : loading ? (
+        <div className="flex h-full items-center justify-center">
+          <Loader2 size={22} className="animate-spin text-muted-foreground" />
+        </div>
+      ) : error ? (
+        <div className="flex h-full flex-col items-center justify-center gap-2 text-center">
+          <AlertCircle size={22} className="text-destructive" />
+          <p className="text-sm text-muted-foreground">{error}</p>
+        </div>
+      ) : (
+        <ConversationList conversations={conversations} currentUserId={currentUserId} accent={accent} onSelect={setSelected} onNewMessage={() => setShowNewMessage(true)} />
+      )}
+
+      {showNewMessage && <MemberPickerModal accent={accent} onSelect={handleNewDM} onClose={() => setShowNewMessage(false)} />}
+    </>
+  );
+}
+
+function GroupChatsTab({ currentUserId, isEboard, accent, initialGroupChatId }) {
   const [chats, setChats] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [selected, setSelected] = useState(null);
+  const [showNewGC, setShowNewGC] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
-
     function load() {
       getGroupChats()
-        .then((data) => {
-          if (!cancelled) setChats(data);
-        })
-        .catch((err) => {
-          if (isRedirectError(err)) throw err;
-          if (!cancelled) setError(err.message ?? 'Could not load group chats');
-        })
-        .finally(() => {
-          if (!cancelled) setLoading(false);
-        });
+        .then((data) => { if (!cancelled) setChats(data); })
+        .catch((err) => { if (isRedirectError(err)) throw err; if (!cancelled) setError(err.message ?? 'Could not load group chats'); })
+        .finally(() => { if (!cancelled) setLoading(false); });
     }
-
     load();
     const interval = setInterval(load, 7000);
-    return () => {
-      cancelled = true;
-      clearInterval(interval);
-    };
+    return () => { cancelled = true; clearInterval(interval); };
   }, []);
 
-  // Deep link from a committee's "Group Chat" button (?groupChat=<id>) —
-  // jump straight into that chat once its data has loaded.
   useEffect(() => {
     if (!initialGroupChatId) return;
     const match = chats.find((c) => c.id === initialGroupChatId);
@@ -1453,164 +1412,48 @@ function GroupChatsTab({ currentUserId, isEboard, initialGroupChatId }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialGroupChatId, chats]);
 
-  function handleCreated(chat) {
-    setChats((prev) => [chat, ...prev]);
-  }
-
   function handleDeleted(chatId) {
     setChats((prev) => prev.filter((c) => c.id !== chatId));
     setSelected(null);
   }
 
-  // A photo change comes back as the full updated chat object — refresh it
-  // both in the open thread and in the list, so the new photo shows up
-  // immediately instead of waiting for the next poll.
   function handleChatUpdated(updatedChat) {
     setSelected(updatedChat);
     setChats((prev) => prev.map((c) => (c.id === updatedChat.id ? updatedChat : c)));
   }
 
-  if (selected) {
-    return (
-      <GroupChatThread
-        chat={selected}
-        currentUserId={currentUserId}
-        isEboard={isEboard}
-        onBack={() => setSelected(null)}
-        onDeleted={handleDeleted}
-        onChatUpdated={handleChatUpdated}
-      />
-    );
+  async function handleCreate(name, memberIds) {
+    const chat = await createGroupChat({ name, memberIds });
+    setChats((prev) => [chat, ...prev]);
+    setShowNewGC(false);
   }
 
   return (
-    <div className="space-y-4">
-      {isEboard && <CreateGroupChatForm onCreated={handleCreated} />}
-
-      {error && (
-        <Card className="border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-950/40">
-          <CardContent className="pt-6 text-sm text-red-700 dark:text-red-300">{error}</CardContent>
-        </Card>
-      )}
-
-      {loading ? (
-        <p className="py-10 text-center text-sm text-gray-500 sm:py-12">Loading group chats...</p>
-      ) : chats.length === 0 ? (
-        <EmptyState icon={Users} message="No group chats yet." />
-      ) : (
-        <div className="space-y-1">
-          {chats.map((chat) => (
-            <GroupChatListItem key={chat.id} chat={chat} currentUserId={currentUserId} onSelect={setSelected} />
-          ))}
+    <>
+      {selected ? (
+        <GroupChatThread chat={selected} currentUserId={currentUserId} isEboard={isEboard} accent={accent} onBack={() => setSelected(null)} onDeleted={handleDeleted} onChatUpdated={handleChatUpdated} />
+      ) : loading ? (
+        <div className="flex h-full items-center justify-center">
+          <Loader2 size={22} className="animate-spin text-muted-foreground" />
         </div>
+      ) : error ? (
+        <div className="flex h-full flex-col items-center justify-center gap-2 text-center">
+          <AlertCircle size={22} className="text-destructive" />
+          <p className="text-sm text-muted-foreground">{error}</p>
+        </div>
+      ) : (
+        <GroupChatList chats={chats} currentUserId={currentUserId} accent={accent} isEboard={isEboard} onSelect={setSelected} onNewChat={() => setShowNewGC(true)} />
       )}
-    </div>
+
+      {showNewGC && <NewGroupChatModal accent={accent} onClose={() => setShowNewGC(false)} onCreate={handleCreate} />}
+    </>
   );
 }
 
-function MessagesTab({ currentUserId, isEboard, initialWithId }) {
-  const [conversations, setConversations] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [selected, setSelected] = useState(null);
-  const [composing, setComposing] = useState(false);
+// ─── Main revamped page ───
 
-  useEffect(() => {
-    let cancelled = false;
-
-    function load() {
-      getConversations()
-        .then((data) => {
-          if (!cancelled) setConversations(data);
-        })
-        .catch((err) => {
-          if (isRedirectError(err)) throw err;
-          if (!cancelled) setError(err.message ?? 'Could not load conversations');
-        })
-        .finally(() => {
-          if (!cancelled) setLoading(false);
-        });
-    }
-
-    load();
-    const interval = setInterval(load, 7000);
-    return () => {
-      cancelled = true;
-      clearInterval(interval);
-    };
-  }, []);
-
-  // Deep link from the Directory's "Message" button (?with=<authentik_id>)
-  // — jump straight into that conversation once, on mount.
-  useEffect(() => {
-    if (!initialWithId) return;
-    getMember(initialWithId)
-      .then((member) => setSelected({ authentik_id: initialWithId, ...member }))
-      .catch((err) => {
-        if (isRedirectError(err)) throw err;
-      });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [initialWithId]);
-
-  function handlePickMember(member) {
-    setComposing(false);
-    setSelected({ authentik_id: member.id, ...member });
-  }
-
-  if (selected) {
-    return (
-      <ConversationThread
-        conversation={selected}
-        currentUserId={currentUserId}
-        isEboard={isEboard}
-        onBack={() => setSelected(null)}
-      />
-    );
-  }
-
-  if (composing) {
-    return (
-      <NewMessagePicker
-        onSelect={handlePickMember}
-        onCancel={() => setComposing(false)}
-      />
-    );
-  }
-
-  return (
-    <div className="space-y-4">
-      <Button type="button" variant="outline" onClick={() => setComposing(true)} className="gap-2">
-        <Plus className="h-4 w-4" /> New Message
-      </Button>
-
-      {error && (
-        <Card className="border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-950/40">
-          <CardContent className="pt-6 text-sm text-red-700 dark:text-red-300">{error}</CardContent>
-        </Card>
-      )}
-
-      {loading ? (
-        <p className="py-10 text-center text-sm text-gray-500 sm:py-12">Loading conversations...</p>
-      ) : conversations.length === 0 ? (
-        <EmptyState icon={MessageSquare} message="No conversations yet. Start one with the New Message button above." />
-      ) : (
-        <div className="space-y-1">
-          {conversations.map((conversation) => (
-            <ConversationListItem
-              key={conversation.authentik_id}
-              conversation={conversation}
-              active={false}
-              currentUserId={currentUserId}
-              onSelect={setSelected}
-            />
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
-function MessagesPageContent() {
+function RevampedMessagesContent({ accentKey }) {
+  const accent = ACCENT_THEMES[accentKey] ?? ACCENT_THEMES.blue;
   const { data: session } = useSession();
   const searchParams = useSearchParams();
   const withId = searchParams.get('with');
@@ -1619,43 +1462,58 @@ function MessagesPageContent() {
   const isEboard = session?.user?.groups?.includes('eboard') ?? false;
   const { dmCount, groupChatCount } = useUnreadCounts();
 
+  const [activeTab, setActiveTab] = useState(groupChatId ? 'groups' : 'messages');
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <div>
-        <h1 className="mb-2 text-2xl font-bold text-gray-900 sm:text-3xl dark:text-slate-100">Messages</h1>
-        <p className="text-sm text-gray-600 sm:text-base dark:text-slate-400">
-          Direct messages and group chats
-        </p>
+        <p className="mb-1 text-[11px] font-semibold uppercase tracking-[0.22em]" style={{ color: accent.light }}>Chapter Overview</p>
+        <h1 className="text-2xl font-bold sm:text-3xl" style={{ color: accent.base }}>Messages</h1>
+        <p className="text-sm text-muted-foreground">Direct messages and group chats</p>
       </div>
 
-      <Tabs defaultValue={groupChatId ? 'groups' : 'messages'} className="w-full min-w-0">
-        <TabsList className="grid h-auto w-full grid-cols-2 gap-1">
-          <TabsTrigger value="messages" className="min-w-0 gap-1.5 px-2 py-2 text-xs sm:text-sm">
-            Messages
-            {dmCount > 0 && <Badge className="h-5 min-w-5 justify-center bg-red-600 px-1 text-white">{dmCount > 99 ? '99+' : dmCount}</Badge>}
-          </TabsTrigger>
-          <TabsTrigger value="groups" className="min-w-0 gap-1.5 px-2 py-2 text-xs sm:text-sm">
-            Group Chats
-            {groupChatCount > 0 && <Badge className="h-5 min-w-5 justify-center bg-red-600 px-1 text-white">{groupChatCount > 99 ? '99+' : groupChatCount}</Badge>}
-          </TabsTrigger>
-        </TabsList>
+      <div className="relative flex items-center gap-1 border-b border-border">
+        {[
+          { id: 'messages', label: 'Messages', unread: dmCount },
+          { id: 'groups', label: 'Group Chats', unread: groupChatCount },
+        ].map((tab) => {
+          const isActive = activeTab === tab.id;
+          return (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => setActiveTab(tab.id)}
+              className={cn('relative flex items-center gap-2 px-4 pb-3 pt-1 text-sm font-medium transition-colors duration-150', isActive ? 'text-foreground' : 'text-muted-foreground hover:text-foreground')}
+              role="tab"
+              aria-selected={isActive}
+            >
+              {tab.label}
+              {tab.unread > 0 && <UnreadBadge count={tab.unread} />}
+              {isActive && <span aria-hidden="true" className="absolute inset-x-2 bottom-0 h-0.5 rounded-full" style={{ background: accent.base }} />}
+            </button>
+          );
+        })}
+      </div>
 
-        <TabsContent value="messages" className="mt-6">
-          <MessagesTab currentUserId={currentUserId} isEboard={isEboard} initialWithId={withId} />
-        </TabsContent>
-
-        <TabsContent value="groups" className="mt-6">
-          <GroupChatsTab currentUserId={currentUserId} isEboard={isEboard} initialGroupChatId={groupChatId} />
-        </TabsContent>
-      </Tabs>
+      <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm" style={{ height: 600 }}>
+        {activeTab === 'messages' && (
+          <MessagesTab currentUserId={currentUserId} isEboard={isEboard} accent={accent} initialWithId={withId} />
+        )}
+        {activeTab === 'groups' && (
+          <GroupChatsTab currentUserId={currentUserId} isEboard={isEboard} accent={accent} initialGroupChatId={groupChatId} />
+        )}
+      </div>
     </div>
   );
 }
 
-export default function MessagesPage() {
+export default function MessagesPage({ accent }) {
+  if (accent !== 'blue' && accent !== 'red') {
+    return <LegacyMessagesPage />;
+  }
   return (
-    <Suspense fallback={<p className="py-10 text-center text-sm text-gray-500">Loading...</p>}>
-      <MessagesPageContent />
+    <Suspense fallback={<p className="py-10 text-center text-sm text-muted-foreground">Loading...</p>}>
+      <RevampedMessagesContent accentKey={accent} />
     </Suspense>
   );
 }
