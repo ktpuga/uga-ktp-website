@@ -7,6 +7,7 @@ export default function AdminCalendar() {
     <EventsCalendar
       title="Calendar"
       description="All chapter events and committee meetings"
+      accent="red"
     />
   );
 }
