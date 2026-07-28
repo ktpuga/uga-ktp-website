@@ -342,6 +342,7 @@ function ConversationThread({ conversation, currentUserId, isEboard, onBack }) {
   const [draft, setDraft] = useState('');
   const [attachedFile, setAttachedFile] = useState(null);
   const [sending, setSending] = useState(false);
+  const [isBlocked, setIsBlocked] = useState(false);
   const bottomRef = useRef(null);
   const fileInputRef = useRef(null);
 
@@ -431,7 +432,7 @@ function ConversationThread({ conversation, currentUserId, isEboard, onBack }) {
           <AvatarFallback className="bg-blue-900 text-white">{memberInitials(conversation)}</AvatarFallback>
         </Avatar>
         <p className="flex-1 font-medium text-gray-900 dark:text-slate-100">{memberDisplayName(conversation)}</p>
-        <BlockButton userId={conversation.authentik_id} size="sm" />
+        <BlockButton userId={conversation.authentik_id} size="sm" onStatusChange={setIsBlocked} />
       </div>
 
       <div className="flex-1 space-y-2 overflow-y-auto py-4">
@@ -457,41 +458,49 @@ function ConversationThread({ conversation, currentUserId, isEboard, onBack }) {
         <div ref={bottomRef} />
       </div>
 
-      {attachedFile && (
-        <div className="mb-2 flex items-center gap-2 rounded-md border border-gray-200 px-2.5 py-1.5 text-xs dark:border-slate-700">
-          <Paperclip className="h-3.5 w-3.5 shrink-0 text-gray-400" />
-          <span className="min-w-0 flex-1 truncate text-gray-700 dark:text-slate-300">{attachedFile.name}</span>
-          <button type="button" onClick={() => { setAttachedFile(null); if (fileInputRef.current) fileInputRef.current.value = ''; }}>
-            <X className="h-3.5 w-3.5 text-gray-400 hover:text-gray-700" />
-          </button>
+      {isBlocked ? (
+        <div className="border-t border-gray-200 pt-3 text-center text-xs text-gray-500 dark:border-slate-700 dark:text-slate-400">
+          You've blocked this member. Unblock them above to send messages.
         </div>
-      )}
+      ) : (
+        <>
+          {attachedFile && (
+            <div className="mb-2 flex items-center gap-2 rounded-md border border-gray-200 px-2.5 py-1.5 text-xs dark:border-slate-700">
+              <Paperclip className="h-3.5 w-3.5 shrink-0 text-gray-400" />
+              <span className="min-w-0 flex-1 truncate text-gray-700 dark:text-slate-300">{attachedFile.name}</span>
+              <button type="button" onClick={() => { setAttachedFile(null); if (fileInputRef.current) fileInputRef.current.value = ''; }}>
+                <X className="h-3.5 w-3.5 text-gray-400 hover:text-gray-700" />
+              </button>
+            </div>
+          )}
 
-      <form onSubmit={handleSend} className="flex items-center gap-2 border-t border-gray-200 pt-3 dark:border-slate-700">
-        <input
-          ref={fileInputRef}
-          type="file"
-          className="hidden"
-          onChange={(e) => setAttachedFile(e.target.files?.[0] ?? null)}
-        />
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          className="shrink-0 px-2"
-          onClick={() => fileInputRef.current?.click()}
-        >
-          <Paperclip className="h-4 w-4" />
-        </Button>
-        <Input
-          placeholder="Type a message..."
-          value={draft}
-          onChange={(e) => setDraft(e.target.value)}
-        />
-        <Button type="submit" disabled={(!draft.trim() && !attachedFile) || sending} className="shrink-0">
-          <Send className="h-4 w-4" />
-        </Button>
-      </form>
+          <form onSubmit={handleSend} className="flex items-center gap-2 border-t border-gray-200 pt-3 dark:border-slate-700">
+            <input
+              ref={fileInputRef}
+              type="file"
+              className="hidden"
+              onChange={(e) => setAttachedFile(e.target.files?.[0] ?? null)}
+            />
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="shrink-0 px-2"
+              onClick={() => fileInputRef.current?.click()}
+            >
+              <Paperclip className="h-4 w-4" />
+            </Button>
+            <Input
+              placeholder="Type a message..."
+              value={draft}
+              onChange={(e) => setDraft(e.target.value)}
+            />
+            <Button type="submit" disabled={(!draft.trim() && !attachedFile) || sending} className="shrink-0">
+              <Send className="h-4 w-4" />
+            </Button>
+          </form>
+        </>
+      )}
     </div>
   );
 }

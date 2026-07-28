@@ -488,6 +488,7 @@ function DMThread({ conversation, currentUserId, isEboard, accent, onBack }) {
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [isBlocked, setIsBlocked] = useState(false);
   const bottomRef = useRef(null);
 
   useEffect(() => {
@@ -548,7 +549,7 @@ function DMThread({ conversation, currentUserId, isEboard, accent, onBack }) {
           <p className="truncate text-sm font-semibold text-foreground">{memberDisplayName(conversation)}</p>
           {conversation.username && <p className="text-[11px] text-muted-foreground">@{conversation.username}</p>}
         </div>
-        <BlockButton userId={conversation.authentik_id} size="sm" />
+        <BlockButton userId={conversation.authentik_id} size="sm" onStatusChange={setIsBlocked} />
       </div>
 
       <div className="flex-1 overflow-y-auto px-4 py-4">
@@ -582,7 +583,13 @@ function DMThread({ conversation, currentUserId, isEboard, accent, onBack }) {
         <div ref={bottomRef} />
       </div>
 
-      <Composer onSend={handleSend} accent={accent} />
+      {isBlocked ? (
+        <div className="border-t border-border bg-muted/40 px-4 py-3 text-center text-xs text-muted-foreground">
+          You've blocked this member. Unblock them above to send messages.
+        </div>
+      ) : (
+        <Composer onSend={handleSend} accent={accent} />
+      )}
     </div>
   );
 }

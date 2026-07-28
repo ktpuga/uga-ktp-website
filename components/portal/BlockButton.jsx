@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Ban, CircleCheck, X } from 'lucide-react';
+import { Ban, CheckCircle2, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { getBlockedUsers, blockUser, unblockUser } from '@/lib/portal-api';
 import { isRedirectError } from '@/lib/is-redirect-error';
@@ -17,7 +17,7 @@ import { isRedirectError } from '@/lib/is-redirect-error';
 // stacking a second independent z-50 overlay on top of that one is a real
 // source of click/dismiss bugs. Matches how ReportButton handles its own
 // dialog for the same reason.
-export default function BlockButton({ userId, variant = 'outline', size = 'sm', className = '' }) {
+export default function BlockButton({ userId, variant = 'outline', size = 'sm', className = '', onStatusChange }) {
   const [blocked, setBlocked] = useState(null); // null while loading
   const [busy, setBusy] = useState(false);
   const [confirming, setConfirming] = useState(false);
@@ -27,13 +27,17 @@ export default function BlockButton({ userId, variant = 'outline', size = 'sm', 
     let cancelled = false;
     getBlockedUsers()
       .then((list) => {
-        if (!cancelled) setBlocked(list.some((u) => u.id === userId));
+        if (cancelled) return;
+        const isBlocked = list.some((u) => u.id === userId);
+        setBlocked(isBlocked);
+        onStatusChange?.(isBlocked);
       })
       .catch((err) => {
         if (isRedirectError(err)) throw err;
         if (!cancelled) setBlocked(false);
       });
     return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId]);
 
   async function handleConfirm() {
@@ -43,9 +47,11 @@ export default function BlockButton({ userId, variant = 'outline', size = 'sm', 
       if (blocked) {
         await unblockUser(userId);
         setBlocked(false);
+        onStatusChange?.(false);
       } else {
         await blockUser(userId);
         setBlocked(true);
+        onStatusChange?.(true);
       }
       setConfirming(false);
     } catch (err) {
@@ -71,7 +77,7 @@ export default function BlockButton({ userId, variant = 'outline', size = 'sm', 
         }}
         className={`gap-1.5 ${blocked ? 'text-green-700 hover:text-green-800' : 'text-red-600 hover:text-red-700'} ${className}`}
       >
-        {blocked ? <CircleCheck className="h-3.5 w-3.5" /> : <Ban className="h-3.5 w-3.5" />}
+        {blocked ? <CheckCircle2 className="h-3.5 w-3.5" /> : <Ban className="h-3.5 w-3.5" />}
         {blocked ? 'Unblock' : 'Block'}
       </Button>
 
