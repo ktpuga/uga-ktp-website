@@ -1,117 +1,237 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ShieldAlert, User as UserIcon, MessageSquare, Image as ImageIcon } from 'lucide-react';
+import { useState, useMemo, useEffect } from 'react';
+import { cn } from '@/lib/utils';
+import {
+  User,
+  MessageSquare,
+  Image as ImageIcon,
+  CheckCircle2,
+  XCircle,
+  Clock,
+  Hash,
+  ShieldCheck,
+} from 'lucide-react';
 import { getReports, updateReportStatus } from '@/lib/portal-api';
-import { formatMessageTime, memberDisplayName } from '@/lib/portal-format';
 import { isRedirectError } from '@/lib/is-redirect-error';
 
-const CONTENT_ICON = {
-  user: UserIcon,
-  message: MessageSquare,
-  group_message: MessageSquare,
-  photo: ImageIcon,
+const MAROON = {
+  base: '#7f1d1d',
+  gradient: 'linear-gradient(135deg, #7f1d1d 0%, #991b1b 100%)',
+  light: '#991b1b',
+  muted: 'rgba(127,29,29,0.10)',
 };
 
-const CONTENT_LABEL = {
-  user: 'Member profile',
-  message: 'Direct message',
-  group_message: 'Group chat message',
-  photo: 'Photo',
+const CONTENT_META = {
+  user: { icon: User, label: 'Member profile' },
+  message: { icon: MessageSquare, label: 'Direct message' },
+  group_message: { icon: MessageSquare, label: 'Group chat message' },
+  photo: { icon: ImageIcon, label: 'Photo' },
 };
 
-function ReportCard({ report, onResolve }) {
-  const [response, setResponse] = useState(report.moderator_response ?? '');
-  const [busy, setBusy] = useState(false);
-  const Icon = CONTENT_ICON[report.content_type] ?? ShieldAlert;
+function tint(hex, alpha) {
+  const h = hex.replace('#', '');
+  const full = h.length === 3 ? h.split('').map((c) => c + c).join('') : h;
+  const n = parseInt(full, 16);
+  return `rgba(${(n >> 16) & 255},${(n >> 8) & 255},${n & 255},${alpha})`;
+}
 
-  async function handleAction(status) {
-    setBusy(true);
+function personName(u, fallback = 'Unknown') {
+  if (!u) return fallback;
+  const name = [u.first_name, u.last_name].filter(Boolean).join(' ');
+  return name || u.username;
+}
+
+function timeAgo(iso) {
+  const diff = Date.now() - new Date(iso).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return 'just now';
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  const days = Math.floor(hrs / 24);
+  if (days < 30) return `${days}d ago`;
+  return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+}
+
+// ─── Tab bar ───
+
+function TabBar({ active, onChange, openCount, historyCount }) {
+  const tabs = [
+    { id: 'open', label: 'Open', count: openCount },
+    { id: 'history', label: 'History', count: historyCount },
+  ];
+
+  return (
+    <div className="relative mb-6 flex items-center gap-0.5 border-b border-border">
+      {tabs.map((tab) => {
+        const isActive = active === tab.id;
+        return (
+          <button
+            key={tab.id}
+            type="button"
+            role="tab"
+            aria-selected={isActive}
+            onClick={() => onChange(tab.id)}
+            className={cn(
+              'relative flex items-center gap-1.5 px-4 pb-3 pt-1 text-sm font-medium transition-colors',
+              isActive ? 'text-foreground' : 'text-muted-foreground hover:text-foreground'
+            )}
+          >
+            {tab.label}
+            <span
+              className="rounded-full px-1.5 py-0.5 text-[10px] font-bold leading-none"
+              style={{ background: isActive ? tint(MAROON.base, 0.1) : 'transparent', color: isActive ? MAROON.light : 'inherit' }}
+            >
+              {tab.count}
+            </span>
+            {isActive && <span className="absolute inset-x-2 bottom-0 h-0.5 rounded-full" style={{ background: MAROON.base }} aria-hidden="true" />}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+// ─── Report card ───
+
+function ReportCard({ report, onResolve, onDismiss }) {
+  const [note, setNote] = useState('');
+  const [loading, setLoading] = useState(null);
+  const [error, setError] = useState(null);
+
+  const meta = CONTENT_META[report.content_type] ?? CONTENT_META.message;
+  const Icon = meta.icon;
+  const isOpen = report.status === 'open';
+
+  async function handle(action) {
+    setLoading(action);
+    setError(null);
     try {
-      await onResolve(report.id, { status, moderatorResponse: response });
+      if (action === 'resolve') await onResolve(report.id, note);
+      else await onDismiss(report.id, note);
+    } catch (err) {
+      if (isRedirectError(err)) throw err;
+      setError(err.message ?? 'Failed to update report');
     } finally {
-      setBusy(false);
+      setLoading(null);
     }
   }
 
   return (
-    <Card>
-      <CardContent className="space-y-3 p-4">
-        <div className="flex flex-wrap items-start justify-between gap-2">
-          <div className="flex items-center gap-2">
-            <Icon className="h-4 w-4 text-gray-500 dark:text-slate-400" />
-            <span className="text-sm font-medium text-gray-900 dark:text-slate-100">
-              {CONTENT_LABEL[report.content_type] ?? report.content_type}
+    <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
+      <div className="h-0.5 w-full" style={{ background: isOpen ? MAROON.gradient : 'transparent' }} aria-hidden="true" />
+
+      <div className="space-y-3 px-5 py-4">
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-semibold" style={{ background: tint(MAROON.base, 0.08), color: MAROON.light }}>
+              <Icon size={11} strokeWidth={1.75} />
+              {meta.label}
+            </div>
+            <span className="inline-flex items-center rounded-full border border-border bg-muted/40 px-2.5 py-0.5 text-[11px] text-muted-foreground">
+              {report.reason}
             </span>
-            <Badge variant="outline">{report.reason}</Badge>
           </div>
-          <span className="text-xs text-gray-500 dark:text-slate-400">{formatMessageTime(report.created_at)}</span>
+          <span className="shrink-0 text-[11px] tabular-nums text-muted-foreground">{timeAgo(report.created_at)}</span>
         </div>
 
-        <div className="grid grid-cols-1 gap-2 text-sm sm:grid-cols-2">
-          <p className="text-gray-700 dark:text-slate-300">
-            <span className="text-gray-500 dark:text-slate-400">Reported by:</span>{' '}
-            {report.reporter ? memberDisplayName(report.reporter) : 'Unknown'}
-          </p>
-          <p className="text-gray-700 dark:text-slate-300">
-            <span className="text-gray-500 dark:text-slate-400">Reported member:</span>{' '}
-            {report.reported_user ? memberDisplayName(report.reported_user) : '—'}
-          </p>
+        <div className="grid grid-cols-2 gap-x-4 gap-y-1 rounded-xl border border-border bg-muted/20 px-4 py-2.5 text-xs">
+          <div>
+            <span className="text-muted-foreground">Reported by </span>
+            <span className="font-medium text-foreground">{personName(report.reporter)}</span>
+            {report.reporter && <span className="ml-1 text-muted-foreground">@{report.reporter.username}</span>}
+          </div>
+          <div>
+            <span className="text-muted-foreground">Reported member </span>
+            <span className="font-medium text-foreground">{personName(report.reported_user, '—')}</span>
+            {report.reported_user && <span className="ml-1 text-muted-foreground">@{report.reported_user.username}</span>}
+          </div>
         </div>
 
         {report.explanation && (
-          <p className="rounded-md bg-gray-50 p-2.5 text-sm text-gray-700 dark:bg-slate-800/50 dark:text-slate-300">
+          <blockquote className="rounded-xl border-l-2 border-muted-foreground/25 bg-muted/20 px-4 py-2.5 text-xs italic leading-relaxed text-muted-foreground">
             {report.explanation}
-          </p>
+          </blockquote>
         )}
 
-        {report.content_id && (
-          <p className="text-xs text-gray-400 dark:text-slate-500">Content ID: {report.content_id}</p>
+        {report.content_id != null && (
+          <div className="flex items-center gap-1 text-[10px] text-muted-foreground/50">
+            <Hash size={9} />
+            Content ID: {report.content_id}
+          </div>
         )}
 
-        {report.status === 'open' ? (
-          <div className="space-y-2 pt-1">
-            <Textarea
-              placeholder="Optional note for the record..."
-              value={response}
-              onChange={(e) => setResponse(e.target.value)}
+        {isOpen && (
+          <div className="space-y-2.5 pt-1">
+            <textarea
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
               rows={2}
+              placeholder="Optional note for the record…"
+              className="w-full resize-none rounded-xl border border-border bg-muted/30 px-3 py-2 text-xs text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-1"
+              style={{ ['--tw-ring-color']: tint(MAROON.base, 0.28) }}
+              onFocus={(e) => { e.currentTarget.style.borderColor = tint(MAROON.base, 0.35); }}
+              onBlur={(e) => { e.currentTarget.style.borderColor = ''; }}
             />
-            <div className="flex gap-2">
-              <Button size="sm" className="bg-red-800 hover:bg-red-700" onClick={() => handleAction('resolved')} disabled={busy}>
-                Resolve
-              </Button>
-              <Button size="sm" variant="outline" onClick={() => handleAction('dismissed')} disabled={busy}>
-                Dismiss
-              </Button>
+            {error && <p className="text-xs text-red-600">{error}</p>}
+            <div className="flex items-center justify-end gap-2">
+              <button
+                type="button"
+                disabled={loading !== null}
+                onClick={() => handle('dismiss')}
+                className="rounded-lg border border-border px-3.5 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:opacity-40"
+              >
+                {loading === 'dismiss' ? 'Dismissing…' : 'Dismiss'}
+              </button>
+              <button
+                type="button"
+                disabled={loading !== null}
+                onClick={() => handle('resolve')}
+                className="rounded-lg px-3.5 py-1.5 text-xs font-semibold text-white transition-opacity hover:opacity-85 disabled:opacity-40"
+                style={{ background: MAROON.gradient }}
+              >
+                {loading === 'resolve' ? 'Resolving…' : 'Resolve'}
+              </button>
             </div>
           </div>
-        ) : (
-          <div className="flex flex-wrap items-center gap-2 pt-1">
-            <Badge className={report.status === 'resolved' ? 'bg-green-100 text-green-800' : 'bg-slate-100 text-slate-800'}>
-              {report.status === 'resolved' ? 'Resolved' : 'Dismissed'}
-            </Badge>
+        )}
+
+        {!isOpen && (
+          <div className="flex flex-wrap items-start justify-between gap-3 pt-0.5">
+            {report.status === 'resolved' ? (
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-green-100 bg-green-50 px-2.5 py-1 text-[11px] font-semibold text-green-700">
+                <CheckCircle2 size={10} />
+                Resolved
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-muted px-2.5 py-1 text-[11px] font-semibold text-muted-foreground">
+                <XCircle size={10} />
+                Dismissed
+              </span>
+            )}
             {report.moderator_response && (
-              <span className="text-xs text-gray-500 dark:text-slate-400">"{report.moderator_response}"</span>
+              <p className="max-w-prose text-[11px] leading-relaxed text-muted-foreground">
+                <span className="font-medium text-foreground">Note: </span>
+                {report.moderator_response}
+              </p>
             )}
           </div>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }
+
+// ─── Main export ───
 
 export default function ModerationQueue() {
   const [reports, setReports] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [activeTab, setActiveTab] = useState('open');
 
-  function load() {
+  function loadReports() {
     setLoading(true);
     getReports()
       .then((data) => setReports(Array.isArray(data) ? data : []))
@@ -122,70 +242,60 @@ export default function ModerationQueue() {
       .finally(() => setLoading(false));
   }
 
-  useEffect(load, []);
+  useEffect(loadReports, []);
 
-  async function handleResolve(id, { status, moderatorResponse }) {
-    try {
-      const updated = await updateReportStatus(id, { status, moderatorResponse });
-      setReports((prev) => prev.map((r) => (r.id === id ? { ...r, ...updated } : r)));
-    } catch (err) {
-      if (isRedirectError(err)) throw err;
-      window.alert(err.message ?? 'Failed to update report');
-    }
+  async function updateStatus(id, status, note) {
+    const updated = await updateReportStatus(id, { status, moderatorResponse: note });
+    setReports((prev) => prev.map((r) => (r.id === id ? { ...r, ...updated } : r)));
   }
 
-  const open = reports.filter((r) => r.status === 'open');
-  const closed = reports.filter((r) => r.status !== 'open');
+  async function handleResolve(id, note) {
+    await updateStatus(id, 'resolved', note);
+  }
+
+  async function handleDismiss(id, note) {
+    await updateStatus(id, 'dismissed', note);
+  }
+
+  const openReports = useMemo(() => reports.filter((r) => r.status === 'open'), [reports]);
+  const historyReports = useMemo(() => reports.filter((r) => r.status !== 'open'), [reports]);
+  const listed = activeTab === 'open' ? openReports : historyReports;
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="mb-2 text-2xl font-bold text-red-900 dark:text-red-100 sm:text-3xl">Reports & Moderation</h1>
-        <p className="text-sm text-gray-600 dark:text-slate-400 sm:text-base">
-          Review reports submitted by members about users, messages, and photos.
+    <div className="mx-auto max-w-3xl px-4 pb-16 pt-8 sm:px-6 lg:px-8">
+      <div className="mb-7">
+        <p className="mb-1 text-[11px] font-semibold uppercase tracking-[0.22em]" style={{ color: MAROON.light }}>
+          Admin Panel
         </p>
+        <h1 className="font-serif text-3xl font-normal leading-tight tracking-tight text-foreground">Reports &amp; Moderation</h1>
       </div>
 
-      {error && (
-        <Card className="border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-950/40">
-          <CardContent className="pt-6 text-sm text-red-700 dark:text-red-300">{error}</CardContent>
-        </Card>
-      )}
+      {error && <p className="mb-4 text-sm text-red-600">{error}</p>}
+
+      <TabBar active={activeTab} onChange={setActiveTab} openCount={openReports.length} historyCount={historyReports.length} />
 
       {loading ? (
-        <p className="py-10 text-center text-sm text-gray-500">Loading reports...</p>
+        <p className="py-12 text-center text-sm text-muted-foreground">Loading reports...</p>
+      ) : listed.length === 0 ? (
+        <div className="flex h-48 flex-col items-center justify-center gap-3 rounded-2xl border border-border bg-card">
+          {activeTab === 'open' ? (
+            <>
+              <ShieldCheck size={28} className="text-muted-foreground" />
+              <p className="text-sm text-muted-foreground">No open reports — queue is clear.</p>
+            </>
+          ) : (
+            <>
+              <Clock size={28} className="text-muted-foreground" />
+              <p className="text-sm text-muted-foreground">No resolved or dismissed reports yet.</p>
+            </>
+          )}
+        </div>
       ) : (
-        <Tabs defaultValue="open" className="w-full min-w-0">
-          <TabsList className="grid h-auto w-full grid-cols-2 gap-1 sm:w-auto sm:inline-grid">
-            <TabsTrigger value="open" className="min-w-0 px-3 py-2 text-xs sm:text-sm">Open ({open.length})</TabsTrigger>
-            <TabsTrigger value="history" className="min-w-0 px-3 py-2 text-xs sm:text-sm">History ({closed.length})</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="open" className="mt-6 space-y-3">
-            {open.length === 0 ? (
-              <Card>
-                <CardContent className="flex flex-col items-center justify-center px-4 py-10 text-center">
-                  <ShieldAlert className="mb-4 h-12 w-12 text-gray-400" />
-                  <p className="text-sm text-gray-600 dark:text-slate-400">No open reports.</p>
-                </CardContent>
-              </Card>
-            ) : (
-              open.map((report) => <ReportCard key={report.id} report={report} onResolve={handleResolve} />)
-            )}
-          </TabsContent>
-
-          <TabsContent value="history" className="mt-6 space-y-3">
-            {closed.length === 0 ? (
-              <Card>
-                <CardContent className="flex flex-col items-center justify-center px-4 py-10 text-center">
-                  <p className="text-sm text-gray-600 dark:text-slate-400">No resolved reports yet.</p>
-                </CardContent>
-              </Card>
-            ) : (
-              closed.map((report) => <ReportCard key={report.id} report={report} onResolve={handleResolve} />)
-            )}
-          </TabsContent>
-        </Tabs>
+        <div className="space-y-4">
+          {listed.map((report) => (
+            <ReportCard key={report.id} report={report} onResolve={handleResolve} onDismiss={handleDismiss} />
+          ))}
+        </div>
       )}
     </div>
   );

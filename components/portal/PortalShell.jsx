@@ -6,7 +6,7 @@ import { usePathname } from 'next/navigation';
 import Image from 'next/image';
 import { useSession } from 'next-auth/react';
 import {
-  LogOut, PanelLeft, PanelLeftClose, Menu, X, Sun, Moon, ChevronLeft, ChevronRight,
+  LogOut, PanelLeft, PanelLeftClose, Menu, X, Sun, Moon, ChevronLeft, ChevronRight, Home,
 } from 'lucide-react';
 import { logoutEverywhere } from '@/lib/auth-actions';
 import { useUnreadCounts } from '@/lib/use-unread-counts';
@@ -126,6 +126,29 @@ function RevampedThemeButton({ accentColor, accentMuted, collapsed }) {
         {isDark ? 'Light mode' : 'Dark mode'}
       </span>
     </button>
+  );
+}
+
+function SidebarAvatar({ authentikId, initials, gradient, glow }) {
+  const [err, setErr] = useState(false);
+  return (
+    <div
+      className="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full text-[11px] font-semibold text-white"
+      style={{ background: gradient, boxShadow: `0 2px 10px -3px ${glow}` }}
+    >
+      {authentikId && !err ? (
+        <img
+          src={`/api/users/${authentikId}/profile-picture/media`}
+          alt=""
+          width={32}
+          height={32}
+          className="h-full w-full object-cover"
+          onError={() => setErr(true)}
+        />
+      ) : (
+        initials
+      )}
+    </div>
   );
 }
 
@@ -273,7 +296,7 @@ export default function PortalShell({
               style={{ background: `linear-gradient(90deg, ${tint(revamped.light, 0.55)}, transparent)` }}
             />
 
-            <nav className="relative flex-1 overflow-y-auto overflow-x-hidden py-3" aria-label="Main navigation">
+            <nav className="sidebar-scroll relative flex-1 overflow-y-auto overflow-x-hidden py-3" aria-label="Main navigation">
               {groups.map((group) => (
                 <div key={group.heading} className="mb-3 last:mb-0">
                   {collapsed ? (
@@ -307,17 +330,34 @@ export default function PortalShell({
 
             <div className="relative shrink-0 border-t border-border p-2">
               <div className={cn('mb-1.5 flex items-center transition-all duration-300', collapsed ? 'justify-center' : 'gap-2.5 rounded-lg border border-border/70 bg-background/50 p-2.5')}>
-                <div
-                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[11px] font-semibold text-white"
-                  style={{ background: revamped.gradient, boxShadow: `0 2px 10px -3px ${tint(revamped.light, 0.8)}` }}
-                >
-                  {initials}
-                </div>
+                <SidebarAvatar
+                  authentikId={user.authentik_id}
+                  initials={initials}
+                  gradient={revamped.gradient}
+                  glow={tint(revamped.light, 0.8)}
+                />
                 <div className={cn('min-w-0 overflow-hidden transition-all duration-300', collapsed ? 'w-0 opacity-0' : 'w-auto opacity-100')}>
                   <p className="truncate text-[12px] font-semibold leading-tight text-foreground">{displayName}</p>
                   <p className="truncate text-[10.5px] leading-tight text-muted-foreground">{profileRole}</p>
                 </div>
               </div>
+
+              <Link
+                href="/"
+                className={cn(
+                  'group flex w-full items-center rounded-lg py-[7px] text-sm font-medium text-muted-foreground transition-all duration-200 hover:text-foreground',
+                  collapsed ? 'justify-center px-0' : 'gap-3 pl-3 pr-2.5 text-left',
+                )}
+                aria-label="Back to homepage"
+                title={collapsed ? 'Back to homepage' : undefined}
+                onMouseEnter={hoverOn(revamped.light)}
+                onMouseLeave={hoverOff}
+              >
+                <span aria-hidden="true" className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md transition-all duration-200 group-hover:-translate-y-px group-hover:scale-110" style={{ background: revamped.muted }}>
+                  <Home className="h-[15px] w-[15px]" strokeWidth={1.85} />
+                </span>
+                <span className={cn('overflow-hidden whitespace-nowrap transition-all duration-300', collapsed ? 'w-0 opacity-0' : 'w-auto opacity-100')}>Back to Homepage</span>
+              </Link>
 
               <RevampedThemeButton accentColor={revamped.light} accentMuted={revamped.muted} collapsed={collapsed} />
 
@@ -361,6 +401,9 @@ export default function PortalShell({
                 <button type="button" onClick={() => setMobileNavOpen((open) => !open)} aria-label={mobileNavOpen ? 'Close menu' : 'Open menu'} aria-expanded={mobileNavOpen} className={iconBtnClass}>
                   {mobileNavOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
                 </button>
+                <Link href="/" aria-label="Back to homepage" className={iconBtnClass}>
+                  <Home className="h-4 w-4" />
+                </Link>
                 <ThemeToggle iconOnly />
                 <button type="button" onClick={() => logoutEverywhere()} aria-label="Sign out" className={iconBtnClass}>
                   <LogOut className="h-4 w-4 shrink-0" />

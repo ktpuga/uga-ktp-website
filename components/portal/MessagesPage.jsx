@@ -3,7 +3,6 @@
 import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useSession } from 'next-auth/react';
-import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
 import {
   X, ChevronLeft, Send, Paperclip, Search, Plus, Smile, Trash2, Users,
@@ -72,15 +71,28 @@ function formatFileSize(bytes) {
 // ─── Shared atoms ───
 
 function MemberAvatar({ member, size = 36, accent }) {
-  const px = `${size}px`;
+  const [err, setErr] = useState(false);
   const userId = member?.id ?? member?.authentik_id;
   return (
-    <Avatar style={{ width: px, height: px }} className="shrink-0">
-      {userId && <AvatarImage src={`/api/users/${userId}/profile-picture/media`} alt="" />}
-      <AvatarFallback className="font-semibold text-white" style={{ background: accent.gradient, fontSize: size * 0.37 }}>
-        {member ? memberInitials(member) : '?'}
-      </AvatarFallback>
-    </Avatar>
+    <div className="shrink-0 overflow-hidden rounded-full" style={{ width: size, height: size }}>
+      {userId && !err ? (
+        <img
+          src={`/api/users/${userId}/profile-picture/media`}
+          alt=""
+          width={size}
+          height={size}
+          className="h-full w-full object-cover"
+          onError={() => setErr(true)}
+        />
+      ) : (
+        <div
+          className="flex h-full w-full select-none items-center justify-center font-semibold text-white"
+          style={{ background: accent.gradient, fontSize: size * 0.37 }}
+        >
+          {member ? memberInitials(member) : '?'}
+        </div>
+      )}
+    </div>
   );
 }
 
