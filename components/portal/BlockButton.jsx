@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Ban, CircleCheck, X } from 'lucide-react';
+import { Ban, CheckCircle2, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { getBlockedUsers, blockUser, unblockUser } from '@/lib/portal-api';
 import { isRedirectError } from '@/lib/is-redirect-error';
@@ -71,7 +71,7 @@ export default function BlockButton({ userId, variant = 'outline', size = 'sm', 
         }}
         className={`gap-1.5 ${blocked ? 'text-green-700 hover:text-green-800' : 'text-red-600 hover:text-red-700'} ${className}`}
       >
-        {blocked ? <CircleCheck className="h-3.5 w-3.5" /> : <Ban className="h-3.5 w-3.5" />}
+        {blocked ? <CheckCircle2 className="h-3.5 w-3.5" /> : <Ban className="h-3.5 w-3.5" />}
         {blocked ? 'Unblock' : 'Block'}
       </Button>
 
