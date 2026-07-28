@@ -85,6 +85,7 @@ const ACCENT_BUTTON = {
   blue: 'bg-blue-800 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600',
   amber: 'bg-amber-800 hover:bg-amber-700 dark:bg-amber-700 dark:hover:bg-amber-600',
   red: 'bg-red-800 hover:bg-red-700 dark:bg-red-700 dark:hover:bg-red-600',
+  teal: 'bg-teal-800 hover:bg-teal-700 dark:bg-teal-700 dark:hover:bg-teal-600',
   onboarding: 'bg-[#2A5CCA] hover:bg-[#3570DB]',
 };
 

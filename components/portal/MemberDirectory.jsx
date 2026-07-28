@@ -133,6 +133,27 @@ function MemberProfileModal({ member, avatarClass, onClose }) {
   );
 }
 
+const THEMES = {
+  blue: {
+    heading: 'text-blue-900 dark:text-blue-100',
+    avatarClass: 'bg-blue-900 text-white dark:bg-blue-700',
+    blobA: 'from-indigo-500 via-fuchsia-500 to-cyan-400',
+    blobB: 'from-cyan-400 via-indigo-500 to-fuchsia-500',
+  },
+  amber: {
+    heading: 'text-amber-900 dark:text-amber-100',
+    avatarClass: 'bg-amber-900 text-white dark:bg-amber-700',
+    blobA: 'from-amber-400 via-orange-300 to-yellow-200',
+    blobB: 'from-yellow-200 via-amber-400 to-orange-300',
+  },
+  teal: {
+    heading: 'text-teal-900 dark:text-teal-100',
+    avatarClass: 'bg-teal-900 text-white dark:bg-teal-700',
+    blobA: 'from-teal-400 via-cyan-300 to-emerald-200',
+    blobB: 'from-emerald-200 via-teal-400 to-cyan-300',
+  },
+};
+
 export default function MemberDirectory({
   title = 'Directory',
   description = 'Browse chapter members',
@@ -143,15 +164,7 @@ export default function MemberDirectory({
   const [error, setError] = useState(null);
   const [selectedMember, setSelectedMember] = useState(null);
 
-  const isAmber = theme === 'amber';
-  const heading = isAmber ? 'text-amber-900 dark:text-amber-100' : 'text-blue-900 dark:text-blue-100';
-  const avatarClass = isAmber ? 'bg-amber-900 text-white dark:bg-amber-700' : 'bg-blue-900 text-white dark:bg-blue-700';
-  const blobA = isAmber
-    ? 'from-amber-400 via-orange-300 to-yellow-200'
-    : 'from-indigo-500 via-fuchsia-500 to-cyan-400';
-  const blobB = isAmber
-    ? 'from-yellow-200 via-amber-400 to-orange-300'
-    : 'from-cyan-400 via-indigo-500 to-fuchsia-500';
+  const { heading, avatarClass, blobA, blobB } = THEMES[theme] ?? THEMES.blue;
 
   useEffect(() => {
     getMemberDirectory()

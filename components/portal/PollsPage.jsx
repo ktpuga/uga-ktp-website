@@ -27,6 +27,7 @@ const ACCENTS = {
   blue: { heading: 'text-blue-900 dark:text-blue-100', button: 'bg-blue-800 hover:bg-blue-700' },
   amber: { heading: 'text-amber-900 dark:text-amber-100', button: 'bg-amber-800 hover:bg-amber-700' },
   red: { heading: 'text-red-900 dark:text-red-100', button: 'bg-red-800 hover:bg-red-700' },
+  teal: { heading: 'text-teal-900 dark:text-teal-100', button: 'bg-teal-800 hover:bg-teal-700' },
 };
 
 const EMPTY_FORM = { question: '', description: '', options: ['', ''], multiSelect: false, audience: [], committeeId: '', expiresAt: '' };

@@ -64,6 +64,36 @@ function resolveWelcomeName(session, members) {
   return memberWelcomeName(currentMember) ?? sessionWelcomeName(session);
 }
 
+const THEMES = {
+  blue: {
+    heading: 'text-blue-900 dark:text-blue-100',
+    icon: 'text-blue-800 dark:text-blue-300',
+    statHover: 'hover:shadow-indigo-200/50 dark:hover:shadow-indigo-900/30',
+    eventHover: 'hover:border-blue-200 hover:bg-blue-50/50 dark:hover:border-blue-800 dark:hover:bg-blue-950/30',
+    eventBadge: 'bg-blue-100 text-blue-900 dark:bg-[#22252b] dark:text-blue-100',
+    blobA: 'from-indigo-500 via-fuchsia-500 to-cyan-400',
+    blobB: 'from-cyan-400 via-indigo-500 to-fuchsia-500',
+  },
+  amber: {
+    heading: 'text-amber-900 dark:text-amber-100',
+    icon: 'text-amber-800 dark:text-amber-300',
+    statHover: 'hover:shadow-amber-200/50 dark:hover:shadow-amber-900/30',
+    eventHover: 'hover:border-amber-200 hover:bg-amber-50/50 dark:hover:border-amber-800 dark:hover:bg-amber-950/30',
+    eventBadge: 'bg-amber-100 text-amber-900 dark:bg-[#22252b] dark:text-amber-100',
+    blobA: 'from-amber-400 via-orange-300 to-yellow-200',
+    blobB: 'from-yellow-200 via-amber-400 to-orange-300',
+  },
+  teal: {
+    heading: 'text-teal-900 dark:text-teal-100',
+    icon: 'text-teal-800 dark:text-teal-300',
+    statHover: 'hover:shadow-teal-200/50 dark:hover:shadow-teal-900/30',
+    eventHover: 'hover:border-teal-200 hover:bg-teal-50/50 dark:hover:border-teal-800 dark:hover:bg-teal-950/30',
+    eventBadge: 'bg-teal-100 text-teal-900 dark:bg-[#22252b] dark:text-teal-100',
+    blobA: 'from-teal-400 via-cyan-300 to-emerald-200',
+    blobB: 'from-emerald-200 via-teal-400 to-cyan-300',
+  },
+};
+
 export default function PortalDashboard({
   welcomeSubtitle,
   memberGroupLabel,
@@ -79,20 +109,8 @@ export default function PortalDashboard({
   const [error, setError] = useState(null);
   const { data: session } = useSession();
 
-  const isAmber = theme === 'amber';
-  const heading = isAmber ? 'text-amber-900 dark:text-amber-100' : 'text-blue-900 dark:text-blue-100';
-  const icon = isAmber ? 'text-amber-800 dark:text-amber-300' : 'text-blue-800 dark:text-blue-300';
-  const statHover = isAmber ? 'hover:shadow-amber-200/50 dark:hover:shadow-amber-900/30' : 'hover:shadow-indigo-200/50 dark:hover:shadow-indigo-900/30';
-  const eventHover = isAmber
-    ? 'hover:border-amber-200 hover:bg-amber-50/50 dark:hover:border-amber-800 dark:hover:bg-amber-950/30'
-    : 'hover:border-blue-200 hover:bg-blue-50/50 dark:hover:border-blue-800 dark:hover:bg-blue-950/30';
-  const eventBadge = isAmber ? 'bg-amber-100 text-amber-900 dark:bg-[#22252b] dark:text-amber-100' : 'bg-blue-100 text-blue-900 dark:bg-[#22252b] dark:text-blue-100';
-  const blobA = isAmber
-    ? 'from-amber-400 via-orange-300 to-yellow-200'
-    : 'from-indigo-500 via-fuchsia-500 to-cyan-400';
-  const blobB = isAmber
-    ? 'from-yellow-200 via-amber-400 to-orange-300'
-    : 'from-cyan-400 via-indigo-500 to-fuchsia-500';
+  const t = THEMES[theme] ?? THEMES.blue;
+  const { heading, icon, statHover, eventHover, eventBadge, blobA, blobB } = t;
 
   useEffect(() => {
     Promise.all([

@@ -28,6 +28,11 @@ const ACCENTS = {
     header: 'from-red-900/5',
     active: 'bg-red-50 text-red-900 dark:bg-[#22252b] dark:text-red-100',
   },
+  teal: {
+    title: 'text-teal-900 dark:text-teal-100',
+    header: 'from-teal-900/5',
+    active: 'bg-teal-50 text-teal-900 dark:bg-[#22252b] dark:text-teal-100',
+  },
 };
 
 const iconBtnClass =

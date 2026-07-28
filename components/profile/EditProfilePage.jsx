@@ -15,6 +15,7 @@ const ACCENT_HEADING = {
   blue: 'text-blue-900 dark:text-blue-100',
   amber: 'text-amber-900 dark:text-amber-100',
   red: 'text-red-900 dark:text-red-100',
+  teal: 'text-teal-900 dark:text-teal-100',
 };
 
 function BlockedUsersCard() {

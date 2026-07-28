@@ -1,10 +1,15 @@
-export const metadata = { title: "Pledge Portal — KTP" }
+'use client';
+
+import PortalDashboard from '@/components/portal/PortalDashboard';
 
 export default function PledgeDashboard() {
   return (
-    <div>
-      <h1 className="text-2xl font-bold text-slate-900 mb-2">Welcome, Pledge</h1>
-      <p className="text-slate-500">Your pledge portal is coming soon.</p>
-    </div>
-  )
+    <PortalDashboard
+      welcomeSubtitle="Here's what's happening during your pledge semester"
+      memberGroupLabel="Chapter Members"
+      calendarHref="/pledge/calendar"
+      filesHref="/pledge/files"
+      theme="teal"
+    />
+  );
 }
