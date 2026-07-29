@@ -234,7 +234,7 @@ function RevampedEditProfilePage({ accentKey, portalLabel }) {
     <div className="mx-auto max-w-2xl px-4 pb-16 pt-8 sm:px-6">
       <div className="mb-8">
         <p className="mb-1 text-[11px] font-semibold uppercase tracking-[0.22em]" style={{ color: accent.light }}>
-          Alpha Iota Chapter
+          UGA Phi Chapter
         </p>
         <h1 className="font-serif text-3xl font-normal leading-tight tracking-tight text-foreground">Settings</h1>
       </div>

@@ -5,7 +5,7 @@ import PortalDashboard from '@/components/portal/PortalDashboard';
 export default function MemberDashboard() {
   return (
     <PortalDashboard
-      welcomeSubtitle="Here's what's happening in KTP Georgia"
+      welcomeSubtitle="Here's what's happening in KTP Phi Chapter"
       memberGroupLabel="Active Members"
       calendarHref="/member/calendar"
       filesHref="/member/files"
