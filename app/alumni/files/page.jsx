@@ -7,6 +7,7 @@ export default function AlumniFiles() {
     <PhotoFiles
       title="Files & Photos"
       description="Browse chapter photos and shared memories"
+      accent="amber"
     />
   );
 }

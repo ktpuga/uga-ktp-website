@@ -24,11 +24,25 @@ import { isRedirectError } from '@/lib/is-redirect-error';
 import ReportButton from './ReportButton';
 import BlockButton from './BlockButton';
 
-const BLUE_ACCENT = {
-  base: '#1e3a8a',
-  gradient: 'linear-gradient(135deg, #1e3a8a 0%, #1d4ed8 100%)',
-  light: '#1d4ed8',
-  muted: 'rgba(30,58,138,0.10)',
+const ACCENT_THEMES = {
+  blue: {
+    base: '#1e3a8a',
+    gradient: 'linear-gradient(135deg, #1e3a8a 0%, #1d4ed8 100%)',
+    light: '#1d4ed8',
+    muted: 'rgba(30,58,138,0.10)',
+  },
+  amber: {
+    base: '#b45309',
+    gradient: 'linear-gradient(135deg, #b45309 0%, #d97706 100%)',
+    light: '#d97706',
+    muted: 'rgba(180,83,9,0.10)',
+  },
+  teal: {
+    base: '#134e4a',
+    gradient: 'linear-gradient(135deg, #134e4a 0%, #0f766e 100%)',
+    light: '#0f766e',
+    muted: 'rgba(19,78,74,0.10)',
+  },
 };
 
 const GROUP_ORDER = ['eboard', 'chair', 'active', 'pledge', 'alumni'];
@@ -575,8 +589,8 @@ function DirectoryHeader({ title, description, accent }) {
   );
 }
 
-function RevampedMemberDirectory({ title, description }) {
-  const accent = BLUE_ACCENT;
+function RevampedMemberDirectory({ title, description, theme }) {
+  const accent = ACCENT_THEMES[theme] ?? ACCENT_THEMES.blue;
   const [members, setMembers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -701,9 +715,11 @@ function RevampedMemberDirectory({ title, description }) {
   );
 }
 
+const REVAMPED_KEYS = new Set(['blue', 'amber', 'teal']);
+
 export default function MemberDirectory({ title = 'Directory', description = 'Browse chapter members', theme = 'blue' }) {
-  if (theme === 'blue') {
-    return <RevampedMemberDirectory title={title} description={description} />;
+  if (REVAMPED_KEYS.has(theme)) {
+    return <RevampedMemberDirectory title={title} description={description} theme={theme} />;
   }
   return <LegacyMemberDirectory title={title} description={description} theme={theme} />;
 }

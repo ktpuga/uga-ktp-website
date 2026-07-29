@@ -7,6 +7,7 @@ export default function PledgeCalendar() {
     <EventsCalendar
       title="Calendar"
       description="Upcoming chapter events and meetings"
+      accent="teal"
     />
   );
 }

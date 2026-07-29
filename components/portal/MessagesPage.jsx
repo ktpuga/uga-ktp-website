@@ -29,6 +29,8 @@ import LegacyMessagesPage from './LegacyMessagesPage';
 const ACCENT_THEMES = {
   blue: { base: '#1e3a8a', gradient: 'linear-gradient(135deg, #1e3a8a 0%, #1d4ed8 100%)', light: '#1d4ed8', muted: 'rgba(30,58,138,0.10)' },
   red: { base: '#7f1d1d', gradient: 'linear-gradient(135deg, #7f1d1d 0%, #991b1b 100%)', light: '#991b1b', muted: 'rgba(127,29,29,0.10)' },
+  amber: { base: '#b45309', gradient: 'linear-gradient(135deg, #b45309 0%, #d97706 100%)', light: '#d97706', muted: 'rgba(180,83,9,0.10)' },
+  teal: { base: '#134e4a', gradient: 'linear-gradient(135deg, #134e4a 0%, #0f766e 100%)', light: '#0f766e', muted: 'rgba(19,78,74,0.10)' },
 };
 
 const QUICK_EMOJI = ['👍', '❤️', '😂', '😮', '😢', '🎉', '🙏', '🔥'];
@@ -1526,8 +1528,10 @@ function RevampedMessagesContent({ accentKey }) {
   );
 }
 
+const REVAMPED_KEYS = new Set(['blue', 'red', 'amber', 'teal']);
+
 export default function MessagesPage({ accent }) {
-  if (accent !== 'blue' && accent !== 'red') {
+  if (!REVAMPED_KEYS.has(accent)) {
     return <LegacyMessagesPage />;
   }
   return (

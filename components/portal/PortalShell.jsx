@@ -40,9 +40,8 @@ const ACCENTS = {
   },
 };
 
-// Revamped visual treatment — currently only designed for the Member (blue)
-// and Admin (red) portals. Alumni/pledge keep the plain ACCENTS rendering
-// above until they get their own pass.
+// Any accent with an entry here renders the revamped sidebar. It must have a
+// matching NAV_GROUPING key below, or the sidebar renders with zero nav items.
 const REVAMPED_ACCENTS = {
   blue: {
     gradient: 'linear-gradient(135deg, #1e3a8a 0%, #1d4ed8 100%)',
@@ -54,7 +53,19 @@ const REVAMPED_ACCENTS = {
     light: '#991b1b',
     muted: 'rgba(127,29,29,0.10)',
   },
+  amber: {
+    gradient: 'linear-gradient(135deg, #b45309 0%, #d97706 100%)',
+    light: '#d97706',
+    muted: 'rgba(180,83,9,0.10)',
+  },
+  teal: {
+    gradient: 'linear-gradient(135deg, #134e4a 0%, #0f766e 100%)',
+    light: '#0f766e',
+    muted: 'rgba(19,78,74,0.10)',
+  },
 };
+
+const PORTAL_ROOT = { blue: '/member', red: '/admin', amber: '/alumni', teal: '/pledge' };
 
 // Groups the flat `nav` prop (owned by each portal's layout.jsx, unchanged)
 // into labelled sections for the revamped sidebar, by href. Keep in sync if
@@ -72,6 +83,18 @@ const NAV_GROUPING = {
     { heading: 'Moderation', hrefs: ['/admin/reports', '/admin/users'] },
     { heading: 'Content', hrefs: ['/admin/files', '/admin/homepage-photos', '/admin/ios-homepage-slideshow'] },
     { heading: 'Account', hrefs: ['/admin/settings'] },
+  ],
+  amber: [
+    { heading: 'Main', hrefs: ['/alumni', '/alumni/calendar'] },
+    { heading: 'Community', hrefs: ['/alumni/directory', '/alumni/committees', '/alumni/polls'] },
+    { heading: 'Resources', hrefs: ['/alumni/files', '/alumni/messages'] },
+    { heading: 'Account', hrefs: ['/alumni/settings'] },
+  ],
+  teal: [
+    { heading: 'Main', hrefs: ['/pledge', '/pledge/calendar'] },
+    { heading: 'Community', hrefs: ['/pledge/directory', '/pledge/polls'] },
+    { heading: 'Resources', hrefs: ['/pledge/files', '/pledge/messages'] },
+    { heading: 'Account', hrefs: ['/pledge/settings'] },
   ],
 };
 
@@ -284,7 +307,7 @@ export default function PortalShell({
             />
 
             <div className={cn('relative flex h-[70px] shrink-0 items-center', collapsed ? 'justify-center px-0' : 'px-4')}>
-              <Link href={accent === 'red' ? '/admin' : '/member'} className="flex shrink-0 items-center" title={collapsed ? portalName : undefined}>
+              <Link href={PORTAL_ROOT[accent] ?? '/member'} className="flex shrink-0 items-center" title={collapsed ? portalName : undefined}>
                 <Image src="/KTP PHI CHAPTER.svg" alt="KTP" width={36} height={36} className="h-8 w-auto" />
               </Link>
               <div className={cn('ml-3 overflow-hidden transition-all duration-300', collapsed ? 'w-0 opacity-0' : 'w-40 opacity-100')}>
@@ -398,7 +421,7 @@ export default function PortalShell({
           {/* Mobile header + dropdown — same interaction as the plain variant, simplified styling */}
           <div className="flex min-w-0 flex-1 flex-col">
             <div className={cn('sticky top-0 z-30 flex h-14 items-center justify-between gap-3 border-b border-border bg-card px-4 md:hidden')}>
-              <Link href={accent === 'red' ? '/admin' : '/member'} className="flex items-center gap-2">
+              <Link href={PORTAL_ROOT[accent] ?? '/member'} className="flex items-center gap-2">
                 <Image src="/KTP PHI CHAPTER.svg" alt="KTP" width={28} height={28} className="h-7 w-auto" />
                 <span className="text-sm font-semibold text-foreground">{portalName}</span>
               </Link>

@@ -1,5 +1,5 @@
 import MessagesPage from '@/components/portal/MessagesPage';
 
 export default function PledgeMessagesPage() {
-  return <MessagesPage />;
+  return <MessagesPage accent="teal" />;
 }
