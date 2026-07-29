@@ -7,6 +7,7 @@ export default function MemberFiles() {
     <PhotoFiles
       title="Files & Photos"
       description="Browse chapter photos"
+      accent="blue"
     />
   );
 }
