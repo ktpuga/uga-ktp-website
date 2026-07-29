@@ -67,9 +67,14 @@ function ProfilePictureField({ authentikId, variant }) {
       <div>
         <label className={`inline-block cursor-pointer text-sm font-medium underline ${labelClass}`}>
           {uploading ? 'Uploading...' : 'Change photo'}
+          {/* Keep in sync with PROFILE_PICTURE_MIMETYPES in ktp-api's
+              middleware/upload.js. iOS reports HEIC inconsistently (sometimes
+              with an empty type), so `image/*` is the fallback that keeps the
+              picker from greying out a member's own camera roll — the API
+              re-validates the real content either way. */}
           <input
             type="file"
-            accept="image/jpeg,image/png,image/webp"
+            accept="image/jpeg,image/png,image/webp,image/heic,image/heif,image/avif,image/gif,image/tiff,image/*"
             onChange={handleFileChange}
             disabled={uploading}
             className="hidden"

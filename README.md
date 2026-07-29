@@ -1,38 +1,226 @@
-This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# uga-ktp-website
 
-## Getting Started
+The public marketing site **and** the member portal for Kappa Theta Pi, Phi Chapter at UGA. Next.js 15 (App Router), Tailwind v4, NextAuth v5 against Authentik SSO, with Sanity powering the blog.
 
-First, run the development server:
+**Production:** [ugaktp.com](https://ugaktp.com)
+
+This repo is the frontend only. All chapter data lives behind [`ktp-api`](https://github.com/ktpuga/ktp-api); this app never talks to PostgreSQL or Immich directly.
+
+---
+
+## How it fits together
+
+| Piece | Role |
+|---|---|
+| **This app** | Public pages + four authenticated portals. Holds no chapter data of its own |
+| **Authentik** (`auth.ugaktp.com`) | Login, passwords, and group membership. NextAuth stores the resulting access token server-side only |
+| **ktp-api** (`api2.ugaktp.com`) | Every read/write of real chapter data. Called from server actions in `lib/portal-api.js` |
+| **Sanity** | Blog content only (`/blog`, `/studio`). Unrelated to the portal |
+
+Media never reaches the browser from Immich directly. Routes under `app/api/**/media` proxy each file server-side so the Immich API key stays on the server — see [Media proxying](#media-proxying).
+
+---
+
+## Getting started
 
 ```bash
+npm install
+cp .env.example .env    # then fill it in — see the notes inside
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000) and sign in with a real Authentik account. `localhost:3000` is already registered as a redirect URI on the `ktpapp` provider, so no Authentik change is needed.
 
-You can start editing the page by modifying `app/page.js`. The page auto-updates as you edit the file.
+You need a real account in a real group to see anything past the login screen — there is no mock/offline mode. If the local database is in a bad state, ask Infrastructure rather than editing it directly.
 
-This project uses [`next/font`](https://nextjs.org/docs/basic-features/font-optimization) to automatically optimize and load Inter, a custom Google Font.
+| Script | Does |
+|---|---|
+| `npm run dev` | Dev server |
+| `npm run build` | Production build. Runs `next-sitemap` afterwards |
+| `npm start` | Serves an existing build |
 
-## Learn More
+> **After any `npm run build`:** `next-sitemap`'s postbuild step rewrites `public/robots.txt`, `public/sitemap.xml`, and `public/sitemap-0.xml` every time. Those edits are never an intended part of a diff — revert them with
+> `git checkout -- public/robots.txt public/sitemap-0.xml public/sitemap.xml`.
 
-To learn more about Next.js, take a look at the following resources:
+---
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Routes
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js/) - your feedback and contributions are welcome!
+### Public
 
-## Deploy on Vercel
+| Path | Page |
+|---|---|
+| `/` | Homepage |
+| `/rush` | Rush info and schedule |
+| `/members-list` | Public "meet the chapter" roster |
+| `/blog`, `/blog/[slug]` | Sanity-backed blog |
+| `/studio` | Embedded Sanity Studio |
+| `/sponsorship`, `/hackathon`, `/links` | Standalone marketing pages |
+| `/privacy`, `/code-of-conduct`, `/community-guidelines` | Policy pages (required for App Store review) |
+| `/login` | SSO entry point |
+| `/checkin/[eventId]/[token]` | QR attendance check-in landing page |
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+`/members-list` reads the public `GET /roster` endpoint, which deliberately exposes far less than the authenticated directory — no email, phone, major, or pledge class. It also excludes pledges, test accounts, and anyone without a profile picture.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/deployment) for more details.
+### Portals
 
-Update\*\*
+Four portals, one per Authentik group. `/admin` is eboard; `/member` covers both `chair` and `active`.
+
+| | `/member` | `/admin` | `/alumni` | `/pledge` |
+|---|---|---|---|---|
+| Accent | blue | maroon | amber | teal |
+| Dashboard | ● | analytics | ● | ● |
+| Calendar | ● | ● | ● | ● |
+| Directory | ● | — | ● | ● |
+| Committees | ● | ● | ● | — |
+| Polls | ● | ● | ● | ● |
+| Files & Photos | ● | ● | ● | ● |
+| Messages | ● | ● | ● | ● |
+| Attendance | chair only | ● | — | — |
+| Settings | ● | ● | ● | ● |
+
+Admin additionally has Announcements, Reports, User Management, Homepage Photos, and iOS Homepage Slideshow.
+
+Pledges have no Committees tab by design — it isn't hidden with CSS, the route doesn't exist.
+
+---
+
+## Auth and route protection
+
+`middleware.ts` runs on every portal path and enforces, in order:
+
+1. **Not signed in, or a token refresh failed** → `/login`. The refresh-failure check matters: without it the page loads and then dies on the first API call with a dead token.
+2. **`profile_complete === false`** → `/complete-profile`, before anything else.
+3. **Portal boundaries** — each group only reaches its own portal. Wrong-portal requests redirect to `homePortal(groups)` rather than 403ing.
+
+`auth.ts` handles the OIDC session and owns two things worth knowing about:
+
+- **Token refresh.** Authentik access tokens are short-lived. `auth.ts` captures `refresh_token`/`expires_at` (via the `offline_access` scope) and renews automatically. A failed refresh sets `session.error`, which the middleware above treats as signed-out.
+- **Concurrent-refresh de-duplication.** Dashboard pages fire several server actions in parallel, each of which could independently decide to refresh at the same instant — and Authentik rotates refresh tokens on use, so whichever request lands first invalidates the others. An in-flight `Map` collapses concurrent refreshes for the same token into one request. This is safe only because dev and production both run a single Node process.
+
+The access token is available exclusively in server-side code as `session.access_token`. It is never sent to the browser.
+
+**Signing out** must go through `logoutEverywhere()` in `lib/auth-actions.js`, not NextAuth's `signOut()`. `signOut()` alone clears this app's cookie but leaves the Authentik SSO session intact, so the next login silently re-authenticates as the same person. `logoutEverywhere()` performs a full RP-initiated logout against Authentik's end-session endpoint.
+
+---
+
+## Talking to ktp-api
+
+All API access goes through **server actions** in `lib/portal-api.js`. Client components import and call those; they never `fetch` ktp-api themselves, because the access token isn't available to them.
+
+```js
+'use server'
+import { apiRequest } from '@/lib/portal-api'
+
+export async function getCommittees() {
+  return apiRequest('/committees')
+}
+```
+
+`apiRequest()` attaches the bearer token and, on a 401, calls `redirect('/login')`.
+
+> **`redirect()` throws on purpose.** Next.js implements `redirect()` by throwing a `NEXT_REDIRECT` signal that must propagate uncaught for navigation to happen. A `try/catch` around a server action will swallow it and render the literal string `"NEXT_REDIRECT"` as an error message. Every catch block around a server action must re-throw it:
+>
+> ```js
+> import { isRedirectError } from '@/lib/is-redirect-error'
+>
+> try {
+>   await someServerAction()
+> } catch (err) {
+>   if (isRedirectError(err)) throw err
+>   setError(err.message)
+> }
+> ```
+>
+> This bug has been fixed across ~10 files already. Don't reintroduce it.
+
+**After mutating data that the session caches** (notably `profile_complete`), call `update()` from `useSession()` so the session reflects the new state before you navigate.
+
+### Media proxying
+
+Anything stored in Immich is served through a Next.js route under `app/api/`, which forwards to ktp-api server-side:
+
+| Route | Backs |
+|---|---|
+| `/api/photos/[id]/media` | Shared album photos |
+| `/api/users/[id]/profile-picture/media` | Profile pictures |
+| `/api/roster/[id]/media` | Public roster photos |
+| `/api/homepage-photos/[id]/media` | Public homepage gallery |
+| `/api/group-chats/[id]/photo/media` | Group chat avatars |
+| `/api/messages/[messageId]/attachment` | DM attachments |
+| `/api/documents/[id]/download`, `/preview` | Document library |
+
+Point `<img src>` at these, never at ktp-api or Immich directly.
+
+---
+
+## Project layout
+
+```
+app/
+  (public pages)/        homepage, rush, blog, policies, members-list
+  member|admin|alumni|pledge/   the four portals — each has its own layout.jsx + NAV
+  api/                   media proxy routes + NextAuth handler
+components/
+  portal/                shared portal UI (PortalShell, dashboards, calendar, messages…)
+  profile/               settings + the shared ProfileForm
+  admin/, analytics/     admin-only surfaces
+  ui/                    shadcn-style primitives
+lib/
+  portal-api.js          every ktp-api server action
+  auth-actions.js        logoutEverywhere()
+  portal-format.js       shared name/group/date formatting
+  is-redirect-error.js   the NEXT_REDIRECT guard described above
+sanity/                  blog schema + client
+middleware.ts            portal access control
+auth.ts                  NextAuth config, token refresh
+```
+
+### Portal components are shared across all four portals
+
+Nearly everything under `components/portal/` is one component rendered by all four portals, switched by an `accent` (or `theme`) prop — `blue`, `red`, `amber`, `teal`. Editing one of these files changes every portal at once. See [`components/README.md`](components/README.md) before adding anything portal-specific.
+
+Two conventions that will silently break a portal if missed:
+
+1. **Adding a nav item takes two edits** — the portal's own `NAV` array in `app/<portal>/layout.jsx`, *and* `NAV_GROUPING` in `components/portal/PortalShell.jsx`. The sidebar only renders hrefs present in `NAV_GROUPING`; miss the second edit and the item silently doesn't appear even though the route works.
+2. **Adding a new accent takes two edits too** — `REVAMPED_ACCENTS` *and* `NAV_GROUPING` in `PortalShell.jsx`. `REVAMPED_ACCENTS` alone flips the portal onto the styled sidebar, and a missing `NAV_GROUPING` key then renders a completely empty sidebar rather than falling back.
+
+Also note that several components take an `accent` prop with **no default value**. Omitting it doesn't error — it quietly renders the older unstyled variant. If a page looks unexpectedly plain, check that its wrapper passes an accent.
+
+### Profile pictures
+
+Use a plain `<img>` with an `onError` fallback to initials, which is the established pattern throughout the portal. Prefer it over shadcn's Radix `Avatar` — Radix's `AvatarFallback` has a real-world quirk where it can stay visible even after the image loads, which produced an initials-only-avatars bug more than once here.
+
+---
+
+## Environment variables
+
+See `.env.example` for the authoritative list and per-variable notes. Summary:
+
+| Variable | Notes |
+|---|---|
+| `AUTHENTIK_CLIENT_ID` / `AUTHENTIK_CLIENT_SECRET` | From the `ktpapp` OIDC provider. Same values locally and in production |
+| `AUTHENTIK_ISSUER` | `https://auth.ugaktp.com/application/o/ktpapp/` |
+| `AUTH_SECRET` | Generate your own locally (`openssl rand -base64 32`). Never reuse production's |
+| `AUTH_URL` | `http://localhost:3000` locally, `https://ugaktp.com` in production |
+| `AUTH_TRUST_HOST` | Required in production only — Traefik proxies the request, so NextAuth can't infer the host |
+| `API_URL` | `https://api2.ugaktp.com` locally; `http://10.0.0.53:4000` on the server (direct LAN, skips Traefik) |
+| `NEXT_PUBLIC_SANITY_PROJECT_ID` / `_DATASET` / `_API_VERSION` | Blog only. Baked in at build time as Docker build args |
+
+---
+
+## Deployment
+
+Runs in Docker on **LXC 116**; Traefik on LXC 100 routes `ugaktp.com` to it. Pushing to `main` triggers a self-hosted GitHub Actions runner (`.github/workflows/deploy.yml`) which rebuilds the container and posts the result to Discord.
+
+`next.config.js` carries two non-obvious settings, both load-bearing:
+
+- **`output: 'standalone'`** — required for the Docker image.
+- **`experimental.serverActions.bodySizeLimit: '250mb'`** — Server Actions default to a 1MB request body regardless of what ktp-api's multer limits allow. Every upload in this app goes through a server action, so without this every real photo upload is rejected by Next.js before ktp-api ever sees it.
+
+The Dockerfile sets `NODE_OPTIONS=--max-old-space-size=3072`. LXC 116 has 4GB of RAM, and the static-generation phase (heavy partly because Sanity Studio is bundled into a route) gets OOM-killed without a heap cap. Don't remove it without also giving the container more memory.
+
+### Local build troubleshooting
+
+- **Stale `.next` cache** causes a broad class of bizarre, unreproducible errors. Delete `.next` and rebuild before investigating anything strange.
+- **Stop the dev server before `npm run build`** — both write to `.next` and will interfere.

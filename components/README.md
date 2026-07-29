@@ -1,1 +1,58 @@
-These Component Pages are used across all 3 directories, meaning if you change one file it changes for all 3 groups, for the most part this is fine, but if we are making rush specific elements or elements that include sensitive information that only admins should have access to please make sure that you create the component within the specified fo
+# components/
+
+Most of what's in here is shared by **all four portals** — `/member`, `/admin`, `/alumni`, and `/pledge`. Editing one of these files changes the experience for every group at once. That's usually what you want; it's also the easiest way to break three portals while testing one.
+
+## Where to put a new component
+
+| It is… | Put it in |
+|---|---|
+| Used by more than one portal | `portal/` |
+| Settings / profile editing | `profile/` |
+| Admin-only (moderation, user management, homepage content) | `admin/` |
+| Admin dashboard charts | `analytics/` |
+| A generic primitive (button, card, avatar, tabs) | `ui/` |
+| Public marketing site only | top level, next to `template-page.jsx` |
+
+**Anything eboard-only belongs in `admin/`, not `portal/`.** Don't put a privileged surface in a shared component and hide it behind a role check — a shared file is one careless prop away from rendering for everyone. The same goes for rush-specific or otherwise audience-specific UI: give it its own file rather than branching inside a shared one.
+
+## Theming: the `accent` prop
+
+Shared portal components take an `accent` (sometimes `theme`) prop and look up their colors from a local `ACCENT_THEMES` map:
+
+| Value | Portal |
+|---|---|
+| `blue` | Member |
+| `red` | Admin |
+| `amber` | Alumni |
+| `teal` | Pledge |
+
+Two things to know before touching this:
+
+**Several of these components have no default accent value.** Omitting the prop doesn't throw — it silently renders the older, unstyled variant. If a page looks unexpectedly plain, check that its `page.jsx` wrapper actually passes an accent before assuming the component is broken.
+
+**Adding a new accent requires editing `PortalShell.jsx` in two places** — `REVAMPED_ACCENTS` *and* `NAV_GROUPING`. `REVAMPED_ACCENTS` alone is what switches a portal onto the styled sidebar; if `NAV_GROUPING` has no matching key, the sidebar then renders with zero nav items. That's an empty sidebar, not a graceful fallback.
+
+## Adding a nav item
+
+Also two edits, for the same reason:
+
+1. The `NAV` array in that portal's `app/<portal>/layout.jsx`
+2. `NAV_GROUPING` in `portal/PortalShell.jsx`
+
+The sidebar only renders hrefs listed in `NAV_GROUPING`. Miss step 2 and the item never appears, even though the route and layout are both correct.
+
+## Profile pictures
+
+Use a plain `<img>` with an `onError` handler falling back to initials. Prefer this over `ui/avatar.jsx`'s Radix-based `Avatar` — Radix's `AvatarFallback` can stay visible even after the image successfully loads, which has caused initials-only-avatar bugs here more than once.
+
+`ui/card.jsx`'s `ProfileCard` is shared by the roster, sponsorship page, alumni section, and homepage. It takes `avatarShape="square"` to opt into a rounded square instead of the default circle — only the roster uses that today.
+
+## Embed real components, don't reinvent them
+
+`ReportButton`, `BlockButton`, and `ProfileActionsMenu` each own their modal/popover state internally. Mount them directly; they need little more than an id and a content type. Don't wrap them in a parent-owned `onReport`/`onBlock` callback — designs generated from mockups tend to assume that shape, and rewiring to it just adds state for no benefit.
+
+The same applies to `profile/ProfileForm.jsx`, which is shared with the onboarding flow. Embed it as-is rather than rebuilding its fields.
+
+## `Legacy*` files
+
+Files named `Legacy<Something>.jsx` are pre-redesign copies kept behind an accent check during the portal revamp. Every portal now renders the current design, so these are unreachable. They're retained deliberately — don't wire anything new to them, and don't spend time updating them.
