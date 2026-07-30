@@ -1,19 +1,12 @@
 import { auth } from "@/auth"
 import { NextResponse } from "next/server"
+import { homePortal } from "@/lib/home-portal"
 
 // Returns the home portal path for a user based on their Authentik groups.
 // Used to redirect users who try to access a portal they don't belong to.
-// Order matters: someone accepted from rush into a pledge class keeps the rush
-// group in Authentik until it's removed, so the higher-privilege portal has to
-// win. Rush is checked last for exactly that reason.
-function homePortal(groups: string[]): string {
-  if (groups.includes("eboard")) return "/admin"
-  if (groups.includes("chair") || groups.includes("active")) return "/member"
-  if (groups.includes("alumni")) return "/alumni"
-  if (groups.includes("pledge")) return "/pledge"
-  if (groups.includes("rush")) return "/rushee"
-  return "/"
-}
+// Shared with app/auth/redirect/page.jsx. Deliberately NOT redefined here —
+// the two copies have drifted apart twice, and both times it presented as
+// "login is broken". See lib/home-portal.js.
 
 export default auth((req) => {
   // Not logged in, or a token refresh already failed (see auth.ts) — send to
