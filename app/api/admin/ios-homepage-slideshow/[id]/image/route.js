@@ -1,5 +1,9 @@
 import { proxyAdminApi, requireEboardAccess } from '@/lib/admin-proxy';
-// iOS homepage slideshow API proxy.
+// iOS homepage slideshow API proxy — image replacement.
+//
+// Separate from the sibling [id] route because this one is multipart: it swaps
+// the picture on an existing slide while its metadata, schedule and position
+// stay put. Body carries `file` plus optional focal_x/focal_y, same as create.
 
 async function asJsonResponse(response) {
   if (!(response instanceof Response)) return response;
@@ -10,25 +14,15 @@ async function asJsonResponse(response) {
   return Response.json(payload);
 }
 
-export async function GET() {
+export async function PUT(request, { params }) {
   const access = await requireEboardAccess();
   if (!access.ok) return access.response;
 
-  // The manager needs inactive/scheduled/expired slides too — without this it
-  // only ever sees what's live right now, so a deactivated slide vanishes from
-  // the one screen that could reactivate it. The API gates this on eboard.
-  const response = await proxyAdminApi('/ios-homepage-photos?include_hidden=true', { accessToken: access.accessToken });
-  return asJsonResponse(response);
-}
-
-export async function POST(request) {
-  const access = await requireEboardAccess();
-  if (!access.ok) return access.response;
-
+  const { id } = await params;
   const formData = await request.formData();
-  const response = await proxyAdminApi('/ios-homepage-photos', {
+  const response = await proxyAdminApi(`/ios-homepage-photos/${id}/image`, {
     accessToken: access.accessToken,
-    method: 'POST',
+    method: 'PUT',
     body: formData,
   });
 
