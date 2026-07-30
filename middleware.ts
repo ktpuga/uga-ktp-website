@@ -3,11 +3,15 @@ import { NextResponse } from "next/server"
 
 // Returns the home portal path for a user based on their Authentik groups.
 // Used to redirect users who try to access a portal they don't belong to.
+// Order matters: someone accepted from rush into a pledge class keeps the rush
+// group in Authentik until it's removed, so the higher-privilege portal has to
+// win. Rush is checked last for exactly that reason.
 function homePortal(groups: string[]): string {
   if (groups.includes("eboard")) return "/admin"
   if (groups.includes("chair") || groups.includes("active")) return "/member"
   if (groups.includes("alumni")) return "/alumni"
   if (groups.includes("pledge")) return "/pledge"
+  if (groups.includes("rush")) return "/rushee"
   return "/"
 }
 
@@ -38,6 +42,9 @@ export default auth((req) => {
 
   if (path.startsWith("/pledge") && !groups.includes("pledge"))
     return NextResponse.redirect(new URL(homePortal(groups), req.url))
+
+  if (path.startsWith("/rushee") && !groups.includes("rush"))
+    return NextResponse.redirect(new URL(homePortal(groups), req.url))
 })
 
 export const config = {
@@ -51,6 +58,8 @@ export const config = {
     "/alumni/:path*",
     "/pledge",
     "/pledge/:path*",
+    "/rushee",
+    "/rushee/:path*",
     "/complete-profile",
     "/complete-profile/:path*",
   ],

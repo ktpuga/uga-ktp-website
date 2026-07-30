@@ -38,6 +38,11 @@ const ACCENTS = {
     header: 'from-teal-900/5',
     active: 'bg-teal-50 text-teal-900 dark:bg-[#22252b] dark:text-teal-100',
   },
+  violet: {
+    title: 'text-violet-900 dark:text-violet-100',
+    header: 'from-violet-900/5',
+    active: 'bg-violet-50 text-violet-900 dark:bg-[#22252b] dark:text-violet-100',
+  },
 };
 
 // Any accent with an entry here renders the revamped sidebar. It must have a
@@ -63,9 +68,18 @@ const REVAMPED_ACCENTS = {
     light: '#0f766e',
     muted: 'rgba(19,78,74,0.10)',
   },
+  // Rush. Violet is deliberately the furthest from the other four — a rushee
+  // is the one portal user who is not yet a member, and eboard looking over
+  // someone's shoulder should be able to tell instantly which they're in.
+  violet: {
+    gradient: 'linear-gradient(135deg, #5b21b6 0%, #7c3aed 100%)',
+    light: '#7c3aed',
+    muted: 'rgba(91,33,182,0.10)',
+  },
 };
 
-const PORTAL_ROOT = { blue: '/member', red: '/admin', amber: '/alumni', teal: '/pledge' };
+// violet is /rushee, not /rush — /rush is the public rush marketing page.
+const PORTAL_ROOT = { blue: '/member', red: '/admin', amber: '/alumni', teal: '/pledge', violet: '/rushee' };
 
 // Groups the flat `nav` prop (owned by each portal's layout.jsx, unchanged)
 // into labelled sections for the revamped sidebar, by href. Keep in sync if
@@ -79,7 +93,7 @@ const NAV_GROUPING = {
   ],
   red: [
     { heading: 'Overview', hrefs: ['/admin'] },
-    { heading: 'Engagement', hrefs: ['/admin/announcements', '/admin/calendar', '/admin/committees', '/admin/polls', '/admin/attendance', '/admin/messages'] },
+    { heading: 'Engagement', hrefs: ['/admin/announcements', '/admin/rush-announcements', '/admin/calendar', '/admin/committees', '/admin/polls', '/admin/attendance', '/admin/messages'] },
     { heading: 'Moderation', hrefs: ['/admin/reports', '/admin/users'] },
     { heading: 'Content', hrefs: ['/admin/files', '/admin/homepage-photos', '/admin/ios-homepage-slideshow'] },
     { heading: 'Account', hrefs: ['/admin/settings'] },
@@ -96,9 +110,23 @@ const NAV_GROUPING = {
     { heading: 'Resources', hrefs: ['/pledge/files', '/pledge/messages'] },
     { heading: 'Account', hrefs: ['/pledge/settings'] },
   ],
+  // Rush is intentionally the smallest portal. No Directory, no Files, no
+  // Committees — those are all gated on SHARED_ALBUM_GROUPS server-side and
+  // would 403 anyway, so listing them would only advertise doors that don't
+  // open.
+  violet: [
+    { heading: 'Rush', hrefs: ['/rushee', '/rushee/announcements', '/rushee/calendar'] },
+    { heading: 'Take Part', hrefs: ['/rushee/polls', '/rushee/messages'] },
+    { heading: 'Account', hrefs: ['/rushee/settings'] },
+  ],
 };
 
-const GROUP_PRIORITY = ['eboard', 'chair', 'active', 'alumni', 'pledge'];
+// "rush" last, matching ktp-api's constants/roleGroups.js — someone accepted
+// out of rush keeps that group until it's removed, so a higher-privilege group
+// has to win. Without rush listed at all, a rushee resolved to undefined and
+// formatMemberGroup's fallback labelled them "Member" in the sidebar, which is
+// exactly what they are not.
+const GROUP_PRIORITY = ['eboard', 'chair', 'active', 'alumni', 'pledge', 'rush'];
 
 const iconBtnClass =
   'flex items-center justify-center rounded-lg p-2 text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-[#22252b] dark:hover:text-white';
