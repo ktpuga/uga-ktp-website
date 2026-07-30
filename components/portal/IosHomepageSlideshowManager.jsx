@@ -1,937 +1,1284 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { ArrowDown, ArrowUp, GripVertical, ImagePlus, Loader2, PencilLine, Power, Plus, Trash2, Upload, X } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { useConfirm } from '@/components/ui/confirm-dialog';
-import { getDeleteConfirmationMessage } from '@/lib/slideshow-auth.cjs';
+import { cn } from '@/lib/utils';
+import {
+  AlarmClock, AlertTriangle, Calendar, ChevronDown, ChevronUp, ExternalLink, Eye, EyeOff,
+  GripVertical, Image as ImageIcon, Info, Loader2, MoreVertical, Pencil, Plus, RefreshCw,
+  Trash2, Upload, X,
+} from 'lucide-react';
 import slideshowUtils from '@/lib/slideshow-utils.cjs';
 
 const {
   buildCreateSlideFormData,
   buildReorderPayload,
   buildUpdateSlidePayload,
-  createEmptySlideForm,
   formatSlideSchedule,
   getSlideScheduleState,
   normalizeSlideRecord,
   validateSlideForm,
 } = slideshowUtils;
 
-const IMAGE_ACCEPT = 'image/jpeg,image/png,image/webp,image/heic,image/heif';
+// Admin-only page — always maroon. Kept in sync with PortalShell's
+// REVAMPED_ACCENTS.red.
+const MAROON = {
+  base: '#7f1d1d',
+  gradient: 'linear-gradient(135deg, #7f1d1d 0%, #991b1b 100%)',
+  light: '#991b1b',
+};
 
-function cx(...values) {
-  return values.filter(Boolean).join(' ');
+// Enforced server-side by ensureActiveLimit() in iosHomepageSlidesController —
+// exceeding it returns 409 active_slide_limit. Mirrored here so the UI can warn
+// before a save fails rather than after.
+const MAX_ACTIVE = 10;
+const IMG_ACCEPT = 'image/jpeg,image/png,image/webp,image/heic,image/heif';
+const TIMELINE_DAYS = 28;
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+const API_BASE = '/api/admin/ios-homepage-slideshow';
+
+// Tailwind classes rather than raw hex so these follow the .portal-dark token
+// swap — hardcoded light-mode colours were unreadable in dark mode.
+const STATE_STYLES = {
+  active: {
+    label: 'Live now',
+    pill: 'border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-900 dark:bg-emerald-950 dark:text-emerald-300',
+    dot: 'bg-emerald-500',
+  },
+  scheduled: {
+    label: 'Scheduled',
+    pill: 'border-amber-200 bg-amber-50 text-amber-800 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-300',
+    dot: 'bg-amber-500',
+  },
+  expired: {
+    label: 'Expired',
+    pill: 'border-border bg-muted text-muted-foreground',
+    dot: 'bg-muted-foreground',
+  },
+  inactive: {
+    label: 'Inactive',
+    pill: 'border-border bg-muted text-muted-foreground',
+    dot: 'bg-muted-foreground/60',
+  },
+};
+
+const FILTERS = [
+  { id: 'all', label: 'All' },
+  { id: 'active', label: 'Live now' },
+  { id: 'scheduled', label: 'Scheduled' },
+  { id: 'expired', label: 'Expired' },
+  { id: 'inactive', label: 'Inactive' },
+];
+
+function tint(hex, alpha) {
+  const h = hex.replace('#', '');
+  const full = h.length === 3 ? h.split('').map((c) => c + c).join('') : h;
+  const n = parseInt(full, 16);
+  return `rgba(${(n >> 16) & 255},${(n >> 8) & 255},${n & 255},${alpha})`;
 }
 
-async function readJsonResponse(response) {
+function timeAgo(iso) {
+  const parsed = new Date(iso).getTime();
+  if (Number.isNaN(parsed)) return '';
+  const mins = Math.floor((Date.now() - parsed) / 60000);
+  if (mins < 1) return 'just now';
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  const days = Math.floor(hrs / 24);
+  if (days < 30) return `${days}d ago`;
+  return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+}
+
+function slideMediaUrl(id) {
+  return `${API_BASE}/${id}/media`;
+}
+
+// Mirrors services/iosSlideshowImage.js exactly. The server extracts the
+// largest possible 3:2 region centred on the focal point, then resizes it —
+// so the crop is full-height on a source wider than 3:2 and full-width on a
+// taller one. Reimplementing it here is what makes the preview frame honest;
+// anything else shows the user a crop the server won't actually produce.
+function computeCropRect(width, height, focalX, focalY) {
+  if (!width || !height) return null;
+  const cropWidth = Math.min(width, Math.round(height * 1.5));
+  const cropHeight = Math.min(height, Math.round(width / 1.5));
+  const left = Math.max(0, Math.min(width - cropWidth, Math.round(width * focalX - cropWidth / 2)));
+  const top = Math.max(0, Math.min(height - cropHeight, Math.round(height * focalY - cropHeight / 2)));
+  return {
+    leftPct: (left / width) * 100,
+    topPct: (top / height) * 100,
+    widthPct: (cropWidth / width) * 100,
+    heightPct: (cropHeight / height) * 100,
+  };
+}
+
+async function readJson(response) {
   const body = response.status === 204 ? null : await response.json().catch(() => null);
   if (!response.ok) {
-    const errorMessage = body?.error || body?.message || 'The slideshow request failed.';
-    throw new Error(errorMessage);
+    throw new Error(body?.error || body?.message || 'The slideshow request failed.');
   }
   return body;
 }
 
-async function inspectImageDimensions(file) {
-  if (!file) return null;
-  try {
-    const objectUrl = URL.createObjectURL(file);
-    const dimensions = await new Promise((resolve, reject) => {
-      const image = new Image();
-      image.onload = () => resolve({ width: image.naturalWidth, height: image.naturalHeight });
-      image.onerror = () => reject(new Error('Could not inspect image dimensions.'));
-      image.src = objectUrl;
-    });
-    URL.revokeObjectURL(objectUrl);
-    return dimensions;
-  } catch {
-    return null;
-  }
+function emptyForm() {
+  return {
+    title: '', subtitle: '', altText: '', linkUrl: '', linkLabel: '',
+    startsAt: '', endsAt: '', isActive: true, focalX: 0.5, focalY: 0.5,
+  };
 }
 
-function readPreviewSource(file) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(String(reader.result));
-    reader.onerror = () => reject(new Error('Could not read the selected image.'));
-    reader.readAsDataURL(file);
-  });
-}
+function ModalWrapper({ children, onClose, label, maxWidth = 'max-w-lg' }) {
+  useEffect(() => {
+    function handleKey(e) {
+      if (e.key === 'Escape') onClose();
+    }
+    window.addEventListener('keydown', handleKey);
+    return () => window.removeEventListener('keydown', handleKey);
+  }, [onClose]);
 
-async function cropToSlideshowFrame(file, cropLeft, cropTop, cropRight, cropBottom) {
-  const sourceUrl = URL.createObjectURL(file);
-  try {
-    const image = await new Promise((resolve, reject) => {
-      const element = new Image();
-      element.onload = () => resolve(element);
-      element.onerror = () => reject(new Error('This image cannot be cropped in this browser.'));
-      element.src = sourceUrl;
-    });
-    const left = Math.round(image.naturalWidth * (Number(cropLeft) / 100));
-    const top = Math.round(image.naturalHeight * (Number(cropTop) / 100));
-    const sourceWidth = Math.round(image.naturalWidth * ((Number(cropRight) - Number(cropLeft)) / 100));
-    const sourceHeight = Math.round(image.naturalHeight * ((Number(cropBottom) - Number(cropTop)) / 100));
-    const canvas = document.createElement('canvas');
-    canvas.width = sourceWidth;
-    canvas.height = sourceHeight;
-    canvas.getContext('2d').drawImage(image, left, top, sourceWidth, sourceHeight, 0, 0, sourceWidth, sourceHeight);
-    const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/jpeg', 0.92));
-    if (!blob) throw new Error('Could not create the cropped image.');
-    return new File([blob], `${file.name.replace(/\.[^.]+$/, '') || 'slideshow'}.jpg`, { type: 'image/jpeg' });
-  } finally {
-    URL.revokeObjectURL(sourceUrl);
-  }
-}
-
-function StatusBadge({ label, tone }) {
-  const toneClass = {
-    active: 'border-emerald-200 bg-emerald-50 text-emerald-800',
-    scheduled: 'border-amber-200 bg-amber-50 text-amber-900',
-    expired: 'border-slate-200 bg-slate-50 text-slate-700',
-    inactive: 'border-slate-200 bg-slate-100 text-slate-700',
-  }[tone] ?? 'border-slate-200 bg-slate-100 text-slate-700';
-
-  return <span className={cx('inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-medium', toneClass)}>{label}</span>;
-}
-
-function FieldError({ id, error }) {
-  if (!error) return null;
   return (
-    <p id={id} className="text-sm text-red-700" role="alert">
-      {error}
-    </p>
-  );
-}
-
-function SlidePreview({ src, alt, emptyLabel = 'No preview yet' }) {
-  const [failed, setFailed] = useState(false);
-
-  useEffect(() => setFailed(false), [src]);
-  return (
-    <div className="space-y-2">
-      <div className="relative aspect-[3/2] overflow-hidden rounded-xl border border-slate-200 bg-slate-100 shadow-sm">
-        {src && !failed ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={src} alt={alt} className="h-full w-full object-contain" onError={() => setFailed(true)} />
-        ) : (
-          <div className="flex h-full w-full items-center justify-center px-4 text-center text-sm text-slate-500">{failed ? 'This browser cannot preview the selected image, but it can still be uploaded.' : emptyLabel}</div>
-        )}
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-label={label}>
+      <div className="absolute inset-0 bg-background/80 backdrop-blur-sm" onClick={onClose} aria-hidden="true" />
+      <div className={cn('relative z-10 w-full overflow-hidden rounded-2xl border border-border bg-card shadow-xl', maxWidth)}>
+        {children}
       </div>
     </div>
   );
 }
 
-function CropBox({ src, dimensions, form, onChange }) {
-  const stageRef = useRef(null);
-  const dragRef = useRef(null);
-
-  function startDrag(event, edge) {
-    event.preventDefault();
-    event.currentTarget.setPointerCapture?.(event.pointerId);
-    dragRef.current = { edge };
-  }
-
-  function moveDrag(event) {
-    if (!dragRef.current || !stageRef.current) return;
-    const rect = stageRef.current.getBoundingClientRect();
-    const x = Math.max(0, Math.min(100, ((event.clientX - rect.left) / rect.width) * 100));
-    const y = Math.max(0, Math.min(100, ((event.clientY - rect.top) / rect.height) * 100));
-    const minSize = 8;
-    const { edge } = dragRef.current;
-    if (edge === 'left') onChange({ cropLeft: Math.min(x, form.cropRight - minSize) });
-    if (edge === 'right') onChange({ cropRight: Math.max(x, form.cropLeft + minSize) });
-    if (edge === 'top') onChange({ cropTop: Math.min(y, form.cropBottom - minSize) });
-    if (edge === 'bottom') onChange({ cropBottom: Math.max(y, form.cropTop + minSize) });
-  }
-
-  const cropStyle = { left: `${form.cropLeft}%`, top: `${form.cropTop}%`, width: `${form.cropRight - form.cropLeft}%`, height: `${form.cropBottom - form.cropTop}%` };
-  const aspectRatio = dimensions?.width && dimensions?.height ? `${dimensions.width} / ${dimensions.height}` : '3 / 2';
-  return <div className="space-y-2"><div ref={stageRef} className="relative mx-auto w-full max-w-md overflow-hidden rounded-xl bg-slate-950" style={{ aspectRatio }} onPointerMove={moveDrag} onPointerUp={() => { dragRef.current = null; }}>
-    {src && <img src={src} alt="Crop selection" className="h-full w-full select-none object-fill" draggable={false} />}
-    <div className="absolute border-2 border-white shadow-[0_0_0_9999px_rgba(15,23,42,0.55)]" style={cropStyle}>
-      {['left', 'right', 'top', 'bottom'].map((edge) => <button key={edge} type="button" onPointerDown={(event) => startDrag(event, edge)} className={cx('absolute rounded-full border-2 border-slate-900 bg-white shadow', edge === 'left' && 'left-0 top-1/2 h-7 w-3 -translate-x-1/2 -translate-y-1/2 cursor-ew-resize', edge === 'right' && 'right-0 top-1/2 h-7 w-3 translate-x-1/2 -translate-y-1/2 cursor-ew-resize', edge === 'top' && 'left-1/2 top-0 h-3 w-7 -translate-x-1/2 -translate-y-1/2 cursor-ns-resize', edge === 'bottom' && 'bottom-0 left-1/2 h-3 w-7 -translate-x-1/2 translate-y-1/2 cursor-ns-resize')} aria-label={`Drag ${edge} crop edge`} />)}
+function ModalHeader({ title, icon, onClose }) {
+  return (
+    <div className="flex items-center justify-between border-b border-border px-5 py-4" style={{ background: tint(MAROON.base, 0.03) }}>
+      <div className="flex min-w-0 items-center gap-3">
+        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-white" style={{ background: MAROON.gradient }}>
+          {icon}
+        </div>
+        <p className="truncate text-sm font-semibold text-foreground">{title}</p>
+      </div>
+      <button type="button" onClick={onClose} className="rounded-lg p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground" aria-label="Close">
+        <X size={14} />
+      </button>
     </div>
-  </div><p className="text-xs text-slate-500">Drag any white edge to set the part of the image that will be uploaded.</p></div>;
+  );
 }
 
-function SlideEditorDialog({
-  mode,
-  form,
-  errors,
-  filePreviewUrl,
-  slidePreviewUrl,
-  fileDimensions,
-  onChange,
-  onSubmit,
-  onClose,
-  onFileSelected,
-  submitting,
-}) {
-  const fileInputRef = useRef(null);
-  const title = mode === 'create' ? 'Add slide' : 'Edit slide';
-  const submitLabel = mode === 'create' ? 'Add slide' : 'Save changes';
-  const previewUrl = mode === 'create' ? filePreviewUrl : slidePreviewUrl;
-
-  const handleFileChange = async (file) => {
-    await onFileSelected(file);
-    fileInputRef.current.value = '';
-  };
+function ConfirmDeleteModal({ slide, busy, onClose, onConfirm }) {
+  const [typed, setTyped] = useState('');
+  const confirmed = typed.trim().toLowerCase() === 'delete';
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-slate-950/60 p-4 backdrop-blur-sm sm:items-center">
-      <div className="w-full max-w-5xl rounded-2xl border border-slate-200 bg-white shadow-2xl dark:border-slate-800 dark:bg-slate-950">
-        <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3 dark:border-slate-800 sm:px-6">
-          <div>
-            <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-50">{title}</h2>
-            <p className="text-sm text-slate-500">
-              {mode === 'create' ? 'Upload a new slideshow image and its metadata.' : 'Edit the slide metadata and active window.'}
-            </p>
+    <ModalWrapper onClose={onClose} label="Delete slide" maxWidth="max-w-sm">
+      <div className="flex items-center justify-between border-b border-destructive/15 bg-destructive/5 px-5 py-4">
+        <div className="flex items-center gap-3">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-destructive/15">
+            <AlertTriangle size={14} className="text-destructive" />
           </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="rounded-lg p-2 text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 dark:hover:bg-slate-900"
-            aria-label="Close editor"
-          >
-            <X className="h-5 w-5" />
-          </button>
+          <p className="text-sm font-semibold text-destructive">Delete slide</p>
+        </div>
+        <button type="button" onClick={onClose} className="rounded-lg p-1.5 text-muted-foreground hover:bg-muted" aria-label="Close">
+          <X size={14} />
+        </button>
+      </div>
+      <div className="space-y-3 px-5 py-4">
+        {/* Wording matches getDeleteConfirmationMessage() in slideshow-auth.cjs.
+            Only the cropped 1500x1000 derivative is destroyed — a photo-library
+            image this slide was registered from is left alone. */}
+        <p className="text-xs leading-relaxed text-muted-foreground">
+          <span className="font-semibold text-foreground">&ldquo;{slide.title}&rdquo;</span> will be permanently
+          deleted, along with the cropped slideshow image generated for it. This cannot be undone.{' '}
+          <span className="font-medium text-foreground">
+            If this slide was registered from the shared photo library, that original stays untouched.
+          </span>
+        </p>
+        <div>
+          <label htmlFor="delete-confirm" className="mb-1.5 block text-xs font-semibold text-muted-foreground">
+            Type <span className="font-mono font-bold text-destructive">delete</span> to confirm
+          </label>
+          <input
+            id="delete-confirm"
+            autoFocus
+            type="text"
+            value={typed}
+            onChange={(e) => setTyped(e.target.value)}
+            placeholder="delete"
+            className="w-full rounded-lg border border-border bg-muted/40 px-3 py-2 font-mono text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-1 focus:ring-destructive/40"
+          />
+        </div>
+      </div>
+      <div className="flex justify-end gap-2 border-t border-border px-5 py-4">
+        <button type="button" onClick={onClose} disabled={busy} className="rounded-lg border border-border px-4 py-2 text-sm font-medium text-muted-foreground hover:bg-muted disabled:opacity-40">
+          Cancel
+        </button>
+        <button
+          type="button"
+          onClick={onConfirm}
+          disabled={!confirmed || busy}
+          className="flex items-center gap-2 rounded-lg bg-destructive px-4 py-2 text-sm font-semibold text-white hover:bg-destructive/90 disabled:opacity-35"
+        >
+          {busy && <Loader2 size={13} className="animate-spin" />}
+          Permanently delete
+        </button>
+      </div>
+    </ModalWrapper>
+  );
+}
+
+// Renders a slide the way the iOS app composites it: the 3:2 image with title,
+// subtitle and link button laid over it.
+function IphoneFrame({ slide, imageSrc }) {
+  return (
+    <div className="flex flex-col items-center">
+      <div
+        className="relative overflow-hidden rounded-[2.5rem] border-[6px] border-foreground/10 bg-black shadow-2xl"
+        style={{ width: 220, height: 440 }}
+        aria-label="iPhone preview"
+      >
+        <div className="absolute left-1/2 top-2 z-20 h-4 w-20 -translate-x-1/2 rounded-full bg-black" />
+        <div className="absolute left-0 top-0 z-10 flex w-full items-center justify-between px-5 pt-2 text-[8px] font-bold text-white">
+          <span>9:41</span>
+          <span className="flex items-center gap-0.5">
+            <span className="h-1.5 w-1.5 rounded-full bg-white" />
+            <span className="h-1.5 w-1.5 rounded-full bg-white" />
+          </span>
         </div>
 
-        <form onSubmit={onSubmit} className="grid gap-6 px-4 py-4 sm:px-6 lg:grid-cols-[minmax(0,1.2fr)_minmax(320px,0.8fr)]">
-          <div className="space-y-4">
-            {mode === 'create' ? (
-              <div
-                className={cx('rounded-xl border border-dashed px-4 py-5 transition-colors', errors.file ? 'border-red-300 bg-red-50/60' : 'border-slate-300 bg-slate-50/70 hover:bg-slate-50')}
-                onDrop={async (event) => {
-                  event.preventDefault();
-                  await handleFileChange(event.dataTransfer.files?.[0] ?? null);
-                }}
-                onDragOver={(event) => event.preventDefault()}
-                role="button"
-                tabIndex={0}
-                onKeyDown={(event) => {
-                  if (event.key === 'Enter' || event.key === ' ') {
-                    event.preventDefault();
-                    fileInputRef.current?.click();
-                  }
-                }}
-                onClick={() => fileInputRef.current?.click()}
-                aria-label="Choose or drop an image file"
-              >
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                  <div>
-                    <p className="flex items-center gap-2 text-sm font-medium text-slate-900">
-                      <Upload className="h-4 w-4" />
-                      Choose an image or drop one here
-                    </p>
-                    <p className="mt-1 text-sm text-slate-500">
-                      JPEG, PNG, WebP, HEIC, or HEIF. Max 15 MB. Minimum 900 × 600.
-                    </p>
-                  </div>
-                  <Button type="button" variant="outline" className="w-full sm:w-auto" onClick={() => fileInputRef.current?.click()}>
-                    Browse files
-                  </Button>
-                </div>
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  className="sr-only"
-                  accept={IMAGE_ACCEPT}
-                  onChange={(event) => handleFileChange(event.target.files?.[0] ?? null)}
-                />
-                {form.file && (
-                  <p className="mt-3 text-sm text-slate-700">
-                    Selected file: <span className="font-medium">{form.file.name}</span>
-                    {fileDimensions ? ` · ${fileDimensions.width} × ${fileDimensions.height}` : ''}
-                  </p>
-                )}
-                <FieldError id="slide-file-error" error={errors.file} />
-              </div>
-            ) : (
-              <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600 dark:border-slate-800 dark:bg-slate-900/50 dark:text-slate-300">
-                File replacement is not exposed here. Use the API if a slide needs a new asset.
-              </div>
-            )}
-
-            <div className="grid gap-4 sm:grid-cols-2">
-              <label className="space-y-1">
-                <span className="text-sm font-medium text-slate-700 dark:text-slate-200">Title</span>
-                <Input
-                  value={form.title}
-                  onChange={(event) => onChange({ title: event.target.value })}
-                  maxLength={100}
-                  aria-invalid={Boolean(errors.title)}
-                  aria-describedby={errors.title ? 'slide-title-error' : undefined}
-                />
-                <FieldError id="slide-title-error" error={errors.title} />
-              </label>
-
-              <label className="space-y-1">
-                <span className="text-sm font-medium text-slate-700 dark:text-slate-200">Alt text</span>
-                <Input
-                  value={form.altText}
-                  onChange={(event) => onChange({ altText: event.target.value })}
-                  maxLength={300}
-                  aria-invalid={Boolean(errors.altText)}
-                  aria-describedby={errors.altText ? 'slide-alt-error' : undefined}
-                />
-                <FieldError id="slide-alt-error" error={errors.altText} />
-              </label>
-
-              <label className="space-y-1 sm:col-span-2">
-                <span className="text-sm font-medium text-slate-700 dark:text-slate-200">Subtitle</span>
-                <Textarea
-                  value={form.subtitle}
-                  onChange={(event) => onChange({ subtitle: event.target.value })}
-                  maxLength={220}
-                  className="min-h-20"
-                  aria-invalid={Boolean(errors.subtitle)}
-                  aria-describedby={errors.subtitle ? 'slide-subtitle-error' : undefined}
-                />
-                <FieldError id="slide-subtitle-error" error={errors.subtitle} />
-              </label>
-
-              <label className="space-y-1 sm:col-span-2">
-                <span className="text-sm font-medium text-slate-700 dark:text-slate-200">HTTPS link URL</span>
-                <Input
-                  value={form.linkUrl}
-                  onChange={(event) => onChange({ linkUrl: event.target.value })}
-                  placeholder="https://"
-                  aria-invalid={Boolean(errors.linkUrl)}
-                  aria-describedby={errors.linkUrl ? 'slide-link-url-error' : undefined}
-                />
-                <FieldError id="slide-link-url-error" error={errors.linkUrl} />
-              </label>
-
-              <label className="space-y-1">
-                <span className="text-sm font-medium text-slate-700 dark:text-slate-200">Link action label</span>
-                <Input
-                  value={form.linkLabel}
-                  onChange={(event) => onChange({ linkLabel: event.target.value })}
-                  maxLength={80}
-                  aria-invalid={Boolean(errors.linkLabel)}
-                  aria-describedby={errors.linkLabel ? 'slide-link-label-error' : undefined}
-                />
-                <FieldError id="slide-link-label-error" error={errors.linkLabel} />
-              </label>
-
-              <label className="space-y-1">
-                <span className="text-sm font-medium text-slate-700 dark:text-slate-200">Start date/time</span>
-                <Input
-                  type="datetime-local"
-                  value={form.startsAt}
-                  onChange={(event) => onChange({ startsAt: event.target.value })}
-                  aria-invalid={Boolean(errors.startsAt)}
-                  aria-describedby={errors.startsAt ? 'slide-starts-error' : undefined}
-                />
-                <FieldError id="slide-starts-error" error={errors.startsAt} />
-              </label>
-
-              <label className="space-y-1">
-                <span className="text-sm font-medium text-slate-700 dark:text-slate-200">End date/time</span>
-                <Input
-                  type="datetime-local"
-                  value={form.endsAt}
-                  onChange={(event) => onChange({ endsAt: event.target.value })}
-                  aria-invalid={Boolean(errors.endsAt)}
-                  aria-describedby={errors.endsAt ? 'slide-ends-error' : undefined}
-                />
-                <FieldError id="slide-ends-error" error={errors.endsAt} />
-              </label>
-            </div>
-
-            {mode === 'create' && (
-              <label className="flex items-center gap-3 rounded-xl border border-slate-200 px-4 py-3 text-sm text-slate-700 dark:border-slate-800 dark:text-slate-200">
-                <input
-                  type="checkbox"
-                  checked={form.isActive}
-                  onChange={(event) => onChange({ isActive: event.target.checked })}
-                  className="h-4 w-4 rounded border-slate-300 text-red-700 focus-visible:ring-red-500"
-                />
-                Active by default
-              </label>
-            )}
-          </div>
-
-          <div className="space-y-4">
-            <SlidePreview
-              src={previewUrl}
-              alt={form.altText || form.title || 'Slide preview'}
-              emptyLabel={mode === 'create' ? 'Choose an image to preview it here.' : 'No slide preview available.'}
-            />
-
-            {mode === 'create' && (
-              <div className="space-y-3 rounded-xl border border-slate-200 px-4 py-3 dark:border-slate-800">
-                <label className="flex items-center gap-3 text-sm font-medium text-slate-800 dark:text-slate-100"><input type="checkbox" checked={form.cropToFrame} onChange={(event) => onChange({ cropToFrame: event.target.checked })} />Crop image before uploading</label>
-                {form.cropToFrame && <CropBox src={previewUrl} dimensions={fileDimensions} form={form} onChange={onChange} />}
-              </div>
-            )}
-
-            {mode === 'edit' && (
-              <div className="rounded-xl border border-slate-200 px-4 py-4 text-sm text-slate-600 dark:border-slate-800 dark:text-slate-300">
-                Current schedule: {formatSlideSchedule(form)}
-              </div>
-            )}
-
-            <div className="flex items-center justify-end gap-3 border-t border-slate-200 pt-4 dark:border-slate-800">
-              <Button type="button" variant="outline" onClick={onClose} disabled={submitting}>
-                Cancel
-              </Button>
-              <Button type="submit" disabled={submitting} className="bg-red-900 hover:bg-red-800">
-                {submitting ? (
-                  <span className="inline-flex items-center gap-2">
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    {mode === 'create' ? 'Processing...' : 'Saving...'}
-                  </span>
+        <div className="h-full w-full bg-black">
+          {slide ? (
+            <div className="relative h-full w-full">
+              <div className="absolute inset-x-0 top-0" style={{ bottom: '33%' }}>
+                {imageSrc ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={imageSrc} alt={slide.altText || ''} className="h-full w-full object-cover" loading="lazy" decoding="async" />
                 ) : (
-                  submitLabel
+                  <div className="flex h-full w-full items-center justify-center bg-neutral-800 text-[9px] text-white/40">No image yet</div>
                 )}
-              </Button>
+                <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+              </div>
+
+              <div className="absolute inset-x-3 text-white" style={{ bottom: '35%' }}>
+                <p className="line-clamp-2 text-[11px] font-bold leading-tight drop-shadow-sm">{slide.title || 'Title preview'}</p>
+                {slide.subtitle && <p className="mt-0.5 line-clamp-2 text-[9px] leading-snug text-white/80">{slide.subtitle}</p>}
+                {slide.linkLabel && (
+                  <div className="mt-1.5 inline-block rounded-full bg-white/20 px-2.5 py-0.5 backdrop-blur-sm">
+                    <span className="text-[9px] font-semibold text-white">{slide.linkLabel}</span>
+                  </div>
+                )}
+              </div>
+
+              <div className="absolute inset-x-0 bottom-0 rounded-b-[2rem] bg-[#1c1c1e] px-3 pb-3 pt-2" style={{ top: '67%' }}>
+                <p className="mb-1 text-[8px] font-semibold uppercase tracking-wider text-white/40">KTP Phi Chapter</p>
+                <div className="h-6 rounded-lg bg-white/10" />
+                <div className="mt-1.5 grid grid-cols-4 gap-1">
+                  {[0, 1, 2, 3].map((i) => <div key={i} className="h-8 rounded-lg bg-white/10" />)}
+                </div>
+              </div>
             </div>
+          ) : (
+            <div className="flex h-full items-center justify-center px-4 text-center">
+              <p className="text-[10px] text-white/40">Select a slide to preview it here</p>
+            </div>
+          )}
+        </div>
+      </div>
+      <p className="mt-3 text-[11px] text-muted-foreground">App preview</p>
+    </div>
+  );
+}
+
+// Shows the WHOLE source at its natural aspect ratio with the real 3:2 crop
+// rectangle overlaid. Anything that pre-crops the container to 3:2 is lying to
+// the user about what they'll get.
+function FocalPointPicker({ src, focal, onChange }) {
+  const stageRef = useRef(null);
+  const dragging = useRef(false);
+  const [dimensions, setDimensions] = useState(null);
+
+  useEffect(() => {
+    setDimensions(null);
+    if (!src) return undefined;
+    let cancelled = false;
+    const image = new Image();
+    image.onload = () => {
+      if (!cancelled) setDimensions({ width: image.naturalWidth, height: image.naturalHeight });
+    };
+    image.src = src;
+    return () => { cancelled = true; };
+  }, [src]);
+
+  function pick(clientX, clientY) {
+    const el = stageRef.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    if (!rect.width || !rect.height) return;
+    const x = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
+    const y = Math.max(0, Math.min(1, (clientY - rect.top) / rect.height));
+    onChange(x, y);
+  }
+
+  const crop = dimensions ? computeCropRect(dimensions.width, dimensions.height, focal.x, focal.y) : null;
+  const tooSmall = dimensions && (dimensions.width < 900 || dimensions.height < 600);
+
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center justify-between">
+        <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Set focal point</span>
+        <span className="font-mono text-[11px] text-muted-foreground">{focal.x.toFixed(2)}, {focal.y.toFixed(2)}</span>
+      </div>
+
+      <div
+        ref={stageRef}
+        className="relative w-full cursor-crosshair select-none overflow-hidden rounded-xl border border-border bg-muted"
+        style={{ aspectRatio: dimensions ? `${dimensions.width} / ${dimensions.height}` : '3 / 2' }}
+        onPointerDown={(e) => { dragging.current = true; e.currentTarget.setPointerCapture?.(e.pointerId); pick(e.clientX, e.clientY); }}
+        onPointerMove={(e) => { if (dragging.current) pick(e.clientX, e.clientY); }}
+        onPointerUp={() => { dragging.current = false; }}
+        onPointerCancel={() => { dragging.current = false; }}
+      >
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={src} alt="" className="pointer-events-none h-full w-full object-contain" decoding="async" />
+
+        {crop && (
+          <div
+            className="pointer-events-none absolute rounded-sm border-2 border-white shadow-[0_0_0_9999px_rgba(0,0,0,0.45)]"
+            style={{
+              left: `${crop.leftPct}%`,
+              top: `${crop.topPct}%`,
+              width: `${crop.widthPct}%`,
+              height: `${crop.heightPct}%`,
+            }}
+          />
+        )}
+
+        <div
+          className="pointer-events-none absolute h-5 w-5 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white bg-white/30 shadow-md backdrop-blur-sm"
+          style={{ left: `${focal.x * 100}%`, top: `${focal.y * 100}%` }}
+        />
+      </div>
+
+      <p className="text-[11px] text-muted-foreground">
+        The white rectangle is the exact 3:2 area the server will keep. Click or drag to move it.
+      </p>
+      {tooSmall && (
+        <p className="flex items-center gap-1.5 rounded-lg bg-destructive/10 px-3 py-2 text-[11px] text-destructive">
+          <AlertTriangle size={11} /> This image is {dimensions.width} × {dimensions.height}. The minimum is 900 × 600.
+        </p>
+      )}
+    </div>
+  );
+}
+
+function Field({ label, required, counter, error, children, htmlFor }) {
+  return (
+    <div>
+      <div className="mb-1 flex items-center justify-between">
+        <label htmlFor={htmlFor} className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+          {label} {required && <span className="text-destructive">*</span>}
+        </label>
+        {counter && <span className="text-[10px] tabular-nums text-muted-foreground">{counter}</span>}
+      </div>
+      {children}
+      {error && <p className="mt-1 text-[11px] text-destructive">{error}</p>}
+    </div>
+  );
+}
+
+const INPUT_CLASS =
+  'w-full rounded-lg border border-border bg-muted/40 px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-1 focus:ring-[rgba(127,29,29,0.28)]';
+
+function SlideMetaForm({ form, errors, onChange }) {
+  const altDupesTitle =
+    form.altText.trim().length > 0 &&
+    form.altText.trim().toLowerCase() === form.title.trim().toLowerCase();
+
+  return (
+    <div className="space-y-4">
+      <Field label="Title" required counter={`${form.title.length}/100`} error={errors.title} htmlFor="slide-title">
+        <input id="slide-title" type="text" maxLength={100} value={form.title} placeholder="Spring Rush 2026"
+          onChange={(e) => onChange({ title: e.target.value })} className={INPUT_CLASS} />
+      </Field>
+
+      <Field label="Subtitle" counter={`${form.subtitle.length}/220`} error={errors.subtitle} htmlFor="slide-subtitle">
+        <textarea id="slide-subtitle" rows={2} maxLength={220} value={form.subtitle}
+          placeholder="Join us this semester for events, workshops, and networking."
+          onChange={(e) => onChange({ subtitle: e.target.value })} className={cn(INPUT_CLASS, 'resize-none')} />
+      </Field>
+
+      <Field label="Alt text" required counter={`${form.altText.length}/300`} error={errors.altText} htmlFor="slide-alt">
+        <input id="slide-alt" type="text" maxLength={300} value={form.altText}
+          placeholder="KTP members at a spring networking event"
+          onChange={(e) => onChange({ altText: e.target.value })} className={INPUT_CLASS} />
+        {altDupesTitle && (
+          <div className="mt-1.5 flex items-start gap-1.5 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-[11px] text-amber-800 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-300">
+            <Info size={11} className="mt-0.5 shrink-0" />
+            Alt text repeats the title. Good alt text describes what is visible in the photo, for members using VoiceOver.
           </div>
-        </form>
+        )}
+      </Field>
+
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <Field label="Link URL (HTTPS)" error={errors.linkUrl} htmlFor="slide-link-url">
+          <input id="slide-link-url" type="url" value={form.linkUrl} placeholder="https://ugaktp.com/rush"
+            onChange={(e) => onChange({ linkUrl: e.target.value })} className={INPUT_CLASS} />
+        </Field>
+        <Field label="Button label" counter={`${form.linkLabel.length}/80`} error={errors.linkLabel} htmlFor="slide-link-label">
+          <input id="slide-link-label" type="text" maxLength={80} value={form.linkLabel} placeholder="Learn more"
+            onChange={(e) => onChange({ linkLabel: e.target.value })} className={INPUT_CLASS} />
+        </Field>
+      </div>
+
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <Field label="Show from (optional)" error={errors.startsAt} htmlFor="slide-starts">
+          <input id="slide-starts" type="datetime-local" value={form.startsAt}
+            onChange={(e) => onChange({ startsAt: e.target.value })} className={INPUT_CLASS} />
+        </Field>
+        <Field label="Hide after (optional)" error={errors.endsAt} htmlFor="slide-ends">
+          <input id="slide-ends" type="datetime-local" value={form.endsAt} min={form.startsAt || undefined}
+            onChange={(e) => onChange({ endsAt: e.target.value })} className={INPUT_CLASS} />
+        </Field>
       </div>
     </div>
   );
 }
 
-function ExistingImageDialog({ onClose, onAdded }) {
-  const [photos, setPhotos] = useState([]);
-  const [selected, setSelected] = useState(null);
-  const [title, setTitle] = useState('');
-  const [subtitle, setSubtitle] = useState('');
-  const [altText, setAltText] = useState('');
-  const [linkUrl, setLinkUrl] = useState('');
-  const [linkLabel, setLinkLabel] = useState('');
-  const [startsAt, setStartsAt] = useState('');
-  const [endsAt, setEndsAt] = useState('');
-  const [isActive, setIsActive] = useState(true);
-  const [loading, setLoading] = useState(true);
-  const [submitting, setSubmitting] = useState(false);
+function SlideModal({ slide, activeCount, onClose, onCreate, onRegister, onSaveMeta, onReplaceImage }) {
+  const isEdit = Boolean(slide);
+
+  const [mode, setMode] = useState('upload');
+  const [form, setForm] = useState(() => (isEdit
+    ? {
+      ...emptyForm(),
+      title: slide.title || '',
+      subtitle: slide.subtitle || '',
+      altText: slide.altText || '',
+      linkUrl: slide.linkUrl || '',
+      linkLabel: slide.linkLabel || '',
+      startsAt: slide.startsAt ? String(slide.startsAt).slice(0, 16) : '',
+      endsAt: slide.endsAt ? String(slide.endsAt).slice(0, 16) : '',
+      isActive: slide.isActive,
+    }
+    : emptyForm()));
+
+  const [file, setFile] = useState(null);
+  const [filePreview, setFilePreview] = useState('');
+  const [fileDimensions, setFileDimensions] = useState(null);
+  const [replaceMode, setReplaceMode] = useState(false);
+  const [errors, setErrors] = useState({});
   const [error, setError] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+
+  const [library, setLibrary] = useState([]);
+  const [libraryLoading, setLibraryLoading] = useState(false);
+  const [librarySelection, setLibrarySelection] = useState(null);
+
+  const fileRef = useRef(null);
+
+  // Object URLs leak if they're not revoked when the chosen file changes.
+  useEffect(() => () => { if (filePreview.startsWith('blob:')) URL.revokeObjectURL(filePreview); }, [filePreview]);
 
   useEffect(() => {
-    fetch('/api/admin/ios-homepage-slideshow/library', { cache: 'no-store' })
-      .then(readJsonResponse)
-      .then((body) => setPhotos(Array.isArray(body) ? body : body?.items ?? body?.data ?? []))
-      .catch((requestError) => setError(requestError.message || 'Could not load the photo library.'))
-      .finally(() => setLoading(false));
-  }, []);
+    if (isEdit || mode !== 'library' || library.length || libraryLoading) return;
+    setLibraryLoading(true);
+    fetch(`${API_BASE}/library`, { cache: 'no-store' })
+      .then(readJson)
+      .then((body) => setLibrary(Array.isArray(body) ? body : body?.items ?? body?.data ?? []))
+      .catch((err) => setError(err.message ?? 'Could not load the photo library.'))
+      .finally(() => setLibraryLoading(false));
+  }, [isEdit, mode, library.length, libraryLoading]);
 
-  async function submit(event) {
-    event.preventDefault();
-    const assetId = selected?.immich_asset_id;
-    if (!assetId || !title.trim() || !altText.trim()) {
-      setError('Choose an image and provide both a title and alt text.');
-      return;
-    }
-    if (linkUrl && !/^https:\/\//i.test(linkUrl)) {
-      setError('Link URL must use HTTPS.');
-      return;
-    }
-    if (startsAt && endsAt && new Date(startsAt) >= new Date(endsAt)) {
-      setError('End date/time must be after the start date/time.');
-      return;
-    }
-    setSubmitting(true);
+  function selectFile(picked) {
+    if (!picked) return;
+    setFile(picked);
+    setErrors((prev) => ({ ...prev, file: undefined }));
     setError('');
+
+    const url = URL.createObjectURL(picked);
+    setFilePreview(url);
+
+    const probe = new Image();
+    probe.onload = () => setFileDimensions({ width: probe.naturalWidth, height: probe.naturalHeight });
+    probe.onerror = () => setFileDimensions(null);
+    probe.src = url;
+  }
+
+  function updateForm(patch) {
+    setForm((prev) => ({ ...prev, ...patch }));
+    setErrors((prev) => {
+      const next = { ...prev };
+      Object.keys(patch).forEach((key) => delete next[key]);
+      return next;
+    });
+  }
+
+  const previewSlide = useMemo(() => ({
+    title: form.title,
+    subtitle: form.subtitle || null,
+    altText: form.altText,
+    linkLabel: form.linkLabel || null,
+  }), [form]);
+
+  // In edit mode with no new file, the only image is the stored 1500x1000
+  // derivative — already exactly 3:2, so there is nothing left to reposition.
+  const previewImage = filePreview || (isEdit ? slideMediaUrl(slide.id) : '');
+  const showFocalPicker = Boolean(filePreview);
+
+  async function submit(e) {
+    e.preventDefault();
+    setError('');
+
+    const validation = validateSlideForm(
+      { ...form, file, fileDimensions },
+      { requireFile: !isEdit && mode === 'upload' },
+    );
+    if (!validation.valid) {
+      setErrors(validation.errors);
+      setError('Fix the highlighted fields before saving.');
+      return;
+    }
+    if (!isEdit && mode === 'library' && !librarySelection) {
+      setError('Choose an image from the library first.');
+      return;
+    }
+
+    setSubmitting(true);
     try {
-      const response = await fetch('/api/admin/ios-homepage-slideshow/register', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ immich_asset_id: String(assetId), title: title.trim(), subtitle: subtitle.trim() || null, alt_text: altText.trim(), link_url: linkUrl.trim() || null, link_label: linkLabel.trim() || null, is_active: isActive, starts_at: startsAt || null, ends_at: endsAt || null, focal_x: 0.5, focal_y: 0.5 }),
-      });
-      await readJsonResponse(response);
-      await onAdded();
-    } catch (requestError) {
-      setError(requestError.message || 'Could not add the selected image.');
+      if (isEdit) {
+        // Metadata first, then the image. The reverse order can leave a slide
+        // with a swapped picture but the caption edits silently dropped.
+        const payload = buildUpdateSlidePayload(
+          {
+            title: slide.title, subtitle: slide.subtitle, altText: slide.altText,
+            linkUrl: slide.linkUrl, linkLabel: slide.linkLabel,
+            isActive: slide.isActive, startsAt: slide.startsAt, endsAt: slide.endsAt,
+          },
+          form,
+        );
+        if (Object.keys(payload).length) await onSaveMeta(slide.id, payload);
+        if (replaceMode && file) await onReplaceImage(slide.id, file, form.focalX, form.focalY);
+      } else if (mode === 'library') {
+        await onRegister({ ...form, immichAssetId: librarySelection.immich_asset_id });
+      } else {
+        await onCreate({ ...form, file });
+      }
+      onClose();
+    } catch (err) {
+      setError(err.message ?? 'Something went wrong.');
     } finally {
       setSubmitting(false);
     }
   }
 
-  return <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-slate-950/60 p-4 backdrop-blur-sm"><form onSubmit={submit} className="w-full max-w-4xl rounded-2xl bg-white p-5 shadow-2xl dark:bg-slate-950">
-    <div className="mb-4 flex items-start justify-between"><div><h2 className="text-lg font-semibold">Choose photo-library image</h2><p className="text-sm text-slate-500">Register an existing image as a mobile slideshow slide.</p></div><button type="button" onClick={onClose} aria-label="Close"><X className="h-5 w-5" /></button></div>
-    {error && <p className="mb-3 rounded-lg bg-red-50 p-3 text-sm text-red-800">{error}</p>}
-    <div className="grid max-h-56 grid-cols-3 gap-3 overflow-y-auto sm:grid-cols-4">{loading ? <p className="col-span-full text-sm text-slate-500">Loading images…</p> : photos.filter((photo) => (!photo.media_type || photo.media_type === 'image') && photo.immich_asset_id).map((photo) => <button key={photo.id} type="button" onClick={() => setSelected(photo)} className={cx('overflow-hidden rounded-lg border text-left', selected?.id === photo.id ? 'border-red-700 ring-2 ring-red-200' : 'border-slate-200')}><img src={`/api/photos/${photo.id}/media`} alt={photo.title || 'Library image'} className="aspect-square w-full object-cover" /><span className="block truncate p-1.5 text-xs">{photo.title || 'Untitled'}</span></button>)}</div>
-    <div className="mt-4 grid gap-3 sm:grid-cols-2"><Input value={title} onChange={(event) => setTitle(event.target.value)} placeholder="Title (required)" /><Input value={altText} onChange={(event) => setAltText(event.target.value)} placeholder="Alt text (required)" /><Textarea value={subtitle} onChange={(event) => setSubtitle(event.target.value)} placeholder="Subtitle (optional)" className="sm:col-span-2" /><Input value={linkUrl} onChange={(event) => setLinkUrl(event.target.value)} placeholder="HTTPS link (optional)" /><Input value={linkLabel} onChange={(event) => setLinkLabel(event.target.value)} placeholder="Link label (optional)" /><Input type="datetime-local" value={startsAt} onChange={(event) => setStartsAt(event.target.value)} aria-label="Start date/time" /><Input type="datetime-local" value={endsAt} onChange={(event) => setEndsAt(event.target.value)} aria-label="End date/time" /><label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={isActive} onChange={(event) => setIsActive(event.target.checked)} />Show on homepage</label></div>
-    <div className="mt-5 flex justify-end gap-2"><Button type="button" variant="outline" onClick={onClose} disabled={submitting}>Cancel</Button><Button type="submit" className="bg-red-900 hover:bg-red-800" disabled={submitting}>{submitting ? 'Adding…' : 'Add slide'}</Button></div>
-  </form></div>;
-}
-
-function SlideRow({ slide, index, total, draggingId, busy, onMove, onEdit, onToggleActive, onDelete, onDragStart, onDragOver, onDrop, onDragEnd }) {
-  const status = getSlideScheduleState(slide);
-  const mediaUrl = `/api/admin/ios-homepage-slideshow/${slide.id}/media`;
-  const hasLink = Boolean(slide.linkUrl || slide.linkLabel);
+  const atCapacity = !isEdit && activeCount >= MAX_ACTIVE;
 
   return (
-    <li
-      className={cx('rounded-2xl border border-slate-200 bg-white px-3 py-3 shadow-sm transition-shadow dark:border-slate-800 dark:bg-slate-950', draggingId === slide.id && 'ring-2 ring-red-500')}
-      draggable
-      onDragStart={(event) => onDragStart(event, slide.id)}
-      onDragOver={(event) => onDragOver(event, slide.id)}
-      onDrop={(event) => onDrop(event, slide.id)}
-      onDragEnd={onDragEnd}
-    >
-      <div className="flex flex-col gap-4 xl:flex-row xl:items-start">
-        <div className="flex items-start gap-3 xl:w-[calc(100%-24rem)]">
-          <button
-            type="button"
-            className="mt-1 rounded-lg p-2 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
-            aria-label={`Drag slide ${index + 1}`}
-            title="Drag to reorder"
-          >
-            <GripVertical className="h-5 w-5" />
-          </button>
+    <ModalWrapper onClose={onClose} label={isEdit ? 'Edit slide' : 'New slide'} maxWidth="max-w-4xl">
+      <ModalHeader
+        title={isEdit ? `Edit: ${slide.title}` : 'New slide'}
+        icon={isEdit ? <Pencil size={13} /> : <Plus size={14} />}
+        onClose={onClose}
+      />
+      <form onSubmit={submit}>
+        <div className="flex max-h-[75vh] overflow-hidden">
+          <div className="flex-1 space-y-5 overflow-y-auto p-5">
+            {!isEdit && (
+              <div className="inline-flex rounded-xl border border-border bg-muted/40 p-0.5 text-xs font-medium">
+                {[['upload', 'Upload image'], ['library', 'From photo library']].map(([value, label]) => (
+                  <button
+                    key={value}
+                    type="button"
+                    onClick={() => { setMode(value); setError(''); }}
+                    className={cn('rounded-lg px-4 py-1.5 transition-all', mode === value ? 'text-white shadow-sm' : 'text-muted-foreground hover:text-foreground')}
+                    style={mode === value ? { background: MAROON.gradient } : undefined}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            )}
 
-          <div className="w-32 shrink-0 sm:w-40">
-            <SlidePreview src={mediaUrl} alt={slide.altText || slide.title || 'Slide preview'} emptyLabel="No preview" />
+            {!isEdit && mode === 'library' ? (
+              <div>
+                <p className="mb-2 text-xs text-muted-foreground">
+                  Registers an existing shared-album image as a slide. The server still crops its own 3:2 copy; the original is untouched.
+                </p>
+                <div className="grid max-h-56 grid-cols-3 gap-3 overflow-y-auto sm:grid-cols-4">
+                  {libraryLoading ? (
+                    <p className="col-span-full flex items-center gap-2 py-6 text-sm text-muted-foreground">
+                      <Loader2 size={14} className="animate-spin" /> Loading images…
+                    </p>
+                  ) : library.length === 0 ? (
+                    <p className="col-span-full py-6 text-sm text-muted-foreground">No library images available.</p>
+                  ) : (
+                    library
+                      .filter((photo) => (!photo.media_type || photo.media_type === 'image') && photo.immich_asset_id)
+                      .map((photo) => (
+                        <button
+                          key={photo.id}
+                          type="button"
+                          onClick={() => setLibrarySelection(photo)}
+                          className={cn(
+                            'overflow-hidden rounded-lg border text-left',
+                            librarySelection?.id === photo.id ? 'border-transparent ring-2' : 'border-border',
+                          )}
+                          style={librarySelection?.id === photo.id ? { '--tw-ring-color': MAROON.light } : undefined}
+                        >
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img src={`/api/photos/${photo.id}/media`} alt={photo.title || 'Library image'}
+                            className="aspect-square w-full object-cover" loading="lazy" decoding="async" />
+                          <span className="block truncate p-1.5 text-xs text-foreground">{photo.title || 'Untitled'}</span>
+                        </button>
+                      ))
+                  )}
+                </div>
+              </div>
+            ) : isEdit && !replaceMode ? (
+              <div className="flex items-center justify-between rounded-xl border border-border bg-muted/20 px-4 py-3">
+                <div className="flex items-center gap-3">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={slideMediaUrl(slide.id)} alt="" className="h-12 w-[72px] rounded-lg object-cover" loading="lazy" decoding="async" />
+                  <p className="text-xs text-muted-foreground">Current image</p>
+                </div>
+                <button type="button" onClick={() => setReplaceMode(true)}
+                  className="flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-muted-foreground hover:bg-muted hover:text-foreground">
+                  <Upload size={11} /> Replace image
+                </button>
+              </div>
+            ) : showFocalPicker ? (
+              <div className="space-y-2">
+                <FocalPointPicker src={filePreview} focal={{ x: form.focalX, y: form.focalY }}
+                  onChange={(x, y) => updateForm({ focalX: x, focalY: y })} />
+                <button type="button"
+                  onClick={() => { setFile(null); setFilePreview(''); setFileDimensions(null); if (isEdit) setReplaceMode(false); }}
+                  className="text-xs text-muted-foreground hover:text-foreground">
+                  {isEdit ? 'Keep the current image' : 'Choose a different image'}
+                </button>
+                {errors.file && <p className="text-[11px] text-destructive">{errors.file}</p>}
+              </div>
+            ) : (
+              <div>
+                <div
+                  onClick={() => fileRef.current?.click()}
+                  onDragOver={(e) => e.preventDefault()}
+                  onDrop={(e) => { e.preventDefault(); selectFile(e.dataTransfer.files?.[0]); }}
+                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); fileRef.current?.click(); } }}
+                  role="button"
+                  tabIndex={0}
+                  className="flex cursor-pointer flex-col items-center gap-2 rounded-2xl border-2 border-dashed border-border bg-muted/20 px-6 py-8 text-center hover:bg-muted/40"
+                >
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl" style={{ background: tint(MAROON.base, 0.08) }}>
+                    <Upload size={18} style={{ color: MAROON.light }} />
+                  </div>
+                  <p className="text-sm font-medium text-foreground">Click or drag an image here</p>
+                  <p className="text-xs text-muted-foreground">JPEG, PNG, WebP, HEIC · max 15 MB</p>
+                  <p className="text-[11px] text-muted-foreground/70">At least 900 × 600. The server crops a 3:2 copy at 1500 × 1000.</p>
+                </div>
+                {errors.file && <p className="mt-1 text-[11px] text-destructive">{errors.file}</p>}
+                {isEdit && (
+                  <button type="button" onClick={() => setReplaceMode(false)} className="mt-2 text-xs text-muted-foreground hover:text-foreground">
+                    Keep the current image
+                  </button>
+                )}
+              </div>
+            )}
+
+            <input ref={fileRef} type="file" accept={IMG_ACCEPT} className="sr-only"
+              onChange={(e) => selectFile(e.target.files?.[0])} />
+
+            <SlideMetaForm form={form} errors={errors} onChange={updateForm} />
+
+            {!isEdit && (
+              <label className="flex items-center gap-3 rounded-xl border border-border px-4 py-3 text-sm text-foreground">
+                <input type="checkbox" checked={form.isActive} disabled={atCapacity}
+                  onChange={(e) => updateForm({ isActive: e.target.checked })} className="h-4 w-4 rounded border-border" />
+                Show in the slideshow straight away
+              </label>
+            )}
+
+            {atCapacity && (
+              <div className="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-800 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-300">
+                <Info size={12} className="mt-0.5 shrink-0" />
+                The slideshow already has {MAX_ACTIVE} active slides. This one can be saved as inactive — deactivate another to make room for it.
+              </div>
+            )}
+
+            {error && (
+              <div className="flex items-center gap-2 rounded-xl bg-destructive/10 px-4 py-2.5 text-xs text-destructive">
+                <AlertTriangle size={12} /> {error}
+              </div>
+            )}
           </div>
 
-          <div className="min-w-0 flex-1 space-y-2">
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="rounded-full bg-slate-900 px-2.5 py-1 text-xs font-medium text-white dark:bg-slate-100 dark:text-slate-900">#{index + 1}</span>
-              <StatusBadge label={status.label} tone={status.tone} />
-              {slide.isActive ? <span className="text-xs font-medium text-emerald-700">Visible in slideshow</span> : <span className="text-xs font-medium text-slate-500">Hidden from slideshow</span>}
-            </div>
-
-            <div className="min-w-0 space-y-1">
-              <h3 className="truncate text-base font-semibold text-slate-900 dark:text-slate-50">{slide.title || 'Untitled slide'}</h3>
-              {slide.subtitle && <p className="text-sm text-slate-600 dark:text-slate-300">{slide.subtitle}</p>}
-              <p className="text-xs text-slate-500">Alt text: {slide.altText || 'Required but empty'}</p>
-            </div>
-
-            <div className="flex flex-wrap gap-3 text-xs text-slate-500">
-              <span>Schedule: {formatSlideSchedule(slide)}</span>
-              {hasLink && <span>Link: {slide.linkLabel || 'Open link'}{slide.linkUrl ? ` (${slide.linkUrl})` : ''}</span>}
-            </div>
+          <div className="hidden w-64 shrink-0 flex-col items-center border-l border-border bg-muted/20 p-6 lg:flex">
+            <p className="mb-4 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Live preview</p>
+            <IphoneFrame slide={previewSlide} imageSrc={previewImage} />
           </div>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2 xl:w-[22rem] xl:justify-end">
-          <Button type="button" variant="outline" size="sm" disabled={busy || index === 0} onClick={() => onMove(index, -1)} aria-label={`Move slide ${index + 1} up`}>
-            <ArrowUp className="h-4 w-4" />
-          </Button>
-          <Button type="button" variant="outline" size="sm" disabled={busy || index === total - 1} onClick={() => onMove(index, 1)} aria-label={`Move slide ${index + 1} down`}>
-            <ArrowDown className="h-4 w-4" />
-          </Button>
-          <Button type="button" variant="outline" size="sm" onClick={() => onEdit(slide)} aria-label={`Edit slide ${index + 1}`}>
-            <PencilLine className="h-4 w-4" />
-          </Button>
-          <Button type="button" variant="outline" size="sm" onClick={() => onToggleActive(slide)} disabled={busy} aria-label={slide.isActive ? `Deactivate slide ${index + 1}` : `Activate slide ${index + 1}`}>
-            <Power className="h-4 w-4" />
-          </Button>
-          <Button type="button" variant="destructive" size="sm" onClick={() => onDelete(slide)} disabled={busy} aria-label={`Delete slide ${index + 1}`}>
-            <Trash2 className="h-4 w-4" />
-          </Button>
+        <div className="flex items-center justify-end gap-2 border-t border-border px-5 py-4">
+          <button type="button" onClick={onClose} disabled={submitting}
+            className="rounded-lg border border-border px-4 py-2 text-sm font-medium text-muted-foreground hover:bg-muted disabled:opacity-40">
+            Cancel
+          </button>
+          <button type="submit" disabled={submitting}
+            className="flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold text-white disabled:opacity-40"
+            style={{ background: MAROON.gradient }}>
+            {submitting && <Loader2 size={13} className="animate-spin" />}
+            {submitting ? 'Saving…' : isEdit ? 'Save changes' : 'Create slide'}
+          </button>
+        </div>
+      </form>
+    </ModalWrapper>
+  );
+}
+
+function CapacityMeter({ activeCount }) {
+  const atCap = activeCount >= MAX_ACTIVE;
+  const nearCap = activeCount >= MAX_ACTIVE - 2;
+  const pct = Math.min(100, (activeCount / MAX_ACTIVE) * 100);
+
+  return (
+    <div className={cn('overflow-hidden rounded-2xl border bg-card shadow-sm',
+      atCap ? 'border-destructive/30' : nearCap ? 'border-amber-300 dark:border-amber-900' : 'border-border')}>
+      <div className="px-5 py-4">
+        <div className="mb-2 flex items-center justify-between">
+          <p className="text-sm font-semibold text-foreground">Active slide capacity</p>
+          <p className={cn('text-sm font-bold', atCap ? 'text-destructive' : nearCap ? 'text-amber-600 dark:text-amber-400' : 'text-foreground')}>
+            {activeCount} / {MAX_ACTIVE}
+          </p>
+        </div>
+        <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
+          <div className="h-full rounded-full transition-all duration-500"
+            style={{ width: `${pct}%`, background: atCap ? '#dc2626' : nearCap ? '#f59e0b' : MAROON.gradient }} />
+        </div>
+        <p className={cn('mt-2 text-xs', atCap ? 'text-destructive' : nearCap ? 'text-amber-700 dark:text-amber-400' : 'text-muted-foreground')}>
+          {atCap
+            ? 'At capacity — deactivate a slide before activating another.'
+            : `${MAX_ACTIVE - activeCount} slot${MAX_ACTIVE - activeCount !== 1 ? 's' : ''} available`}
+        </p>
+      </div>
+    </div>
+  );
+}
+
+function ScheduleTimeline({ slides }) {
+  const [collapsed, setCollapsed] = useState(false);
+
+  const { gapRanges, lanes, startMs } = useMemo(() => {
+    const start = Date.now();
+    const scheduled = slides.filter((s) => s.startsAt || s.endsAt);
+
+    const isActiveOn = (slide, dayStart, dayEnd) => {
+      if (!slide.isActive) return false;
+      const from = slide.startsAt ? new Date(slide.startsAt).getTime() : 0;
+      const to = slide.endsAt ? new Date(slide.endsAt).getTime() : Infinity;
+      return from < dayEnd && to > dayStart;
+    };
+
+    const gapDays = [];
+    for (let d = 0; d < TIMELINE_DAYS; d += 1) {
+      const dayStart = start + d * DAY_MS;
+      if (!slides.some((s) => isActiveOn(s, dayStart, dayStart + DAY_MS))) gapDays.push(d);
+    }
+
+    const ranges = [];
+    let open = null;
+    for (let d = 0; d <= TIMELINE_DAYS; d += 1) {
+      if (gapDays.includes(d)) {
+        if (open === null) open = d;
+      } else if (open !== null) {
+        ranges.push({ start: open, end: d - 1 });
+        open = null;
+      }
+    }
+
+    return { gapRanges: ranges, lanes: scheduled, startMs: start };
+  }, [slides]);
+
+  const fmt = (ms) => new Date(ms).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  const laneColors = ['#7f1d1d', '#7e22ce', '#1d4ed8', '#15803d', '#b45309', '#0e7490', '#be185d'];
+
+  return (
+    <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
+      <div className="flex items-center justify-between border-b border-border px-5 py-4" style={{ background: tint(MAROON.base, 0.03) }}>
+        <div className="flex items-center gap-3">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg text-white" style={{ background: MAROON.gradient }}>
+            <AlarmClock size={14} />
+          </div>
+          <div>
+            <p className="text-sm font-semibold text-foreground">Schedule timeline</p>
+            <p className="text-[11px] text-muted-foreground">Next {TIMELINE_DAYS} days · coverage gaps highlighted</p>
+          </div>
+        </div>
+        <button type="button" onClick={() => setCollapsed((p) => !p)}
+          className="flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs text-muted-foreground hover:bg-muted hover:text-foreground">
+          {collapsed ? <><ChevronDown size={13} /> Show</> : <><ChevronUp size={13} /> Collapse</>}
+        </button>
+      </div>
+
+      {!collapsed && (
+        <div className="overflow-x-auto p-5">
+          {gapRanges.length > 0 && (
+            <div className="mb-4 flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 dark:border-amber-900 dark:bg-amber-950">
+              <AlertTriangle size={13} className="mt-0.5 shrink-0 text-amber-600 dark:text-amber-400" />
+              <div className="text-xs text-amber-800 dark:text-amber-300">
+                <span className="font-semibold">No slides scheduled for:</span>{' '}
+                {gapRanges.map((r) => (r.start === r.end
+                  ? fmt(startMs + r.start * DAY_MS)
+                  : `${fmt(startMs + r.start * DAY_MS)}–${fmt(startMs + r.end * DAY_MS)}`)).join(', ')}
+                {' '}— the app slideshow will be empty on those dates.
+              </div>
+            </div>
+          )}
+
+          {lanes.length === 0 ? (
+            <p className="py-4 text-center text-xs text-muted-foreground">
+              No slides have a scheduling window. Every active slide shows all the time.
+            </p>
+          ) : (
+            <div style={{ minWidth: 600 }}>
+              <div className="mb-1 flex" style={{ paddingLeft: 140 }}>
+                {Array.from({ length: TIMELINE_DAYS }).map((_, d) => (d % 7 === 0 ? (
+                  <div key={d} className="text-[10px] text-muted-foreground" style={{ flex: `0 0 ${(7 / TIMELINE_DAYS) * 100}%` }}>
+                    {fmt(startMs + d * DAY_MS)}
+                  </div>
+                ) : null))}
+              </div>
+
+              <div className="relative mb-1 h-3 rounded-full" style={{ marginLeft: 140 }}>
+                {gapRanges.map((r) => (
+                  <div key={`${r.start}-${r.end}`} className="absolute h-full rounded-full bg-amber-300/50"
+                    style={{ left: `${(r.start / TIMELINE_DAYS) * 100}%`, width: `${((r.end - r.start + 1) / TIMELINE_DAYS) * 100}%` }} />
+                ))}
+              </div>
+
+              {lanes.map((slide, i) => {
+                const from = slide.startsAt ? Math.max(0, (new Date(slide.startsAt).getTime() - startMs) / (TIMELINE_DAYS * DAY_MS)) : 0;
+                const to = slide.endsAt ? Math.min(1, (new Date(slide.endsAt).getTime() - startMs) / (TIMELINE_DAYS * DAY_MS)) : 1;
+                return (
+                  <div key={slide.id} className="mb-1 flex items-center gap-2">
+                    <div className="w-[132px] shrink-0 truncate pr-2 text-right text-[11px] text-muted-foreground">{slide.title}</div>
+                    <div className="relative h-5 flex-1 rounded-full bg-muted/60">
+                      <div className="absolute h-full rounded-full"
+                        style={{ left: `${from * 100}%`, width: `${Math.max(0.02, to - from) * 100}%`, background: laneColors[i % laneColors.length] }} />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function StateBadge({ tone }) {
+  const style = STATE_STYLES[tone] ?? STATE_STYLES.inactive;
+  return (
+    <span className={cn('inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[11px] font-semibold', style.pill)}>
+      <span className={cn('h-1.5 w-1.5 rounded-full', style.dot)} />
+      {style.label}
+    </span>
+  );
+}
+
+function SlideRow({
+  slide, index, selected, busy, atCap, isDragging, isDropTarget,
+  onSelect, onEdit, onToggleActive, onDelete, onDragStart, onDragOver, onDrop, onDragEnd,
+}) {
+  const [menuOpen, setMenuOpen] = useState(false);
+  const state = getSlideScheduleState(slide);
+  const schedule = formatSlideSchedule(slide);
+  const blockedByCap = atCap && !slide.isActive;
+
+  return (
+    <div
+      draggable
+      onDragStart={onDragStart}
+      onDragOver={(e) => { e.preventDefault(); onDragOver(); }}
+      onDrop={onDrop}
+      onDragEnd={onDragEnd}
+      onClick={onSelect}
+      className={cn(
+        'group relative flex cursor-pointer items-start gap-3 rounded-2xl border bg-card px-4 py-3 transition-all',
+        selected ? 'border-transparent ring-1' : 'border-border hover:shadow-sm',
+        isDragging && 'scale-[0.98] opacity-50',
+        isDropTarget && !isDragging && 'border-dashed',
+        state.tone === 'expired' && 'opacity-70',
+      )}
+      style={selected ? { '--tw-ring-color': tint(MAROON.base, 0.4), borderColor: tint(MAROON.base, 0.4) } : undefined}
+    >
+      <div className="flex flex-col items-center gap-1 pt-0.5">
+        <span className="flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-bold text-white" style={{ background: MAROON.gradient }}>
+          {index + 1}
+        </span>
+        <span className="cursor-grab text-muted-foreground/50" aria-hidden="true"><GripVertical size={13} /></span>
+      </div>
+
+      <div className="relative shrink-0 overflow-hidden rounded-xl" style={{ width: 80, height: 54 }}>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={slideMediaUrl(slide.id)} alt={slide.altText || ''} className="h-full w-full object-cover" loading="lazy" decoding="async" />
+        {!slide.isActive && <div className="absolute inset-0 bg-background/50 backdrop-blur-[1px]" />}
+      </div>
+
+      <div className="flex min-w-0 flex-1 flex-col gap-1">
+        <div className="flex flex-wrap items-center gap-1.5">
+          <p className="truncate text-sm font-semibold text-foreground">{slide.title}</p>
+          <StateBadge tone={state.tone} />
+          {state.tone === 'expired' && (
+            <span className="rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[10px] text-amber-700 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-300">
+              Cleanup candidate
+            </span>
+          )}
+        </div>
+        {slide.subtitle && <p className="truncate text-xs text-muted-foreground">{slide.subtitle}</p>}
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[11px] text-muted-foreground">
+          {schedule && schedule !== 'Unscheduled' && <span className="flex items-center gap-1"><Calendar size={10} />{schedule}</span>}
+          {slide.linkUrl && <span className="flex items-center gap-1"><ExternalLink size={10} />{slide.linkLabel || 'Link'}</span>}
+          {slide.created_at && <span>Added {timeAgo(slide.created_at)}</span>}
         </div>
       </div>
-    </li>
+
+      <div className="ml-2 flex shrink-0 items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
+        <button type="button" onClick={onEdit}
+          className="flex items-center gap-1 rounded-lg border border-border px-2.5 py-1.5 text-xs font-medium text-muted-foreground hover:bg-muted hover:text-foreground">
+          <Pencil size={11} /> Edit
+        </button>
+        <button
+          type="button"
+          onClick={onToggleActive}
+          disabled={busy || blockedByCap}
+          title={blockedByCap ? `At ${MAX_ACTIVE} active slides — deactivate another first` : undefined}
+          className={cn(
+            'flex items-center gap-1 rounded-lg border px-2.5 py-1.5 text-xs font-medium transition-colors disabled:opacity-40',
+            slide.isActive ? 'border-border text-muted-foreground hover:bg-muted' : 'border-transparent text-white hover:opacity-85',
+          )}
+          style={!slide.isActive ? { background: MAROON.gradient } : undefined}
+        >
+          {slide.isActive ? <><EyeOff size={11} /> Deactivate</> : <><Eye size={11} /> Activate</>}
+        </button>
+        <div className="relative">
+          <button type="button" onClick={() => setMenuOpen((p) => !p)} aria-label={`More actions for ${slide.title}`}
+            className="rounded-lg border border-border p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground">
+            <MoreVertical size={13} />
+          </button>
+          {menuOpen && (
+            <>
+              <div className="fixed inset-0 z-10" onClick={() => setMenuOpen(false)} />
+              <div className="absolute right-0 top-full z-20 mt-1 w-36 overflow-hidden rounded-xl border border-border bg-card shadow-lg">
+                <button type="button" onClick={() => { setMenuOpen(false); onDelete(); }}
+                  className="flex w-full items-center gap-2 px-3 py-2.5 text-xs text-destructive hover:bg-destructive/5">
+                  <Trash2 size={11} /> Delete slide
+                </button>
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+    </div>
   );
 }
 
 export default function IosHomepageSlideshowManager() {
-  const confirm = useConfirm();
   const [slides, setSlides] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
-  const [flash, setFlash] = useState(null);
-  const [editorMode, setEditorMode] = useState(null);
-  const [libraryOpen, setLibraryOpen] = useState(false);
-  const [form, setForm] = useState(createEmptySlideForm());
-  const [fieldErrors, setFieldErrors] = useState({});
-  const [submitting, setSubmitting] = useState(false);
-  const [filePreviewUrl, setFilePreviewUrl] = useState('');
-  const [fileDimensions, setFileDimensions] = useState(null);
-  const [draggingId, setDraggingId] = useState('');
-  const [busyOperation, setBusyOperation] = useState(false);
-  const flashTimer = useRef(null);
+  const [flash, setFlash] = useState('');
 
-  const editSlide = editorMode?.slide ?? null;
-  const editPreviewUrl = editSlide ? `/api/admin/ios-homepage-slideshow/${editSlide.id}/media` : '';
-
-  const sortedSlides = useMemo(() => [...slides].sort((a, b) => (a.displayOrder - b.displayOrder) || a.id.localeCompare(b.id)), [slides]);
+  const [selectedId, setSelectedId] = useState(null);
+  const [filter, setFilter] = useState('all');
+  const [showCreate, setShowCreate] = useState(false);
+  const [editTarget, setEditTarget] = useState(null);
+  const [deleteTarget, setDeleteTarget] = useState(null);
+  const [dragIndex, setDragIndex] = useState(null);
+  const [overIndex, setOverIndex] = useState(null);
 
   useEffect(() => {
-    loadSlides();
+    load({ initial: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
     if (!flash) return undefined;
-    clearTimeout(flashTimer.current);
-    flashTimer.current = window.setTimeout(() => setFlash(null), 4000);
-    return () => clearTimeout(flashTimer.current);
+    const timer = setTimeout(() => setFlash(''), 4000);
+    return () => clearTimeout(timer);
   }, [flash]);
 
-  async function loadSlides() {
+  async function load({ initial = false } = {}) {
+    if (!initial) setRefreshing(true);
     setError('');
-    setRefreshing(true);
     try {
-      const response = await fetch('/api/admin/ios-homepage-slideshow', { cache: 'no-store' });
-      const body = await readJsonResponse(response);
+      const body = await readJson(await fetch(API_BASE, { cache: 'no-store' }));
       const list = Array.isArray(body) ? body : body?.slides ?? body?.items ?? body?.data ?? [];
-      setSlides(list.map(normalizeSlideRecord));
-    } catch (requestError) {
-      setError(requestError.message || 'Could not load slideshow items.');
+      const normalized = list.map(normalizeSlideRecord).sort((a, b) => (a.displayOrder - b.displayOrder) || String(a.id).localeCompare(String(b.id)));
+      setSlides(normalized);
+      setSelectedId((prev) => (prev && normalized.some((s) => s.id === prev) ? prev : normalized[0]?.id ?? null));
+    } catch (err) {
+      setError(err.message ?? 'Could not load slideshow items.');
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
   }
 
-  function openCreateEditor() {
-    setFieldErrors({});
-    setForm(createEmptySlideForm());
-    setEditorMode({ type: 'create' });
-  }
+  const activeCount = useMemo(() => slides.filter((s) => s.isActive).length, [slides]);
+  const atCap = activeCount >= MAX_ACTIVE;
+  const selectedSlide = useMemo(() => slides.find((s) => s.id === selectedId) ?? null, [slides, selectedId]);
 
-  function openEditEditor(slide) {
-    setFieldErrors({});
-    setForm({
-      ...createEmptySlideForm(),
-      title: slide.title || '',
-      subtitle: slide.subtitle || '',
-      altText: slide.altText || '',
-      linkUrl: slide.linkUrl || '',
-      linkLabel: slide.linkLabel || '',
-      startsAt: slide.startsAt || '',
-      endsAt: slide.endsAt || '',
-      isActive: slide.isActive,
-    });
-    setEditorMode({ type: 'edit', slide });
-  }
+  const counts = useMemo(() => {
+    const base = { all: slides.length, active: 0, scheduled: 0, expired: 0, inactive: 0 };
+    slides.forEach((s) => { base[getSlideScheduleState(s).tone] += 1; });
+    return base;
+  }, [slides]);
 
-  function updateForm(patch) {
-    setForm((current) => ({ ...current, ...patch }));
-    setFieldErrors((current) => {
-      const next = { ...current };
-      Object.keys(patch).forEach((key) => delete next[key]);
-      return next;
-    });
-  }
+  const visibleSlides = useMemo(
+    () => (filter === 'all' ? slides : slides.filter((s) => getSlideScheduleState(s).tone === filter)),
+    [slides, filter],
+  );
 
-  async function selectFile(file) {
-    if (!file) {
-      updateForm({ file: null });
-      setFilePreviewUrl('');
-      setFileDimensions(null);
-      return;
-    }
-
-    const nextErrors = {};
-    if (!['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif'].includes(file.type)) {
-      nextErrors.file = 'JPEG, PNG, WebP, HEIC, or HEIF images only.';
-    } else if (file.size > 15 * 1024 * 1024) {
-      nextErrors.file = 'Image must be 15 MB or smaller.';
-    }
-
-    readPreviewSource(file).then(setFilePreviewUrl).catch(() => setFilePreviewUrl(''));
-
-    const dimensions = await inspectImageDimensions(file);
-    if (dimensions && (dimensions.width < 900 || dimensions.height < 600)) {
-      nextErrors.file = 'Image must be at least 900 × 600 pixels.';
-    }
-
-    updateForm({ file });
-    setFileDimensions(dimensions);
-    setFieldErrors((current) => ({ ...current, ...nextErrors }));
-  }
-
-  async function submitCreate(event) {
-    event.preventDefault();
-    const validation = validateSlideForm({ ...form, fileDimensions, file: form.file }, { requireFile: true });
-    if (!validation.valid) {
-      setFieldErrors(validation.errors);
-      setFlash({ tone: 'error', text: 'Fix the highlighted fields before uploading.' });
-      return;
-    }
-
-    setSubmitting(true);
-    setBusyOperation(true);
+  async function persistOrder(next) {
+    const previous = slides;
+    setSlides(next);
+    setBusy(true);
+    setError('');
     try {
-      let uploadFile = form.file;
-      let cropUnavailable = false;
-      if (form.cropToFrame) {
-        try {
-          uploadFile = await cropToSlideshowFrame(form.file, form.cropLeft, form.cropTop, form.cropRight, form.cropBottom);
-        } catch {
-          // Some Safari/HEIC combinations cannot draw into a canvas. Preserve
-          // the original file rather than preventing the upload altogether.
-          cropUnavailable = true;
-        }
-      }
-      const response = await fetch('/api/admin/ios-homepage-slideshow', {
-        method: 'POST',
-        body: buildCreateSlideFormData({ ...form, file: uploadFile }),
-      });
-      await readJsonResponse(response);
-      setEditorMode(null);
-      setForm(createEmptySlideForm());
-      setFieldErrors({});
-      setFlash({ tone: 'success', text: cropUnavailable ? 'Slide uploaded; this browser could not apply the crop.' : 'Slide added successfully.' });
-      await loadSlides();
-    } catch (requestError) {
-      setFieldErrors((current) => ({ ...current, file: requestError.message }));
-      setFlash({ tone: 'error', text: requestError.message || 'Could not add the slide.' });
-    } finally {
-      setSubmitting(false);
-      setBusyOperation(false);
-    }
-  }
-
-  async function submitEdit(event) {
-    event.preventDefault();
-    if (!editSlide) return;
-
-    const validation = validateSlideForm(form, { requireFile: false });
-    if (!validation.valid) {
-      setFieldErrors(validation.errors);
-      setFlash({ tone: 'error', text: 'Fix the highlighted fields before saving.' });
-      return;
-    }
-
-    const payload = buildUpdateSlidePayload(
-      {
-        title: editSlide.title,
-        subtitle: editSlide.subtitle,
-        altText: editSlide.altText,
-        linkUrl: editSlide.linkUrl,
-        linkLabel: editSlide.linkLabel,
-        isActive: editSlide.isActive,
-        startsAt: editSlide.startsAt,
-        endsAt: editSlide.endsAt,
-      },
-      form,
-    );
-
-    if (Object.keys(payload).length === 0) {
-      setEditorMode(null);
-      setFlash({ tone: 'success', text: 'No changes to save.' });
-      return;
-    }
-
-    setSubmitting(true);
-    setBusyOperation(true);
-    try {
-      const response = await fetch(`/api/admin/ios-homepage-slideshow/${editSlide.id}`, {
+      await readJson(await fetch(`${API_BASE}/reorder`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
-      await readJsonResponse(response);
-      setEditorMode(null);
-      setFlash({ tone: 'success', text: 'Slide updated successfully.' });
-      await loadSlides();
-    } catch (requestError) {
-      setFlash({ tone: 'error', text: requestError.message || 'Could not save the slide.' });
+        body: JSON.stringify(buildReorderPayload(next.map((s) => s.id))),
+      }));
+      setFlash('Slide order saved.');
+      await load();
+    } catch (err) {
+      setSlides(previous);
+      setError(err.message ?? 'Could not save the new order.');
+      await load();
     } finally {
-      setSubmitting(false);
-      setBusyOperation(false);
+      setBusy(false);
     }
+  }
+
+  function handleDrop(index) {
+    const from = dragIndex;
+    setDragIndex(null);
+    setOverIndex(null);
+    if (from === null || from === index) return;
+    const next = [...slides];
+    const [moved] = next.splice(from, 1);
+    next.splice(index, 0, moved);
+    persistOrder(next);
   }
 
   async function toggleActive(slide) {
-    setBusyOperation(true);
+    if (!slide.isActive && atCap) return;
+    setBusy(true);
+    setError('');
     try {
-      const response = await fetch(`/api/admin/ios-homepage-slideshow/${slide.id}`, {
+      await readJson(await fetch(`${API_BASE}/${slide.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ is_active: !slide.isActive }),
-      });
-      await readJsonResponse(response);
-      setFlash({ tone: 'success', text: slide.isActive ? 'Slide deactivated.' : 'Slide activated.' });
-      await loadSlides();
-    } catch (requestError) {
-      setFlash({ tone: 'error', text: requestError.message || 'Could not change active status.' });
+      }));
+      setFlash(slide.isActive ? 'Slide deactivated.' : 'Slide activated.');
+      await load();
+    } catch (err) {
+      setError(err.message ?? 'Could not change the active status.');
     } finally {
-      setBusyOperation(false);
+      setBusy(false);
     }
   }
 
-  async function deleteSlide(slide) {
-    const confirmed = await confirm(
-      getDeleteConfirmationMessage(),
-      { title: 'Delete slide?', confirmLabel: 'Delete slide' },
-    );
+  async function createSlide(values) {
+    await readJson(await fetch(API_BASE, { method: 'POST', body: buildCreateSlideFormData(values) }));
+    setFlash('Slide created.');
+    await load();
+  }
 
-    if (!confirmed) return;
+  async function registerSlide(values) {
+    await readJson(await fetch(`${API_BASE}/register`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        immich_asset_id: String(values.immichAssetId),
+        title: values.title.trim(),
+        subtitle: values.subtitle.trim() || null,
+        alt_text: values.altText.trim(),
+        link_url: values.linkUrl.trim() || null,
+        link_label: values.linkLabel.trim() || null,
+        is_active: values.isActive,
+        starts_at: values.startsAt || null,
+        ends_at: values.endsAt || null,
+        focal_x: values.focalX,
+        focal_y: values.focalY,
+      }),
+    }));
+    setFlash('Slide added from the photo library.');
+    await load();
+  }
 
-    setBusyOperation(true);
+  async function saveMeta(id, payload) {
+    await readJson(await fetch(`${API_BASE}/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    }));
+    setFlash('Slide updated.');
+    await load();
+  }
+
+  async function replaceImage(id, file, focalX, focalY) {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('focal_x', String(focalX));
+    formData.append('focal_y', String(focalY));
+    await readJson(await fetch(`${API_BASE}/${id}/image`, { method: 'PUT', body: formData }));
+    setFlash('Slide image replaced.');
+    await load();
+  }
+
+  async function confirmDelete() {
+    if (!deleteTarget) return;
+    setBusy(true);
+    setError('');
     try {
-      const response = await fetch(`/api/admin/ios-homepage-slideshow/${slide.id}`, { method: 'DELETE' });
-      await readJsonResponse(response);
-      setFlash({ tone: 'success', text: 'Slide deleted.' });
-      await loadSlides();
-    } catch (requestError) {
-      setFlash({ tone: 'error', text: requestError.message || 'Could not delete the slide.' });
+      await readJson(await fetch(`${API_BASE}/${deleteTarget.id}`, { method: 'DELETE' }));
+      setFlash('Slide deleted.');
+      setDeleteTarget(null);
+      await load();
+    } catch (err) {
+      setError(err.message ?? 'Could not delete that slide.');
+      setDeleteTarget(null);
     } finally {
-      setBusyOperation(false);
+      setBusy(false);
     }
   }
-
-  async function reorderSlides(nextSlides, message = 'Slide order saved.') {
-    const previousSlides = slides;
-    const nextOrder = nextSlides.map((slide) => slide.id);
-    setSlides(nextSlides);
-    setBusyOperation(true);
-
-    try {
-      const response = await fetch('/api/admin/ios-homepage-slideshow/reorder', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(buildReorderPayload(nextOrder)),
-      });
-      await readJsonResponse(response);
-      setFlash({ tone: 'success', text: message });
-      await loadSlides();
-    } catch (requestError) {
-      setSlides(previousSlides);
-      setFlash({ tone: 'error', text: requestError.message || 'Could not save the new order.' });
-      await loadSlides();
-    } finally {
-      setBusyOperation(false);
-    }
-  }
-
-  function moveSlide(index, direction) {
-    const targetIndex = index + direction;
-    if (targetIndex < 0 || targetIndex >= sortedSlides.length) return;
-
-    const nextSlides = [...sortedSlides];
-    const [moved] = nextSlides.splice(index, 1);
-    nextSlides.splice(targetIndex, 0, moved);
-    nextSlides.forEach((slide, position) => {
-      slide.displayOrder = position;
-    });
-    reorderSlides(nextSlides, 'Slide order updated.');
-  }
-
-  function handleDragStart(event, id) {
-    event.dataTransfer.effectAllowed = 'move';
-    event.dataTransfer.setData('text/plain', id);
-    setDraggingId(id);
-  }
-
-  function handleDragOver(event) {
-    event.preventDefault();
-    event.dataTransfer.dropEffect = 'move';
-  }
-
-  function handleDrop(event, targetId) {
-    event.preventDefault();
-    const sourceId = event.dataTransfer.getData('text/plain') || draggingId;
-    setDraggingId('');
-    if (!sourceId || sourceId === targetId) return;
-
-    const sourceIndex = sortedSlides.findIndex((slide) => slide.id === sourceId);
-    const targetIndex = sortedSlides.findIndex((slide) => slide.id === targetId);
-    if (sourceIndex < 0 || targetIndex < 0) return;
-
-    const nextSlides = [...sortedSlides];
-    const [moved] = nextSlides.splice(sourceIndex, 1);
-    nextSlides.splice(targetIndex, 0, moved);
-    reorderSlides(nextSlides, 'Slide order updated.');
-  }
-
-  function handleDragEnd() {
-    setDraggingId('');
-  }
-
-  const bannerClass = flash?.tone === 'error' ? 'border-red-200 bg-red-50 text-red-800' : 'border-emerald-200 bg-emerald-50 text-emerald-800';
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-        <div className="space-y-1">
-          <h1 className="text-2xl font-semibold tracking-tight text-slate-900 dark:text-slate-50 sm:text-3xl">Slideshow</h1>
-          <p className="max-w-2xl text-sm text-slate-600 dark:text-slate-300">
-            Manage the homepage slideshow in display order. Every change goes through the authenticated API proxy.
-          </p>
+    <div className="mx-auto max-w-6xl px-4 pb-16 pt-8 sm:px-6 lg:px-8">
+      <div className="mb-7 flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <p className="mb-1 text-[11px] font-semibold uppercase tracking-[0.22em]" style={{ color: MAROON.light }}>Admin Panel</p>
+          <h1 className="font-serif text-3xl font-normal leading-tight tracking-tight text-foreground">Homepage Slideshow</h1>
+          <p className="mt-1 text-sm text-muted-foreground">Controls the slideshow on the KTP Life app&apos;s home screen</p>
         </div>
-
-        <div className="flex flex-wrap gap-2">
-          <Button type="button" variant="outline" onClick={() => setLibraryOpen(true)}>Choose from library</Button>
-          <Button onClick={openCreateEditor} className="bg-red-900 hover:bg-red-800">
-            <Plus className="h-4 w-4" />
-            Upload slide
-          </Button>
+        <div className="flex items-center gap-2">
+          <button type="button" onClick={() => load()} disabled={refreshing || busy}
+            className="flex items-center gap-1.5 rounded-xl border border-border bg-card px-4 py-2 text-sm font-medium text-muted-foreground shadow-sm hover:bg-muted hover:text-foreground disabled:opacity-40">
+            <RefreshCw size={13} className={refreshing ? 'animate-spin' : undefined} /> Refresh
+          </button>
+          <button type="button" onClick={() => setShowCreate(true)}
+            className="flex items-center gap-1.5 rounded-xl px-4 py-2 text-sm font-semibold text-white shadow-sm hover:opacity-85"
+            style={{ background: MAROON.gradient }}>
+            <Plus size={14} /> New slide
+          </button>
         </div>
       </div>
 
       {(error || flash) && (
-        <div className={cx('rounded-xl border px-4 py-3 text-sm', flash ? bannerClass : 'border-red-200 bg-red-50 text-red-800')} role="status" aria-live="polite">
-          {flash?.text || error}
+        <div className={cn('mb-5 flex items-center gap-2 rounded-2xl border px-4 py-3 text-sm',
+          error
+            ? 'border-destructive/30 bg-destructive/10 text-destructive'
+            : 'border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-900 dark:bg-emerald-950 dark:text-emerald-300')}
+          role="status" aria-live="polite">
+          {error ? <AlertTriangle size={14} /> : null} {error || flash}
         </div>
       )}
 
-      <div className="rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-950">
-        <div className="flex flex-col gap-2 border-b border-slate-200 px-4 py-3 dark:border-slate-800 sm:flex-row sm:items-center sm:justify-between sm:px-6">
-          <div>
-            <h2 className="text-base font-semibold text-slate-900 dark:text-slate-50">Current slides</h2>
-            <p className="text-sm text-slate-500">{loading || refreshing ? 'Loading slideshow items…' : `${sortedSlides.length} item${sortedSlides.length === 1 ? '' : 's'}`}</p>
-          </div>
-          <div className="text-xs text-slate-500">{busyOperation ? 'Processing changes…' : 'Use drag-and-drop or the move buttons to reorder.'}</div>
+      <div className="mb-6 grid grid-cols-1 gap-5 lg:grid-cols-[1fr_auto]">
+        <div className="space-y-5">
+          <CapacityMeter activeCount={activeCount} />
+          <ScheduleTimeline slides={slides} />
         </div>
-
-        <div className="px-4 py-4 sm:px-6">
-          {loading ? (
-            <div className="flex items-center gap-2 py-10 text-sm text-slate-500">
-              <Loader2 className="h-4 w-4 animate-spin" /> Loading slideshow…
-            </div>
-          ) : sortedSlides.length === 0 ? (
-            <div className="flex flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-slate-300 px-4 py-12 text-center text-sm text-slate-500">
-              <ImagePlus className="h-10 w-10 text-slate-400" />
-              <p>No slides yet. Add the first one to populate the homepage slideshow.</p>
-              <Button type="button" variant="outline" onClick={openCreateEditor}>
-                Add slide
-              </Button>
-            </div>
-          ) : (
-            <ol className="space-y-3">
-              {sortedSlides.map((slide, index) => (
-                <SlideRow
-                  key={slide.id}
-                  slide={slide}
-                  index={index}
-                  total={sortedSlides.length}
-                  draggingId={draggingId}
-                  busy={busyOperation || submitting}
-                  onMove={moveSlide}
-                  onEdit={openEditEditor}
-                  onToggleActive={toggleActive}
-                  onDelete={deleteSlide}
-                  onDragStart={handleDragStart}
-                  onDragOver={handleDragOver}
-                  onDrop={handleDrop}
-                  onDragEnd={handleDragEnd}
-                />
-              ))}
-            </ol>
-          )}
+        <div className="flex flex-col items-center rounded-2xl border border-border bg-card p-5 shadow-sm lg:w-64">
+          <p className="mb-1 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">App preview</p>
+          <p className="mb-4 text-[11px] text-muted-foreground/70">Click a slide to preview it</p>
+          <IphoneFrame slide={selectedSlide} imageSrc={selectedSlide ? slideMediaUrl(selectedSlide.id) : ''} />
         </div>
       </div>
 
-      {editorMode && (
-        <SlideEditorDialog
-          mode={editorMode.type}
-          form={form}
-          errors={fieldErrors}
-          filePreviewUrl={filePreviewUrl}
-          slidePreviewUrl={editPreviewUrl}
-          fileDimensions={fileDimensions}
-          onChange={updateForm}
-          onSubmit={editorMode.type === 'create' ? submitCreate : submitEdit}
-          onClose={() => setEditorMode(null)}
-          onFileSelected={selectFile}
-          submitting={submitting}
+      <div className="mb-4 flex flex-wrap items-center gap-2">
+        {FILTERS.map((f) => (
+          <button key={f.id} type="button" onClick={() => setFilter(f.id)}
+            className={cn('flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium transition-colors',
+              filter === f.id ? 'border-transparent text-white' : 'border-border text-muted-foreground hover:text-foreground')}
+            style={filter === f.id ? { background: MAROON.gradient } : undefined}>
+            {f.label}
+            <span className={cn('rounded-full px-1.5 py-0.5 text-[9px] font-bold leading-none',
+              filter === f.id ? 'bg-white/20 text-white' : 'bg-muted text-muted-foreground')}>
+              {counts[f.id]}
+            </span>
+          </button>
+        ))}
+      </div>
+
+      {loading ? (
+        <div className="flex h-32 items-center justify-center gap-2 rounded-2xl border border-border bg-card text-sm text-muted-foreground">
+          <Loader2 size={15} className="animate-spin" /> Loading slideshow…
+        </div>
+      ) : visibleSlides.length === 0 ? (
+        <div className="flex h-32 flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-border bg-card">
+          <ImageIcon size={20} className="text-muted-foreground" />
+          <p className="text-sm text-muted-foreground">
+            {slides.length === 0 ? 'No slides yet — add the first one above.' : `No ${FILTERS.find((f) => f.id === filter)?.label.toLowerCase()} slides.`}
+          </p>
+        </div>
+      ) : (
+        <div className="space-y-2">
+          {visibleSlides.map((slide) => {
+            const index = slides.findIndex((s) => s.id === slide.id);
+            return (
+              <SlideRow
+                key={slide.id}
+                slide={slide}
+                index={index}
+                selected={selectedId === slide.id}
+                busy={busy}
+                atCap={atCap}
+                isDragging={dragIndex === index}
+                isDropTarget={overIndex === index}
+                onSelect={() => setSelectedId(slide.id)}
+                onEdit={() => setEditTarget(slide)}
+                onToggleActive={() => toggleActive(slide)}
+                onDelete={() => setDeleteTarget(slide)}
+                onDragStart={() => setDragIndex(index)}
+                onDragOver={() => setOverIndex(index)}
+                onDrop={() => handleDrop(index)}
+                onDragEnd={() => { setDragIndex(null); setOverIndex(null); }}
+              />
+            );
+          })}
+        </div>
+      )}
+
+      {showCreate && (
+        <SlideModal
+          activeCount={activeCount}
+          onClose={() => setShowCreate(false)}
+          onCreate={createSlide}
+          onRegister={registerSlide}
         />
       )}
 
-      {libraryOpen && <ExistingImageDialog onClose={() => setLibraryOpen(false)} onAdded={async () => { setLibraryOpen(false); setFlash({ tone: 'success', text: 'Slide added from the photo library.' }); await loadSlides(); }} />}
+      {editTarget && (
+        <SlideModal
+          slide={editTarget}
+          activeCount={activeCount}
+          onClose={() => setEditTarget(null)}
+          onSaveMeta={saveMeta}
+          onReplaceImage={replaceImage}
+        />
+      )}
+
+      {deleteTarget && (
+        <ConfirmDeleteModal
+          slide={deleteTarget}
+          busy={busy}
+          onClose={() => setDeleteTarget(null)}
+          onConfirm={confirmDelete}
+        />
+      )}
     </div>
   );
 }
