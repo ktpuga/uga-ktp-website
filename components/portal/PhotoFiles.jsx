@@ -8,7 +8,7 @@ import {
   Link2, ExternalLink, FolderIcon, FolderOpen, Upload, Film, ChevronRight, AlertCircle,
 } from 'lucide-react';
 import {
-  getPhotos, getAlbums, createAlbum, deleteAlbum, uploadPhoto, deletePhoto,
+  getPhotos, getAlbums, getGeneralAlbumStats, createAlbum, deleteAlbum, uploadPhoto, deletePhoto,
   getDocumentFolders, getDocuments, createDocumentFolder, deleteDocumentFolder,
   uploadDocument, createDocumentLink, deleteDocument,
 } from '@/lib/portal-api';
@@ -721,14 +721,26 @@ function AlbumsTab({ accent, isEboard, currentUserId }) {
   const [activeAlbum, setActiveAlbum] = useState(null);
   const [showNewAlbum, setShowNewAlbum] = useState(false);
 
+  const [generalStats, setGeneralStats] = useState(null);
+
   useEffect(() => {
     getAlbums()
       .then(setAlbums)
       .catch((err) => { if (isRedirectError(err)) throw err; setError(err.message ?? 'Could not load albums'); })
       .finally(() => setLoading(false));
+
+    // Separate call because the shared album isn't a row in `albums`. Failure
+    // here only costs its thumbnail, so it must not surface as a page error or
+    // block the album list from rendering.
+    getGeneralAlbumStats()
+      .then(setGeneralStats)
+      .catch((err) => { if (isRedirectError(err)) throw err; });
   }, []);
 
-  const sorted = useMemo(() => [GENERAL_ALBUM, ...albums], [albums]);
+  const sorted = useMemo(
+    () => [{ ...GENERAL_ALBUM, ...(generalStats ?? {}) }, ...albums],
+    [albums, generalStats],
+  );
 
   async function handleCreate(name, desc) {
     const album = await createAlbum(name, desc || undefined);
