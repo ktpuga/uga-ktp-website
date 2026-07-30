@@ -7,6 +7,7 @@ const NAV = [
   { href: '/admin', label: 'Analytics', icon: BarChart2 },
   { href: '/admin/announcements', label: 'Announcements', icon: Megaphone },
   { href: '/admin/rush-announcements', label: 'Rush Announcements', icon: Megaphone },
+  { href: '/admin/rush-signup', label: 'Rush Signup', icon: QrCode },
   { href: '/admin/calendar', label: 'Calendar', icon: Calendar },
   { href: '/admin/committees', label: 'Committees', icon: UsersRound },
   { href: '/admin/polls', label: 'Polls', icon: Vote },

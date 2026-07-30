@@ -94,7 +94,7 @@ const NAV_GROUPING = {
   red: [
     { heading: 'Overview', hrefs: ['/admin'] },
     { heading: 'Engagement', hrefs: ['/admin/announcements', '/admin/rush-announcements', '/admin/calendar', '/admin/committees', '/admin/polls', '/admin/attendance', '/admin/messages'] },
-    { heading: 'Moderation', hrefs: ['/admin/reports', '/admin/users'] },
+    { heading: 'Moderation', hrefs: ['/admin/reports', '/admin/users', '/admin/rush-signup'] },
     { heading: 'Content', hrefs: ['/admin/files', '/admin/homepage-photos', '/admin/ios-homepage-slideshow'] },
     { heading: 'Account', hrefs: ['/admin/settings'] },
   ],

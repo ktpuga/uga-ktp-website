@@ -15,7 +15,7 @@ import {
   getGroupChatMessages, sendGroupChatMessage, toggleGroupChatReaction, toggleMessageReaction,
   deleteMessage, deleteGroupChatMessage, markGroupChatRead, getGroupChatMembers,
   addGroupChatMember, removeGroupChatMember, getCommittees, getCommitteeMembers,
-  getMemberDirectory,
+  getMessageableMembers,
 } from '@/lib/portal-api';
 import { memberDisplayName, memberInitials, formatMemberGroup, formatMessageTime, groupMatches } from '@/lib/portal-format';
 import { isRedirectError } from '@/lib/is-redirect-error';
@@ -374,7 +374,7 @@ function MemberPickerModal({ accent, onSelect, onClose }) {
   const [query, setQuery] = useState('');
 
   useEffect(() => {
-    getMemberDirectory()
+    getMessageableMembers()
       .then(setMembers)
       .catch((err) => { if (isRedirectError(err)) throw err; })
       .finally(() => setLoading(false));
@@ -669,7 +669,7 @@ function BulkAddByGroupOrCommittee({ excludeIds, accent, onAddMany }) {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    getMemberDirectory().then(setMembers).catch((err) => { if (isRedirectError(err)) throw err; });
+    getMessageableMembers().then(setMembers).catch((err) => { if (isRedirectError(err)) throw err; });
     getCommittees().then(setCommittees).catch((err) => { if (isRedirectError(err)) throw err; });
   }, []);
 
@@ -761,7 +761,7 @@ function AddMemberPicker({ excludeIds, accent, onAdd }) {
   const [query, setQuery] = useState('');
 
   useEffect(() => {
-    getMemberDirectory().then(setMembers).catch((err) => { if (isRedirectError(err)) throw err; }).finally(() => setLoading(false));
+    getMessageableMembers().then(setMembers).catch((err) => { if (isRedirectError(err)) throw err; }).finally(() => setLoading(false));
   }, []);
 
   const filtered = useMemo(() => {
@@ -838,7 +838,7 @@ function NewGroupChatModal({ accent, onClose, onCreate }) {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    getMemberDirectory().then(setMembers).catch((err) => { if (isRedirectError(err)) throw err; }).finally(() => setLoadingMembers(false));
+    getMessageableMembers().then(setMembers).catch((err) => { if (isRedirectError(err)) throw err; }).finally(() => setLoadingMembers(false));
     getCommittees().then(setCommittees).catch((err) => { if (isRedirectError(err)) throw err; });
   }, []);
 
