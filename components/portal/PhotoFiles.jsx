@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { cn } from '@/lib/utils';
 import {
@@ -159,7 +159,169 @@ function FieldInput(props) {
 
 // ─── Albums tab ───
 
+// djb2 — deterministic, dependency-free. Every visual property of an empty
+// album's cover is derived from this, so the same album always looks identical
+// on every render, device and reload. Nothing here may use Math.random().
+function djb2(value) {
+  let hash = 5381;
+  for (let i = 0; i < value.length; i += 1) {
+    hash = ((hash << 5) + hash) ^ value.charCodeAt(i);
+    hash >>>= 0;
+  }
+  return hash;
+}
+
+function seedValues(id, count) {
+  return Array.from({ length: count }, (_, i) => djb2(`${id}:${i}`));
+}
+
+// The general shared album is synthetic (id: null) and never comes from the
+// API, so hashing its id would seed every render from the string "null".
+// A stable literal keeps it distinct and consistent instead.
+function coverSeed(album) {
+  return album.isShared || album.id == null ? 'shared-album' : String(album.id);
+}
+
+function thumbUrl(photoId) {
+  return `/api/photos/${photoId}/media?size=thumbnail`;
+}
+
+// Empty-album cover. Four motifs, a full 0–359° hue wheel, a rotation and a
+// spacing — all seeded from the album id, so no two albums collide visually
+// and a brand-new album looks intentional on day one with zero configuration.
+function GenerativePattern({ album, accent }) {
+  const seed = coverSeed(album);
+  const [s0, s1, s2, s3] = seedValues(seed, 4);
+
+  const hue = s0 % 360;
+  const motif = s1 % 4;
+  const angleDeg = (s2 % 40) - 20 + 45;
+  const spacing = 12 + (s3 % 8) * 3;
+
+  // React's useId is unique per mounted instance, which matters because two
+  // cards for the same album (grid + detail header) would otherwise emit
+  // duplicate SVG pattern ids. The colons it contains are invalid inside a
+  // url(#...) reference, hence the strip.
+  const patternId = `album-pattern-${useId().replace(/:/g, '')}`;
+  const stroke = accent.base;
+  const strokeOpacity = 0.18;
+  const width = 1.2;
+
+  let motifEl;
+  if (motif === 0) {
+    motifEl = (
+      <pattern id={patternId} width={spacing} height={spacing} patternUnits="userSpaceOnUse" patternTransform={`rotate(${angleDeg})`}>
+        <line x1={0} y1={0} x2={0} y2={spacing} stroke={stroke} strokeWidth={width} strokeOpacity={strokeOpacity} />
+      </pattern>
+    );
+  } else if (motif === 1) {
+    motifEl = (
+      <pattern id={patternId} width={spacing} height={spacing} patternUnits="userSpaceOnUse" patternTransform={`rotate(${angleDeg})`}>
+        <line x1={0} y1={0} x2={0} y2={spacing} stroke={stroke} strokeWidth={width} strokeOpacity={strokeOpacity} />
+        <line x1={0} y1={0} x2={spacing} y2={0} stroke={stroke} strokeWidth={width} strokeOpacity={strokeOpacity} />
+      </pattern>
+    );
+  } else if (motif === 2) {
+    motifEl = (
+      <pattern id={patternId} width={spacing} height={spacing} patternUnits="userSpaceOnUse">
+        <circle cx={spacing / 2} cy={spacing / 2} r={1.4} fill={stroke} fillOpacity={strokeOpacity * 1.6} />
+      </pattern>
+    );
+  } else {
+    motifEl = (
+      <pattern id={patternId} width={spacing} height={spacing} patternUnits="userSpaceOnUse">
+        <circle cx={0} cy={0} r={spacing * 0.35} fill="none" stroke={stroke} strokeWidth={width * 0.9} strokeOpacity={strokeOpacity} />
+        <circle cx={0} cy={0} r={spacing * 0.65} fill="none" stroke={stroke} strokeWidth={width * 0.5} strokeOpacity={strokeOpacity * 0.7} />
+        <circle cx={spacing} cy={spacing} r={spacing * 0.35} fill="none" stroke={stroke} strokeWidth={width * 0.9} strokeOpacity={strokeOpacity} />
+        <circle cx={spacing} cy={spacing} r={spacing * 0.65} fill="none" stroke={stroke} strokeWidth={width * 0.5} strokeOpacity={strokeOpacity * 0.7} />
+      </pattern>
+    );
+  }
+
+  return (
+    // `relative` lives here rather than being inherited from a parent, so the
+    // absolutely-positioned SVG anchors correctly wherever this is mounted.
+    <div
+      className="relative h-full w-full"
+      style={{ background: `linear-gradient(135deg, hsl(${hue},38%,82%) 0%, hsl(${(hue + 25) % 360},30%,75%) 100%)` }}
+    >
+      <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg" className="absolute inset-0">
+        <defs>{motifEl}</defs>
+        <rect width="100%" height="100%" fill={`url(#${patternId})`} />
+      </svg>
+
+      {/* The HSL wash is deliberately light; without this it glares as a bright
+          block in dark mode. Darkening here keeps one gradient definition
+          rather than branching the whole colour calculation on theme. */}
+      <div className="pointer-events-none absolute inset-0 hidden bg-black/55 dark:block" />
+
+      <div className="absolute inset-0 flex flex-col items-center justify-center gap-1.5">
+        <div
+          className="flex h-9 w-9 items-center justify-center rounded-xl shadow-sm"
+          style={{ background: tint(accent.base, 0.18), border: `1px solid ${tint(accent.base, 0.25)}` }}
+        >
+          <ImageIcon size={16} style={{ color: accent.base }} strokeWidth={1.5} />
+        </div>
+        <p
+          className="rounded-full px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide"
+          style={{ background: tint(accent.base, 0.12), color: accent.light }}
+        >
+          Empty album
+        </p>
+      </div>
+    </div>
+  );
+}
+
+// 1–4 recent images, laid out per count so each arrangement looks deliberate
+// rather than like a grid that ran out of cells.
+function CollageThumbnail({ ids }) {
+  const tile = (id) => (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img src={thumbUrl(id)} alt="" className="h-full w-full object-cover" loading="lazy" decoding="async" />
+  );
+
+  if (ids.length === 1) {
+    return <div className="h-full w-full overflow-hidden">{tile(ids[0])}</div>;
+  }
+
+  if (ids.length === 2) {
+    return (
+      <div className="flex h-full w-full gap-px">
+        <div className="flex-1 overflow-hidden">{tile(ids[0])}</div>
+        <div className="flex-1 overflow-hidden">{tile(ids[1])}</div>
+      </div>
+    );
+  }
+
+  if (ids.length === 3) {
+    return (
+      <div className="flex h-full w-full gap-px">
+        <div className="flex-[2] overflow-hidden">{tile(ids[0])}</div>
+        <div className="flex flex-1 flex-col gap-px">
+          <div className="flex-1 overflow-hidden">{tile(ids[1])}</div>
+          <div className="flex-1 overflow-hidden">{tile(ids[2])}</div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="grid h-full w-full grid-cols-2 gap-px">
+      {ids.slice(0, 4).map((id) => (
+        <div key={id} className="overflow-hidden">{tile(id)}</div>
+      ))}
+    </div>
+  );
+}
+
 function AlbumCard({ album, accent, isEboard, onOpen, onDelete }) {
+  const coverIds = Array.isArray(album.cover_photo_ids) ? album.cover_photo_ids : [];
+  // photo_count counts ALL media while cover_photo_ids is images only, so a
+  // video-only album correctly reads "3 items" over a generated pattern. The
+  // synthetic shared album has no count at all, hence the type check.
+  const hasCount = typeof album.photo_count === 'number';
+
   return (
     <div
       className="group relative overflow-hidden rounded-2xl border border-border bg-card shadow-sm transition-shadow hover:shadow-md cursor-pointer"
@@ -169,8 +331,22 @@ function AlbumCard({ album, accent, isEboard, onOpen, onDelete }) {
       onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && onOpen()}
       aria-label={`Open ${album.name}`}
     >
-      <div className="relative flex aspect-video items-center justify-center" style={{ background: tint(accent.base, 0.07) }}>
-        <ImageIcon size={32} style={{ color: tint(accent.base, 0.4) }} />
+      <div className="relative aspect-video w-full overflow-hidden" style={{ background: tint(accent.base, 0.07) }}>
+        {coverIds.length > 0 ? (
+          <>
+            <CollageThumbnail ids={coverIds} />
+            <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
+          </>
+        ) : (
+          <GenerativePattern album={album} accent={accent} />
+        )}
+
+        {hasCount && (
+          <div className="absolute bottom-2 right-2 rounded-full bg-black/50 px-2 py-0.5 text-[10px] font-semibold text-white backdrop-blur-sm">
+            {album.photo_count === 0 ? 'Empty' : `${album.photo_count} item${album.photo_count !== 1 ? 's' : ''}`}
+          </div>
+        )}
+
         {isEboard && !album.isShared && (
           <button
             type="button"

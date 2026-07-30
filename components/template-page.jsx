@@ -246,6 +246,11 @@ export default function TemplatePage() {
           </div>
         </section>
 
+        {/* =========================== CHAPTER GALLERY ========================= */}
+        {/* Eboard-curated via /admin/homepage-photos. Renders nothing at all
+            when no photos are configured, so it can't leave an empty band. */}
+        <GallerySection />
+
         {/* ========================== HACKATHON HIGHLIGHTS ===================== */}
         <section className="relative py-12 md:py-16 bg-white/70">
           <div className="container mx-auto max-w-6xl px-4 md:px-6">
@@ -305,8 +310,6 @@ export default function TemplatePage() {
             </div>
           </div>
         </section>
-
-        <GallerySection />
 
         {/* ===============================  ABOUT  ============================= */}
         <section id="about" className="bg-card py-16 md:py-24">

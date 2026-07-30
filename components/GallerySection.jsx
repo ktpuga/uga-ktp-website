@@ -19,9 +19,13 @@ function GalleryMedia({ photo }) {
   }
   return (
     // eslint-disable-next-line @next/next/no-img-element
+    // The media endpoint serves the original file — there's no thumbnail
+    // variant — so defer anything the visitor hasn't scrolled to.
     <img
       src={src}
       alt={photo.title || "Chapter photo"}
+      loading="lazy"
+      decoding="async"
       className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.02]"
     />
   );
@@ -42,13 +46,17 @@ export default function GallerySection() {
   if (loaded && photos.length === 0) return null;
 
   return (
-    <section className="relative py-12 md:py-16">
+    // Mirrors the Hackathon Highlights section directly below it — same
+    // background, header row and carousel treatment, so the two read as a pair.
+    <section className="relative py-12 md:py-16 bg-white/70">
       <div className="container mx-auto max-w-6xl px-4 md:px-6">
-        <div className="mb-6">
-          <h2 className="text-2xl md:text-3xl font-bold tracking-tight text-slate-900">
-            Chapter Gallery
-          </h2>
-          <p className="text-slate-600">A look at life in Phi Chapter</p>
+        <div className="mb-6 flex items-end justify-between">
+          <div>
+            <h2 className="text-2xl md:text-3xl font-bold tracking-tight text-slate-900">
+              Chapter Gallery
+            </h2>
+            <p className="text-slate-600">A look at life in Phi Chapter</p>
+          </div>
         </div>
 
         <div className="group relative">
