@@ -9,7 +9,7 @@ export default function PledgeDashboard() {
       memberGroupLabel="Chapter Members"
       calendarHref="/pledge/calendar"
       filesHref="/pledge/files"
-      theme="teal"
+      theme="blue"
     />
   );
 }

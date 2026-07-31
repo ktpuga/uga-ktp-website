@@ -7,7 +7,7 @@ export default function RusheeCalendar() {
     <EventsCalendar
       title="Rush Events"
       description="Info sessions, socials and everything else happening this rush"
-      accent="violet"
+      accent="blue"
     />
   );
 }

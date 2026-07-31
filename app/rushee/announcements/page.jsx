@@ -3,5 +3,5 @@
 import RushAnnouncements from '@/components/portal/RushAnnouncements';
 
 export default function RusheeAnnouncements() {
-  return <RushAnnouncements accent="violet" />;
+  return <RushAnnouncements accent="blue" />;
 }

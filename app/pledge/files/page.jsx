@@ -7,7 +7,7 @@ export default function PledgeFiles() {
     <PhotoFiles
       title="Files & Photos"
       description="Browse chapter photos and shared memories"
-      accent="teal"
+      accent="blue"
     />
   );
 }

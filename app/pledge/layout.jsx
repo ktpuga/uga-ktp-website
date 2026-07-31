@@ -15,7 +15,7 @@ const NAV = [
 
 export default function PledgeLayout({ children }) {
   return (
-    <PortalShell portalName="Pledge Portal" accent="teal" nav={NAV}>
+    <PortalShell portalName="Pledge Portal" accent="blue" nav={NAV}>
       {children}
     </PortalShell>
   );

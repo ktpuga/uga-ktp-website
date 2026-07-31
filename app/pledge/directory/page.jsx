@@ -7,7 +7,7 @@ export default function PledgeDirectoryPage() {
     <MemberDirectory
       title="Directory"
       description="Get to know the brothers and members of the chapter"
-      theme="teal"
+      theme="blue"
     />
   );
 }

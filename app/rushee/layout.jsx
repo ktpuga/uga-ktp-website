@@ -29,7 +29,7 @@ const NAV = [
 
 export default function RusheeLayout({ children }) {
   return (
-    <PortalShell portalName="Rush Portal" accent="violet" nav={NAV}>
+    <PortalShell portalName="Rush Portal" accent="blue" nav={NAV}>
       {children}
     </PortalShell>
   );

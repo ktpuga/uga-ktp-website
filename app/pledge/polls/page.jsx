@@ -3,5 +3,5 @@
 import PollsPage from '@/components/portal/PollsPage';
 
 export default function PledgePolls() {
-  return <PollsPage accent="teal" />;
+  return <PollsPage accent="blue" />;
 }
