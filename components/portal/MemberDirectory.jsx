@@ -45,7 +45,10 @@ const ACCENT_THEMES = {
   },
 };
 
-const GROUP_ORDER = ['eboard', 'chair', 'active', 'pledge', 'alumni'];
+// Rush sits last: rushees aren't members, and the section only appears for
+// eboard/chair/active anyway — the API omits those rows entirely for everyone
+// else, so this order is what a permitted viewer sees, not a permission check.
+const GROUP_ORDER = ['eboard', 'chair', 'active', 'pledge', 'alumni', 'rush'];
 
 const GROUP_COLOR = {
   eboard: '#7f1d1d',
@@ -53,6 +56,7 @@ const GROUP_COLOR = {
   active: '#1d4ed8',
   pledge: '#15803d',
   alumni: '#b45309',
+  rush: '#0e7490',
 };
 
 const GROUP_BG = {
@@ -61,6 +65,7 @@ const GROUP_BG = {
   active: 'rgba(29,78,216,0.10)',
   pledge: 'rgba(21,128,61,0.10)',
   alumni: 'rgba(180,83,9,0.10)',
+  rush: 'rgba(14,116,144,0.10)',
 };
 
 function tint(hex, alpha) {
@@ -446,19 +451,39 @@ function ProfileModal({ member, accent, onClose }) {
             )}
           </div>
 
-          {(member.major || member.pledgeClass || graduation || member.email) && (
-            <div className="mt-5 w-full rounded-xl border border-border p-4 text-xs" style={{ background: tint(accent.base, 0.03) }}>
+          {/* A rushee has no pledge class, graduation date or exec title, and
+              the API withholds their email, so About Me is often the only thing
+              this panel would otherwise have for them. */}
+          {member.aboutMe && (
+            <div className="mt-5 w-full rounded-xl border border-border p-4 text-left" style={{ background: tint(accent.base, 0.03) }}>
+              <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">About</p>
+              <p className="whitespace-pre-line text-xs leading-relaxed text-foreground">{member.aboutMe}</p>
+            </div>
+          )}
+
+          {(member.major || member.pledgeClass || graduation || member.email || member.personalEmail) && (
+            <div className={cn('w-full rounded-xl border border-border p-4 text-xs', member.aboutMe ? 'mt-3' : 'mt-5')} style={{ background: tint(accent.base, 0.03) }}>
               {member.major && <InfoRow icon={<BookOpen size={12} />} label="Major" value={member.major} />}
               {member.pledgeClass && <InfoRow icon={<Users size={12} />} label="Pledge Class" value={member.pledgeClass} />}
               {graduation && <InfoRow icon={<GraduationCap size={12} />} label="Graduation" value={graduation} />}
-              {member.email && <InfoRow icon={<Mail size={12} />} label="Email" value={member.email} isLast />}
+              {/* Both addresses are shown when both exist. isLast is computed
+                  rather than hardcoded so the divider lands on whichever row
+                  actually ends the list. */}
+              {member.email && (
+                <InfoRow icon={<Mail size={12} />} label="UGA Email" value={member.email} isLast={!member.personalEmail} />
+              )}
+              {member.personalEmail && (
+                <InfoRow icon={<Mail size={12} />} label="Personal Email" value={member.personalEmail} isLast />
+              )}
             </div>
           )}
 
           <div className="mt-4 flex w-full flex-col gap-2">
-            {member.email && (
+            {/* Prefers the UGA address, falls back to the personal one — an
+                alumnus often has only the latter still working. */}
+            {(member.email || member.personalEmail) && (
               <a
-                href={`mailto:${member.email}`}
+                href={`mailto:${member.email || member.personalEmail}`}
                 className="flex items-center justify-center gap-2 rounded-xl border border-border py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-muted"
               >
                 <Mail size={14} /> Email
@@ -627,6 +652,12 @@ function RevampedMemberDirectory({ title, description, theme }) {
     const map = {};
     for (const g of GROUP_ORDER) map[g] = [];
     for (const m of sorted) {
+      // GROUP_ORDER must contain every value in ktp-api's constants/roleGroups.js.
+      // Anything missing lands in 'active' and is silently mislabelled — that is
+      // exactly how rushees ended up listed as Active members once the rush
+      // portal shipped. Prefer adding the group here over relying on this
+      // fallback; dropping unknowns instead would hide people entirely, which
+      // is worse.
       const g = GROUP_ORDER.includes(m.memberGroup) ? m.memberGroup : 'active';
       map[g].push(m);
     }

@@ -49,12 +49,24 @@ export function PortalAccentProvider({ accent, children }) {
   const palette = PALETTES[accent] ?? PALETTES.blue;
   return (
     <PortalAccentContext.Provider value={accent}>
-      {/* Input focus rings are Tailwind arbitrary values inside plain string
-          constants, so a hook can't reach them. Publishing the colour as a CSS
-          variable lets those classes read focus:ring-[var(--portal-ring)] and
-          follow the accent with no scoping. display:contents keeps this div
-          out of layout entirely. */}
-      <div style={{ display: 'contents', '--portal-ring': palette.ring }}>{children}</div>
+      {/* This div is the portal subtree wrapper, and carries two portal-wide
+          concerns that can't be expressed as props:
+
+          1. --portal-ring. Input focus rings are Tailwind arbitrary values
+             inside plain string constants, so a hook can't reach them. As a
+             CSS variable those classes can read focus:ring-[var(--portal-ring)]
+             and follow the accent with no scoping.
+          2. .portal-scroll. Styles every scroll area in the portal to match
+             the sidebar (see globals.css). Done here rather than on each
+             scrollable element so new ones inherit it.
+
+          display:contents keeps it out of layout while leaving it in the DOM
+          tree, which is what descendant selectors and variable inheritance
+          both need. Both render paths in PortalShell go through here, so
+          neither can drift. */}
+      <div className="portal-scroll" style={{ display: 'contents', '--portal-ring': palette.ring }}>
+        {children}
+      </div>
     </PortalAccentContext.Provider>
   );
 }

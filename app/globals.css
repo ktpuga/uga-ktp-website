@@ -220,4 +220,51 @@
   .sidebar-scroll::-webkit-scrollbar-thumb:hover {
     background-color: var(--color-muted-foreground);
   }
+
+  /* Every scroll area inside a portal gets the sidebar's scrollbar.
+     Applied to the whole subtree rather than to each scrollable element by
+     hand: there are scroll containers in the message list, member pickers,
+     modals, tables and the main column, and any new one added later would
+     otherwise silently fall back to the browser default. The descendant
+     selector means new scroll areas inherit this for free.
+
+     Both `scrollbar-*` (Firefox) and `::-webkit-scrollbar` (Chrome/Safari)
+     are set because neither is universal. Unlike .sidebar-scroll this also
+     sets `height`, which is what styles HORIZONTAL scrollbars — the sidebar
+     never needed it, but wide tables and code blocks in the portals do. */
+  .portal-scroll,
+  .portal-scroll * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-border) transparent;
+  }
+  .portal-scroll ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  .portal-scroll ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .portal-scroll ::-webkit-scrollbar-thumb {
+    background-color: var(--color-border);
+    border-radius: 9999px;
+  }
+  .portal-scroll ::-webkit-scrollbar-thumb:hover {
+    background-color: var(--color-muted-foreground);
+  }
+  /* Scroll containers that are themselves rendered by PortalShell rather than
+     nested inside it — the descendant combinator above wouldn't reach them. */
+  .portal-scroll::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  .portal-scroll::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .portal-scroll::-webkit-scrollbar-thumb {
+    background-color: var(--color-border);
+    border-radius: 9999px;
+  }
+  .portal-scroll::-webkit-scrollbar-thumb:hover {
+    background-color: var(--color-muted-foreground);
+  }
 }

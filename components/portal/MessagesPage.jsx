@@ -22,6 +22,7 @@ import { isRedirectError } from '@/lib/is-redirect-error';
 import { useConfirm } from '@/components/ui/confirm-dialog';
 import { useUnreadCounts } from '@/lib/use-unread-counts';
 import ReportButton from './ReportButton';
+import AudienceSelect from './AudienceSelect';
 import BlockButton from './BlockButton';
 import ProfileActionsMenu from './ProfileActionsMenu';
 import LegacyMessagesPage from './LegacyMessagesPage';
@@ -833,6 +834,8 @@ function NewGroupChatModal({ accent, onClose, onCreate }) {
   const [loadingMembers, setLoadingMembers] = useState(true);
   const [committees, setCommittees] = useState([]);
   const [selectedIds, setSelectedIds] = useState(new Set());
+  const [audience, setAudience] = useState([]);
+  const [committeeIds, setCommitteeIds] = useState([]);
   const [query, setQuery] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState(null);
@@ -851,23 +854,8 @@ function NewGroupChatModal({ accent, onClose, onCreate }) {
     setSelectedIds((prev) => { const next = new Set(prev); next.has(id) ? next.delete(id) : next.add(id); return next; });
   }
 
-  function handleImportGroup(groupValue) {
-    setSelectedIds((prev) => {
-      const next = new Set(prev);
-      members.filter((m) => groupMatches(m.memberGroup, groupValue)).forEach((m) => next.add(m.id));
-      return next;
-    });
-  }
-
-  async function handleImportCommittee(committeeId) {
-    if (!committeeId) return;
-    try {
-      const committeeMembers = await getCommitteeMembers(committeeId);
-      setSelectedIds((prev) => { const next = new Set(prev); committeeMembers.forEach((m) => next.add(m.authentik_id)); return next; });
-    } catch (err) {
-      if (isRedirectError(err)) throw err;
-      setError(err.message ?? 'Failed to import committee members');
-    }
+  function toggleCommittee(id) {
+    setCommitteeIds((prev) => (prev.includes(id) ? prev.filter((c) => c !== id) : [...prev, id]));
   }
 
   async function handleSubmit() {
@@ -875,7 +863,7 @@ function NewGroupChatModal({ accent, onClose, onCreate }) {
     setSubmitting(true);
     setError(null);
     try {
-      await onCreate(name.trim(), [...selectedIds]);
+      await onCreate(name.trim(), [...selectedIds], audience, committeeIds);
     } catch (err) {
       if (isRedirectError(err)) throw err;
       setError(err.message ?? 'Failed to create group chat');
@@ -889,7 +877,10 @@ function NewGroupChatModal({ accent, onClose, onCreate }) {
     return () => window.removeEventListener('keydown', handler);
   }, [onClose]);
 
-  const canCreate = name.trim().length > 0 && !submitting;
+  // Mirrors the backend's 400: a chat with no groups, no committees and no
+  // individuals would have exactly one member (the creator, auto-added).
+  const hasTarget = selectedIds.size > 0 || audience.length > 0 || committeeIds.length > 0;
+  const canCreate = name.trim().length > 0 && hasTarget && !submitting;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-label="New group chat">
@@ -921,31 +912,44 @@ function NewGroupChatModal({ accent, onClose, onCreate }) {
             />
           </div>
 
+          {/* Groups and committees are LIVE membership, not a one-time import.
+              These used to expand into a fixed list of user ids, which meant a
+              pledge promoted to active silently stayed in the pledge chat and
+              never appeared in the actives chat. Stored as the chat's audience
+              instead, so membership follows the person's current role. */}
           <div>
-            <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Quick Add by Role</p>
-            <div className="flex flex-wrap gap-2">
-              {ROLE_GROUPS.map((g) => (
-                <button key={g.value} type="button" onClick={() => handleImportGroup(g.value)} className="rounded-full border border-border bg-card px-3 py-1 text-xs font-medium text-muted-foreground transition-all hover:text-foreground">
-                  + {g.label}
-                </button>
-              ))}
-            </div>
+            <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Groups</p>
+            <AudienceSelect value={audience} onChange={setAudience} />
           </div>
 
           {committees.length > 0 && (
             <div>
-              <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Add by Committee</p>
-              <div className="relative">
-                <select
-                  className="w-full appearance-none rounded-lg border border-border bg-card px-3 py-2 pr-8 text-sm text-muted-foreground focus:outline-none"
-                  defaultValue=""
-                  onChange={(e) => { if (e.target.value) handleImportCommittee(e.target.value); }}
-                >
-                  <option value="" disabled>Select a committee…</option>
-                  {committees.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-                </select>
-                <ChevronDown size={13} className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
+              <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Committees</p>
+              <div className="flex flex-wrap gap-2 rounded-xl border border-border bg-muted/40 p-3">
+                {committees.map((c) => {
+                  const selected = committeeIds.includes(String(c.id));
+                  return (
+                    <button
+                      key={c.id}
+                      type="button"
+                      onClick={() => toggleCommittee(String(c.id))}
+                      aria-pressed={selected}
+                      className={cn(
+                        'rounded-full border px-3 py-1.5 text-xs font-medium transition-all duration-150',
+                        selected
+                          ? 'border-transparent text-white'
+                          : 'border-border bg-card text-muted-foreground hover:border-transparent hover:text-foreground',
+                      )}
+                      style={selected ? { background: accent.gradient } : undefined}
+                    >
+                      {c.name}
+                    </button>
+                  );
+                })}
               </div>
+              <p className="mt-1.5 text-[11px] text-muted-foreground">
+                Anyone who joins the committee later is added to this chat automatically.
+              </p>
             </div>
           )}
 
@@ -1116,11 +1120,22 @@ function GroupChatInfoModal({ chat, members, messages, isEboard, accent, onAddMe
                     </div>
                   </ProfileActionsMenu>
                   <GroupBadge group={m.memberGroup ?? m.member_group} />
-                  {isEboard && (
+                  {/* is_auto means they're here through the chat's group or
+                      committee, not as an individual. Removing them would
+                      delete no row and they'd stay in the chat, so offer the
+                      explanation instead of a button that does nothing. */}
+                  {isEboard && (m.is_auto ? (
+                    <span
+                      className="ml-1 shrink-0 rounded-md px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground"
+                      title="In this chat because of its groups or committees. Change those to remove them."
+                    >
+                      auto
+                    </span>
+                  ) : (
                     <button type="button" onClick={() => onRemoveMember(m.authentik_id)} className="ml-1 shrink-0 rounded-md p-1 text-muted-foreground hover:bg-destructive/10 hover:text-destructive" aria-label={`Remove ${memberDisplayName(m)}`}>
                       <UserMinus size={12} />
                     </button>
-                  )}
+                  ))}
                 </div>
               ))}
               {members.length === 0 && <p className="py-6 text-center text-sm text-muted-foreground">No members yet.</p>}
@@ -1443,8 +1458,8 @@ function GroupChatsTab({ currentUserId, isEboard, accent, initialGroupChatId }) 
     setChats((prev) => prev.map((c) => (c.id === updatedChat.id ? updatedChat : c)));
   }
 
-  async function handleCreate(name, memberIds) {
-    const chat = await createGroupChat({ name, memberIds });
+  async function handleCreate(name, memberIds, audience, committeeIds) {
+    const chat = await createGroupChat({ name, memberIds, audience, committeeIds });
     setChats((prev) => [chat, ...prev]);
     setShowNewGC(false);
   }

@@ -287,15 +287,47 @@ export default function ProfileForm({
         />
       </Field>
 
+      {/* Shows in the directory. It matters most for rushees, whose card has
+          no pledge class, graduation date or exec title to fill it out, but
+          it's on everyone's profile — there's nothing rush-specific about a
+          person describing themselves. 600 matches the cap in
+          userController.updateProfile, which truncates rather than rejects. */}
+      <Field label="About Me" variant={variant}>
+        <textarea
+          name="about_me"
+          rows={4}
+          maxLength={600}
+          placeholder="A sentence or two about yourself. What you're studying, what you're into, what you're hoping to get out of KTP."
+          defaultValue={defaultValues.about_me}
+          className={`${inputClass} resize-none`}
+        />
+      </Field>
+
+      {/* Two addresses on purpose. A UGA address stops working after
+          graduation, so the personal one is what still reaches an alumnus —
+          and a rushee may not have a UGA address yet. Neither is required. */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <Field label="Email" variant={variant}>
+        <Field label="UGA Email" variant={variant}>
           <Input
             type="email"
             name="email"
+            placeholder="you@uga.edu"
             defaultValue={defaultValues.email}
             className={inputClass}
           />
         </Field>
+        <Field label="Personal Email" variant={variant}>
+          <Input
+            type="email"
+            name="personal_email"
+            placeholder="you@gmail.com"
+            defaultValue={defaultValues.personal_email}
+            className={inputClass}
+          />
+        </Field>
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <Field label="Phone Number" variant={variant}>
           <Input
             type="tel"
