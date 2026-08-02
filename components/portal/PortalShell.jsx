@@ -96,26 +96,26 @@ const PORTAL_ROOT = { blue: '/member', red: '/admin', amber: '/alumni', teal: '/
 const NAV_GROUPING = {
   blue: [
     { heading: 'Main', hrefs: ['/member', '/member/calendar'] },
-    { heading: 'Community', hrefs: ['/member/directory', '/member/committees', '/member/polls', '/member/attendance'] },
+    { heading: 'Community', hrefs: ['/member/directory', '/member/meetings', '/member/committees', '/member/polls', '/member/attendance'] },
     { heading: 'Resources', hrefs: ['/member/files', '/member/messages'] },
     { heading: 'Account', hrefs: ['/member/settings'] },
   ],
   red: [
     { heading: 'Overview', hrefs: ['/admin'] },
-    { heading: 'Engagement', hrefs: ['/admin/announcements', '/admin/rush-announcements', '/admin/calendar', '/admin/committees', '/admin/polls', '/admin/attendance', '/admin/messages'] },
+    { heading: 'Engagement', hrefs: ['/admin/announcements', '/admin/rush-announcements', '/admin/calendar', '/admin/committees', '/admin/polls', '/admin/attendance', '/admin/meetings', '/admin/messages'] },
     { heading: 'Moderation', hrefs: ['/admin/reports', '/admin/users', '/admin/rush-signup'] },
     { heading: 'Content', hrefs: ['/admin/files', '/admin/homepage-photos', '/admin/ios-homepage-slideshow'] },
     { heading: 'Account', hrefs: ['/admin/settings'] },
   ],
   amber: [
     { heading: 'Main', hrefs: ['/alumni', '/alumni/calendar'] },
-    { heading: 'Community', hrefs: ['/alumni/directory', '/alumni/committees', '/alumni/polls'] },
+    { heading: 'Community', hrefs: ['/alumni/directory', '/alumni/meetings', '/alumni/committees', '/alumni/polls'] },
     { heading: 'Resources', hrefs: ['/alumni/files', '/alumni/messages'] },
     { heading: 'Account', hrefs: ['/alumni/settings'] },
   ],
   teal: [
     { heading: 'Main', hrefs: ['/pledge', '/pledge/calendar'] },
-    { heading: 'Community', hrefs: ['/pledge/directory', '/pledge/polls'] },
+    { heading: 'Community', hrefs: ['/pledge/directory', '/pledge/meetings', '/pledge/polls'] },
     { heading: 'Resources', hrefs: ['/pledge/files', '/pledge/messages'] },
     { heading: 'Account', hrefs: ['/pledge/settings'] },
   ],
@@ -125,7 +125,7 @@ const NAV_GROUPING = {
   // open.
   violet: [
     { heading: 'Rush', hrefs: ['/rushee', '/rushee/announcements', '/rushee/calendar'] },
-    { heading: 'Take Part', hrefs: ['/rushee/polls', '/rushee/messages'] },
+    { heading: 'Take Part', hrefs: ['/rushee/polls', '/rushee/meetings', '/rushee/messages'] },
     { heading: 'Account', hrefs: ['/rushee/settings'] },
   ],
 };

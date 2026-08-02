@@ -1,6 +1,6 @@
 'use client';
 
-import { LayoutDashboard, Calendar, FolderOpen, Users, Settings, MessageSquare, UsersRound, Vote, QrCode } from 'lucide-react';
+import { LayoutDashboard, Calendar, FolderOpen, Users, Settings, MessageSquare, UsersRound, Vote, QrCode, CalendarClock } from 'lucide-react';
 import { useSession } from 'next-auth/react';
 import PortalShell from '@/components/portal/PortalShell';
 
@@ -8,6 +8,7 @@ const BASE_NAV = [
   { href: '/member', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/member/calendar', label: 'Calendar', icon: Calendar },
   { href: '/member/directory', label: 'Directory', icon: Users },
+  { href: '/member/meetings', label: 'Meetings', icon: CalendarClock },
   { href: '/member/committees', label: 'Committees', icon: UsersRound },
   { href: '/member/polls', label: 'Polls', icon: Vote },
   { href: '/member/files', label: 'Files & Photos', icon: FolderOpen },

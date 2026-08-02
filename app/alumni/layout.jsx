@@ -1,12 +1,13 @@
 'use client';
 
-import { LayoutDashboard, Calendar, FolderOpen, Users, Settings, MessageSquare, UsersRound, Vote } from 'lucide-react';
+import { LayoutDashboard, Calendar, FolderOpen, Users, Settings, MessageSquare, UsersRound, Vote, CalendarClock } from 'lucide-react';
 import PortalShell from '@/components/portal/PortalShell';
 
 const NAV = [
   { href: '/alumni', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/alumni/calendar', label: 'Calendar', icon: Calendar },
   { href: '/alumni/directory', label: 'Directory', icon: Users },
+  { href: '/alumni/meetings', label: 'Meetings', icon: CalendarClock },
   { href: '/alumni/committees', label: 'Committees', icon: UsersRound },
   { href: '/alumni/polls', label: 'Polls', icon: Vote },
   { href: '/alumni/files', label: 'Files & Photos', icon: FolderOpen },

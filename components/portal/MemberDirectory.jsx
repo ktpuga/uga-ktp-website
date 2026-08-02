@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import {
   Users, X, MessageSquare, Mail, CalendarDays, ChevronUp, ChevronDown,
-  AlertCircle, Loader2, GraduationCap, BookOpen,
+  AlertCircle, Loader2, GraduationCap, BookOpen, CalendarClock,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { getMemberDirectory } from '@/lib/portal-api';
@@ -23,6 +23,7 @@ import {
 import { isRedirectError } from '@/lib/is-redirect-error';
 import ReportButton from './ReportButton';
 import BlockButton from './BlockButton';
+import { RequestMeetingModal } from './MeetingsPage';
 
 const ACCENT_THEMES = {
   blue: {
@@ -388,6 +389,7 @@ function InfoRow({ icon, label, value, isLast }) {
 }
 
 function ProfileModal({ member, accent, onClose }) {
+  const [requestMeetingFor, setRequestMeetingFor] = useState(null);
   const pathname = usePathname();
   const { data: session } = useSession();
   const isSelf = session?.user?.authentik_id === member.id;
@@ -496,6 +498,16 @@ function ProfileModal({ member, accent, onClose }) {
             >
               <MessageSquare size={14} /> Message
             </Link>
+            {/* Takes the slot Calendly's booking link used to occupy, but
+                requests time through our own request/accept flow instead of
+                sending someone off to a third-party page. */}
+            <button
+              type="button"
+              onClick={() => setRequestMeetingFor(member)}
+              className="flex items-center justify-center gap-2 rounded-xl border border-border py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-muted"
+            >
+              <CalendarClock size={14} /> Request a meeting
+            </button>
             {member.calendlyUrl && (
               <a
                 href={member.calendlyUrl}
@@ -515,6 +527,17 @@ function ProfileModal({ member, accent, onClose }) {
           )}
         </div>
       </div>
+
+      {requestMeetingFor && (
+        <RequestMeetingModal
+          accent={accent}
+          presetInvitee={requestMeetingFor}
+          onClose={() => setRequestMeetingFor(null)}
+          // Closing the profile too, so the member ends up back in the
+          // directory rather than staring at the card they just acted on.
+          onCreated={() => { setRequestMeetingFor(null); onClose(); }}
+        />
+      )}
     </div>
   );
 }

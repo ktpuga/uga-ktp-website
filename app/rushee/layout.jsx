@@ -1,6 +1,6 @@
 'use client';
 
-import { Calendar, LayoutDashboard, Megaphone, MessageSquare, Settings, Vote } from 'lucide-react';
+import { Calendar, LayoutDashboard, Megaphone, MessageSquare, Settings, Vote, CalendarClock } from 'lucide-react';
 import PortalShell from '@/components/portal/PortalShell';
 
 // NOTE: this portal lives at /rushee, NOT /rush — /rush is the PUBLIC rush
@@ -23,6 +23,7 @@ const NAV = [
   { href: '/rushee/announcements', label: 'Announcements', icon: Megaphone },
   { href: '/rushee/calendar', label: 'Calendar', icon: Calendar },
   { href: '/rushee/polls', label: 'Polls', icon: Vote },
+  { href: '/rushee/meetings', label: 'Meetings', icon: CalendarClock },
   { href: '/rushee/messages', label: 'Messages', icon: MessageSquare },
   { href: '/rushee/settings', label: 'Settings', icon: Settings },
 ];
