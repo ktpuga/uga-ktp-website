@@ -5,15 +5,17 @@ import { useSession } from 'next-auth/react';
 import { cn } from '@/lib/utils';
 import {
   ChevronLeft, Plus, Trash2, Download, X, Search, ImageIcon, FileText, FileIcon,
-  Link2, ExternalLink, FolderIcon, FolderOpen, Upload, Film, ChevronRight, AlertCircle,
+  Link2, ExternalLink, FolderIcon, FolderOpen, Upload, Film, ChevronRight, AlertCircle, Lock,
 } from 'lucide-react';
 import {
   getPhotos, getAlbums, getGeneralAlbumStats, createAlbum, deleteAlbum, uploadPhoto, deletePhoto,
   getDocumentFolders, getDocuments, createDocumentFolder, deleteDocumentFolder,
   uploadDocument, createDocumentLink, deleteDocument,
+  setAlbumVisibility, setFolderVisibility, setDocumentVisibility,
 } from '@/lib/portal-api';
 import { formatPhotoDate } from '@/lib/portal-format';
 import { isRedirectError } from '@/lib/is-redirect-error';
+import VisibilityControl from '@/components/portal/VisibilityControl';
 import { useConfirm } from '@/components/ui/confirm-dialog';
 import PhotoMedia from './PhotoMedia';
 import ReportButton from './ReportButton';
@@ -315,7 +317,7 @@ function CollageThumbnail({ ids }) {
   );
 }
 
-function AlbumCard({ album, accent, isEboard, onOpen, onDelete }) {
+function AlbumCard({ album, accent, isEboard, onOpen, onDelete, onEditVisibility }) {
   const coverIds = Array.isArray(album.cover_photo_ids) ? album.cover_photo_ids : [];
   // photo_count counts ALL media while cover_photo_ids is images only, so a
   // video-only album correctly reads "3 items" over a generated pattern. The
@@ -347,15 +349,34 @@ function AlbumCard({ album, accent, isEboard, onOpen, onDelete }) {
           </div>
         )}
 
+        {/* Always visible, not hover-only: a restricted album looks exactly
+            like an open one otherwise, and eboard needs to see at a glance
+            which albums the chapter can't see. */}
+        {isRestricted(album) && (
+          <div className="absolute left-2 top-2 flex items-center gap-1 rounded-full bg-black/55 px-2 py-0.5 text-[10px] font-semibold text-white backdrop-blur-sm">
+            <Lock size={9} /> Restricted
+          </div>
+        )}
+
         {isEboard && !album.isShared && (
-          <button
-            type="button"
-            onClick={(e) => { e.stopPropagation(); onDelete(); }}
-            className="absolute right-2 top-2 flex h-6 w-6 items-center justify-center rounded-full bg-black/50 text-white opacity-0 transition-opacity hover:bg-destructive group-hover:opacity-100"
-            aria-label={`Delete ${album.name}`}
-          >
-            <Trash2 size={11} />
-          </button>
+          <div className="absolute right-2 top-2 flex gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+            <button
+              type="button"
+              onClick={(e) => { e.stopPropagation(); onEditVisibility(); }}
+              className="flex h-6 w-6 items-center justify-center rounded-full bg-black/50 text-white hover:bg-black/70"
+              aria-label={`Change who can see ${album.name}`}
+            >
+              <Lock size={11} />
+            </button>
+            <button
+              type="button"
+              onClick={(e) => { e.stopPropagation(); onDelete(); }}
+              className="flex h-6 w-6 items-center justify-center rounded-full bg-black/50 text-white hover:bg-destructive"
+              aria-label={`Delete ${album.name}`}
+            >
+              <Trash2 size={11} />
+            </button>
+          </div>
         )}
       </div>
       <div className="px-4 py-3">
@@ -370,13 +391,78 @@ function AlbumCard({ album, accent, isEboard, onOpen, onDelete }) {
   );
 }
 
+// True when eboard has restricted this row. Albums and folders normalise an
+// empty audience to NULL, so any non-empty array means restricted. A DOCUMENT
+// uses overrides_folder instead: a document with no audience of its own is
+// inheriting, which may well be stricter than "everyone", so the absence of an
+// audience says nothing about whether it's restricted.
+function isRestricted(item) {
+  if (item.overrides_folder !== undefined && !item.overrides_folder) return false;
+  return (item.audience?.length ?? 0) > 0 || (item.committee_ids?.length ?? 0) > 0;
+}
+
+// One modal for all three kinds. `kind` picks both the save call and the
+// semantics of an empty selection — see VisibilityControl.
+function EditVisibilityModal({ kind, item, accent, onClose, onSaved }) {
+  const [value, setValue] = useState({
+    // A document that isn't overriding is inheriting; albums and folders have
+    // nothing to inherit from, so the toggle never shows for them.
+    inherit: kind === 'document' ? !item.overrides_folder : false,
+    audience: item.audience ?? [],
+    committeeIds: (item.committee_ids ?? []).map(String),
+  });
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+
+  async function save() {
+    setSaving(true);
+    setError('');
+    try {
+      const updated =
+        kind === 'album'
+          ? await setAlbumVisibility(item.id, value)
+          : kind === 'folder'
+            ? await setFolderVisibility(item.id, value)
+            : await setDocumentVisibility(item.id, value);
+      onSaved(updated);
+      onClose();
+    } catch (err) {
+      if (isRedirectError(err)) throw err;
+      setError(err.message ?? 'Could not update visibility.');
+      setSaving(false);
+    }
+  }
+
+  return (
+    <ModalWrapper onClose={onClose} label="Edit visibility" maxWidth="max-w-md">
+      <ModalHeader accent={accent} title={`Who can see "${item.name ?? item.filename}"`} icon={<Lock size={14} strokeWidth={1.75} />} onClose={onClose} />
+      <div className="max-h-[70vh] overflow-y-auto p-5">
+        <VisibilityControl
+          inheritable={kind === 'document'}
+          value={value}
+          onChange={setValue}
+        />
+        {error && (
+          <p className="mt-3 flex items-center gap-1.5 text-[11px] text-destructive">
+            <AlertCircle size={11} /> {error}
+          </p>
+        )}
+      </div>
+      <ModalFooter accent={accent} onClose={onClose} onConfirm={save} confirmLabel={saving ? 'Saving…' : 'Save'} disabled={saving} />
+    </ModalWrapper>
+  );
+}
+
 function NewAlbumModal({ accent, onClose, onCreate }) {
   const [name, setName] = useState('');
   const [desc, setDesc] = useState('');
+  // Defaults to unrestricted, matching how every album behaved before
+  // visibility existed. Restricting has to be a deliberate act.
+  const [visibility, setVisibility] = useState({ inherit: false, audience: [], committeeIds: [] });
   return (
     <ModalWrapper onClose={onClose} label="New album">
       <ModalHeader accent={accent} title="New Album" icon={<ImageIcon size={14} strokeWidth={1.75} />} onClose={onClose} />
-      <div className="space-y-4 p-5">
+      <div className="max-h-[70vh] space-y-4 overflow-y-auto p-5">
         <FormField label="Album Name">
           <FieldInput accent={accent} autoFocus type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Spring Formal 2026" />
         </FormField>
@@ -390,8 +476,17 @@ function NewAlbumModal({ accent, onClose, onCreate }) {
             style={{ '--tw-ring-color': tint(accent.base, 0.3) }}
           />
         </FormField>
+        <FormField label="Who can see this">
+          <VisibilityControl value={visibility} onChange={setVisibility} />
+        </FormField>
       </div>
-      <ModalFooter accent={accent} onClose={onClose} onConfirm={() => onCreate(name.trim(), desc.trim())} confirmLabel="Create Album" disabled={!name.trim()} />
+      <ModalFooter
+        accent={accent}
+        onClose={onClose}
+        onConfirm={() => onCreate(name.trim(), desc.trim(), visibility)}
+        confirmLabel="Create Album"
+        disabled={!name.trim()}
+      />
     </ModalWrapper>
   );
 }
@@ -720,6 +815,7 @@ function AlbumsTab({ accent, isEboard, currentUserId }) {
   const [error, setError] = useState(null);
   const [activeAlbum, setActiveAlbum] = useState(null);
   const [showNewAlbum, setShowNewAlbum] = useState(false);
+  const [visibilityFor, setVisibilityFor] = useState(null);
 
   const [generalStats, setGeneralStats] = useState(null);
 
@@ -742,8 +838,8 @@ function AlbumsTab({ accent, isEboard, currentUserId }) {
     [albums, generalStats],
   );
 
-  async function handleCreate(name, desc) {
-    const album = await createAlbum(name, desc || undefined);
+  async function handleCreate(name, desc, visibility) {
+    const album = await createAlbum(name, desc || undefined, visibility?.audience, visibility?.committeeIds);
     setAlbums((prev) => [album, ...prev]);
     setShowNewAlbum(false);
   }
@@ -789,11 +885,28 @@ function AlbumsTab({ accent, isEboard, currentUserId }) {
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {sorted.map((album) => (
-          <AlbumCard key={album.id ?? 'general'} album={album} accent={accent} isEboard={isEboard} onOpen={() => setActiveAlbum(album)} onDelete={() => handleDelete(album.id)} />
+          <AlbumCard
+            key={album.id ?? 'general'}
+            album={album}
+            accent={accent}
+            isEboard={isEboard}
+            onOpen={() => setActiveAlbum(album)}
+            onDelete={() => handleDelete(album.id)}
+            onEditVisibility={() => setVisibilityFor(album)}
+          />
         ))}
       </div>
 
       {showNewAlbum && <NewAlbumModal accent={accent} onClose={() => setShowNewAlbum(false)} onCreate={handleCreate} />}
+      {visibilityFor && (
+        <EditVisibilityModal
+          kind="album"
+          item={visibilityFor}
+          accent={accent}
+          onClose={() => setVisibilityFor(null)}
+          onSaved={(updated) => setAlbums((prev) => prev.map((a) => (a.id === updated.id ? { ...a, ...updated } : a)))}
+        />
+      )}
     </>
   );
 }
@@ -802,10 +915,11 @@ function AlbumsTab({ accent, isEboard, currentUserId }) {
 
 function NewFolderModal({ accent, onClose, onCreate }) {
   const [name, setName] = useState('');
+  const [visibility, setVisibility] = useState({ inherit: false, audience: [], committeeIds: [] });
   return (
     <ModalWrapper onClose={onClose} label="New folder">
       <ModalHeader accent={accent} title="New Folder" icon={<FolderIcon size={14} strokeWidth={1.75} />} onClose={onClose} />
-      <div className="p-5">
+      <div className="max-h-[70vh] space-y-4 overflow-y-auto p-5">
         <FormField label="Folder Name">
           <FieldInput
             accent={accent}
@@ -814,11 +928,16 @@ function NewFolderModal({ accent, onClose, onCreate }) {
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="e.g. Fall 2026 Resources"
-            onKeyDown={(e) => { if (e.key === 'Enter' && name.trim()) onCreate(name.trim()); }}
+            onKeyDown={(e) => { if (e.key === 'Enter' && name.trim()) onCreate(name.trim(), visibility); }}
           />
         </FormField>
+        <FormField label="Who can see this">
+          {/* A folder is hidden ENTIRELY when restricted, name included — a
+              locked-but-listed folder called "Exec Only" leaks by itself. */}
+          <VisibilityControl value={visibility} onChange={setVisibility} />
+        </FormField>
       </div>
-      <ModalFooter accent={accent} onClose={onClose} onConfirm={() => onCreate(name.trim())} confirmLabel="Create Folder" disabled={!name.trim()} />
+      <ModalFooter accent={accent} onClose={onClose} onConfirm={() => onCreate(name.trim(), visibility)} confirmLabel="Create Folder" disabled={!name.trim()} />
     </ModalWrapper>
   );
 }
@@ -896,7 +1015,7 @@ function FilePreviewModal({ doc, accent, onClose }) {
   );
 }
 
-function DocRow({ doc, isFolder, accent, isEboard, onOpenFolder, onPreview, onDelete }) {
+function DocRow({ doc, isFolder, accent, isEboard, onOpenFolder, onPreview, onDelete, onEditVisibility }) {
   const isLink = doc.kind === 'link';
   const isFile = doc.kind !== 'link' && !isFolder;
 
@@ -951,6 +1070,25 @@ function DocRow({ doc, isFolder, accent, isEboard, onOpenFolder, onPreview, onDe
 
       <td className="px-4 py-3">
         <div className="flex items-center justify-end gap-1.5">
+          {/* A restricted row is otherwise indistinguishable from an open one.
+              For a DOCUMENT this reflects its own override only — an
+              inheriting document inside a restricted folder is restricted in
+              effect, but the folder is where that is shown and changed. */}
+          {isRestricted(doc) && (
+            <span className="flex items-center gap-1 rounded-full border border-border px-2 py-0.5 text-[10px] font-medium text-muted-foreground" title="Restricted">
+              <Lock size={9} /> Restricted
+            </span>
+          )}
+          {isEboard && (
+            <button
+              type="button"
+              onClick={onEditVisibility}
+              className="flex h-7 w-7 items-center justify-center rounded-lg border border-border bg-card text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+              aria-label={`Change who can see ${doc.name ?? doc.filename}`}
+            >
+              <Lock size={13} />
+            </button>
+          )}
           {isFile && (
             <a href={`/api/documents/${doc.id}/download`} download={doc.filename} className="flex h-7 w-7 items-center justify-center rounded-lg border border-border bg-card text-muted-foreground transition-colors hover:bg-muted hover:text-foreground" aria-label="Download">
               <Download size={13} />
@@ -986,6 +1124,7 @@ function DocumentsTab({ accent, isEboard }) {
   const [error, setError] = useState(null);
   const [showNewFolder, setShowNewFolder] = useState(false);
   const [showAddLink, setShowAddLink] = useState(false);
+  const [visibilityFor, setVisibilityFor] = useState(null);
   const [previewDoc, setPreviewDoc] = useState(null);
   const fileUploadRef = useRef(null);
 
@@ -1018,8 +1157,8 @@ function DocumentsTab({ accent, isEboard }) {
     setPath((prev) => prev.slice(0, index + 1));
   }
 
-  async function handleCreateFolder(name) {
-    const folder = await createDocumentFolder(name, currentFolderId);
+  async function handleCreateFolder(name, visibility) {
+    const folder = await createDocumentFolder(name, currentFolderId, visibility?.audience, visibility?.committeeIds);
     setFolders((prev) => [...prev, folder]);
     setShowNewFolder(false);
   }
@@ -1133,6 +1272,7 @@ function DocumentsTab({ accent, isEboard }) {
                   onOpenFolder={openFolder}
                   onPreview={setPreviewDoc}
                   onDelete={() => (doc.kind === 'folder' ? handleDeleteFolder(doc.id) : handleDeleteDocument(doc.id))}
+                  onEditVisibility={() => setVisibilityFor(doc)}
                 />
               ))}
             </tbody>
@@ -1148,6 +1288,23 @@ function DocumentsTab({ accent, isEboard }) {
       {showNewFolder && <NewFolderModal accent={accent} onClose={() => setShowNewFolder(false)} onCreate={handleCreateFolder} />}
       {showAddLink && <AddLinkModal accent={accent} onClose={() => setShowAddLink(false)} onAdd={handleAddLink} />}
       {previewDoc && <FilePreviewModal doc={previewDoc} accent={accent} onClose={() => setPreviewDoc(null)} />}
+      {visibilityFor && (
+        <EditVisibilityModal
+          kind={visibilityFor.kind === 'folder' ? 'folder' : 'document'}
+          item={visibilityFor}
+          accent={accent}
+          onClose={() => setVisibilityFor(null)}
+          onSaved={(updated) => {
+            // Folders and documents live in two separate lists that the table
+            // merges, so the update has to go back to whichever it came from.
+            if (visibilityFor.kind === 'folder') {
+              setFolders((prev) => prev.map((f) => (f.id === updated.id ? { ...f, ...updated } : f)));
+            } else {
+              setDocuments((prev) => prev.map((d) => (d.id === updated.id ? { ...d, ...updated } : d)));
+            }
+          }}
+        />
+      )}
     </>
   );
 }
