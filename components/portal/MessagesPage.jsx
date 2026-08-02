@@ -11,7 +11,7 @@ import {
 } from 'lucide-react';
 import {
   getConversations, getConversation, sendMessage, markConversationRead, getMember,
-  getGroupChats, createGroupChat, deleteGroupChat, updateGroupChatPhoto,
+  getGroupChats, createGroupChat, deleteGroupChat, updateGroupChatPhoto, setGroupChatAudience,
   getGroupChatMessages, sendGroupChatMessage, toggleGroupChatReaction, toggleMessageReaction,
   deleteMessage, deleteGroupChatMessage, markGroupChatRead, getGroupChatMembers,
   addGroupChatMember, removeGroupChatMember, getCommittees, getCommitteeMembers,
@@ -660,6 +660,102 @@ function GroupChatList({ chats, currentUserId, accent, isEboard, onSelect, onNew
   );
 }
 
+// Edits which groups and committees a chat follows, after it was created.
+//
+// Saving takes effect for everyone immediately: membership is derived at read
+// time, so nobody needs backfilling and anyone who no longer matches drops out
+// on their next request. Individually-added members are untouched — narrowing
+// an audience must not evict a guest who was deliberately invited.
+function ChatAudienceEditor({ chat, accent, onChatUpdated }) {
+  const [committees, setCommittees] = useState([]);
+  const [audience, setAudience] = useState(chat.audience ?? []);
+  const [committeeIds, setCommitteeIds] = useState((chat.committee_ids ?? []).map(String));
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState(null);
+  const [saved, setSaved] = useState(false);
+
+  useEffect(() => {
+    getCommittees().then(setCommittees).catch((err) => { if (isRedirectError(err)) throw err; });
+  }, []);
+
+  // The Eboard chat reconciles its own membership from Authentik on every
+  // login, so giving it an audience would create a second source of truth for
+  // the same question. The API returns 409; don't offer the control at all.
+  if (chat.is_eboard_chat) {
+    return (
+      <p className="rounded-lg border border-border bg-muted/30 px-3 py-2 text-[11px] text-muted-foreground">
+        Everyone in the <strong className="text-foreground">eboard</strong> group is in this chat automatically.
+      </p>
+    );
+  }
+
+  const dirty =
+    JSON.stringify([...audience].sort()) !== JSON.stringify([...(chat.audience ?? [])].sort())
+    || JSON.stringify([...committeeIds].sort()) !== JSON.stringify([...(chat.committee_ids ?? []).map(String)].sort());
+
+  async function save() {
+    setSaving(true);
+    setError(null);
+    try {
+      const updated = await setGroupChatAudience(chat.id, { audience, committeeIds });
+      onChatUpdated?.(updated);
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2000);
+    } catch (err) {
+      if (isRedirectError(err)) throw err;
+      setError(err.message ?? 'Could not update who is in this chat.');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div className="space-y-2">
+      <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Groups &amp; committees</p>
+      <AudienceSelect value={audience} onChange={setAudience} />
+
+      {committees.length > 0 && (
+        <div className="flex flex-wrap gap-2 rounded-xl border border-border bg-muted/40 p-3">
+          {committees.map((c) => {
+            const selected = committeeIds.includes(String(c.id));
+            return (
+              <button
+                key={c.id}
+                type="button"
+                aria-pressed={selected}
+                onClick={() => setCommitteeIds((prev) => (
+                  prev.includes(String(c.id)) ? prev.filter((x) => x !== String(c.id)) : [...prev, String(c.id)]
+                ))}
+                className={cn(
+                  'rounded-full border px-3 py-1.5 text-xs font-medium transition-all duration-150',
+                  selected
+                    ? 'border-transparent text-white'
+                    : 'border-border bg-card text-muted-foreground hover:text-foreground',
+                )}
+                style={selected ? { background: accent.gradient } : undefined}
+              >
+                {c.name}
+              </button>
+            );
+          })}
+        </div>
+      )}
+
+      {error && <p className="text-[11px] text-destructive">{error}</p>}
+
+      <button
+        type="button"
+        onClick={save}
+        disabled={!dirty || saving}
+        className="w-full rounded-lg py-2 text-xs font-semibold text-white transition-opacity disabled:opacity-40"
+        style={{ background: accent.gradient }}
+      >
+        {saving ? 'Saving…' : saved ? 'Saved' : dirty ? 'Save membership' : 'No changes'}
+      </button>
+    </div>
+  );
+}
+
 // Lets eboard pull in a whole slice of the chapter at once — by Authentik
 // role group or by committee — instead of adding people one at a time.
 function BulkAddByGroupOrCommittee({ excludeIds, accent, onAddMany }) {
@@ -1141,16 +1237,25 @@ function GroupChatInfoModal({ chat, members, messages, isEboard, accent, onAddMe
               {members.length === 0 && <p className="py-6 text-center text-sm text-muted-foreground">No members yet.</p>}
 
               {isEboard && (
-                <div className="space-y-3 border-t border-border p-4">
-                  <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Add Members</p>
-                  <BulkAddByGroupOrCommittee excludeIds={members.map((m) => m.authentik_id)} accent={accent} onAddMany={onAddMany} />
-                  {adding ? (
-                    <AddMemberPicker excludeIds={members.map((m) => m.authentik_id)} accent={accent} onAdd={(m) => { onAddMember(m); setAdding(false); }} />
-                  ) : (
-                    <button type="button" onClick={() => setAdding(true)} className="w-full rounded-lg border border-border py-2 text-xs font-semibold text-foreground hover:bg-muted">
-                      + Add individually
-                    </button>
-                  )}
+                <div className="space-y-4 border-t border-border p-4">
+                  {/* Editing the audience replaced a "quick add by group"
+                      control that expanded a group into individual rows. That
+                      was a snapshot: it captured who was in the group at that
+                      moment and never updated, which is the exact problem
+                      audiences exist to solve. Groups and committees belong
+                      here as live membership; individuals stay separate. */}
+                  <ChatAudienceEditor chat={chat} accent={accent} onChatUpdated={onChatUpdated} />
+
+                  <div className="space-y-3">
+                    <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Individual members</p>
+                    {adding ? (
+                      <AddMemberPicker excludeIds={members.map((m) => m.authentik_id)} accent={accent} onAdd={(m) => { onAddMember(m); setAdding(false); }} />
+                    ) : (
+                      <button type="button" onClick={() => setAdding(true)} className="w-full rounded-lg border border-border py-2 text-xs font-semibold text-foreground hover:bg-muted">
+                        + Add individually
+                      </button>
+                    )}
+                  </div>
                 </div>
               )}
             </div>
@@ -1196,9 +1301,14 @@ function GroupChatThread({ chat, currentUserId, isEboard, accent, onBack, onDele
     return () => { cancelled = true; clearInterval(interval); };
   }, [chat.id]);
 
+  // Membership is DERIVED from the audience, so the roster has to refetch when
+  // the audience changes, not only when the chat changes. Keying on chat.id
+  // alone left the member list showing the old roster until you closed and
+  // reopened the chat — which reads as "saving didn't work".
+  const membershipKey = `${(chat.audience ?? []).join(',')}|${(chat.committee_ids ?? []).join(',')}`;
   useEffect(() => {
     getGroupChatMembers(chat.id).then(setMembers).catch((err) => { if (isRedirectError(err)) throw err; });
-  }, [chat.id]);
+  }, [chat.id, membershipKey]);
 
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages.length]);
 

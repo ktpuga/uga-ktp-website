@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { User, ShieldOff, AlertTriangle, X, UserX, ExternalLink, Info } from 'lucide-react';
+import { User, ShieldOff, AlertTriangle, X, UserX, ExternalLink, Info, Calendar } from 'lucide-react';
 import { getProfile, getBlockedUsers, unblockUser, deleteAccount } from '@/lib/portal-api';
 import { normalizeUserProfile } from '@/lib/profile';
 import { formatMemberGroup, memberDisplayName, memberInitials } from '@/lib/portal-format';
@@ -9,6 +9,7 @@ import { isRedirectError } from '@/lib/is-redirect-error';
 import { logoutEverywhere } from '@/lib/auth-actions';
 import { cn } from '@/lib/utils';
 import ProfileForm from './ProfileForm';
+import CalendarSubscription from './CalendarSubscription';
 import LegacyEditProfilePage from './LegacyEditProfilePage';
 
 const ACCENT_THEMES = {
@@ -275,6 +276,15 @@ function RevampedEditProfilePage({ accentKey, portalLabel }) {
             </div>
 
             <ProfileForm mode="edit" variant="portal" accent={accentKey} defaultValues={profile} />
+          </SectionCard>
+
+          <SectionCard
+            accent={accent}
+            icon={<Calendar size={14} strokeWidth={1.75} />}
+            title="Calendar Subscription"
+            description="Put chapter events into Apple Calendar, Google Calendar or Outlook, kept up to date automatically."
+          >
+            <CalendarSubscription initialToken={profile?.calendar_feed_token ?? null} />
           </SectionCard>
 
           <SectionCard
