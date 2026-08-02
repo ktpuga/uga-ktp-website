@@ -85,11 +85,17 @@ export function MailIcon(props) {
 // `avatarShape="square"` opts into a rounded square instead of the default
 // circle — the roster uses it so more of each photo is visible. Both the Root
 // and the Fallback need the override, since each carries its own rounded-full.
-const ProfileCard = ({ name, title, bio, avatarSrc, fallbackInitials, instagramUrl, linkedinUrl, otherUrl, email, className, avatarShape = "circle" }) => {
+// `avatarSize="lg"` opts into a noticeably larger photo. Opt-in rather than a
+// blanket change because this component is also used by the sponsorship page,
+// whose cards are laid out around the smaller default — the roster wants the
+// photo to be the point, sponsorship does not.
+const AVATAR_SIZES = { default: "w-20 h-20", lg: "w-32 h-32 sm:w-36 sm:h-36" };
+
+const ProfileCard = ({ name, title, bio, avatarSrc, fallbackInitials, instagramUrl, linkedinUrl, otherUrl, email, className, avatarShape = "circle", avatarSize = "default" }) => {
   const squareAvatar = avatarShape === "square";
   return (
     <div className={`relative rounded-2xl bg-card/80 backdrop-blur-lg border-2 border-transparent bg-clip-padding p-6 text-center shadow-xl flex flex-col items-center justify-center transition-transform duration-300 hover:scale-105 hover:border-gradient-to-tr hover:from-indigo-400 hover:via-fuchsia-400 hover:to-cyan-400 group min-h-[260px] h-full ${className ?? ""}`}>
-      <Avatar className={cn("w-20 h-20 mb-4 shadow-lg ring-4 ring-indigo-200 group-hover:ring-fuchsia-300 transition-all duration-300", squareAvatar && "rounded-2xl")}>
+      <Avatar className={cn(AVATAR_SIZES[avatarSize] ?? AVATAR_SIZES.default, "mb-4 shadow-lg ring-4 ring-indigo-200 group-hover:ring-fuchsia-300 transition-all duration-300", squareAvatar && "rounded-2xl")}>
         <AvatarImage src={avatarSrc} alt={`${name} Avatar, bio: ${bio}`} />
         <AvatarFallback className={cn(squareAvatar && "rounded-2xl")}>{fallbackInitials}</AvatarFallback>
       </Avatar>

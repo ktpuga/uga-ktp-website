@@ -131,11 +131,14 @@ function LegacyProfileModal({ member, avatarClass, onClose }) {
           </Button>
         </div>
         <div className="flex flex-col items-center gap-3 px-6 pb-6 text-center">
-          <Avatar className="h-20 w-20">
+          {/* Larger than the list rows on purpose — this modal is where someone
+              has deliberately opened a person, so the photo is the point.
+              Fallback text scales with it, or initials float in a large circle. */}
+          <Avatar className="h-32 w-32 sm:h-36 sm:w-36">
             {member.id && (
               <AvatarImage src={`/api/users/${member.id}/profile-picture/media`} alt={name} />
             )}
-            <AvatarFallback className={`text-lg ${avatarClass}`}>{memberInitials(member)}</AvatarFallback>
+            <AvatarFallback className={`text-3xl ${avatarClass}`}>{memberInitials(member)}</AvatarFallback>
           </Avatar>
           <div>
             <p className="text-lg font-semibold text-gray-900 dark:text-slate-100">{name}</p>

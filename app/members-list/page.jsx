@@ -50,6 +50,7 @@ function RosterCard({ person, title }) {
       avatarSrc={`/api/roster/${person.id}/media`}
       fallbackInitials={initials}
       avatarShape="square"
+      avatarSize="lg"
       className="h-full"
     />
   );
