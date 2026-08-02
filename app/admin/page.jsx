@@ -1,23 +1,20 @@
 'use client';
 
 import AnalyticsContent from '@/components/analytics/AnalyticsContent';
-
-// Same maroon values as PortalShell.jsx's REVAMPED_ACCENTS.red — kept in
-// sync manually since this page renders outside the sidebar's own scope.
-const MAROON = {
-  base: '#7f1d1d',
-  gradient: 'linear-gradient(135deg, #7f1d1d 0%, #991b1b 100%)',
-  muted: 'rgba(127,29,29,0.10)',
-  light: '#991b1b',
-};
+import { useAccentPalette } from '@/components/portal/PortalAccentContext';
 
 export default function AdminAnalyticsPage() {
+  // Follows the Admin red/blue toggle rather than a hardcoded maroon — the
+  // provider is PortalShell, so this resolves to whichever colour the sidebar
+  // is currently showing.
+  const accent = useAccentPalette();
+
   return (
     <AnalyticsContent
-      accentBase={MAROON.base}
-      accentGradient={MAROON.gradient}
-      accentMuted={MAROON.muted}
-      accentLight={MAROON.light}
+      accentBase={accent.base}
+      accentGradient={accent.gradient}
+      accentMuted={accent.muted}
+      accentLight={accent.light}
     />
   );
 }

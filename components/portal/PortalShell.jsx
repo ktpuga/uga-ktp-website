@@ -13,6 +13,7 @@ import { useUnreadCounts } from '@/lib/use-unread-counts';
 import { cn } from '@/lib/utils';
 import { memberDisplayName, memberInitials, formatMemberGroup } from '@/lib/portal-format';
 import { PortalThemeProvider, usePortalTheme } from './PortalThemeProvider';
+import { PortalAccentProvider } from './PortalAccentContext';
 import ThemeToggle from './ThemeToggle';
 
 const STORAGE_KEY = 'ktp-portal-sidebar';
@@ -348,6 +349,7 @@ export default function PortalShell({
 
     return (
       <PortalThemeProvider>
+       <PortalAccentProvider accent={colorKey}>
         <div className="flex h-screen overflow-hidden bg-background text-foreground">
           <aside
             className={cn(
@@ -556,6 +558,7 @@ export default function PortalShell({
             <main className="min-w-0 flex-1 overflow-y-auto p-4 sm:p-6 md:p-8">{children}</main>
           </div>
         </div>
+       </PortalAccentProvider>
       </PortalThemeProvider>
     );
   }
@@ -725,5 +728,9 @@ export default function PortalShell({
     </div>
   );
 
-  return <PortalThemeProvider>{shell}</PortalThemeProvider>;
+  return (
+    <PortalThemeProvider>
+      <PortalAccentProvider accent={colorKey}>{shell}</PortalAccentProvider>
+    </PortalThemeProvider>
+  );
 }

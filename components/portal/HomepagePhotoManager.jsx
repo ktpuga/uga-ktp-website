@@ -1,5 +1,6 @@
 'use client';
 
+import { useAccentPalette } from '@/components/portal/PortalAccentContext';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { cn } from '@/lib/utils';
 import {
@@ -17,13 +18,9 @@ import {
 } from '@/lib/portal-api';
 import { isRedirectError } from '@/lib/is-redirect-error';
 
-// Admin-only page — always maroon, no per-portal accent. Kept in sync with
-// PortalShell's REVAMPED_ACCENTS.red.
-const MAROON = {
-  base: '#7f1d1d',
-  gradient: 'linear-gradient(135deg, #7f1d1d 0%, #991b1b 100%)',
-  light: '#991b1b',
-};
+// Palette now comes from the portal accent context so the Admin red/blue
+// toggle reaches this page, not just the sidebar. Each component asks for it
+// directly — no prop threading through the sub-components in this file.
 
 // Mirrors what ktp-api's multer config actually accepts for this route.
 const ACCEPT = 'image/jpeg,image/png,image/webp,video/mp4,video/quicktime,video/webm';
@@ -75,6 +72,7 @@ function ModalWrapper({ children, onClose, label, maxWidth = 'max-w-lg' }) {
 }
 
 function ModalHeader({ title, icon, onClose }) {
+  const MAROON = useAccentPalette();
   return (
     <div className="flex items-center justify-between border-b border-border px-5 py-4" style={{ background: tint(MAROON.base, 0.03) }}>
       <div className="flex items-center gap-3">
@@ -127,6 +125,7 @@ function ConfirmModal({ title, body, confirmLabel, onClose, onConfirm, busy = fa
 }
 
 function AddMediaModal({ onClose, onUpload, onRegisterImmich }) {
+  const MAROON = useAccentPalette();
   const [mode, setMode] = useState('upload');
   const [stagedFiles, setStagedFiles] = useState([]);
   const [immichId, setImmichId] = useState('');
@@ -190,7 +189,7 @@ function AddMediaModal({ onClose, onUpload, onRegisterImmich }) {
   }
 
   const inputClass =
-    'w-full rounded-lg border border-border bg-muted/40 px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-1 focus:ring-[rgba(127,29,29,0.28)]';
+    'w-full rounded-lg border border-border bg-muted/40 px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-1 focus:ring-[var(--portal-ring)]';
 
   return (
     <ModalWrapper onClose={onClose} label="Add media" maxWidth="max-w-xl">
@@ -278,14 +277,14 @@ function AddMediaModal({ onClose, onUpload, onRegisterImmich }) {
                     placeholder="Title (optional)"
                     value={entry.title}
                     onChange={(e) => updateMeta(index, 'title', e.target.value)}
-                    className="rounded-lg border border-border bg-card px-2.5 py-1.5 text-xs text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-1 focus:ring-[rgba(127,29,29,0.28)]"
+                    className="rounded-lg border border-border bg-card px-2.5 py-1.5 text-xs text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-1 focus:ring-[var(--portal-ring)]"
                   />
                   <input
                     type="text"
                     placeholder="Caption (optional)"
                     value={entry.caption}
                     onChange={(e) => updateMeta(index, 'caption', e.target.value)}
-                    className="rounded-lg border border-border bg-card px-2.5 py-1.5 text-xs text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-1 focus:ring-[rgba(127,29,29,0.28)]"
+                    className="rounded-lg border border-border bg-card px-2.5 py-1.5 text-xs text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-1 focus:ring-[var(--portal-ring)]"
                   />
                 </div>
               </div>
@@ -383,6 +382,7 @@ function AddMediaModal({ onClose, onUpload, onRegisterImmich }) {
 }
 
 function EditMetaModal({ photo, onClose, onSave }) {
+  const MAROON = useAccentPalette();
   const [title, setTitle] = useState(photo.title ?? '');
   const [caption, setCaption] = useState(photo.caption ?? '');
   const [submitting, setSubmitting] = useState(false);
@@ -403,7 +403,7 @@ function EditMetaModal({ photo, onClose, onSave }) {
   }
 
   const inputClass =
-    'w-full rounded-lg border border-border bg-muted/40 px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-1 focus:ring-[rgba(127,29,29,0.28)]';
+    'w-full rounded-lg border border-border bg-muted/40 px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-1 focus:ring-[var(--portal-ring)]';
 
   return (
     <ModalWrapper onClose={onClose} label="Edit media info" maxWidth="max-w-sm">
@@ -459,6 +459,7 @@ function GalleryCard({
   photo, index, selected, onSelect, onEdit, onRemove, onMoveUp, onMoveDown,
   isDragging, isDropTarget, onDragStart, onDragOver, onDrop, onDragEnd,
 }) {
+  const MAROON = useAccentPalette();
   const [hovered, setHovered] = useState(false);
   const showOverlay = hovered || selected;
 
@@ -564,6 +565,7 @@ function GalleryCard({
 }
 
 function HomepagePreviewStrip({ photos }) {
+  const MAROON = useAccentPalette();
   const [collapsed, setCollapsed] = useState(false);
 
   return (
@@ -649,6 +651,7 @@ function HomepagePreviewStrip({ photos }) {
 }
 
 export default function HomepagePhotoManager() {
+  const MAROON = useAccentPalette();
   const [photos, setPhotos] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);

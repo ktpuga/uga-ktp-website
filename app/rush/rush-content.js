@@ -83,3 +83,49 @@ We focus on career development, technical growth, and building a tight-knit comm
     required to attend at least one info session. If you have a conflict, reach out on Instagram and we will help you figure out next steps.`,
   },
 ]
+
+// The four steps shown on /rush/how-it-works. Kept here with the rest of the
+// rush copy so it can be reworded each semester without touching the layout.
+//
+// Step 4 is deliberately worded as an update you'll see in the portal rather
+// than promising an automatic bid notification — bids are sent by leadership as
+// a direct message. There is no separate bid system, and the page shouldn't
+// imply one.
+//
+// Step 3 says where interview signup will be announced rather than linking it.
+// There is no interview-signup feature in the portal yet; the details go out as
+// a rush announcement.
+export const RUSH_STEPS = [
+  {
+    id: 'account',
+    label: 'Make an account with us',
+    body: `Click the button at the bottom of this page, or scan the QR code at any info session, and create an account. It takes about a minute.
+
+Then come back to the main page and sign in to the portal. You can look around before the first event — have a read through what's posted and see what's coming up.`,
+    detail: 'Takes ~1 minute',
+  },
+  {
+    id: 'events',
+    label: 'Come to events and talk to members',
+    body: `We want to get to know you, and showing up is the biggest thing that helps your chances of getting a bid. Every rush event — info sessions, socials, coffee chats — is on your calendar in the portal with the time and place.
+
+Come say hi. Scan the QR code we put up at each event to log your attendance, so we know you were there.`,
+    detail: 'Every rush event',
+  },
+  {
+    id: 'interviews',
+    label: 'Sign up for interviews',
+    body: `Towards the end of rush, we hold short interviews. It's a relaxed conversation with a couple of members — we're just trying to get to know you properly.
+
+Signup details get posted as an announcement in your portal, so keep an eye on it around then.`,
+    detail: 'Towards the end of rush',
+  },
+  {
+    id: 'update',
+    label: 'Check back for an update',
+    body: `Once interviews wrap up, leadership reviews everyone who took part. Check back in on your portal to see where you stand.
+
+If you're offered a bid, you'll get a message from us — and a notification on your phone, so you don't have to keep refreshing. You'll hear either way.`,
+    detail: 'After interviews',
+  },
+];

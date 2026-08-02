@@ -1,5 +1,6 @@
 'use client';
 
+import { useAccentPalette } from '@/components/portal/PortalAccentContext';
 import { useState, useMemo, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import {
@@ -15,12 +16,9 @@ import {
 import { getReports, updateReportStatus } from '@/lib/portal-api';
 import { isRedirectError } from '@/lib/is-redirect-error';
 
-const MAROON = {
-  base: '#7f1d1d',
-  gradient: 'linear-gradient(135deg, #7f1d1d 0%, #991b1b 100%)',
-  light: '#991b1b',
-  muted: 'rgba(127,29,29,0.10)',
-};
+// Palette now comes from the portal accent context so the Admin red/blue
+// toggle reaches this page, not just the sidebar. Each component asks for it
+// directly — no prop threading through the sub-components in this file.
 
 const CONTENT_META = {
   user: { icon: User, label: 'Member profile' },
@@ -57,6 +55,7 @@ function timeAgo(iso) {
 // ─── Tab bar ───
 
 function TabBar({ active, onChange, openCount, historyCount }) {
+  const MAROON = useAccentPalette();
   const tabs = [
     { id: 'open', label: 'Open', count: openCount },
     { id: 'history', label: 'History', count: historyCount },
@@ -96,6 +95,7 @@ function TabBar({ active, onChange, openCount, historyCount }) {
 // ─── Report card ───
 
 function ReportCard({ report, onResolve, onDismiss }) {
+  const MAROON = useAccentPalette();
   const [note, setNote] = useState('');
   const [loading, setLoading] = useState(null);
   const [error, setError] = useState(null);
@@ -226,6 +226,7 @@ function ReportCard({ report, onResolve, onDismiss }) {
 // ─── Main export ───
 
 export default function ModerationQueue() {
+  const MAROON = useAccentPalette();
   const [reports, setReports] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);

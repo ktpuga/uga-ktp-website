@@ -1,5 +1,6 @@
 'use client';
 
+import { useAccentPalette } from '@/components/portal/PortalAccentContext';
 import { useEffect, useState } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
 import { cn } from '@/lib/utils';
@@ -9,11 +10,9 @@ import {
 import { closeRushSignup, getRushSignup, openRushSignup } from '@/lib/portal-api';
 import { isRedirectError } from '@/lib/is-redirect-error';
 
-const MAROON = {
-  base: '#7f1d1d',
-  gradient: 'linear-gradient(135deg, #7f1d1d 0%, #991b1b 100%)',
-  light: '#991b1b',
-};
+// Palette now comes from the portal accent context so the Admin red/blue
+// toggle reaches this page, not just the sidebar. Each component asks for it
+// directly — no prop threading through the sub-components in this file.
 
 function tint(hex, alpha) {
   const h = hex.replace('#', '');
@@ -21,7 +20,7 @@ function tint(hex, alpha) {
   return `rgba(${(n >> 16) & 255},${(n >> 8) & 255},${n & 255},${alpha})`;
 }
 
-const INPUT = 'w-full rounded-lg border border-border bg-muted/40 px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-1 focus:ring-[rgba(127,29,29,0.28)]';
+const INPUT = 'w-full rounded-lg border border-border bg-muted/40 px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-1 focus:ring-[var(--portal-ring)]';
 
 function formatExpiry(iso) {
   const date = new Date(iso);
@@ -61,6 +60,7 @@ function CopyButton({ value }) {
 }
 
 export default function RushSignupManager() {
+  const MAROON = useAccentPalette();
   const [status, setStatus] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');

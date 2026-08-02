@@ -77,6 +77,7 @@ export default function Page () {
           <span className='hidden truncate text-base font-semibold sm:text-lg md:inline text-[#d4af37]'>Phi Chapter at UGA</span>
         </Link>
         <nav className='ml-auto flex shrink-0 gap-4 sm:gap-6'>
+          <Link href='/rush/how-it-works' className='text-sm font-medium text-white transition-colors hover:text-[#d4af37]'>How it works</Link>
           <Link href='/' className='text-sm font-medium text-white transition-colors hover:text-[#d4af37]'>Home</Link>
         </nav>
       </header>
@@ -129,6 +130,9 @@ export default function Page () {
                 <p className="mt-3 text-xs text-[#e8e0d5]/70">
                   Create your account to see the schedule, RSVP and check in at events.
                 </p>
+                <Link href="/rush/how-it-works" className="mt-2 text-xs font-semibold text-[#d4af37] underline underline-offset-4 hover:text-[#f0d060]">
+                  How does rush work?
+                </Link>
               </div>
             )}
 

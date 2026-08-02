@@ -1,5 +1,6 @@
 'use client';
 
+import { useAccentPalette } from '@/components/portal/PortalAccentContext';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { cn } from '@/lib/utils';
 import {
@@ -19,13 +20,9 @@ const {
   validateSlideForm,
 } = slideshowUtils;
 
-// Admin-only page — always maroon. Kept in sync with PortalShell's
-// REVAMPED_ACCENTS.red.
-const MAROON = {
-  base: '#7f1d1d',
-  gradient: 'linear-gradient(135deg, #7f1d1d 0%, #991b1b 100%)',
-  light: '#991b1b',
-};
+// Palette now comes from the portal accent context so the Admin red/blue
+// toggle reaches this page, not just the sidebar. Each component asks for it
+// directly — no prop threading through the sub-components in this file.
 
 // Enforced server-side by ensureActiveLimit() in iosHomepageSlidesController —
 // exceeding it returns 409 active_slide_limit. Mirrored here so the UI can warn
@@ -148,6 +145,7 @@ function ModalWrapper({ children, onClose, label, maxWidth = 'max-w-lg' }) {
 }
 
 function ModalHeader({ title, icon, onClose }) {
+  const MAROON = useAccentPalette();
   return (
     <div className="flex items-center justify-between border-b border-border px-5 py-4" style={{ background: tint(MAROON.base, 0.03) }}>
       <div className="flex min-w-0 items-center gap-3">
@@ -384,7 +382,7 @@ function Field({ label, required, counter, error, children, htmlFor }) {
 }
 
 const INPUT_CLASS =
-  'w-full rounded-lg border border-border bg-muted/40 px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-1 focus:ring-[rgba(127,29,29,0.28)]';
+  'w-full rounded-lg border border-border bg-muted/40 px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-1 focus:ring-[var(--portal-ring)]';
 
 function SlideMetaForm({ form, errors, onChange }) {
   const altDupesTitle =
@@ -442,6 +440,7 @@ function SlideMetaForm({ form, errors, onChange }) {
 }
 
 function SlideModal({ slide, activeCount, onClose, onCreate, onRegister, onSaveMeta, onReplaceImage }) {
+  const MAROON = useAccentPalette();
   const isEdit = Boolean(slide);
 
   const [mode, setMode] = useState('upload');
@@ -732,6 +731,7 @@ function SlideModal({ slide, activeCount, onClose, onCreate, onRegister, onSaveM
 }
 
 function CapacityMeter({ activeCount }) {
+  const MAROON = useAccentPalette();
   const atCap = activeCount >= MAX_ACTIVE;
   const nearCap = activeCount >= MAX_ACTIVE - 2;
   const pct = Math.min(100, (activeCount / MAX_ACTIVE) * 100);
@@ -761,6 +761,7 @@ function CapacityMeter({ activeCount }) {
 }
 
 function ScheduleTimeline({ slides }) {
+  const MAROON = useAccentPalette();
   const [collapsed, setCollapsed] = useState(false);
 
   const { gapRanges, lanes, startMs } = useMemo(() => {
@@ -886,6 +887,7 @@ function SlideRow({
   slide, index, selected, busy, atCap, isDragging, isDropTarget,
   onSelect, onEdit, onToggleActive, onDelete, onDragStart, onDragOver, onDrop, onDragEnd,
 }) {
+  const MAROON = useAccentPalette();
   const [menuOpen, setMenuOpen] = useState(false);
   const state = getSlideScheduleState(slide);
   const schedule = formatSlideSchedule(slide);
@@ -980,6 +982,7 @@ function SlideRow({
 }
 
 export default function IosHomepageSlideshowManager() {
+  const MAROON = useAccentPalette();
   const [slides, setSlides] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);

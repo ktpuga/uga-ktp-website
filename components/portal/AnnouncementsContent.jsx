@@ -16,13 +16,10 @@ import {
 import { isRedirectError } from '@/lib/is-redirect-error';
 import { useConfirm } from '@/components/ui/confirm-dialog';
 import AudienceSelect from '@/components/portal/AudienceSelect';
+import { useAccentPalette } from '@/components/portal/PortalAccentContext';
 
-const MAROON = {
-  base: '#7f1d1d',
-  gradient: 'linear-gradient(135deg, #7f1d1d 0%, #991b1b 100%)',
-  light: '#991b1b',
-  muted: 'rgba(127,29,29,0.10)',
-};
+// Palette comes from the portal accent context so the Admin red/blue toggle
+// reaches this page. Each component asks for it directly.
 
 function tint(hex, alpha) {
   const h = hex.replace('#', '');
@@ -44,6 +41,7 @@ function FieldLabel({ children }) {
 }
 
 function FieldInput(props) {
+  const MAROON = useAccentPalette();
   return (
     <input
       {...props}
@@ -56,6 +54,7 @@ function FieldInput(props) {
 }
 
 function FieldTextarea(props) {
+  const MAROON = useAccentPalette();
   return (
     <textarea
       {...props}
@@ -70,6 +69,7 @@ function FieldTextarea(props) {
 // ─── Targeting picker (Roles / Committees tab switcher) ───
 
 function TargetingPicker({ committeeIds, audience, onCommitteeIdsChange, onAudienceChange, committees }) {
+  const MAROON = useAccentPalette();
   const [tab, setTab] = useState(committeeIds?.length ? 'committees' : 'roles');
 
   function switchTab(next) {
@@ -150,6 +150,7 @@ function TargetingPicker({ committeeIds, audience, onCommitteeIdsChange, onAudie
 // ─── Badge ───
 
 function ItemBadge({ committeeIds, audience, committees }) {
+  const MAROON = useAccentPalette();
   if (committeeIds && committeeIds.length > 0) {
     const names = committeeIds.map((id) => committees.find((c) => c.id === id)?.name).filter(Boolean);
     return (
@@ -170,6 +171,7 @@ function ItemBadge({ committeeIds, audience, committees }) {
 // ─── Section card wrapper ───
 
 function SectionCard({ icon, title, action, children }) {
+  const MAROON = useAccentPalette();
   return (
     <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
       <div className="flex items-center justify-between border-b border-border px-6 py-4" style={{ background: tint(MAROON.base, 0.03) }}>
@@ -216,6 +218,7 @@ function EmptyState({ label }) {
 const EMPTY_ANNOUNCEMENT_FORM = { title: '', body: '', audience: [] };
 
 function AnnouncementForm({ initial, onSubmit, onCancel, isEdit, committees }) {
+  const MAROON = useAccentPalette();
   const [form, setForm] = useState(initial ?? EMPTY_ANNOUNCEMENT_FORM);
 
   return (
@@ -263,6 +266,7 @@ function AnnouncementForm({ initial, onSubmit, onCancel, isEdit, committees }) {
 }
 
 function AnnouncementCard({ item, onEdit, onDelete, committees }) {
+  const MAROON = useAccentPalette();
   return (
     <div className="group flex gap-4 border-b border-border px-6 py-5 last:border-b-0 transition-colors hover:bg-muted/30">
       <div className="mt-0.5 h-5 w-[3px] shrink-0 rounded-full" style={{ background: MAROON.gradient }} aria-hidden="true" />
@@ -291,6 +295,7 @@ function AnnouncementCard({ item, onEdit, onDelete, committees }) {
 }
 
 function AnnouncementsTab({ committees }) {
+  const MAROON = useAccentPalette();
   const confirm = useConfirm();
   const [announcements, setAnnouncements] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -401,6 +406,7 @@ const EMPTY_EVENT_FORM = {
 };
 
 function EventForm({ initial, onSubmit, onCancel, isEdit, committees, formError }) {
+  const MAROON = useAccentPalette();
   const [form, setForm] = useState(initial ?? EMPTY_EVENT_FORM);
 
   return (
@@ -491,6 +497,7 @@ function EventForm({ initial, onSubmit, onCancel, isEdit, committees, formError 
 }
 
 function EventCard({ item, onEdit, onDelete, committees }) {
+  const MAROON = useAccentPalette();
   return (
     <div className="group flex gap-4 border-b border-border px-6 py-5 last:border-b-0 transition-colors hover:bg-muted/30">
       <div className="mt-0.5 h-5 w-[3px] shrink-0 rounded-full" style={{ background: MAROON.gradient }} aria-hidden="true" />
@@ -539,6 +546,7 @@ function EventCard({ item, onEdit, onDelete, committees }) {
 }
 
 function EventsTab({ committees }) {
+  const MAROON = useAccentPalette();
   const confirm = useConfirm();
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -689,6 +697,7 @@ const TABS = [
 ];
 
 export default function AnnouncementsContent() {
+  const MAROON = useAccentPalette();
   const [activeTab, setActiveTab] = useState('announcements');
   const [committees, setCommittees] = useState([]);
 

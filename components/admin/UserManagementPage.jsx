@@ -1,5 +1,6 @@
 'use client';
 
+import { useAccentPalette } from '@/components/portal/PortalAccentContext';
 import { useState, useMemo, useEffect, useRef } from 'react';
 import { cn } from '@/lib/utils';
 import {
@@ -21,12 +22,9 @@ import { getAdminUsers, updateUserGroup, updateExecTitle } from '@/lib/portal-ap
 import { formatMemberGroup, memberDisplayName, memberInitials } from '@/lib/portal-format';
 import { isRedirectError } from '@/lib/is-redirect-error';
 
-const MAROON = {
-  base: '#7f1d1d',
-  gradient: 'linear-gradient(135deg, #7f1d1d 0%, #991b1b 100%)',
-  light: '#991b1b',
-  muted: 'rgba(127,29,29,0.10)',
-};
+// Palette now comes from the portal accent context so the Admin red/blue
+// toggle reaches this page, not just the sidebar. Each component asks for it
+// directly — no prop threading through the sub-components in this file.
 
 // Established 5-color group scheme — used across Directory, Analytics, User Management
 const GROUP_COLORS = {
@@ -111,7 +109,7 @@ function InlineSelect({ value, options, onChange, placeholder, disabled }) {
         value={value}
         onChange={(e) => onChange(e.target.value)}
         disabled={disabled}
-        className="w-full appearance-none rounded-lg border border-border bg-card py-1.5 pl-3 pr-7 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-[rgba(127,29,29,0.30)] disabled:opacity-60"
+        className="w-full appearance-none rounded-lg border border-border bg-card py-1.5 pl-3 pr-7 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-[var(--portal-ring)] disabled:opacity-60"
       >
         {placeholder && <option value="">{placeholder}</option>}
         {options.map((o) => (
@@ -185,7 +183,7 @@ function ExecTitleEdit({ authentikId, value, onSave }) {
           if (e.key === 'Escape') cancel();
         }}
         placeholder="e.g. Vice President of Finance"
-        className="w-48 rounded-md border border-border bg-card px-2 py-1 text-xs text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-1 focus:ring-[rgba(127,29,29,0.30)]"
+        className="w-48 rounded-md border border-border bg-card px-2 py-1 text-xs text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-1 focus:ring-[var(--portal-ring)]"
       />
       <button type="button" onClick={save} disabled={saving} className="rounded-md p-1 text-green-700 hover:bg-green-50" aria-label="Save">
         <Check size={12} />
@@ -302,6 +300,7 @@ function UserCard({ user, onChangeGroup, onSaveExecTitle }) {
 // ─── Group tab panel ───
 
 function GroupPanel({ group, users, allUsers, onChangeGroup, onSaveExecTitle }) {
+  const MAROON = useAccentPalette();
   const [addUserId, setAddUserId] = useState('');
   const [adding, setAdding] = useState(false);
   const [addError, setAddError] = useState(null);
@@ -375,6 +374,7 @@ function GroupPanel({ group, users, allUsers, onChangeGroup, onSaveExecTitle }) 
 // ─── Stat card ───
 
 function StatCard({ label, value, icon: Icon }) {
+  const MAROON = useAccentPalette();
   return (
     <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
       <div className="h-0.5 w-full" style={{ background: MAROON.gradient }} aria-hidden="true" />
@@ -396,6 +396,7 @@ function StatCard({ label, value, icon: Icon }) {
 // ─── Main export ───
 
 export default function UserManagementPage() {
+  const MAROON = useAccentPalette();
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
