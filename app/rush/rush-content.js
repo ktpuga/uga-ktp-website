@@ -107,17 +107,13 @@ Then come back to the main page and sign in to the portal. You can look around b
   {
     id: 'events',
     label: 'Come to events and talk to members',
-    body: `We want to get to know you, and showing up is the biggest thing that helps your chances of getting a bid. Every rush event (info sessions, socials, coffee chats) is on your calendar in the portal with the time and place.
-
-Come say hi. Scan the QR code we put up at each event to log your attendance, so we know you were there.`,
+    body: `We want to get to know you, and showing up is the biggest thing that helps your chances of getting a bid. Every rush event is on your calendar in the portal with the time and place.`,
     detail: 'Every rush event',
   },
   {
     id: 'interviews',
     label: 'Sign up for interviews',
-    body: `Towards the end of rush, we hold short interviews. It's a relaxed conversation with a couple of members. We're just trying to get to know you properly.
-
-Signup details get posted as an announcement in your portal, so keep an eye on it around then.`,
+    body: `Towards the end of rush, we hold short interviews. Signup details get posted as an announcement in your portal, so keep an eye on it around then.`,
     detail: 'Towards the end of rush',
   },
   {
