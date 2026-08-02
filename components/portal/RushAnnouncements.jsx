@@ -14,7 +14,8 @@ import { isRedirectError } from '@/lib/is-redirect-error';
 // portal to review what rushees have been told.
 
 const ACCENTS = {
-  violet: { base: '#5b21b6', gradient: 'linear-gradient(135deg, #5b21b6 0%, #7c3aed 100%)', light: '#7c3aed' },
+  violet: { base: '#1e3a8a', gradient: 'linear-gradient(135deg, #1e3a8a 0%, #1d4ed8 100%)', light: '#1d4ed8' },
+  blue:   { base: '#1e3a8a', gradient: 'linear-gradient(135deg, #1e3a8a 0%, #1d4ed8 100%)', light: '#1d4ed8' },
   red: { base: '#7f1d1d', gradient: 'linear-gradient(135deg, #7f1d1d 0%, #991b1b 100%)', light: '#991b1b' },
 };
 

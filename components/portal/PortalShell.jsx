@@ -6,7 +6,7 @@ import { usePathname } from 'next/navigation';
 import Image from 'next/image';
 import { useSession } from 'next-auth/react';
 import {
-  LogOut, PanelLeft, PanelLeftClose, Menu, X, Sun, Moon, ChevronLeft, ChevronRight, Home,
+  LogOut, PanelLeft, PanelLeftClose, Menu, X, Sun, Moon, ChevronLeft, ChevronRight, Home, Palette,
 } from 'lucide-react';
 import { logoutEverywhere } from '@/lib/auth-actions';
 import { useUnreadCounts } from '@/lib/use-unread-counts';
@@ -33,15 +33,19 @@ const ACCENTS = {
     header: 'from-red-900/5',
     active: 'bg-red-50 text-red-900 dark:bg-[#22252b] dark:text-red-100',
   },
+  // teal and violet are the Pledge and Rush portals. They deliberately render
+  // the SAME blue as Member — the key stays distinct only because `accent` is
+  // also the NAV_GROUPING lookup, and repointing it at 'blue' would make those
+  // portals look up /member/* hrefs and render an empty sidebar.
   teal: {
-    title: 'text-teal-900 dark:text-teal-100',
-    header: 'from-teal-900/5',
-    active: 'bg-teal-50 text-teal-900 dark:bg-[#22252b] dark:text-teal-100',
+    title: 'text-blue-900 dark:text-blue-100',
+    header: 'from-blue-950/5',
+    active: 'bg-blue-50 text-blue-900 dark:bg-[#22252b] dark:text-blue-100',
   },
   violet: {
-    title: 'text-violet-900 dark:text-violet-100',
-    header: 'from-violet-900/5',
-    active: 'bg-violet-50 text-violet-900 dark:bg-[#22252b] dark:text-violet-100',
+    title: 'text-blue-900 dark:text-blue-100',
+    header: 'from-blue-950/5',
+    active: 'bg-blue-50 text-blue-900 dark:bg-[#22252b] dark:text-blue-100',
   },
 };
 
@@ -63,20 +67,24 @@ const REVAMPED_ACCENTS = {
     light: '#d97706',
     muted: 'rgba(180,83,9,0.10)',
   },
+  // Pledge and Rush share Member's blue. Only Alumni keeps its own colour, and
+  // Admin can be switched between red and blue per user (see ADMIN_ACCENT_KEY).
   teal: {
-    gradient: 'linear-gradient(135deg, #134e4a 0%, #0f766e 100%)',
-    light: '#0f766e',
-    muted: 'rgba(19,78,74,0.10)',
+    gradient: 'linear-gradient(135deg, #1e3a8a 0%, #1d4ed8 100%)',
+    light: '#1d4ed8',
+    muted: 'rgba(30,58,138,0.10)',
   },
-  // Rush. Violet is deliberately the furthest from the other four — a rushee
-  // is the one portal user who is not yet a member, and eboard looking over
-  // someone's shoulder should be able to tell instantly which they're in.
   violet: {
-    gradient: 'linear-gradient(135deg, #5b21b6 0%, #7c3aed 100%)',
-    light: '#7c3aed',
-    muted: 'rgba(91,33,182,0.10)',
+    gradient: 'linear-gradient(135deg, #1e3a8a 0%, #1d4ed8 100%)',
+    light: '#1d4ed8',
+    muted: 'rgba(30,58,138,0.10)',
   },
 };
+
+// Admin is the one portal whose colour is a preference rather than a fixed
+// identity. Stored per browser alongside the sidebar-collapse and dark-mode
+// settings — a cosmetic choice isn't worth a round trip or a users column.
+const ADMIN_ACCENT_KEY = 'ktp-admin-accent';
 
 // violet is /rushee, not /rush — /rush is the public rush marketing page.
 const PORTAL_ROOT = { blue: '/member', red: '/admin', amber: '/alumni', teal: '/pledge', violet: '/rushee' };
@@ -268,8 +276,18 @@ export default function PortalShell({
   responsive = true,
 }) {
   const pathname = usePathname();
-  const styles = ACCENTS[accent] ?? ACCENTS.blue;
-  const revamped = REVAMPED_ACCENTS[accent] ?? null;
+
+  // Admin only: 'red' (default) or 'blue'. Read after mount rather than during
+  // render — localStorage doesn't exist on the server, and reading it in the
+  // initial render would make the server and client HTML disagree.
+  const [adminAccent, setAdminAccent] = useState('red');
+  const isAdminPortal = accent === 'red';
+  // The colour key, which is NOT the same as `accent`. `accent` stays fixed
+  // because NAV_GROUPING is keyed by it; only the palette swaps.
+  const colorKey = isAdminPortal ? adminAccent : accent;
+
+  const styles = ACCENTS[colorKey] ?? ACCENTS.blue;
+  const revamped = REVAMPED_ACCENTS[colorKey] ?? null;
   const [collapsed, setCollapsed] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
@@ -279,8 +297,20 @@ export default function PortalShell({
   useEffect(() => {
     const stored = window.localStorage.getItem(STORAGE_KEY);
     if (stored === 'collapsed') setCollapsed(true);
+
+    const storedAccent = window.localStorage.getItem(ADMIN_ACCENT_KEY);
+    if (storedAccent === 'blue' || storedAccent === 'red') setAdminAccent(storedAccent);
+
     setMounted(true);
   }, []);
+
+  function toggleAdminAccent() {
+    setAdminAccent((prev) => {
+      const next = prev === 'red' ? 'blue' : 'red';
+      window.localStorage.setItem(ADMIN_ACCENT_KEY, next);
+      return next;
+    });
+  }
 
   useEffect(() => {
     if (!mounted) return;
@@ -416,6 +446,32 @@ export default function PortalShell({
               </Link>
 
               <RevampedThemeButton accentColor={revamped.light} accentMuted={revamped.muted} collapsed={collapsed} />
+
+              {/* Admin only — every other portal's colour is fixed identity. */}
+              {isAdminPortal && (
+                <button
+                  type="button"
+                  onClick={toggleAdminAccent}
+                  aria-label={adminAccent === 'red' ? 'Switch admin portal to blue' : 'Switch admin portal to red'}
+                  className={cn(
+                    'group flex w-full items-center rounded-lg py-[7px] text-sm font-medium text-muted-foreground transition-all duration-200 hover:text-foreground',
+                    collapsed ? 'justify-center px-0' : 'gap-3 pl-3 pr-2.5 text-left',
+                  )}
+                  onMouseEnter={hoverOn(revamped.light)}
+                  onMouseLeave={hoverOff}
+                >
+                  <span
+                    aria-hidden="true"
+                    className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md transition-all duration-200 group-hover:-translate-y-px group-hover:scale-110"
+                    style={{ background: revamped.muted }}
+                  >
+                    <Palette className="h-[15px] w-[15px]" strokeWidth={1.85} />
+                  </span>
+                  <span className={cn('overflow-hidden whitespace-nowrap transition-all duration-300', collapsed ? 'w-0 opacity-0' : 'w-auto opacity-100')}>
+                    {adminAccent === 'red' ? 'Use blue' : 'Use red'}
+                  </span>
+                </button>
+              )}
 
               <button
                 type="button"

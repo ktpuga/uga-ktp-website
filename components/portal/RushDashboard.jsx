@@ -16,10 +16,11 @@ import { isRedirectError } from '@/lib/is-redirect-error';
 // chapter headcounts or the photo gallery; they need to know what was
 // announced, what's happening next, and who to ask.
 
+// Matches the Member portal's blue — every portal except Alumni shares it now.
 const ACCENT = {
-  base: '#5b21b6',
-  gradient: 'linear-gradient(135deg, #5b21b6 0%, #7c3aed 100%)',
-  light: '#7c3aed',
+  base: '#1e3a8a',
+  gradient: 'linear-gradient(135deg, #1e3a8a 0%, #1d4ed8 100%)',
+  light: '#1d4ed8',
 };
 
 function tint(hex, alpha) {
