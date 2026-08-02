@@ -4,6 +4,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import CountdownTimer from '@/app/rush/countdownTimer'
 import { RUSH_EVENTS, RUSH_FAQ } from '@/app/rush/rush-content'
+import { getPublicRushSignup } from '@/lib/portal-api'
 import React, { useEffect, useState } from 'react'
 
 function FaqItem ({ question, answer, isOpen, onToggle }) {
@@ -50,11 +51,22 @@ function SectionHeading ({ label, title, description }) {
 export default function Page () {
   const [scrolled, setScrolled] = useState(false)
   const [openFaqId, setOpenFaqId] = useState(null)
+  // null until we know. The button stays hidden unless a rush period is
+  // genuinely open, so a failed lookup shows nothing rather than a dead link.
+  const [rushSignupUrl, setRushSignupUrl] = useState(null)
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 10)
     window.addEventListener('scroll', onScroll)
     return () => window.removeEventListener('scroll', onScroll)
+  }, [])
+
+  useEffect(() => {
+    // getPublicRushSignup never rejects — it resolves to is_open:false on any
+    // failure — so this needs no catch and can't break the marketing page.
+    getPublicRushSignup().then((status) => {
+      if (status?.is_open && status.signup_url) setRushSignupUrl(status.signup_url)
+    })
   }, [])
 
   return (
@@ -102,6 +114,23 @@ export default function Page () {
             <p className="mt-4 w-full max-w-lg text-balance text-base leading-relaxed text-[#e8e0d5] sm:mt-6 sm:text-lg lg:max-w-3xl md:text-xl">
               Interest Forms and Applications will be posted here soon. Check back later, or reach out on Instagram if you have questions.
             </p>
+
+            {/* Only rendered while a rush period is actually open. Hidden
+                rather than disabled — an inert "Sign up" button reads as a
+                broken site to someone who has never seen this page before. */}
+            {rushSignupUrl && (
+              <div className="mt-8 flex w-full max-w-xs flex-col items-center sm:mt-10 sm:max-w-none sm:w-auto">
+                <a
+                  href={rushSignupUrl}
+                  className="w-full rounded-full border-2 border-[#f0d060] bg-[#d4af37] px-8 py-4 text-center text-base font-bold text-[#1a1a1a] shadow-lg transition-colors hover:bg-[#f0d060] sm:w-auto sm:px-12"
+                >
+                  Sign up for Rush →
+                </a>
+                <p className="mt-3 text-xs text-[#e8e0d5]/70">
+                  Create your account to see the schedule, RSVP and check in at events.
+                </p>
+              </div>
+            )}
 
             <div className="mt-8 flex w-full max-w-xs flex-col items-stretch gap-3 sm:mt-10 sm:max-w-none sm:w-auto sm:flex-row sm:items-center sm:justify-center sm:gap-6">
               <Link
