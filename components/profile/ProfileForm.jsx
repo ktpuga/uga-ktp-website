@@ -120,6 +120,18 @@ export default function ProfileForm({
 }) {
   const { data: session, update } = useSession();
   const authentikId = session?.user?.authentik_id ?? defaultValues.authentik_id;
+
+  // Rushees fill this in as the very first thing they do after signing up, so
+  // it's the app's first impression. Chapter-member fields are meaningless to
+  // someone who hasn't been offered a bid — asking a prospective member for
+  // their Pledge Class reads as a form built for somebody else.
+  //
+  // Rush-*only*: someone accepted into a pledge class keeps the rush group in
+  // Authentik until it's removed, and should get the full form again.
+  const groups = session?.user?.groups ?? [];
+  const isRushee =
+    groups.includes('rush') &&
+    !groups.some((g) => ['eboard', 'chair', 'active', 'alumni', 'pledge'].includes(g));
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -304,23 +316,31 @@ export default function ProfileForm({
         />
       </Field>
 
-      <Field label="Calendly URL" variant={variant}>
-        <Input
-          name="calendly_url"
-          placeholder="https://calendly.com/..."
-          defaultValue={defaultValues.calendly_url}
-          className={inputClass}
-        />
-      </Field>
+      {/* Calendly is for members offering 1-on-1 booking in the directory —
+          a rushee has no directory presence to book from. */}
+      {!isRushee && (
+        <Field label="Calendly URL" variant={variant}>
+          <Input
+            name="calendly_url"
+            placeholder="https://calendly.com/..."
+            defaultValue={defaultValues.calendly_url}
+            className={inputClass}
+          />
+        </Field>
+      )}
 
-      <Field label="Pledge Class" variant={variant}>
-        <Input
-          name="pledge_class"
-          placeholder="e.g. Alpha, Beta, Gamma"
-          defaultValue={defaultValues.pledge_class}
-          className={inputClass}
-        />
-      </Field>
+      {/* A rushee has no pledge class yet — that's the thing they're rushing
+          to get. It reappears automatically once they're given the group. */}
+      {!isRushee && (
+        <Field label="Pledge Class" variant={variant}>
+          <Input
+            name="pledge_class"
+            placeholder="e.g. Alpha, Beta, Gamma"
+            defaultValue={defaultValues.pledge_class}
+            className={inputClass}
+          />
+        </Field>
+      )}
 
       {error && (
         <p className="text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 rounded-md px-3 py-2">
