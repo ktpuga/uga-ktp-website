@@ -704,7 +704,16 @@ function RevampedPollsPage({ accentKey }) {
 
   function loadPolls() {
     setLoading(true);
-    Promise.all([getPolls(), getCommittees()])
+    // getCommittees() 403s for rushees — /api/committees is gated on
+    // SHARED_ALBUM_GROUPS, which excludes rush. In a plain Promise.all that
+    // one rejection discarded the polls too, so the Rush portal's Polls tab
+    // rendered permanently empty even when rush polls existed, with no error
+    // shown. Committees are only used to label a poll's scope, so degrade to
+    // an empty list instead. Same trap as PortalDashboard — see RushDashboard.
+    Promise.all([
+      getPolls(),
+      getCommittees().catch((err) => { if (isRedirectError(err)) throw err; return []; }),
+    ])
       .then(([pollsData, committeesData]) => {
         setPolls(Array.isArray(pollsData) ? pollsData : []);
         setCommittees(Array.isArray(committeesData) ? committeesData : []);
