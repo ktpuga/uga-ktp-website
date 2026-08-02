@@ -9,8 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import {
-  Users, X, MessageSquare, Mail, CalendarDays, ChevronUp, ChevronDown,
-  AlertCircle, Loader2, GraduationCap, BookOpen, CalendarClock,
+  Users, X, MessageSquare, Mail, ChevronUp, ChevronDown, AlertCircle, Loader2, GraduationCap, BookOpen, CalendarClock,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { getMemberDirectory } from '@/lib/portal-api';
@@ -187,13 +186,6 @@ function LegacyProfileModal({ member, avatarClass, onClose }) {
                 <MessageSquare className="h-4 w-4" /> Message
               </Link>
             </Button>
-            {member.calendlyUrl && (
-              <Button type="button" variant="outline" className="flex-1 gap-2" asChild>
-                <a href={member.calendlyUrl} target="_blank" rel="noreferrer">
-                  <CalendarDays className="h-4 w-4" /> Schedule
-                </a>
-              </Button>
-            )}
           </div>
           {!isSelf && (
             <div className="w-full border-t border-gray-100 pt-3 dark:border-slate-800">
@@ -498,9 +490,8 @@ function ProfileModal({ member, accent, onClose }) {
             >
               <MessageSquare size={14} /> Message
             </Link>
-            {/* Takes the slot Calendly's booking link used to occupy, but
-                requests time through our own request/accept flow instead of
-                sending someone off to a third-party page. */}
+            {/* Requests time through the meetings flow rather than sending
+                someone off to a third-party booking page. */}
             <button
               type="button"
               onClick={() => setRequestMeetingFor(member)}
@@ -508,16 +499,6 @@ function ProfileModal({ member, accent, onClose }) {
             >
               <CalendarClock size={14} /> Request a meeting
             </button>
-            {member.calendlyUrl && (
-              <a
-                href={member.calendlyUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center justify-center gap-2 rounded-xl border border-border py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-muted"
-              >
-                <CalendarDays size={14} /> Schedule
-              </a>
-            )}
           </div>
 
           {!isSelf && (

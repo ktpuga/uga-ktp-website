@@ -6,21 +6,7 @@ import { usePathname } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { cn } from '@/lib/utils';
 import {
-  ChevronLeft,
-  Plus,
-  Trash2,
-  Search,
-  X,
-  Star,
-  Users,
-  MessageSquare,
-  Calendar,
-  LogIn,
-  LogOut,
-  UserPlus,
-  AlertTriangle,
-  MapPin,
-  Link2,
+  ChevronLeft, Plus, Trash2, Search, X, Star, Users, MessageSquare, Calendar, LogIn, LogOut, UserPlus, AlertTriangle, MapPin,
 } from 'lucide-react';
 import {
   getCommittees,
@@ -248,7 +234,7 @@ function DeleteConfirmModal({ committeeName, accent, onClose, onConfirm }) {
 
 // ─── Schedule Meeting Modal ───
 
-const EMPTY_MEETING_FORM = { title: '', description: '', location: '', start: '', end: '', calendlyUrl: '' };
+const EMPTY_MEETING_FORM = { title: '', description: '', location: '', start: '', end: '' };
 
 function ScheduleMeetingModal({ committeeId, committeeName, accent, onClose, onScheduled }) {
   const [form, setForm] = useState(EMPTY_MEETING_FORM);
@@ -282,7 +268,6 @@ function ScheduleMeetingModal({ committeeId, committeeName, accent, onClose, onS
         startDate: startDate.toISOString(),
         endDate: endDate.toISOString(),
         committeeIds: [committeeId],
-        calendlyUrl: form.calendlyUrl.trim() || null,
       });
 
       if (!result?.ok) {
@@ -355,20 +340,6 @@ function ScheduleMeetingModal({ committeeId, committeeName, accent, onClose, onS
           </FormField>
         </div>
 
-        <FormField label="Calendly Link (optional)">
-          <div className="relative">
-            <Link2 size={13} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-            <input
-              type="url"
-              value={form.calendlyUrl}
-              onChange={(e) => set('calendlyUrl', e.target.value)}
-              placeholder="https://calendly.com/…"
-              className={cn(fieldClass, 'pl-8')}
-              onFocus={focusOn(accent)}
-              onBlur={focusOff()}
-            />
-          </div>
-        </FormField>
 
         {error && <p className="text-sm text-red-600">{error}</p>}
       </div>

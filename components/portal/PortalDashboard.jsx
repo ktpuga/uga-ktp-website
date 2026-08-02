@@ -5,7 +5,9 @@ import Link from 'next/link';
 import { useSession } from 'next-auth/react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Calendar, Users, Megaphone, ImageIcon, ArrowRight, Bell, MapPin, CalendarDays } from 'lucide-react';
+import {
+  Calendar, Users, Megaphone, ImageIcon, ArrowRight, Bell, MapPin,
+} from 'lucide-react';
 import { getEvents, getMembers, getPhotos, getAnnouncements } from '@/lib/portal-api';
 import { formatEventTimeRange, upcomingEvents, countUpcomingEvents, getEventStartDate, getEventEndDate, formatAudience, formatMessageTime } from '@/lib/portal-format';
 import { isRedirectError } from '@/lib/is-redirect-error';
@@ -217,11 +219,6 @@ function RevampedEventsCard({ accent, loading, nextEvents, upcomingCount, calend
                 )}
                 {event.description && (
                   <p className="mt-1.5 line-clamp-2 text-xs leading-relaxed text-muted-foreground">{event.description}</p>
-                )}
-                {event.calendlyUrl && (
-                  <a href={event.calendlyUrl} target="_blank" rel="noreferrer" className="mt-2 inline-flex items-center gap-1 text-xs font-semibold transition-colors" style={{ color: accent.rsvpColor }}>
-                    <CalendarDays className="h-2.5 w-2.5" /> Schedule / RSVP
-                  </a>
                 )}
               </div>
             </li>
@@ -482,16 +479,6 @@ export default function PortalDashboard({
                         )}
                         {event.description && (
                           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 line-clamp-2">{event.description}</p>
-                        )}
-                        {event.calendlyUrl && (
-                          <a
-                            href={event.calendlyUrl}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="mt-2 inline-flex items-center gap-1 text-sm font-medium text-blue-700 hover:underline dark:text-blue-400"
-                          >
-                            <CalendarDays className="h-3.5 w-3.5" /> Schedule / RSVP
-                          </a>
                         )}
                       </div>
                     </div>

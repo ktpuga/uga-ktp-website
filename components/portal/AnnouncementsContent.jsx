@@ -402,7 +402,7 @@ function AnnouncementsTab({ committees }) {
 
 const EMPTY_EVENT_FORM = {
   title: '', description: '', location: '', start: '', end: '',
-  audience: [], committeeIds: [], calendlyUrl: '', requiresAttendance: false,
+  audience: [], committeeIds: [], requiresAttendance: false,
 };
 
 function EventForm({ initial, onSubmit, onCancel, isEdit, committees, formError }) {
@@ -441,11 +441,6 @@ function EventForm({ initial, onSubmit, onCancel, isEdit, committees, formError 
             <FieldLabel>End</FieldLabel>
             <FieldInput type="datetime-local" value={form.end} onChange={(e) => setForm((f) => ({ ...f, end: e.target.value }))} />
           </div>
-        </div>
-
-        <div>
-          <FieldLabel>Calendly URL <span className="normal-case font-normal text-muted-foreground">(optional)</span></FieldLabel>
-          <FieldInput type="url" value={form.calendlyUrl} onChange={(e) => setForm((f) => ({ ...f, calendlyUrl: e.target.value }))} placeholder="https://calendly.com/…" />
         </div>
 
         <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-border bg-muted/40 p-3 transition-colors hover:bg-muted/60">
@@ -534,11 +529,6 @@ function EventCard({ item, onEdit, onDelete, committees }) {
             <MapPin size={10} />
             {item.location || 'Location TBD'}
           </span>
-          {item.calendlyUrl && (
-            <a href={item.calendlyUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-[11px] font-semibold transition-opacity hover:opacity-75" style={{ color: MAROON.light }}>
-              Schedule / RSVP <ArrowRight size={9} />
-            </a>
-          )}
         </div>
       </div>
     </div>
@@ -591,7 +581,6 @@ function EventsTab({ committees }) {
         endDate: endDate.toISOString(),
         audience: form.committeeIds.length ? [] : form.audience,
         committeeIds: form.committeeIds,
-        calendlyUrl: form.calendlyUrl.trim() || null,
         requiresAttendance: form.requiresAttendance,
       };
 
@@ -664,7 +653,6 @@ function EventsTab({ committees }) {
                     end: toDatetimeLocal(getEventEndDate(editingItem)),
                     audience: editingItem.audience ?? [],
                     committeeIds: editingItem.committeeIds ?? [],
-                    calendlyUrl: editingItem.calendlyUrl ?? '',
                     requiresAttendance: editingItem.requiresAttendance ?? false,
                   }}
                   onSubmit={handleSubmit}

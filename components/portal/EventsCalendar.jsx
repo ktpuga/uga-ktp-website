@@ -147,16 +147,6 @@ function DayPopover({ date, dayEvents, align, isEboard, currentUserId, onDelete,
                   <MapPin className="h-3.5 w-3.5 shrink-0 text-gray-500 dark:text-gray-400" />
                   {event.location || 'Location TBD'}
                 </div>
-                {event.calendlyUrl && (
-                  <a
-                    href={event.calendlyUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="inline-flex items-center gap-1 text-xs font-medium text-blue-700 hover:underline dark:text-blue-400"
-                  >
-                    <CalendarDays className="h-3.5 w-3.5" /> Schedule / RSVP
-                  </a>
-                )}
               </div>
             );
           })}
@@ -417,18 +407,6 @@ function EventCard({ event, accent, canDelete, onDelete, isFirst }) {
         <p className="pl-1 text-xs leading-relaxed text-muted-foreground line-clamp-2">{event.description}</p>
       )}
 
-      {event.calendlyUrl && (
-        <a
-          href={event.calendlyUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="mt-1 inline-flex items-center gap-1 pl-1 text-xs font-semibold transition-opacity hover:opacity-75"
-          style={{ color: accent.light }}
-        >
-          Schedule / RSVP
-          <ArrowRight size={10} />
-        </a>
-      )}
     </div>
   );
 }
@@ -550,7 +528,6 @@ function RevampedEventsCalendar({ title, description, accentKey }) {
         timeRange: formatEventTimeRange(getEventStartDate(event), getEventEndDate(event)),
         location: event.location,
         audience: formatAudience(event.audience),
-        calendlyUrl: event.calendlyUrl,
         requiresAttendance: event.requiresAttendance,
         creatorId: event.createdBy,
       };

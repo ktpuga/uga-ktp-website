@@ -348,19 +348,6 @@ export default function ProfileForm({
         />
       </Field>
 
-      {/* Calendly is for members offering 1-on-1 booking in the directory —
-          a rushee has no directory presence to book from. */}
-      {!isRushee && (
-        <Field label="Calendly URL" variant={variant}>
-          <Input
-            name="calendly_url"
-            placeholder="https://calendly.com/..."
-            defaultValue={defaultValues.calendly_url}
-            className={inputClass}
-          />
-        </Field>
-      )}
-
       {/* A rushee has no pledge class yet — that's the thing they're rushing
           to get. It reappears automatically once they're given the group. */}
       {!isRushee && (

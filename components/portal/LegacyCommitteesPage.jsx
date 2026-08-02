@@ -133,7 +133,7 @@ function PromoteMemberPicker({ excludeIds, onPick, onCancel }) {
   );
 }
 
-const EMPTY_MEETING_FORM = { title: '', description: '', location: '', start: '', end: '', calendlyUrl: '' };
+const EMPTY_MEETING_FORM = { title: '', description: '', location: '', start: '', end: '' };
 
 function ScheduleMeetingForm({ committeeId, accentClass, onScheduled, onCancel }) {
   const [form, setForm] = useState(EMPTY_MEETING_FORM);
@@ -163,7 +163,6 @@ function ScheduleMeetingForm({ committeeId, accentClass, onScheduled, onCancel }
         startDate: startDate.toISOString(),
         endDate: endDate.toISOString(),
         committeeIds: [committeeId],
-        calendlyUrl: form.calendlyUrl.trim() || null,
       });
 
       if (!result?.ok) {
@@ -202,11 +201,6 @@ function ScheduleMeetingForm({ committeeId, accentClass, onScheduled, onCancel }
           <Input type="datetime-local" value={form.start} onChange={(e) => setForm({ ...form, start: e.target.value })} />
           <Input type="datetime-local" value={form.end} onChange={(e) => setForm({ ...form, end: e.target.value })} />
         </div>
-        <Input
-          placeholder="Calendly link (optional)"
-          value={form.calendlyUrl}
-          onChange={(e) => setForm({ ...form, calendlyUrl: e.target.value })}
-        />
         {error && <p className="text-sm text-red-600">{error}</p>}
         <div className="flex gap-2">
           <Button

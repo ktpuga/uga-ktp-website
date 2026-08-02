@@ -139,7 +139,7 @@ function DeleteAccountModal({ accent, onClose, onConfirm }) {
             <ul className="space-y-1 text-xs text-muted-foreground">
               <li className="flex items-start gap-1.5"><span className="mt-0.5 text-destructive">•</span> Your name, email, phone, major, and graduation year</li>
               <li className="flex items-start gap-1.5"><span className="mt-0.5 text-destructive">•</span> Profile photo and bio</li>
-              <li className="flex items-start gap-1.5"><span className="mt-0.5 text-destructive">•</span> LinkedIn and Calendly links</li>
+              <li className="flex items-start gap-1.5"><span className="mt-0.5 text-destructive">•</span> LinkedIn link</li>
               <li className="flex items-start gap-1.5"><span className="mt-0.5 text-destructive">•</span> Active sessions on all devices</li>
             </ul>
           </div>
