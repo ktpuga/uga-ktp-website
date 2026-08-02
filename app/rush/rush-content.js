@@ -101,13 +101,13 @@ export const RUSH_STEPS = [
     label: 'Make an account with us',
     body: `Click the button at the bottom of this page, or scan the QR code at any info session, and create an account. It takes about a minute.
 
-Then come back to the main page and sign in to the portal. You can look around before the first event — have a read through what's posted and see what's coming up.`,
+Then come back to the main page and sign in to the portal. You can look around before the first event. Have a read through what's posted and see what's coming up.`,
     detail: 'Takes ~1 minute',
   },
   {
     id: 'events',
     label: 'Come to events and talk to members',
-    body: `We want to get to know you, and showing up is the biggest thing that helps your chances of getting a bid. Every rush event — info sessions, socials, coffee chats — is on your calendar in the portal with the time and place.
+    body: `We want to get to know you, and showing up is the biggest thing that helps your chances of getting a bid. Every rush event (info sessions, socials, coffee chats) is on your calendar in the portal with the time and place.
 
 Come say hi. Scan the QR code we put up at each event to log your attendance, so we know you were there.`,
     detail: 'Every rush event',
@@ -115,7 +115,7 @@ Come say hi. Scan the QR code we put up at each event to log your attendance, so
   {
     id: 'interviews',
     label: 'Sign up for interviews',
-    body: `Towards the end of rush, we hold short interviews. It's a relaxed conversation with a couple of members — we're just trying to get to know you properly.
+    body: `Towards the end of rush, we hold short interviews. It's a relaxed conversation with a couple of members. We're just trying to get to know you properly.
 
 Signup details get posted as an announcement in your portal, so keep an eye on it around then.`,
     detail: 'Towards the end of rush',
@@ -125,7 +125,7 @@ Signup details get posted as an announcement in your portal, so keep an eye on i
     label: 'Check back for an update',
     body: `Once interviews wrap up, leadership reviews everyone who took part. Check back in on your portal to see where you stand.
 
-If you're offered a bid, you'll get a message from us — and a notification on your phone, so you don't have to keep refreshing. You'll hear either way.`,
+If you're offered a bid, you'll get a message from us, plus a notification on your phone, so you don't have to keep refreshing. You'll hear either way.`,
     detail: 'After interviews',
   },
 ];

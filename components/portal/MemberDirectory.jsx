@@ -545,12 +545,16 @@ function DirectoryRow({ member, accent, onClick }) {
         <span className="text-sm text-muted-foreground">{member.pledgeClass || '—'}</span>
       </td>
 
+      {/* Badge last, so it sits flush against the right edge on every row.
+          Role first would push the badge left by the length of each person's
+          title, leaving the group column ragged down the list — only the
+          leadership rows have a title at all. */}
       <td className="px-4 py-3.5 text-right">
         <div className="flex items-center justify-end gap-2">
-          <GroupBadge group={member.memberGroup} />
           {role && (
             <span className="hidden max-w-[160px] truncate text-[11px] text-muted-foreground lg:inline">{role}</span>
           )}
+          <GroupBadge group={member.memberGroup} />
         </div>
       </td>
     </tr>
