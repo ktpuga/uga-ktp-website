@@ -1,6 +1,6 @@
 # uga-ktp-website
 
-The public marketing site **and** the member portal for Kappa Theta Pi, Phi Chapter at UGA. Next.js 15 (App Router), Tailwind v4, NextAuth v5 against Authentik SSO, with Sanity powering the blog.
+The public marketing site **and** the member portal for Kappa Theta Pi, Phi Chapter at UGA. Next.js 16 (App Router, Turbopack), Tailwind v4, NextAuth v5 against Authentik SSO, with Sanity powering the blog.
 
 **Production:** [ugaktp.com](https://ugaktp.com)
 
@@ -15,7 +15,7 @@ This repo is the frontend only. All chapter data lives behind [`ktp-api`](https:
 | **This app** | Public pages + four authenticated portals. Holds no chapter data of its own |
 | **Authentik** (`auth.ugaktp.com`) | Login, passwords, and group membership. NextAuth stores the resulting access token server-side only |
 | **ktp-api** (`api2.ugaktp.com`) | Every read/write of real chapter data. Called from server actions in `lib/portal-api.js` |
-| **Sanity** | Blog content only (`/blog`, `/studio`). Unrelated to the portal |
+| **Sanity** | Blog content only (`/blog`). Unrelated to the portal. The Studio is no longer embedded — see [Sanity Studio](#sanity-studio) |
 
 Media never reaches the browser from Immich directly. Routes under `app/api/**/media` proxy each file server-side so the Immich API key stays on the server — see [Media proxying](#media-proxying).
 
@@ -54,7 +54,6 @@ You need a real account in a real group to see anything past the login screen �
 | `/rush` | Rush info and schedule |
 | `/members-list` | Public "meet the chapter" roster |
 | `/blog`, `/blog/[slug]` | Sanity-backed blog |
-| `/studio` | Embedded Sanity Studio |
 | `/sponsorship`, `/hackathon`, `/links` | Standalone marketing pages |
 | `/privacy`, `/code-of-conduct`, `/community-guidelines` | Policy pages (required for App Store review) |
 | `/login` | SSO entry point |
@@ -87,7 +86,7 @@ Pledges have no Committees tab by design — it isn't hidden with CSS, the route
 
 ## Auth and route protection
 
-`middleware.ts` runs on every portal path and enforces, in order:
+`proxy.ts` runs on every portal path and enforces, in order:
 
 1. **Not signed in, or a token refresh failed** → `/login`. The refresh-failure check matters: without it the page loads and then dies on the first API call with a dead token.
 2. **`profile_complete === false`** → `/complete-profile`, before anything else.
@@ -95,7 +94,7 @@ Pledges have no Committees tab by design — it isn't hidden with CSS, the route
 
 `auth.ts` handles the OIDC session and owns two things worth knowing about:
 
-- **Token refresh.** Authentik access tokens are short-lived. `auth.ts` captures `refresh_token`/`expires_at` (via the `offline_access` scope) and renews automatically. A failed refresh sets `session.error`, which the middleware above treats as signed-out.
+- **Token refresh.** Authentik access tokens are short-lived. `auth.ts` captures `refresh_token`/`expires_at` (via the `offline_access` scope) and renews automatically. A failed refresh sets `session.error`, which `proxy.ts` above treats as signed-out.
 - **Concurrent-refresh de-duplication.** Dashboard pages fire several server actions in parallel, each of which could independently decide to refresh at the same instant — and Authentik rotates refresh tokens on use, so whichever request lands first invalidates the others. An in-flight `Map` collapses concurrent refreshes for the same token into one request. This is safe only because dev and production both run a single Node process.
 
 The access token is available exclusively in server-side code as `session.access_token`. It is never sent to the browser.
@@ -172,7 +171,7 @@ lib/
   portal-format.js       shared name/group/date formatting
   is-redirect-error.js   the NEXT_REDIRECT guard described above
 sanity/                  blog schema + client
-middleware.ts            portal access control
+proxy.ts                 portal access control (was middleware.ts before Next 16)
 auth.ts                  NextAuth config, token refresh
 ```
 
@@ -190,6 +189,23 @@ Also note that several components take an `accent` prop with **no default value*
 ### Profile pictures
 
 Use a plain `<img>` with an `onError` fallback to initials, which is the established pattern throughout the portal. Prefer it over shadcn's Radix `Avatar` — Radix's `AvatarFallback` has a real-world quirk where it can stay visible even after the image loads, which produced an initials-only-avatars bug more than once here.
+
+---
+
+## Sanity Studio
+
+**The Studio is no longer embedded in this app.** There is no `/studio` route — it was removed during the Next.js 16 migration, because `next-sanity` 12+ requires Sanity 5/6 and because that one route was a 1.49 MB chunk of the production bundle and the main driver of the build OOM on LXC 116.
+
+The schema and CLI config still live here (`sanity.config.js`, `sanity.cli.js`, `sanity/schemaTypes/`), and `sanity` / `@sanity/vision` / `@sanity/icons` are now **devDependencies** — present for the CLI, absent from the production bundle and the Docker runtime image.
+
+```bash
+npm run studio:dev      # edit content locally at localhost:3333
+npm run studio:deploy   # publish to <project>.sanity.studio (free, hosted by Sanity)
+```
+
+> **Not yet done:** `studio:deploy` has never been run. Until someone runs it once, blog content is only editable locally via `studio:dev`.
+
+Reading the blog is unaffected — `/blog` and `/blog/[slug]` go through `@sanity/client` and `groq` via `next-sanity`, which remains a production dependency.
 
 ---
 
@@ -218,7 +234,7 @@ Runs in Docker on **LXC 116**; Traefik on LXC 100 routes `ugaktp.com` to it. Pus
 - **`output: 'standalone'`** — required for the Docker image.
 - **`experimental.serverActions.bodySizeLimit: '250mb'`** — Server Actions default to a 1MB request body regardless of what ktp-api's multer limits allow. Every upload in this app goes through a server action, so without this every real photo upload is rejected by Next.js before ktp-api ever sees it.
 
-The Dockerfile sets `NODE_OPTIONS=--max-old-space-size=3072`. LXC 116 has 4GB of RAM, and the static-generation phase (heavy partly because Sanity Studio is bundled into a route) gets OOM-killed without a heap cap. Don't remove it without also giving the container more memory.
+The Dockerfile sets `NODE_OPTIONS=--max-old-space-size=3072`. LXC 116 has 4GB of RAM and the build used to get OOM-killed without a heap cap. The single biggest contributor — Sanity Studio bundled into a route — is gone as of the Next 16 migration, so there is more headroom now, but the cap is still there and there's no reason to remove it.
 
 ### Local build troubleshooting
 
