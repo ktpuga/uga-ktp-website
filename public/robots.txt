@@ -1,9 +1,0 @@
-# *
-User-agent: *
-Allow: /
-
-# Host
-Host: https://ugaktp.com
-
-# Sitemaps
-Sitemap: https://ugaktp.com/sitemap.xml

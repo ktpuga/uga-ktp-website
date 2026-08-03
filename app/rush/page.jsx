@@ -4,7 +4,6 @@ import Image from 'next/image'
 import Link from 'next/link'
 import CountdownTimer from '@/app/rush/countdownTimer'
 import { RUSH_EVENTS, RUSH_FAQ } from '@/app/rush/rush-content'
-import { getPublicRushSignup } from '@/lib/portal-api'
 import React, { useEffect, useState } from 'react'
 
 function FaqItem ({ question, answer, isOpen, onToggle }) {
@@ -51,22 +50,16 @@ function SectionHeading ({ label, title, description }) {
 export default function Page () {
   const [scrolled, setScrolled] = useState(false)
   const [openFaqId, setOpenFaqId] = useState(null)
-  // null until we know. The button stays hidden unless a rush period is
-  // genuinely open, so a failed lookup shows nothing rather than a dead link.
-  const [rushSignupUrl, setRushSignupUrl] = useState(null)
+
+  // The rush-open lookup that used to live here is gone with the signup button
+  // it fed. Account creation happens only on /rush/how-it-works, which does its
+  // own getPublicRushSignup() check — so this page no longer needs to know
+  // whether rush is open, and makes one fewer request on load.
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 10)
     window.addEventListener('scroll', onScroll)
     return () => window.removeEventListener('scroll', onScroll)
-  }, [])
-
-  useEffect(() => {
-    // getPublicRushSignup never rejects — it resolves to is_open:false on any
-    // failure — so this needs no catch and can't break the marketing page.
-    getPublicRushSignup().then((status) => {
-      if (status?.is_open && status.signup_url) setRushSignupUrl(status.signup_url)
-    })
   }, [])
 
   return (
@@ -116,25 +109,28 @@ export default function Page () {
               Interest Forms and Applications will be posted here soon. Check back later, or reach out on Instagram if you have questions.
             </p>
 
-            {/* Only rendered while a rush period is actually open. Hidden
-                rather than disabled — an inert "Sign up" button reads as a
-                broken site to someone who has never seen this page before. */}
-            {rushSignupUrl && (
-              <div className="mt-8 flex w-full max-w-xs flex-col items-center sm:mt-10 sm:max-w-none sm:w-auto">
-                <a
-                  href={rushSignupUrl}
-                  className="w-full rounded-full border-2 border-[#f0d060] bg-[#d4af37] px-8 py-4 text-center text-base font-bold text-[#1a1a1a] shadow-lg transition-colors hover:bg-[#f0d060] sm:w-auto sm:px-12"
-                >
-                  Sign up for Rush →
-                </a>
-                <p className="mt-3 text-xs text-[#e8e0d5]/70">
-                  Create your account to see the schedule, RSVP and check in at events.
-                </p>
-                <Link href="/rush/how-it-works" className="mt-2 text-xs font-semibold text-[#d4af37] underline underline-offset-4 hover:text-[#f0d060]">
-                  How does rush work?
-                </Link>
-              </div>
-            )}
+            {/* The primary CTA sends people to "How Rush Works", NOT straight
+                to the Authentik signup. Account creation lives on that one page
+                so nobody signs up before reading what they're signing up for.
+                See app/rush/how-it-works/page.jsx, which owns the signup button
+                and its own rush-open check.
+
+                Always rendered, unlike the signup button it replaced: that one
+                was hidden when rush was closed because an inert "Sign up" reads
+                as a broken site. This is an internal link to a page that
+                explains the process, so it's never dead — and it's arguably
+                most useful in the off-season, when someone is reading ahead. */}
+            <div className="mt-8 flex w-full max-w-xs flex-col items-center sm:mt-10 sm:max-w-none sm:w-auto">
+              <Link
+                href="/rush/how-it-works"
+                className="w-full rounded-full border-2 border-[#f0d060] bg-[#d4af37] px-8 py-4 text-center text-base font-bold text-[#1a1a1a] shadow-lg transition-colors hover:bg-[#f0d060] sm:w-auto sm:px-12"
+              >
+                How Rush Works →
+              </Link>
+              <p className="mt-3 text-xs text-[#e8e0d5]/70">
+                See the four steps, the timeline, and how to create your account.
+              </p>
+            </div>
 
             <div className="mt-8 flex w-full max-w-xs flex-col items-stretch gap-3 sm:mt-10 sm:max-w-none sm:w-auto sm:flex-row sm:items-center sm:justify-center sm:gap-6">
               <Link
