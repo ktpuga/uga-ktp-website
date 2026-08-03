@@ -98,24 +98,33 @@ function MemberAvatar({ member, size = 36, accent }) {
 }
 
 function GroupChatAvatar({ chat, size = 36, accent }) {
-  const [err, setErr] = useState(false);
-  if (chat.photo_asset_id && !err) {
+  // Keyed by asset id, not a boolean: otherwise a photo that failed to load
+  // once would keep showing the fallback icon even after a new one is uploaded.
+  const [erroredAssetId, setErroredAssetId] = useState(null);
+  const failed = erroredAssetId != null && erroredAssetId === chat.photo_asset_id;
+
+  if (chat.photo_asset_id && !failed) {
     return (
       <div className="shrink-0 overflow-hidden rounded-full" style={{ width: size, height: size }}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
-          src={`/api/group-chats/${chat.id}/photo/media`}
+          // `?v=` is NOT cosmetic. Uploading a new photo creates a brand new
+          // Immich asset, but this route's URL was previously identical before
+          // and after, and the media proxy forwards no Cache-Control — so the
+          // browser served the cached OLD image and the avatar appeared not to
+          // change at all. Keying on the asset id means the URL changes exactly
+          // when the picture does, for every viewer and not just the uploader.
+          // ProfileForm solves the same problem the same way.
+          src={`/api/group-chats/${chat.id}/photo/media?v=${chat.photo_asset_id}`}
           alt={chat.name}
           // Explicit dimensions match MemberAvatar and stop the image briefly
-          // rendering at its natural size before CSS lands. Photos uploaded
-          // since the square-crop change are already 1:1, so object-cover is a
-          // no-op on them; it still centre-crops older wide ones.
+          // rendering at its natural size before CSS lands.
           width={size}
           height={size}
           className="h-full w-full object-cover"
           // Falls back to the icon below rather than a broken-image glyph —
           // the same onError pattern every other avatar here uses.
-          onError={() => setErr(true)}
+          onError={() => setErroredAssetId(chat.photo_asset_id)}
         />
       </div>
     );
