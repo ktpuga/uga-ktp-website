@@ -23,7 +23,10 @@ function tint(hex, alpha) {
 //
 // Pill buttons rather than checkboxes so this matches the committee picker in
 // AnnouncementsContent, which sits directly beside it in the same form.
-export default function AudienceSelect({ value, onChange }) {
+// `exclude` drops groups this particular caller can't actually target. Meetings
+// use it for rush: expandInvitees never invites rushees, so offering the pill
+// would be a control that silently does nothing.
+export default function AudienceSelect({ value, onChange, exclude = [] }) {
   const accent = useAccentPalette();
   const selected = value ?? [];
   const isAll = selected.length === 0;
@@ -54,7 +57,7 @@ export default function AudienceSelect({ value, onChange }) {
       </button>
 
       <div className="flex flex-wrap gap-2 rounded-xl border border-border bg-muted/40 p-3">
-        {AUDIENCE_GROUPS.map((group) => {
+        {AUDIENCE_GROUPS.filter((group) => !exclude.includes(group)).map((group) => {
           const active = selected.includes(group);
           return (
             <button key={group} type="button" onClick={() => toggle(group)} aria-pressed={active} {...pillProps(active)}>
@@ -70,8 +73,14 @@ export default function AudienceSelect({ value, onChange }) {
           produced rush events that no rushee could see. */}
       {isAll ? (
         <p className="text-xs text-muted-foreground">
-          Visible to <span className="font-medium text-foreground">all members</span>. Rushees will not
-          see this unless you tick <span className="font-medium text-foreground">Rushee</span>.
+          {exclude.includes('rush') ? (
+            <>Nobody selected yet.</>
+          ) : (
+            <>
+              Visible to <span className="font-medium text-foreground">all members</span>. Rushees will not
+              see this unless you tick <span className="font-medium text-foreground">Rushee</span>.
+            </>
+          )}
         </p>
       ) : (
         <p className="text-xs text-muted-foreground">

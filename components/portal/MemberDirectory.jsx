@@ -22,7 +22,7 @@ import {
 import { isRedirectError } from '@/lib/is-redirect-error';
 import ReportButton from './ReportButton';
 import BlockButton from './BlockButton';
-import { RequestMeetingModal } from './MeetingsPage';
+import { NewMeetingModal } from './MeetingsPage';
 
 const ACCENT_THEMES = {
   blue: {
@@ -497,7 +497,7 @@ function ProfileModal({ member, accent, onClose }) {
               onClick={() => setRequestMeetingFor(member)}
               className="flex items-center justify-center gap-2 rounded-xl border border-border py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-muted"
             >
-              <CalendarClock size={14} /> Request a meeting
+              <CalendarClock size={14} /> Make a meeting
             </button>
           </div>
 
@@ -510,7 +510,7 @@ function ProfileModal({ member, accent, onClose }) {
       </div>
 
       {requestMeetingFor && (
-        <RequestMeetingModal
+        <NewMeetingModal
           accent={accent}
           presetInvitee={requestMeetingFor}
           onClose={() => setRequestMeetingFor(null)}

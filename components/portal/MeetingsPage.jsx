@@ -7,11 +7,15 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
-  getMeetings, createMeeting, respondToMeeting, cancelMeeting, getMessageableMembers,
+  getMeetings, createMeeting, respondToMeeting, cancelMeeting, getMessageableMembers, getCommittees,
 } from '@/lib/portal-api';
+import AudienceSelect from '@/components/portal/AudienceSelect';
 import { memberDisplayName, memberInitials } from '@/lib/portal-format';
 import { isRedirectError } from '@/lib/is-redirect-error';
 import { useAccentPalette } from '@/components/portal/PortalAccentContext';
+
+// Kept in sync with MAY_BULK_INVITE in ktp-api's meetingsController.
+const MAY_BULK_INVITE = ['eboard', 'chair', 'active', 'alumni'];
 
 function tint(hex, alpha) {
   const h = hex.replace('#', '');
@@ -30,9 +34,9 @@ function formatWhen(startsAt, endsAt) {
   return `${day}, ${from} – ${to}`;
 }
 
-// Rounds to the next half hour and defaults to a 30-minute slot: a meeting
-// request form that opens on "now" produces requests for a time that's already
-// passed by the time someone finishes filling it in.
+// Rounds to the next half hour and defaults to a 30-minute slot: a form that
+// opens on "now" produces meetings for a time that has already passed by the
+// moment someone finishes filling it in.
 function defaultSlot() {
   const start = new Date();
   start.setMinutes(start.getMinutes() + 30 - (start.getMinutes() % 30), 0, 0);
@@ -45,15 +49,23 @@ function defaultSlot() {
   return { start: local(start), end: local(end) };
 }
 
+// A meeting is on the books as soon as it's made, so the only meeting-level
+// states are scheduled and cancelled. Whether an individual is coming lives on
+// their own RSVP, not here.
 const STATUS_STYLES = {
-  pending: { label: 'Awaiting reply', className: 'border-amber-200 bg-amber-50 text-amber-800 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-300' },
-  accepted: { label: 'Confirmed', className: 'border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-900 dark:bg-emerald-950 dark:text-emerald-300' },
-  declined: { label: 'Declined', className: 'border-border bg-muted text-muted-foreground' },
+  scheduled: { label: 'Scheduled', className: 'border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-900 dark:bg-emerald-950 dark:text-emerald-300' },
   cancelled: { label: 'Cancelled', className: 'border-border bg-muted text-muted-foreground' },
 };
 
-function StatusPill({ status }) {
-  const style = STATUS_STYLES[status] ?? STATUS_STYLES.pending;
+const RSVP_STYLES = {
+  going: { label: 'Going', className: 'border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-900 dark:bg-emerald-950 dark:text-emerald-300' },
+  not_going: { label: "Can't make it", className: 'border-border bg-muted text-muted-foreground' },
+  pending: { label: 'No reply yet', className: 'border-amber-200 bg-amber-50 text-amber-800 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-300' },
+};
+
+function Pill({ styles, value }) {
+  const style = styles[value];
+  if (!style) return null;
   return (
     <span className={cn('rounded-full border px-2 py-0.5 text-[10px] font-semibold', style.className)}>
       {style.label}
@@ -85,10 +97,12 @@ function InviteeAvatars({ invitees, accent }) {
 
 function MeetingCard({ meeting, currentUserId, accent, onRespond, onCancel, busy }) {
   const isOrganizer = meeting.organizer_id === currentUserId;
-  // my_response is null for the organizer — they have nothing to accept, which
-  // is what decides whether the Accept/Decline buttons render at all.
-  const needsMyAnswer = !isOrganizer && meeting.my_response === 'pending'
-    && meeting.status !== 'cancelled';
+  // my_response is null for the organizer — they have nothing to RSVP to,
+  // which is what decides whether the buttons render at all.
+  // An RSVP can be changed, unlike the old one-shot accept — plans change, and
+  // the calendar should follow. So the buttons stay visible after answering,
+  // with the current choice highlighted.
+  const canRsvp = !isOrganizer && meeting.my_response != null && meeting.status !== 'cancelled';
 
   return (
     <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
@@ -96,7 +110,12 @@ function MeetingCard({ meeting, currentUserId, accent, onRespond, onCancel, busy
         <div className="min-w-0">
           <div className="mb-1 flex flex-wrap items-center gap-2">
             <p className="text-sm font-semibold text-foreground">{meeting.title}</p>
-            <StatusPill status={meeting.status} />
+            <Pill styles={STATUS_STYLES} value={meeting.status} />
+            {/* Your own RSVP, shown next to the meeting's state so "this is
+                happening" and "I'm coming" stay visibly separate. */}
+            {!isOrganizer && meeting.status !== 'cancelled' && (
+              <Pill styles={RSVP_STYLES} value={meeting.my_response} />
+            )}
           </div>
           <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
             <Clock size={11} /> {formatWhen(meeting.startDate, meeting.endDate)}
@@ -107,7 +126,7 @@ function MeetingCard({ meeting, currentUserId, accent, onRespond, onCancel, busy
             </p>
           )}
           <p className="mt-1 text-[11px] text-muted-foreground">
-            {isOrganizer ? 'You requested this' : `${meeting.organizer_name ?? 'Someone'} requested this`}
+            {isOrganizer ? 'You set this up' : `Set up by ${meeting.organizer_name ?? 'someone'}`}
           </p>
           {meeting.message && (
             <p className="mt-2 whitespace-pre-line rounded-lg bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
@@ -115,29 +134,48 @@ function MeetingCard({ meeting, currentUserId, accent, onRespond, onCancel, busy
             </p>
           )}
         </div>
-        <InviteeAvatars invitees={meeting.invitees ?? []} accent={accent} />
+        <div className="flex shrink-0 flex-col items-end gap-1.5">
+          <InviteeAvatars invitees={meeting.invitees ?? []} accent={accent} />
+          {(meeting.invitees?.length ?? 0) > 0 && (
+            <p className="whitespace-nowrap text-[10px] text-muted-foreground">
+              {meeting.invitees.filter((i) => i.response === 'going').length} going
+              {' · '}
+              {meeting.invitees.filter((i) => i.response === 'pending').length} no reply
+            </p>
+          )}
+        </div>
       </div>
 
-      {(needsMyAnswer || (isOrganizer && meeting.status !== 'cancelled')) && (
+      {(canRsvp || (isOrganizer && meeting.status !== 'cancelled')) && (
         <div className="flex items-center justify-end gap-2 border-t border-border px-5 py-3">
-          {needsMyAnswer && (
+          {canRsvp && (
             <>
               <button
                 type="button"
-                onClick={() => onRespond(meeting.id, 'declined')}
+                onClick={() => onRespond(meeting.id, 'not_going')}
                 disabled={busy}
-                className="flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-muted-foreground hover:bg-muted disabled:opacity-40"
+                aria-pressed={meeting.my_response === 'not_going'}
+                className={cn(
+                  'flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-medium disabled:opacity-40',
+                  meeting.my_response === 'not_going'
+                    ? 'border-foreground/30 bg-muted text-foreground'
+                    : 'border-border text-muted-foreground hover:bg-muted',
+                )}
               >
-                <X size={11} /> Decline
+                <X size={11} /> Can&apos;t make it
               </button>
               <button
                 type="button"
-                onClick={() => onRespond(meeting.id, 'accepted')}
+                onClick={() => onRespond(meeting.id, 'going')}
                 disabled={busy}
-                className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-40"
-                style={{ background: accent.gradient }}
+                aria-pressed={meeting.my_response === 'going'}
+                className={cn(
+                  'flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold disabled:opacity-40',
+                  meeting.my_response === 'going' ? 'text-white' : 'border border-border text-muted-foreground hover:bg-muted',
+                )}
+                style={meeting.my_response === 'going' ? { background: accent.gradient } : undefined}
               >
-                <Check size={11} /> Accept
+                <Check size={11} /> Going
               </button>
             </>
           )}
@@ -157,9 +195,17 @@ function MeetingCard({ meeting, currentUserId, accent, onRespond, onCancel, busy
   );
 }
 
-export function RequestMeetingModal({ accent, presetInvitee, onClose, onCreated }) {
+export function NewMeetingModal({ accent, presetInvitee, onClose, onCreated }) {
+  const { data: session } = useSession();
+  // Everyone except pledges and rushees may invite a whole group or committee.
+  // Mirrors MAY_BULK_INVITE in meetingsController — the server rejects it
+  // regardless, this just avoids offering a control that would 403.
+  const canBulkInvite = (session?.user?.groups ?? []).some((g) => MAY_BULK_INVITE.includes(g));
   const slot = useMemo(defaultSlot, []);
   const [title, setTitle] = useState(presetInvitee ? `Coffee with ${memberDisplayName(presetInvitee)}` : '');
+  const [audience, setAudience] = useState([]);
+  const [committeeIds, setCommitteeIds] = useState([]);
+  const [committees, setCommittees] = useState([]);
   const [message, setMessage] = useState('');
   const [location, setLocation] = useState('');
   const [startsAt, setStartsAt] = useState(slot.start);
@@ -176,7 +222,14 @@ export function RequestMeetingModal({ accent, presetInvitee, onClose, onCreated 
     getMessageableMembers()
       .then((data) => setMembers(Array.isArray(data) ? data : []))
       .catch((err) => { if (isRedirectError(err)) throw err; });
-  }, []);
+    // Only fetched when the viewer may actually use them; the endpoint is open
+    // to every member, so a failure here just leaves the section hidden.
+    if (canBulkInvite) {
+      getCommittees()
+        .then((data) => setCommittees(Array.isArray(data) ? data : []))
+        .catch((err) => { if (isRedirectError(err)) throw err; });
+    }
+  }, [canBulkInvite]);
 
   useEffect(() => {
     function onKey(e) { if (e.key === 'Escape') onClose(); }
@@ -190,7 +243,7 @@ export function RequestMeetingModal({ accent, presetInvitee, onClose, onCreated 
   }, [members, queryText]);
 
   async function submit() {
-    if (!title.trim() || selected.length === 0) return;
+    if (!title.trim() || !hasSomeone) return;
     setSubmitting(true);
     setError('');
     try {
@@ -198,6 +251,8 @@ export function RequestMeetingModal({ accent, presetInvitee, onClose, onCreated 
         title: title.trim(),
         message,
         location,
+        audience,
+        committeeIds,
         // datetime-local gives a local wall-clock string with no zone; the API
         // stores timestamptz, so it's converted here rather than sent raw.
         startsAt: new Date(startsAt).toISOString(),
@@ -208,15 +263,18 @@ export function RequestMeetingModal({ accent, presetInvitee, onClose, onCreated 
       onClose();
     } catch (err) {
       if (isRedirectError(err)) throw err;
-      setError(err.message ?? 'Could not send that request.');
+      setError(err.message ?? 'Could not create that meeting.');
       setSubmitting(false);
     }
   }
 
+  // Either an individual or a group counts — the server applies the same rule.
+  const hasSomeone = selected.length > 0 || audience.length > 0 || committeeIds.length > 0;
+
   const inputClass = 'w-full rounded-lg border border-border bg-muted/40 px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-1 focus:ring-[var(--portal-ring)]';
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-label="Request a meeting">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-label="New meeting">
       <div className="absolute inset-0 bg-background/80 backdrop-blur-sm" onClick={onClose} aria-hidden="true" />
       <div className="relative z-10 w-full max-w-lg overflow-hidden rounded-2xl border border-border bg-card shadow-xl">
         <div className="flex items-center justify-between border-b border-border px-5 py-4" style={{ background: tint(accent.base, 0.03) }}>
@@ -224,7 +282,7 @@ export function RequestMeetingModal({ accent, presetInvitee, onClose, onCreated 
             <div className="flex h-8 w-8 items-center justify-center rounded-lg text-white" style={{ background: accent.gradient }}>
               <Calendar size={14} />
             </div>
-            <p className="text-sm font-semibold text-foreground">Request a meeting</p>
+            <p className="text-sm font-semibold text-foreground">New meeting</p>
           </div>
           <button type="button" onClick={onClose} className="rounded-lg p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground" aria-label="Close">
             <X size={14} />
@@ -258,9 +316,47 @@ export function RequestMeetingModal({ accent, presetInvitee, onClose, onCreated 
             <textarea id="mtg-msg" rows={3} value={message} onChange={(e) => setMessage(e.target.value)} placeholder="Anything they should know beforehand." className={cn(inputClass, 'resize-none')} />
           </div>
 
+          {canBulkInvite && (
+            <div>
+              <p className="mb-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Invite a group</p>
+              <AudienceSelect value={audience} onChange={setAudience} exclude={['rush']} />
+              {committees.length > 0 && (
+                <div className="mt-2 flex flex-wrap gap-2 rounded-xl border border-border bg-muted/40 p-3">
+                  {committees.map((c) => {
+                    const on = committeeIds.includes(String(c.id));
+                    return (
+                      <button
+                        key={c.id}
+                        type="button"
+                        aria-pressed={on}
+                        onClick={() => setCommitteeIds((prev) => (
+                          prev.includes(String(c.id)) ? prev.filter((x) => x !== String(c.id)) : [...prev, String(c.id)]
+                        ))}
+                        className={cn(
+                          'rounded-full border px-3 py-1.5 text-xs font-medium transition-all duration-150',
+                          on ? 'border-transparent text-white' : 'border-border bg-card text-muted-foreground hover:text-foreground',
+                        )}
+                        style={on ? { background: accent.gradient } : undefined}
+                      >
+                        {c.name}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+              {/* Says plainly that this is a snapshot. Someone who joins the
+                  committee next week is not in today's meeting, which is the
+                  opposite of how group chats behave and worth stating. */}
+              <p className="mt-1.5 text-[11px] text-muted-foreground">
+                Whoever is in these right now gets invited. Later joiners don&apos;t.
+              </p>
+            </div>
+          )}
+
           <div>
             <p className="mb-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              Who <span className="ml-1 text-[10px] font-normal normal-case text-muted-foreground/70">{selected.length} selected</span>
+              {canBulkInvite ? 'Or pick people' : 'Who'}
+              <span className="ml-1 text-[10px] font-normal normal-case text-muted-foreground/70">{selected.length} selected</span>
             </p>
             <input type="text" value={queryText} onChange={(e) => setQueryText(e.target.value)} placeholder="Search members…" className={cn(inputClass, 'mb-2')} />
             <div className="max-h-48 overflow-y-auto rounded-xl border border-border">
@@ -298,12 +394,12 @@ export function RequestMeetingModal({ accent, presetInvitee, onClose, onCreated 
           <button
             type="button"
             onClick={submit}
-            disabled={submitting || !title.trim() || selected.length === 0}
+            disabled={submitting || !title.trim() || !hasSomeone}
             className="flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold text-white disabled:opacity-40"
             style={{ background: accent.gradient }}
           >
             {submitting && <Loader2 size={13} className="animate-spin" />}
-            Send request
+            Create meeting
           </button>
         </div>
       </div>
@@ -367,8 +463,8 @@ export default function MeetingsPage() {
     }
   }
 
-  // Anything needing your answer floats to the top — that's the only part of
-  // this page that is actually a to-do rather than a record.
+  // Anything still needing your RSVP floats to the top — that's the only part
+  // of this page that is actually a to-do rather than a record.
   const { needsYou, upcoming, past } = useMemo(() => {
     const now = Date.now();
     const needs = [];
@@ -403,7 +499,8 @@ export default function MeetingsPage() {
           <p className="mb-1 text-[11px] font-semibold uppercase tracking-[0.22em]" style={{ color: accent.light }}>Chapter</p>
           <h1 className="text-2xl font-bold sm:text-3xl" style={{ color: accent.base }}>Meetings</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Ask a member for time, one-on-one or as a group. Accepted meetings land on your calendar.
+            Set up a meeting with specific people, a whole group, or a committee. Everyone invited
+            RSVPs, and it lands on the calendar of whoever says they're going.
           </p>
         </div>
         <button
@@ -412,7 +509,7 @@ export default function MeetingsPage() {
           className="flex items-center gap-1.5 rounded-xl px-4 py-2 text-sm font-semibold text-white shadow-sm hover:opacity-85"
           style={{ background: accent.gradient }}
         >
-          <Plus size={14} /> Request a meeting
+          <Plus size={14} /> Make a meeting
         </button>
       </div>
 
@@ -431,19 +528,19 @@ export default function MeetingsPage() {
           <Users size={22} className="text-muted-foreground" />
           <p className="text-sm text-muted-foreground">No meetings yet.</p>
           <p className="max-w-sm text-xs text-muted-foreground/80">
-            Request one from here, or from anyone&apos;s profile in the directory.
+            Make one from here, or from anyone&apos;s profile in the directory.
           </p>
         </div>
       ) : (
         <div className="space-y-7">
-          <Section title="Needs your answer" items={needsYou} />
+          <Section title="Needs your RSVP" items={needsYou} />
           <Section title="Upcoming" items={upcoming} />
           <Section title="Past" items={past} />
         </div>
       )}
 
       {showRequest && (
-        <RequestMeetingModal
+        <NewMeetingModal
           accent={accent}
           onClose={() => setShowRequest(false)}
           onCreated={(meeting) => setMeetings((prev) => [meeting, ...prev])}
