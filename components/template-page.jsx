@@ -1,6 +1,7 @@
 "use client";
 import { Button } from "@/components/ui/button";
 import Card from "@/components/ui/card";
+import { Menu, X } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
@@ -103,6 +104,24 @@ export default function TemplatePage() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
+  /* ---------------------------- Mobile nav menu ----------------------------
+   * The header used to lay the logo, all six nav links and the Portal Login
+   * button out in a single row at every width. At 390px that row measured
+   * 446px, so the WHOLE PAGE scrolled sideways by 56px — the login button was
+   * the element hanging off the right edge. Below `md` the links now collapse
+   * into a dropdown, leaving a header that fits.
+   * -------------------------------------------------------------------- */
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  const NAV_LINKS = [
+    { href: "/rush", label: "Rush" },
+    { href: "#about", label: "About", hideOnMobile: true },
+    { href: "/members-list", label: "Members" },
+    { href: "#leadership", label: "Leadership" },
+    { href: "/hackathon", label: "Hackathon" },
+    { href: "#contact", label: "Contact" },
+  ];
+
   return (
     <div className="flex min-h-screen flex-col scroll-smooth font-sans bg-gradient-to-br from-slate-50 via-white to-slate-100 text-slate-900">
       <AOSInit />
@@ -125,35 +144,63 @@ export default function TemplatePage() {
             </span>
           )}
         </Link>
-        <nav className="ml-auto flex gap-4 sm:gap-6">
-          {[
-            { href: "/rush", label: "Rush" },
-            { href: "#about", label: "About", hideOnMobile: true },
-            { href: "/members-list", label: "Members" },
-            { href: "#leadership", label: "Leadership" },
-            { href: "/hackathon", label: "Hackathon" },
-            { href: "#contact", label: "Contact" },
-          ]
-            .filter((l) => !(mobile && l.hideOnMobile))
-            .map((l) => (
-              <Link
-                key={l.label}
-                href={l.href}
-                className="relative text-sm font-medium transition-colors duration-300 before:absolute before:-bottom-0.5 before:left-0 before:h-0.5 before:w-full before:origin-left before:scale-x-0 before:bg-indigo-500 before:transition-transform before:duration-300 hover:text-indigo-600 hover:before:scale-x-100"
-              >
-                {l.label}
-              </Link>
-            ))}
+        {/* Inline links from md up; below that they live in the dropdown. */}
+        <nav className="ml-auto hidden gap-4 md:flex md:gap-6">
+          {NAV_LINKS.filter((l) => !(mobile && l.hideOnMobile)).map((l) => (
+            <Link
+              key={l.label}
+              href={l.href}
+              className="relative text-sm font-medium transition-colors duration-300 before:absolute before:-bottom-0.5 before:left-0 before:h-0.5 before:w-full before:origin-left before:scale-x-0 before:bg-indigo-500 before:transition-transform before:duration-300 hover:text-indigo-600 hover:before:scale-x-100"
+            >
+              {l.label}
+            </Link>
+          ))}
         </nav>
+
+        {/* ml-auto below md (where the nav is hidden and nothing else pushes
+            this right), then the original ml-6 once the nav is present.
+            shrink-0 so it can never be the thing that overflows again. */}
         <Link
-            href={session ? "/auth/redirect" : "/login"}
-            className="ml-6 text-sm font-medium px-3 py-1.5 rounded-md bg-blue-900 text-white border border-blue-900 transition-colors duration-300 hover:bg-blue-800 hover:border-blue-800"
-          >
-            <span className="relative before:absolute before:-bottom-0.5 before:left-0 before:h-0.5 before:w-full before:origin-left before:scale-x-0 before:bg-white before:transition-transform before:duration-300 [a:hover_&]:before:scale-x-100">
-              {session ? "My Portal" : "Portal Login"}
-            </span>
-          </Link>
+          href={session ? "/auth/redirect" : "/login"}
+          className="ml-auto shrink-0 whitespace-nowrap rounded-md border border-blue-900 bg-blue-900 px-3 py-1.5 text-sm font-medium text-white transition-colors duration-300 hover:border-blue-800 hover:bg-blue-800 md:ml-6"
+        >
+          <span className="relative before:absolute before:-bottom-0.5 before:left-0 before:h-0.5 before:w-full before:origin-left before:scale-x-0 before:bg-white before:transition-transform before:duration-300 [a:hover_&]:before:scale-x-100">
+            {session ? "My Portal" : "Portal Login"}
+          </span>
+        </Link>
+
+        <button
+          type="button"
+          onClick={() => setMenuOpen((o) => !o)}
+          className="ml-2 shrink-0 rounded-md p-2 text-slate-700 transition-colors hover:bg-slate-100 md:hidden"
+          aria-label={menuOpen ? "Close menu" : "Open menu"}
+          aria-expanded={menuOpen}
+          aria-controls="mobile-nav"
+        >
+          {menuOpen ? <X size={20} /> : <Menu size={20} />}
+        </button>
       </header>
+
+      {/* Dropdown panel. `sticky top-16` keeps it under the sticky header
+          rather than scrolling away from it. */}
+      {menuOpen && (
+        <nav
+          id="mobile-nav"
+          className="sticky top-16 z-40 flex flex-col border-b border-slate-200 bg-white/95 px-4 py-2 shadow-sm backdrop-blur-md md:hidden"
+          aria-label="Main navigation"
+        >
+          {NAV_LINKS.map((l) => (
+            <Link
+              key={l.label}
+              href={l.href}
+              onClick={() => setMenuOpen(false)}
+              className="rounded-md px-2 py-2.5 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-100 hover:text-indigo-600"
+            >
+              {l.label}
+            </Link>
+          ))}
+        </nav>
+      )}
 
       <main className="flex-1">
         {/* ===============================  HERO  ============================== */}
@@ -498,9 +545,15 @@ export default function TemplatePage() {
 
         {/* =========  CONTACT  ========= */}
         <section id="contact" className="bg-slate-100 py-16 md:py-24">
+          {/* fade-up, not flip-up. flip-up was the only one on the page and it
+              applies `perspective(2500px) rotateX(-100deg)` in its
+              pre-animation state — a perspective projection is WIDER than the
+              element itself, so this 390px container measured 405px and pushed
+              the whole page 8px sideways until you scrolled far enough to
+              trigger the animation. Vertical fades don't distort width. */}
           <div
             className="container mx-auto max-w-4xl px-4 text-center md:px-6"
-            data-aos="flip-up"
+            data-aos="fade-up"
             data-aos-duration="300"
           >
             <h2 className="text-3xl font-bold tracking-tight md:text-4xl">

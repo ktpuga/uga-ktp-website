@@ -1,8 +1,9 @@
 'use client';
 
-import { LayoutDashboard, Calendar, FolderOpen, Users, Settings, MessageSquare, UsersRound, Vote, QrCode, CalendarClock } from 'lucide-react';
+import { LayoutDashboard, Calendar, FolderOpen, Users, Settings, MessageSquare, UsersRound, Vote, QrCode, CalendarClock, UserSearch } from 'lucide-react';
 import { useSession } from 'next-auth/react';
 import PortalShell from '@/components/portal/PortalShell';
+import { useRushCount } from '@/lib/use-rush-count';
 
 // The sidebar renders exactly this, in this order. It used to be a flat array
 // here plus a matching NAV_GROUPING entry in PortalShell keyed by accent —
@@ -10,7 +11,7 @@ import PortalShell from '@/components/portal/PortalShell';
 // vanished from the sidebar. Now there is only this.
 const ATTENDANCE_ITEM = { href: '/member/attendance', label: 'Attendance', icon: QrCode };
 
-function buildNav(isChair) {
+function buildNav(isChair, hasRushees) {
   return [
     {
       heading: 'Main',
@@ -23,6 +24,8 @@ function buildNav(isChair) {
       heading: 'Community',
       items: [
         { href: '/member/directory', label: 'Directory', icon: Users },
+        // Only while rush is running — see useRushCount.
+        ...(hasRushees ? [{ href: '/member/rushees', label: 'Rushees', icon: UserSearch }] : []),
         { href: '/member/meetings', label: 'Meetings', icon: CalendarClock },
         { href: '/member/committees', label: 'Committees', icon: UsersRound },
         { href: '/member/polls', label: 'Polls', icon: Vote },
@@ -49,9 +52,10 @@ function buildNav(isChair) {
 export default function MemberLayout({ children }) {
   const { data: session } = useSession();
   const isChair = session?.user?.groups?.includes('chair') ?? false;
+  const rushCount = useRushCount();
 
   return (
-    <PortalShell portalName="Member Portal" accent="blue" homeHref="/member" nav={buildNav(isChair)}>
+    <PortalShell portalName="Member Portal" accent="blue" homeHref="/member" nav={buildNav(isChair, rushCount > 0)}>
       {children}
     </PortalShell>
   );

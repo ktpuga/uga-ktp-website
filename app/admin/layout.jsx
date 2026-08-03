@@ -1,7 +1,8 @@
 'use client';
 
-import { BarChart2, Megaphone, Calendar, MessageSquare, Users, UsersRound, Vote, FolderOpen, Image as ImageIcon, ShieldAlert, Settings, Images, QrCode, CalendarClock } from 'lucide-react';
+import { BarChart2, Megaphone, Calendar, MessageSquare, Users, UsersRound, Vote, FolderOpen, Image as ImageIcon, ShieldAlert, Settings, Images, QrCode, CalendarClock, UserSearch } from 'lucide-react';
 import PortalShell from '@/components/portal/PortalShell';
+import { useRushCount } from '@/lib/use-rush-count';
 
 // The sidebar renders exactly this, in this order.
 //
@@ -16,7 +17,8 @@ import PortalShell from '@/components/portal/PortalShell';
 //     sits with the other people-management tools.
 //
 // Nothing was added or removed — all 16 items are still here.
-const NAV = [
+function buildNav(hasRushees) {
+  return [
   {
     heading: 'Overview',
     items: [{ href: '/admin', label: 'Analytics', icon: BarChart2 }],
@@ -46,6 +48,8 @@ const NAV = [
     items: [
       { href: '/admin/rush-announcements', label: 'Rush Announcements', icon: Megaphone },
       { href: '/admin/rush-signup', label: 'Rush Signup', icon: QrCode },
+        // Only while rush is running — see useRushCount.
+        ...(hasRushees ? [{ href: '/admin/rushees', label: 'Rushees', icon: UserSearch }] : []),
     ],
   },
   {
@@ -68,11 +72,14 @@ const NAV = [
     heading: 'Account',
     items: [{ href: '/admin/settings', label: 'Settings', icon: Settings }],
   },
-];
+  ];
+}
 
 export default function AdminLayout({ children }) {
+  const rushCount = useRushCount();
+
   return (
-    <PortalShell portalName="Admin Portal" accent="red" homeHref="/admin" nav={NAV} responsive={false}>
+    <PortalShell portalName="Admin Portal" accent="red" homeHref="/admin" nav={buildNav(rushCount > 0)} responsive={false}>
       {children}
     </PortalShell>
   );

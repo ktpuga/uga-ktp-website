@@ -389,7 +389,7 @@ function DirectoryHeader({ title, description, accent }) {
   );
 }
 
-function RevampedMemberDirectory({ title, description, theme }) {
+function RevampedMemberDirectory({ title, description, theme, onlyGroup }) {
   const accent = PALETTES[theme] ?? PALETTES.blue;
   const [members, setMembers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -398,14 +398,14 @@ function RevampedMemberDirectory({ title, description, theme }) {
   const [selectedMember, setSelectedMember] = useState(null);
 
   useEffect(() => {
-    getMemberDirectory()
+    getMemberDirectory(onlyGroup ? { group: onlyGroup } : undefined)
       .then(setMembers)
       .catch((err) => {
         if (isRedirectError(err)) throw err;
         setError(err.message ?? 'Could not load directory');
       })
       .finally(() => setLoading(false));
-  }, []);
+  }, [onlyGroup]);
 
   function toggleSort() {
     setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
@@ -501,7 +501,10 @@ function RevampedMemberDirectory({ title, description, theme }) {
               </tr>
             </thead>
             <tbody>
-              {GROUP_ORDER.map((group) => (
+              {/* Filtered to one group when onlyGroup is set — that's what
+                  makes the Rushees tab this same component rather than a
+                  second directory to keep in sync. */}
+              {(onlyGroup ? [onlyGroup] : GROUP_ORDER).map((group) => (
                 <GroupSection key={group} group={group} members={grouped[group]} accent={accent} onSelect={setSelectedMember} />
               ))}
             </tbody>
@@ -526,6 +529,6 @@ function RevampedMemberDirectory({ title, description, theme }) {
 // now renders with the blue palette (see the PALETTES lookup), which beats
 // maintaining a second copy of the whole UI — two copies is what let the
 // CircleCheck/BlockButton fix keep disappearing from one of them.
-export default function MemberDirectory({ title = 'Directory', description = 'Browse chapter members', theme = 'blue' }) {
-  return <RevampedMemberDirectory title={title} description={description} theme={theme} />;
+export default function MemberDirectory({ title = 'Directory', description = 'Browse chapter members', theme = 'blue', onlyGroup }) {
+  return <RevampedMemberDirectory title={title} description={description} theme={theme} onlyGroup={onlyGroup} />;
 }

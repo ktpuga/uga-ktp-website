@@ -8,7 +8,12 @@ export class footer extends Component {
           <p className="text-xs font-['Source Sans Pro']">
             &copy; {new Date().getFullYear()} KTP. All rights reserved.
           </p>
-          <nav className="flex gap-4 sm:gap-6">
+          {/* flex-wrap: six links in a non-wrapping row overflowed the page on
+              narrow phones (measured 361px of content in a 320px viewport, with
+              "LinkedIn" hanging off the right edge). They wrap onto a second
+              line instead now. This footer is on every page, so it was a
+              site-wide overflow, not just the homepage. */}
+          <nav className="flex flex-wrap gap-x-4 gap-y-2 sm:gap-x-6">
             <Link
               href="/code-of-conduct"
               className="text-xs hover:underline underline-offset-4 font-['Source Sans Pro']"

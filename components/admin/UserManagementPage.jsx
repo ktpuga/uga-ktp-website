@@ -33,9 +33,18 @@ const GROUP_COLORS = {
   active: '#1d4ed8',
   pledge: '#15803d',
   alumni: '#b45309',
+  rush: '#0e7490',
 };
 
-const GROUP_ORDER = ['eboard', 'chair', 'active', 'pledge', 'alumni', 'unassigned'];
+// Must contain every value in ktp-api's constants/roleGroups.js. Anything
+// missing falls through normalizeGroup() to 'unassigned' — which is exactly
+// how rushees were showing up here as unassigned rather than as Rushees. The
+// same omission previously mislabelled them in MemberDirectory, so treat this
+// list and roleGroups.js as one thing in two places.
+//
+// 'rush' sits last, after alumni: the section order reads roughly as distance
+// from the chapter, and a rushee hasn't joined it.
+const GROUP_ORDER = ['eboard', 'chair', 'active', 'pledge', 'alumni', 'rush', 'unassigned'];
 
 const STAT_CARDS = [
   { label: 'Total Users', key: 'total', icon: Users },
