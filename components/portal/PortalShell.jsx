@@ -9,6 +9,8 @@ import {
   LogOut, PanelLeft, PanelLeftClose, Menu, X, Sun, Moon, ChevronLeft, ChevronRight, Home, Palette,
 } from 'lucide-react';
 import { logoutEverywhere } from '@/lib/auth-actions';
+import { getProfile } from '@/lib/portal-api';
+import { isRedirectError } from '@/lib/is-redirect-error';
 import { useUnreadCounts } from '@/lib/use-unread-counts';
 import { cn } from '@/lib/utils';
 import { memberDisplayName, memberInitials, formatMemberGroup } from '@/lib/portal-format';
@@ -267,6 +269,22 @@ export default function PortalShell({
   const { total: unreadTotal } = useUnreadCounts();
   const { data: session } = useSession();
 
+  // The session carries authentik_id, groups and profile_complete — and no name
+  // at all. Authentik's invitation flow only ever collects a username, so first
+  // / last / preferred name live in ktp-api's Postgres. Without this fetch
+  // memberDisplayName() fell through to its 'Member' fallback, which is also
+  // exactly what formatMemberGroup('active') returns — so the sidebar showed
+  // the same word twice and looked like it was printing the group as the name.
+  //
+  // GET /users/me is gated on requireAuth only (no group check), so this works
+  // in all five portals including /rushee.
+  const [profile, setProfile] = useState(null);
+  useEffect(() => {
+    getProfile()
+      .then(setProfile)
+      .catch((err) => { if (isRedirectError(err)) throw err; });
+  }, []);
+
   useEffect(() => {
     const stored = window.localStorage.getItem(STORAGE_KEY);
     if (stored === 'collapsed') setCollapsed(true);
@@ -297,18 +315,17 @@ export default function PortalShell({
   // ---------- Revamped path (blue / red only) ----------
   if (revamped) {
     const user = session?.user ?? {};
-    const displayName = memberDisplayName({
-      preferredName: user.preferredName ?? user.preferred_name,
-      firstName: user.firstName ?? user.first_name,
-      lastName: user.lastName ?? user.last_name,
-      username: user.username,
-    });
-    const initials = memberInitials({
-      preferredName: user.preferredName ?? user.preferred_name,
-      firstName: user.firstName ?? user.first_name,
-      lastName: user.lastName ?? user.last_name,
-      username: user.username,
-    });
+    // DB profile first, session second — the session fields are almost always
+    // blank, but keep them as a fallback so the block still renders something
+    // during the moment before the fetch resolves.
+    const nameParts = {
+      preferredName: profile?.preferred_name ?? user.preferredName ?? user.preferred_name,
+      firstName: profile?.first_name ?? user.firstName ?? user.first_name,
+      lastName: profile?.last_name ?? user.lastName ?? user.last_name,
+      username: profile?.username ?? user.username,
+    };
+    const displayName = memberDisplayName(nameParts);
+    const initials = memberInitials(nameParts);
     const resolvedGroup = GROUP_PRIORITY.find((g) => user.groups?.includes(g));
     const profileRole = accent === 'red' ? 'Chapter Administrator' : formatMemberGroup(resolvedGroup);
 
@@ -394,7 +411,7 @@ export default function PortalShell({
                   glow={tint(revamped.light, 0.8)}
                 />
                 <div className={cn('min-w-0 overflow-hidden transition-all duration-300', collapsed ? 'w-0 opacity-0' : 'w-auto opacity-100')}>
-                  <p className="truncate text-[12px] font-semibold leading-tight text-foreground">{displayName}</p>
+                  <p className="truncate text-[12px] font-bold leading-tight text-foreground dark:text-white">{displayName}</p>
                   <p className="truncate text-[10.5px] leading-tight text-muted-foreground">{profileRole}</p>
                 </div>
               </div>
