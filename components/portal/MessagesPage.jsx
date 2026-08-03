@@ -98,11 +98,25 @@ function MemberAvatar({ member, size = 36, accent }) {
 }
 
 function GroupChatAvatar({ chat, size = 36, accent }) {
-  if (chat.photo_asset_id) {
+  const [err, setErr] = useState(false);
+  if (chat.photo_asset_id && !err) {
     return (
       <div className="shrink-0 overflow-hidden rounded-full" style={{ width: size, height: size }}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={`/api/group-chats/${chat.id}/photo/media`} alt={chat.name} className="h-full w-full object-cover" />
+        <img
+          src={`/api/group-chats/${chat.id}/photo/media`}
+          alt={chat.name}
+          // Explicit dimensions match MemberAvatar and stop the image briefly
+          // rendering at its natural size before CSS lands. Photos uploaded
+          // since the square-crop change are already 1:1, so object-cover is a
+          // no-op on them; it still centre-crops older wide ones.
+          width={size}
+          height={size}
+          className="h-full w-full object-cover"
+          // Falls back to the icon below rather than a broken-image glyph —
+          // the same onError pattern every other avatar here uses.
+          onError={() => setErr(true)}
+        />
       </div>
     );
   }
