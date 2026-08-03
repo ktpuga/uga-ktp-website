@@ -125,7 +125,7 @@ export default function Page () {
                 href="/rush/how-it-works"
                 className="w-full rounded-full border-2 border-[#f0d060] bg-[#d4af37] px-8 py-4 text-center text-base font-bold text-[#1a1a1a] shadow-lg transition-colors hover:bg-[#f0d060] sm:w-auto sm:px-12"
               >
-                How Rush Works →
+                How to Sign Up
               </Link>
               <p className="mt-3 text-xs text-[#e8e0d5]/70">
                 See the four steps, the timeline, and how to create your account.
