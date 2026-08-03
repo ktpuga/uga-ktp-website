@@ -106,7 +106,7 @@ We focus on career development, technical growth, and building a tight-knit comm
 export const RUSH_STEPS = [
   {
     id: 'account',
-    label: 'Make an account with us',
+    label: 'Make an Account with Us',
     body: `Click the button at the bottom of this page, or scan the QR code at any info session, and create an account. It takes about a minute.
 
 Then come back to the main page and sign in to the portal. You can look around before the first event. Have a read through what's posted and see what's coming up.`,
@@ -114,19 +114,19 @@ Then come back to the main page and sign in to the portal. You can look around b
   },
   {
     id: 'events',
-    label: 'Come to events and talk to members',
+    label: 'Come to Events and Talk to Members',
     body: `We want to get to know you, and showing up is the biggest thing that helps your chances of getting a bid. Every rush event is on your calendar in the portal with the time and place.`,
     detail: 'Every rush event',
   },
   {
     id: 'interviews',
-    label: 'Sign up for interviews',
+    label: 'Sign Up for Interviews',
     body: `Towards the end of rush, we hold short interviews. Signup details get posted as an announcement in your portal, so keep an eye on it around then.`,
     detail: 'Towards the end of rush',
   },
   {
     id: 'update',
-    label: 'Check back for an update',
+    label: 'Check Back for an Update',
     body: `Once interviews wrap up, leadership reviews everyone who took part. Check back in on your portal to see where you stand.
 
 If you're offered a bid, you'll get a message from us, plus a notification on your phone, so you don't have to keep refreshing. You'll hear either way.`,
