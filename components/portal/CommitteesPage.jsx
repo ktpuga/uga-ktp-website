@@ -21,7 +21,6 @@ import {
 } from '@/lib/portal-api';
 import { memberDisplayName, memberInitials } from '@/lib/portal-format';
 import { isRedirectError } from '@/lib/is-redirect-error';
-import LegacyCommitteesPage from './LegacyCommitteesPage';
 import { NewMeetingModal } from './MeetingsPage';
 
 const ACCENT_THEMES = {
@@ -887,11 +886,11 @@ function RevampedCommitteesPage({ accentKey }) {
   );
 }
 
-const REVAMPED_KEYS = new Set(['blue', 'red', 'amber', 'teal']);
-
+// Every portal passes blue, amber or red, so the pre-revamp variant this used
+// to fall back to was unreachable and has been deleted. An unrecognised accent
+// now renders with the blue palette (see the ACCENT_THEMES lookup), which beats
+// maintaining a second copy of the whole UI — two copies is what let the
+// CircleCheck/BlockButton fix keep disappearing from one of them.
 export default function CommitteesPage({ accent = 'blue' }) {
-  if (!REVAMPED_KEYS.has(accent)) {
-    return <LegacyCommitteesPage accent={accent} />;
-  }
   return <RevampedCommitteesPage accentKey={accent} />;
 }

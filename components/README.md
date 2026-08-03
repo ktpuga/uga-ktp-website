@@ -61,6 +61,6 @@ They're deleted, along with the accent check. An unrecognised accent now renders
 
 **Why this mattered rather than being tidiness:** two copies of the same screen is exactly how the `CircleCheck`/`BlockButton` fix kept disappearing — it would land in one copy and not the other, and the bug looked like it had been reintroduced from nowhere.
 
-`LegacyCommitteesPage.jsx` is the one survivor, still referenced by `CommitteesPage.jsx`. It was left in place only because that file was being edited elsewhere at the time; it's equally unreachable and can go the same way.
+All six are gone, including `LegacyCommitteesPage.jsx`, which was held back briefly only because `CommitteesPage.jsx` was being edited elsewhere at the time.
 
-Git history has all of them if anything is ever needed back.
+Git history has them if anything is ever needed back.
