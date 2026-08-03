@@ -154,8 +154,8 @@ export default function Page () {
             <SectionHeading
               label="Two-Week Rush"
               title="Event Timeline"
-              description="You only need to come to 1 info session, but we recommend attending as many events as you can to get to know the active members and learn more about KTP. Make sure you attend
-              the speed dating at the end of Rush!"
+              description="You only need to come to 1 info session, but we recommend attending as many events as you can to get to know the active members and learn more about KTP. 
+              Make sure you attend the speed dating at the end of Rush!"
             />
 
             <ol className="relative mt-10 space-y-0 sm:mt-12">
