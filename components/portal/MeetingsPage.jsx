@@ -498,7 +498,11 @@ export default function MeetingsPage() {
     const old = [];
     for (const m of meetings) {
       const isOrganizer = m.organizer_id === currentUserId;
-      if (!isOrganizer && m.my_response === 'pending' && m.status !== 'cancelled') needs.push(m);
+      // Cancelled is checked before the date, so a cancelled meeting whose
+      // start time hasn't passed yet still files under Past rather than
+      // sitting in Upcoming as something people might turn up to.
+      if (m.status === 'cancelled') old.push(m);
+      else if (!isOrganizer && m.my_response === 'pending') needs.push(m);
       else if (new Date(m.startDate).getTime() >= now) up.push(m);
       else old.push(m);
     }
