@@ -195,16 +195,25 @@ function MeetingCard({ meeting, currentUserId, accent, onRespond, onCancel, busy
   );
 }
 
-export function NewMeetingModal({ accent, presetInvitee, onClose, onCreated }) {
+// `presetCommittee` ({ id, name }) opens this straight from a committee page
+// with that committee already the invitee list — the picker is replaced by a
+// locked chip, since choosing a *different* committee from inside one
+// committee's page would be a surprise.
+export function NewMeetingModal({ accent, presetInvitee, presetCommittee, onClose, onCreated }) {
   const { data: session } = useSession();
   // Everyone except pledges and rushees may invite a whole group or committee.
   // Mirrors MAY_BULK_INVITE in meetingsController — the server rejects it
   // regardless, this just avoids offering a control that would 403.
   const canBulkInvite = (session?.user?.groups ?? []).some((g) => MAY_BULK_INVITE.includes(g));
+  const hasPresetCommittee = Boolean(presetCommittee);
   const slot = useMemo(defaultSlot, []);
-  const [title, setTitle] = useState(presetInvitee ? `Coffee with ${memberDisplayName(presetInvitee)}` : '');
+  const [title, setTitle] = useState(() => {
+    if (presetInvitee) return `Coffee with ${memberDisplayName(presetInvitee)}`;
+    if (presetCommittee) return `${presetCommittee.name} Meeting`;
+    return '';
+  });
   const [audience, setAudience] = useState([]);
-  const [committeeIds, setCommitteeIds] = useState([]);
+  const [committeeIds, setCommitteeIds] = useState(presetCommittee ? [String(presetCommittee.id)] : []);
   const [committees, setCommittees] = useState([]);
   const [message, setMessage] = useState('');
   const [location, setLocation] = useState('');
@@ -223,13 +232,16 @@ export function NewMeetingModal({ accent, presetInvitee, onClose, onCreated }) {
       .then((data) => setMembers(Array.isArray(data) ? data : []))
       .catch((err) => { if (isRedirectError(err)) throw err; });
     // Only fetched when the viewer may actually use them; the endpoint is open
-    // to every member, so a failure here just leaves the section hidden.
-    if (canBulkInvite) {
+    // to every member, so a failure here just leaves the section hidden. Not
+    // needed at all with a preset committee — that one is already named.
+    if (canBulkInvite && !hasPresetCommittee) {
       getCommittees()
         .then((data) => setCommittees(Array.isArray(data) ? data : []))
         .catch((err) => { if (isRedirectError(err)) throw err; });
     }
-  }, [canBulkInvite]);
+    // Depends on the boolean, not the object: callers pass an inline literal,
+    // and a fresh object every render would refetch the member list forever.
+  }, [canBulkInvite, hasPresetCommittee]);
 
   useEffect(() => {
     function onKey(e) { if (e.key === 'Escape') onClose(); }
@@ -316,7 +328,21 @@ export function NewMeetingModal({ accent, presetInvitee, onClose, onCreated }) {
             <textarea id="mtg-msg" rows={3} value={message} onChange={(e) => setMessage(e.target.value)} placeholder="Anything they should know beforehand." className={cn(inputClass, 'resize-none')} />
           </div>
 
-          {canBulkInvite && (
+          {hasPresetCommittee ? (
+            <div>
+              <p className="mb-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Inviting</p>
+              <div className="flex flex-wrap items-center gap-2 rounded-xl border border-border bg-muted/40 p-3">
+                <span className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold text-white" style={{ background: accent.gradient }}>
+                  <Users size={11} />
+                  {presetCommittee.name}
+                </span>
+                <span className="text-[11px] text-muted-foreground">everyone on this committee</span>
+              </div>
+              <p className="mt-1.5 text-[11px] text-muted-foreground">
+                Whoever is on it right now gets invited. Later joiners don&apos;t.
+              </p>
+            </div>
+          ) : canBulkInvite && (
             <div>
               <p className="mb-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Invite a group</p>
               <AudienceSelect value={audience} onChange={setAudience} exclude={['rush']} />
@@ -355,7 +381,7 @@ export function NewMeetingModal({ accent, presetInvitee, onClose, onCreated }) {
 
           <div>
             <p className="mb-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              {canBulkInvite ? 'Or pick people' : 'Who'}
+              {hasPresetCommittee ? 'Also invite (optional)' : canBulkInvite ? 'Or pick people' : 'Who'}
               <span className="ml-1 text-[10px] font-normal normal-case text-muted-foreground/70">{selected.length} selected</span>
             </p>
             <input type="text" value={queryText} onChange={(e) => setQueryText(e.target.value)} placeholder="Search members…" className={cn(inputClass, 'mb-2')} />

@@ -53,6 +53,14 @@ Use a plain `<img>` with an `onError` handler falling back to initials. Prefer t
 
 The same applies to `profile/ProfileForm.jsx`, which is shared with the onboarding flow. Embed it as-is rather than rebuilding its fields.
 
-## `Legacy*` files
+## `Legacy*` files — removed 2026-08-02
 
-Files named `Legacy<Something>.jsx` are pre-redesign copies kept behind an accent check during the portal revamp. Every portal now renders the current design, so these are unreachable. They're retained deliberately — don't wire anything new to them, and don't spend time updating them.
+Pre-redesign copies kept behind an accent check during the portal revamp. Every portal passes `blue`, `amber` or `red`, all of which took the revamped branch, so they had become unreachable — about 4,400 lines that could never execute.
+
+They're deleted, along with the accent check. An unrecognised accent now renders the current design with the blue palette (every component already did `ACCENT_THEMES[key] ?? ACCENT_THEMES.blue`), which is a better failure than a second copy of the UI that nobody maintains.
+
+**Why this mattered rather than being tidiness:** two copies of the same screen is exactly how the `CircleCheck`/`BlockButton` fix kept disappearing — it would land in one copy and not the other, and the bug looked like it had been reintroduced from nowhere.
+
+`LegacyCommitteesPage.jsx` is the one survivor, still referenced by `CommitteesPage.jsx`. It was left in place only because that file was being edited elsewhere at the time; it's equally unreachable and can go the same way.
+
+Git history has all of them if anything is ever needed back.

@@ -6,7 +6,7 @@ import { usePathname } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { cn } from '@/lib/utils';
 import {
-  ChevronLeft, Plus, Trash2, Search, X, Star, Users, MessageSquare, Calendar, LogIn, LogOut, UserPlus, AlertTriangle, MapPin,
+  ChevronLeft, Plus, Trash2, Search, X, Star, Users, MessageSquare, Calendar, CalendarPlus, QrCode, LogIn, LogOut, UserPlus, AlertTriangle, MapPin,
 } from 'lucide-react';
 import {
   getCommittees,
@@ -22,6 +22,7 @@ import {
 import { memberDisplayName, memberInitials } from '@/lib/portal-format';
 import { isRedirectError } from '@/lib/is-redirect-error';
 import LegacyCommitteesPage from './LegacyCommitteesPage';
+import { NewMeetingModal } from './MeetingsPage';
 
 const ACCENT_THEMES = {
   blue: { base: '#1e3a8a', gradient: 'linear-gradient(135deg, #1e3a8a 0%, #1d4ed8 100%)', light: '#1d4ed8', muted: 'rgba(30,58,138,0.10)' },
@@ -232,12 +233,17 @@ function DeleteConfirmModal({ committeeName, accent, onClose, onConfirm }) {
   );
 }
 
-// ─── Schedule Meeting Modal ───
+// ─── Schedule Event Modal ───
+//
+// This creates an *event* — a calendar entry for the committee, optionally
+// with QR check-in attendance. Its sibling button opens `NewMeetingModal`
+// instead, which creates a *meeting*: an RSVP request, no calendar entry, no
+// attendance. The two used to be one ambiguous "Schedule Meeting" button.
 
-const EMPTY_MEETING_FORM = { title: '', description: '', location: '', start: '', end: '' };
+const EMPTY_EVENT_FORM = { title: '', description: '', location: '', start: '', end: '', requiresAttendance: true };
 
-function ScheduleMeetingModal({ committeeId, committeeName, accent, onClose, onScheduled }) {
-  const [form, setForm] = useState(EMPTY_MEETING_FORM);
+function ScheduleEventModal({ committeeId, committeeName, accent, onClose, onScheduled }) {
+  const [form, setForm] = useState(EMPTY_EVENT_FORM);
   const [error, setError] = useState(null);
   const [saving, setSaving] = useState(false);
 
@@ -268,10 +274,11 @@ function ScheduleMeetingModal({ committeeId, committeeName, accent, onClose, onS
         startDate: startDate.toISOString(),
         endDate: endDate.toISOString(),
         committeeIds: [committeeId],
+        requiresAttendance: form.requiresAttendance,
       });
 
       if (!result?.ok) {
-        setError(result?.error ?? 'Failed to schedule meeting.');
+        setError(result?.error ?? 'Failed to schedule event.');
         setSaving(false);
         return;
       }
@@ -279,7 +286,7 @@ function ScheduleMeetingModal({ committeeId, committeeName, accent, onClose, onS
       onScheduled();
     } catch (err) {
       if (isRedirectError(err)) throw err;
-      setError(err.message ?? 'Failed to schedule meeting.');
+      setError(err.message ?? 'Failed to schedule event.');
       setSaving(false);
     }
   }
@@ -288,9 +295,13 @@ function ScheduleMeetingModal({ committeeId, committeeName, accent, onClose, onS
   const fieldClass = inputClass();
 
   return (
-    <ModalWrapper onClose={onClose} label="Schedule meeting" maxWidth="max-w-lg">
-      <ModalHeader accent={accent} title={`Schedule Meeting — ${committeeName}`} icon={<Calendar size={14} strokeWidth={1.75} />} onClose={onClose} />
+    <ModalWrapper onClose={onClose} label="Schedule event" maxWidth="max-w-lg">
+      <ModalHeader accent={accent} title={`Schedule Event — ${committeeName}`} icon={<CalendarPlus size={14} strokeWidth={1.75} />} onClose={onClose} />
       <div className="max-h-[70vh] space-y-4 overflow-y-auto p-5">
+        <p className="rounded-xl border border-border bg-muted/40 px-3 py-2 text-[11px] leading-relaxed text-muted-foreground">
+          Goes on the calendar for everyone on <span className="font-medium text-foreground">{committeeName}</span>, no RSVP. Use <span className="font-medium text-foreground">New Meeting</span> instead if you want people to accept or decline.
+        </p>
+
         <FormField label="Title">
           <input
             autoFocus
@@ -340,10 +351,30 @@ function ScheduleMeetingModal({ committeeId, committeeName, accent, onClose, onS
           </FormField>
         </div>
 
+        {/* Defaults on: taking attendance is the reason to make an event
+            rather than a meeting. Same control as /admin/announcements. */}
+        <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-border bg-muted/40 p-3 transition-colors hover:bg-muted/60">
+          <input
+            type="checkbox"
+            checked={form.requiresAttendance}
+            onChange={(e) => set('requiresAttendance', e.target.checked)}
+            className="mt-0.5 h-4 w-4 shrink-0 rounded border-border"
+            style={{ accentColor: accent.base }}
+          />
+          <div>
+            <p className="flex items-center gap-1.5 text-sm font-medium text-foreground">
+              <QrCode size={13} style={{ color: accent.light }} />
+              Track attendance for this event (QR check-in)
+            </p>
+            <p className="mt-0.5 text-[11px] text-muted-foreground">
+              A check-in code appears under the Attendance tab once it&apos;s created.
+            </p>
+          </div>
+        </label>
 
         {error && <p className="text-sm text-red-600">{error}</p>}
       </div>
-      <ModalFooter accent={accent} onClose={onClose} onConfirm={handleSubmit} confirmLabel={saving ? 'Scheduling...' : 'Create Meeting'} disabled={!valid || saving} />
+      <ModalFooter accent={accent} onClose={onClose} onConfirm={handleSubmit} confirmLabel={saving ? 'Scheduling...' : 'Create Event'} disabled={!valid || saving} />
     </ModalWrapper>
   );
 }
@@ -484,7 +515,12 @@ function CommitteeDetail({ committee, currentUserId, isEboard, accent, onBack, o
   const [error, setError] = useState(null);
   const [busy, setBusy] = useState(false);
   const [showSchedule, setShowSchedule] = useState(false);
+  const [showMeeting, setShowMeeting] = useState(false);
   const [showPromotePicker, setShowPromotePicker] = useState(false);
+
+  // Matches checkEventPermission in ktp-api's eventsController: eboard may
+  // schedule for any committee, a chair only for one they chair.
+  const canSchedule = committee.is_chair || isEboard;
 
   function loadMembers() {
     setLoading(true);
@@ -581,15 +617,29 @@ function CommitteeDetail({ committee, currentUserId, isEboard, accent, onBack, o
           </Link>
         )}
 
-        {committee.is_chair && (
-          <button
-            type="button"
-            onClick={() => setShowSchedule(true)}
-            className="flex items-center gap-2 rounded-xl border border-border bg-card px-4 py-2.5 text-sm font-medium text-muted-foreground shadow-sm transition-colors hover:bg-muted hover:text-foreground"
-          >
-            <Calendar size={15} style={{ color: accent.light }} />
-            Schedule Meeting
-          </button>
+        {/* Two deliberately separate paths. A meeting asks people to RSVP and
+            never touches the calendar; an event is a calendar entry that can
+            take attendance. One combined button made the choice invisible. */}
+        {canSchedule && (
+          <>
+            <button
+              type="button"
+              onClick={() => setShowMeeting(true)}
+              className="flex items-center gap-2 rounded-xl border border-border bg-card px-4 py-2.5 text-sm font-medium text-muted-foreground shadow-sm transition-colors hover:bg-muted hover:text-foreground"
+            >
+              <Calendar size={15} style={{ color: accent.light }} />
+              New Meeting
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setShowSchedule(true)}
+              className="flex items-center gap-2 rounded-xl border border-border bg-card px-4 py-2.5 text-sm font-medium text-muted-foreground shadow-sm transition-colors hover:bg-muted hover:text-foreground"
+            >
+              <CalendarPlus size={15} style={{ color: accent.light }} />
+              Schedule Event
+            </button>
+          </>
         )}
 
         {committee.is_member ? (
@@ -626,6 +676,15 @@ function CommitteeDetail({ committee, currentUserId, isEboard, accent, onBack, o
           </button>
         )}
       </div>
+
+      {canSchedule && (
+        <div className="mb-5 rounded-xl border border-border bg-muted/40 px-4 py-3">
+          <p className="text-xs leading-relaxed text-muted-foreground">
+            <span className="font-semibold text-foreground">New Meeting</span> asks this committee to RSVP — it shows in their Meetings tab, and reaches the subscribed calendar of whoever accepts. Private to the people invited.{' '}
+            <span className="font-semibold text-foreground">Schedule Event</span> puts it on the chapter calendar for the whole committee, no RSVP, and can take attendance by QR code.
+          </p>
+        </div>
+      )}
 
       {committee.is_member && committee.group_chat_id && (
         <div className="mb-5 flex items-center gap-3 rounded-xl border px-4 py-3" style={{ background: tint(accent.base, 0.04), borderColor: tint(accent.base, 0.18) }}>
@@ -694,7 +753,15 @@ function CommitteeDetail({ committee, currentUserId, isEboard, accent, onBack, o
       </div>
 
       {showSchedule && (
-        <ScheduleMeetingModal committeeId={committee.id} committeeName={committee.name} accent={accent} onClose={() => setShowSchedule(false)} onScheduled={handleSchedule} />
+        <ScheduleEventModal committeeId={committee.id} committeeName={committee.name} accent={accent} onClose={() => setShowSchedule(false)} onScheduled={handleSchedule} />
+      )}
+      {showMeeting && (
+        <NewMeetingModal
+          accent={accent}
+          presetCommittee={{ id: committee.id, name: committee.name }}
+          onClose={() => setShowMeeting(false)}
+          onCreated={() => setShowMeeting(false)}
+        />
       )}
       {showPromotePicker && (
         <PromoteMemberModal

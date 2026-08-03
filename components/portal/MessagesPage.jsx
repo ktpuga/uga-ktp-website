@@ -25,7 +25,6 @@ import ReportButton from './ReportButton';
 import AudienceSelect from './AudienceSelect';
 import BlockButton from './BlockButton';
 import ProfileActionsMenu from './ProfileActionsMenu';
-import LegacyMessagesPage from './LegacyMessagesPage';
 
 const ACCENT_THEMES = {
   blue: { base: '#1e3a8a', gradient: 'linear-gradient(135deg, #1e3a8a 0%, #1d4ed8 100%)', light: '#1d4ed8', muted: 'rgba(30,58,138,0.10)' },
@@ -1653,12 +1652,13 @@ function RevampedMessagesContent({ accentKey }) {
   );
 }
 
-const REVAMPED_KEYS = new Set(['blue', 'red', 'amber', 'teal']);
-
+// Every portal passes blue, amber or red, so the pre-revamp variant this used
+// to fall back to was unreachable and has been deleted. An unrecognised accent
+// now renders the revamped UI with the blue palette (see the ACCENT_THEMES
+// lookup above), which is a better failure than a second copy of the whole UI
+// that nobody maintains — two copies is what let the CircleCheck/BlockButton
+// fix keep disappearing from one of them.
 export default function MessagesPage({ accent }) {
-  if (!REVAMPED_KEYS.has(accent)) {
-    return <LegacyMessagesPage />;
-  }
   return (
     <Suspense fallback={<p className="py-10 text-center text-sm text-muted-foreground">Loading...</p>}>
       <RevampedMessagesContent accentKey={accent} />

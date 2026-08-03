@@ -19,7 +19,6 @@ import VisibilityControl from '@/components/portal/VisibilityControl';
 import { useConfirm } from '@/components/ui/confirm-dialog';
 import PhotoMedia from './PhotoMedia';
 import ReportButton from './ReportButton';
-import LegacyPhotoFiles from './LegacyPhotoFiles';
 
 const ACCENT_THEMES = {
   blue: { base: '#1e3a8a', gradient: 'linear-gradient(135deg, #1e3a8a 0%, #1d4ed8 100%)', light: '#1d4ed8', muted: 'rgba(30,58,138,0.10)' },
@@ -1328,11 +1327,12 @@ function RevampedPhotoFiles({ title, description, accentKey }) {
   );
 }
 
-const REVAMPED_KEYS = new Set(['blue', 'red', 'amber', 'teal']);
-
+// Every portal passes blue, amber or red, so the pre-revamp variant this used
+// to fall back to was unreachable and has been deleted. An unrecognised accent
+// now renders the revamped UI with the blue palette (see the ACCENT_THEMES
+// lookup above), which is a better failure than a second copy of the whole UI
+// that nobody maintains — two copies is what let the CircleCheck/BlockButton
+// fix keep disappearing from one of them.
 export default function PhotoFiles({ title, description, accent }) {
-  if (!REVAMPED_KEYS.has(accent)) {
-    return <LegacyPhotoFiles title={title} description={description} />;
-  }
   return <RevampedPhotoFiles title={title} description={description} accentKey={accent} />;
 }
