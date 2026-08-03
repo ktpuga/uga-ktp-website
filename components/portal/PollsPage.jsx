@@ -31,13 +31,12 @@ import {
 } from '@/lib/portal-api';
 import { memberDisplayName } from '@/lib/portal-format';
 import { isRedirectError } from '@/lib/is-redirect-error';
+import { PALETTES } from '@/components/portal/PortalAccentContext';
 
-const ACCENT_THEMES = {
-  blue: { base: '#1e3a8a', gradient: 'linear-gradient(135deg, #1e3a8a 0%, #1d4ed8 100%)', light: '#1d4ed8', muted: 'rgba(30,58,138,0.10)' },
-  red: { base: '#7f1d1d', gradient: 'linear-gradient(135deg, #7f1d1d 0%, #991b1b 100%)', light: '#991b1b', muted: 'rgba(127,29,29,0.10)' },
-  amber: { base: '#b45309', gradient: 'linear-gradient(135deg, #b45309 0%, #d97706 100%)', light: '#d97706', muted: 'rgba(180,83,9,0.10)' },
-  teal: { base: '#134e4a', gradient: 'linear-gradient(135deg, #134e4a 0%, #0f766e 100%)', light: '#0f766e', muted: 'rgba(19,78,74,0.10)' },
-};
+// Palette comes from PortalAccentContext, the single source of truth. Each of
+// these files used to carry its own ACCENT_THEMES copy; they had already
+// drifted (MemberDirectory was missing 'red' entirely, and every copy still
+// had a real teal that nothing rendered — pledge passes 'blue').
 
 const DEFAULT_AUDIENCE = ['active', 'alumni', 'pledge', 'eboard'];
 
@@ -689,7 +688,7 @@ function TabBar({ active, onChange, accent }) {
 // ─── Main revamped page ───
 
 function RevampedPollsPage({ accentKey }) {
-  const accent = ACCENT_THEMES[accentKey] ?? ACCENT_THEMES.blue;
+  const accent = PALETTES[accentKey] ?? PALETTES.blue;
   const { data: session } = useSession();
   const isEboard = session?.user?.groups?.includes('eboard') ?? false;
 
@@ -826,7 +825,7 @@ function RevampedPollsPage({ accentKey }) {
 
 // Every portal passes blue, amber or red, so the pre-revamp variant this used
 // to fall back to was unreachable and has been deleted. An unrecognised accent
-// now renders the revamped UI with the blue palette (see the ACCENT_THEMES
+// now renders the revamped UI with the blue palette (see the PALETTES
 // lookup above), which is a better failure than a second copy of the whole UI
 // that nobody maintains — two copies is what let the CircleCheck/BlockButton
 // fix keep disappearing from one of them.

@@ -17,29 +17,51 @@ Most of what's in here is shared by **all four portals** — `/member`, `/admin`
 
 ## Theming: the `accent` prop
 
-Shared portal components take an `accent` (sometimes `theme`) prop and look up their colors from a local `ACCENT_THEMES` map:
+Shared portal components take an `accent` (sometimes `theme`) prop and look up
+their colours from **`PALETTES` in `portal/PortalAccentContext.jsx`** — the one
+definition, imported everywhere.
 
-| Value | Portal |
-|---|---|
-| `blue` | Member |
-| `red` | Admin |
-| `amber` | Alumni |
-| `teal` | Pledge |
+| Value | Portal | Renders |
+|---|---|---|
+| `blue` | Member | blue |
+| `red` | Admin | red (or blue, per the admin's own toggle) |
+| `amber` | Alumni | amber |
+| `teal` | Pledge | blue |
+| `violet` | Rush | blue |
 
-Two things to know before touching this:
+`teal` and `violet` are aliases of `blue` — Pledge and Rush have rendered the
+same blue as Member since the colour unification. They survive as distinct keys
+only for historical reasons; either could now pass `'blue'` directly.
 
-**Several of these components have no default accent value.** Omitting the prop doesn't throw — it silently renders the older, unstyled variant. If a page looks unexpectedly plain, check that its `page.jsx` wrapper actually passes an accent before assuming the component is broken.
+**This used to be seven copies.** Every shared component carried its own
+`ACCENT_THEMES` map, and they had already drifted: `MemberDirectory` was missing
+`red` entirely (harmless only because no admin page renders it), and all seven
+still defined a real teal that nothing has rendered since Pledge started passing
+`'blue'`. If you need a new colour, add it to `PALETTES` and nowhere else.
 
-**Adding a new accent requires editing `PortalShell.jsx` in two places** — `REVAMPED_ACCENTS` *and* `NAV_GROUPING`. `REVAMPED_ACCENTS` alone is what switches a portal onto the styled sidebar; if `NAV_GROUPING` has no matching key, the sidebar then renders with zero nav items. That's an empty sidebar, not a graceful fallback.
+**Several components have no default accent.** Omitting the prop doesn't throw —
+the lookup falls back to blue via `PALETTES[key] ?? PALETTES.blue`. If a page
+looks unexpectedly plain, check its `page.jsx` wrapper actually passes an accent.
 
 ## Adding a nav item
 
-Also two edits, for the same reason:
+**One edit:** the `NAV` array in that portal's `app/<portal>/layout.jsx`. It is
+grouped, and the sidebar renders exactly what's there, in that order:
 
-1. The `NAV` array in that portal's `app/<portal>/layout.jsx`
-2. `NAV_GROUPING` in `portal/PortalShell.jsx`
+```js
+const NAV = [
+  { heading: 'Main', items: [{ href: '/member', label: 'Dashboard', icon: LayoutDashboard }] },
+];
+```
 
-The sidebar only renders hrefs listed in `NAV_GROUPING`. Miss step 2 and the item never appears, even though the route and layout are both correct.
+This used to be two edits — the layout's flat array *and* a matching
+`NAV_GROUPING` entry in `PortalShell.jsx` keyed by `accent`. An href in one and
+not the other silently vanished from the sidebar, and an accent with no
+`NAV_GROUPING` key rendered an **empty** sidebar rather than failing. Both lists
+are now one, so neither failure mode exists.
+
+`accent` no longer selects nav structure or the portal's home href (that's the
+`homeHref` prop), so it means only "which palette".
 
 ## Profile pictures
 

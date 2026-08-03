@@ -34,10 +34,9 @@ const ACCENTS = {
     header: 'from-red-900/5',
     active: 'bg-red-50 text-red-900 dark:bg-[#22252b] dark:text-red-100',
   },
-  // teal and violet are the Pledge and Rush portals. They deliberately render
-  // the SAME blue as Member — the key stays distinct only because `accent` is
-  // also the NAV_GROUPING lookup, and repointing it at 'blue' would make those
-  // portals look up /member/* hrefs and render an empty sidebar.
+  // teal and violet are the Pledge and Rush portals, rendering the SAME blue as
+  // Member. They only still exist as separate keys for backwards compatibility;
+  // now that nav and homeHref are props, either could simply pass 'blue'.
   teal: {
     title: 'text-blue-900 dark:text-blue-100',
     header: 'from-blue-950/5',
@@ -50,8 +49,8 @@ const ACCENTS = {
   },
 };
 
-// Any accent with an entry here renders the revamped sidebar. It must have a
-// matching NAV_GROUPING key below, or the sidebar renders with zero nav items.
+// Any accent with an entry here renders the revamped sidebar. It no longer has
+// to match a nav lookup — nav structure comes from the layout via props.
 const REVAMPED_ACCENTS = {
   blue: {
     gradient: 'linear-gradient(135deg, #1e3a8a 0%, #1d4ed8 100%)',
@@ -87,48 +86,14 @@ const REVAMPED_ACCENTS = {
 // settings — a cosmetic choice isn't worth a round trip or a users column.
 const ADMIN_ACCENT_KEY = 'ktp-admin-accent';
 
-// violet is /rushee, not /rush — /rush is the public rush marketing page.
-const PORTAL_ROOT = { blue: '/member', red: '/admin', amber: '/alumni', teal: '/pledge', violet: '/rushee' };
-
-// Groups the flat `nav` prop (owned by each portal's layout.jsx, unchanged)
-// into labelled sections for the revamped sidebar, by href. Keep in sync if
-// a portal's NAV array in its layout.jsx changes.
-const NAV_GROUPING = {
-  blue: [
-    { heading: 'Main', hrefs: ['/member', '/member/calendar'] },
-    { heading: 'Community', hrefs: ['/member/directory', '/member/meetings', '/member/committees', '/member/polls', '/member/attendance'] },
-    { heading: 'Resources', hrefs: ['/member/files', '/member/messages'] },
-    { heading: 'Account', hrefs: ['/member/settings'] },
-  ],
-  red: [
-    { heading: 'Overview', hrefs: ['/admin'] },
-    { heading: 'Engagement', hrefs: ['/admin/announcements', '/admin/rush-announcements', '/admin/calendar', '/admin/committees', '/admin/polls', '/admin/attendance', '/admin/meetings', '/admin/messages'] },
-    { heading: 'Moderation', hrefs: ['/admin/reports', '/admin/users', '/admin/rush-signup'] },
-    { heading: 'Content', hrefs: ['/admin/files', '/admin/homepage-photos', '/admin/ios-homepage-slideshow'] },
-    { heading: 'Account', hrefs: ['/admin/settings'] },
-  ],
-  amber: [
-    { heading: 'Main', hrefs: ['/alumni', '/alumni/calendar'] },
-    { heading: 'Community', hrefs: ['/alumni/directory', '/alumni/meetings', '/alumni/committees', '/alumni/polls'] },
-    { heading: 'Resources', hrefs: ['/alumni/files', '/alumni/messages'] },
-    { heading: 'Account', hrefs: ['/alumni/settings'] },
-  ],
-  teal: [
-    { heading: 'Main', hrefs: ['/pledge', '/pledge/calendar'] },
-    { heading: 'Community', hrefs: ['/pledge/directory', '/pledge/meetings', '/pledge/polls'] },
-    { heading: 'Resources', hrefs: ['/pledge/files', '/pledge/messages'] },
-    { heading: 'Account', hrefs: ['/pledge/settings'] },
-  ],
-  // Rush is intentionally the smallest portal. No Directory, no Files, no
-  // Committees — those are all gated on SHARED_ALBUM_GROUPS server-side and
-  // would 403 anyway, so listing them would only advertise doors that don't
-  // open.
-  violet: [
-    { heading: 'Rush', hrefs: ['/rushee', '/rushee/announcements', '/rushee/calendar'] },
-    { heading: 'Take Part', hrefs: ['/rushee/polls', '/rushee/meetings', '/rushee/messages'] },
-    { heading: 'Account', hrefs: ['/rushee/settings'] },
-  ],
-};
+// Nav grouping and the portal's home href both used to be looked up HERE, keyed
+// by `accent`. That made `accent` do three jobs at once — palette, nav
+// structure, and portal root path — so it could never be changed, and a portal
+// whose accent had no NAV_GROUPING entry rendered an EMPTY sidebar rather than
+// failing. Both now come from the layout that owns them, via the `nav` and
+// `homeHref` props, so there is nothing left to keep in sync across files.
+//
+// `nav` shape: [{ heading, items: [{ href, label, icon }] }]
 
 // "rush" last, matching ktp-api's constants/roleGroups.js — someone accepted
 // out of rush keeps that group until it's removed, so a higher-privilege group
@@ -273,18 +238,25 @@ export default function PortalShell({
   portalName,
   accent = 'blue',
   nav,
+  // Where the sidebar logo links. Was PORTAL_ROOT[accent]; now the layout says
+  // so outright, which is the only place that actually knows.
+  homeHref,
   children,
   responsive = true,
 }) {
   const pathname = usePathname();
+
+  // `nav` is grouped. The mobile drawers render one flat list, so they read
+  // this instead of each re-flattening it.
+  const flatNav = (nav ?? []).flatMap((group) => group.items ?? []);
 
   // Admin only: 'red' (default) or 'blue'. Read after mount rather than during
   // render — localStorage doesn't exist on the server, and reading it in the
   // initial render would make the server and client HTML disagree.
   const [adminAccent, setAdminAccent] = useState('red');
   const isAdminPortal = accent === 'red';
-  // The colour key, which is NOT the same as `accent`. `accent` stays fixed
-  // because NAV_GROUPING is keyed by it; only the palette swaps.
+  // The colour key, which is NOT the same as `accent`: the admin toggle swaps
+  // the palette while `accent` stays 'red', so `isAdminPortal` keeps working.
   const colorKey = isAdminPortal ? adminAccent : accent;
 
   const styles = ACCENTS[colorKey] ?? ACCENTS.blue;
@@ -340,12 +312,9 @@ export default function PortalShell({
     const resolvedGroup = GROUP_PRIORITY.find((g) => user.groups?.includes(g));
     const profileRole = accent === 'red' ? 'Chapter Administrator' : formatMemberGroup(resolvedGroup);
 
-    const groups = (NAV_GROUPING[accent] ?? []).map((group) => ({
-      heading: group.heading,
-      items: group.hrefs
-        .map((href) => nav.find((item) => item.href === href))
-        .filter(Boolean),
-    })).filter((group) => group.items.length > 0);
+    // The layout already owns the grouping, so this is now just a guard against
+    // an empty section rather than an href-by-href reconciliation of two lists.
+    const groups = nav.filter((group) => group.items?.length > 0);
 
     return (
       <PortalThemeProvider>
@@ -367,7 +336,7 @@ export default function PortalShell({
             />
 
             <div className={cn('relative flex h-[70px] shrink-0 items-center', collapsed ? 'justify-center px-0' : 'px-4')}>
-              <Link href={PORTAL_ROOT[accent] ?? '/member'} className="flex shrink-0 items-center" title={collapsed ? portalName : undefined}>
+              <Link href={homeHref} className="flex shrink-0 items-center" title={collapsed ? portalName : undefined}>
                 <Image src="/KTP PHI CHAPTER.svg" alt="KTP" width={36} height={36} className="h-8 w-auto" />
               </Link>
               <div className={cn('ml-3 overflow-hidden transition-all duration-300', collapsed ? 'w-0 opacity-0' : 'w-40 opacity-100')}>
@@ -507,7 +476,7 @@ export default function PortalShell({
           {/* Mobile header + dropdown — same interaction as the plain variant, simplified styling */}
           <div className="flex min-w-0 flex-1 flex-col">
             <div className={cn('sticky top-0 z-30 flex h-14 items-center justify-between gap-3 border-b border-border bg-card px-4 md:hidden')}>
-              <Link href={PORTAL_ROOT[accent] ?? '/member'} className="flex items-center gap-2">
+              <Link href={homeHref} className="flex items-center gap-2">
                 <Image src="/KTP PHI CHAPTER.svg" alt="KTP" width={28} height={28} className="h-7 w-auto" />
                 <span className="text-sm font-semibold text-foreground">{portalName}</span>
               </Link>
@@ -527,7 +496,7 @@ export default function PortalShell({
 
             {mobileNavOpen && (
               <nav className="flex flex-col gap-1 border-b border-border bg-card px-2 py-2 md:hidden">
-                {nav.map(({ href, label, icon: Icon }) => {
+                {flatNav.map(({ href, label, icon: Icon }) => {
                   const active = pathname === href;
                   const showBadge = href.endsWith('/messages') && unreadTotal > 0;
                   return (
@@ -640,7 +609,7 @@ export default function PortalShell({
 
         {responsive && mobileNavOpen && (
           <nav className="flex flex-col gap-1 border-b border-slate-200 bg-white px-2 py-2 md:hidden dark:border-border dark:bg-card">
-            {nav.map(({ href, label, icon: Icon }) => {
+            {flatNav.map(({ href, label, icon: Icon }) => {
               const active = pathname === href;
               const showBadge = href.endsWith('/messages') && unreadTotal > 0;
               return (
@@ -675,7 +644,7 @@ export default function PortalShell({
               : `flex flex-1 flex-col space-y-1 py-4 ${collapsed ? 'px-2' : 'px-3'}`
           }
         >
-          {nav.map(({ href, label, icon: Icon }) => {
+          {flatNav.map(({ href, label, icon: Icon }) => {
             const active = pathname === href;
             const showBadge = href.endsWith('/messages') && unreadTotal > 0;
             return (

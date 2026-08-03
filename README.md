@@ -181,8 +181,8 @@ Nearly everything under `components/portal/` is one component rendered by all fo
 
 Two conventions that will silently break a portal if missed:
 
-1. **Adding a nav item takes two edits** — the portal's own `NAV` array in `app/<portal>/layout.jsx`, *and* `NAV_GROUPING` in `components/portal/PortalShell.jsx`. The sidebar only renders hrefs present in `NAV_GROUPING`; miss the second edit and the item silently doesn't appear even though the route works.
-2. **Adding a new accent takes two edits too** — `REVAMPED_ACCENTS` *and* `NAV_GROUPING` in `PortalShell.jsx`. `REVAMPED_ACCENTS` alone flips the portal onto the styled sidebar, and a missing `NAV_GROUPING` key then renders a completely empty sidebar rather than falling back.
+1. **Adding a nav item is one edit** — the grouped `NAV` array in `app/<portal>/layout.jsx`. The sidebar renders exactly that, in that order. This used to take two edits (the layout array *and* `NAV_GROUPING` in `PortalShell.jsx`) with an href in only one silently disappearing; that second list is gone.
+2. **Adding a colour is one edit** — `PALETTES` in `components/portal/PortalAccentContext.jsx`, the single definition that every shared component imports. (`REVAMPED_ACCENTS` in `PortalShell.jsx` still controls sidebar styling, but a missing key there now falls back to blue instead of emptying the sidebar.)
 
 Also note that several components take an `accent` prop with **no default value**. Omitting it doesn't error — it quietly renders the older unstyled variant. If a page looks unexpectedly plain, check that its wrapper passes an accent.
 

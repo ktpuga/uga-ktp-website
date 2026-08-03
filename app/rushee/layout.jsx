@@ -16,21 +16,37 @@ import PortalShell from '@/components/portal/PortalShell';
 // it renders empty for a rushee. They check in by scanning a QR, which opens
 // /checkin/[eventId]/[token] outside the portal.
 //
-// This array must stay in sync with NAV_GROUPING.violet in PortalShell.jsx —
-// an href in one and not the other silently disappears from the sidebar.
+// This used to carry a warning that it "must stay in sync with
+// NAV_GROUPING.violet in PortalShell.jsx". There is no longer a second list to
+// sync with — the sidebar renders exactly what is below.
 const NAV = [
-  { href: '/rushee', label: 'Dashboard', icon: LayoutDashboard },
-  { href: '/rushee/announcements', label: 'Announcements', icon: Megaphone },
-  { href: '/rushee/calendar', label: 'Calendar', icon: Calendar },
-  { href: '/rushee/polls', label: 'Polls', icon: Vote },
-  { href: '/rushee/meetings', label: 'Meetings', icon: CalendarClock },
-  { href: '/rushee/messages', label: 'Messages', icon: MessageSquare },
-  { href: '/rushee/settings', label: 'Settings', icon: Settings },
+  {
+    heading: 'Rush',
+    items: [
+      { href: '/rushee', label: 'Dashboard', icon: LayoutDashboard },
+      { href: '/rushee/announcements', label: 'Announcements', icon: Megaphone },
+      { href: '/rushee/calendar', label: 'Calendar', icon: Calendar },
+    ],
+  },
+  {
+    heading: 'Take Part',
+    items: [
+      { href: '/rushee/polls', label: 'Polls', icon: Vote },
+      { href: '/rushee/meetings', label: 'Meetings', icon: CalendarClock },
+      { href: '/rushee/messages', label: 'Messages', icon: MessageSquare },
+    ],
+  },
+  {
+    heading: 'Account',
+    items: [{ href: '/rushee/settings', label: 'Settings', icon: Settings }],
+  },
 ];
 
+// accent="violet" renders the same blue as Member and always has. See the note
+// in app/pledge/layout.jsx — this can now safely become 'blue'.
 export default function RusheeLayout({ children }) {
   return (
-    <PortalShell portalName="Rush Portal" accent="violet" nav={NAV}>
+    <PortalShell portalName="Rush Portal" accent="violet" homeHref="/rushee" nav={NAV}>
       {children}
     </PortalShell>
   );
