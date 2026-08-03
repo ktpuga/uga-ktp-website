@@ -13,7 +13,7 @@ export const RUSH_EVENTS = [
   {
     id: 'info-2',
     title: 'Info Session #2',
-    date: 'September 7, 2026',
+    date: 'September 2, 2026',
     time: '7:00-8:00 PM',
     location: 'Boyd 328',
     description: `Learn more about KTP and connect with members!`,
@@ -21,7 +21,7 @@ export const RUSH_EVENTS = [
   {
     id: 'info-3',
     title: 'Info Session #3',
-    date: 'September 14, 2026',
+    date: 'September 4, 2026',
     time: '7:00-8:00 PM',
     location: 'Boyd 328',
     description: `Get to know KTP better and interact with current members!`,
