@@ -17,7 +17,7 @@ import {
   addGroupChatMember, removeGroupChatMember, getCommittees, getCommitteeMembers,
   getMessageableMembers,
 } from '@/lib/portal-api';
-import { memberDisplayName, memberInitials, formatMemberGroup, formatMessageTime, groupMatches } from '@/lib/portal-format';
+import { memberDisplayName, memberInitials, formatMemberGroup, formatMessageTime, groupMatches, MEMBER_GROUP_ORDER } from '@/lib/portal-format';
 import { isRedirectError } from '@/lib/is-redirect-error';
 import { useConfirm } from '@/components/ui/confirm-dialog';
 import { useUnreadCounts } from '@/lib/use-unread-counts';
@@ -1149,6 +1149,28 @@ function GroupChatInfoModal({ chat, members, messages, isEboard, accent, onAddMe
   const photoRef = useRef(null);
   const attachments = useMemo(() => messages.filter((m) => m.attachment), [messages]);
 
+  // Members arrive in whatever order the SQL returned, which put eboard,
+  // pledges and alumni next to each other with no structure. Grouped by member
+  // group in the same order and with the same section styling as the directory,
+  // so the two lists read the same way. Empty groups are dropped rather than
+  // rendering a heading with nothing under it.
+  const groupedMembers = useMemo(() => {
+    const buckets = new Map(MEMBER_GROUP_ORDER.map((g) => [g, []]));
+    for (const m of members) {
+      const raw = m.memberGroup ?? m.member_group;
+      // Unknown groups fall back to 'active' rather than vanishing — the same
+      // trade-off the directory makes, and for the same reason: a mislabelled
+      // member is easier to notice and fix than a missing one.
+      buckets.get(MEMBER_GROUP_ORDER.includes(raw) ? raw : 'active').push(m);
+    }
+    for (const rows of buckets.values()) {
+      rows.sort((a, b) => memberDisplayName(a).localeCompare(memberDisplayName(b)));
+    }
+    return [...buckets.entries()]
+      .filter(([, rows]) => rows.length > 0)
+      .map(([group, rows]) => ({ group, rows }));
+  }, [members]);
+
   async function handlePhotoSelected(e) {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -1226,7 +1248,20 @@ function GroupChatInfoModal({ chat, members, messages, isEboard, accent, onAddMe
         <div className="max-h-80 overflow-y-auto">
           {tab === 'members' && (
             <div>
-              {members.map((m) => (
+              {groupedMembers.map(({ group, rows }) => (
+                <div key={group}>
+                  {/* Same section treatment as the directory: coloured dot,
+                      uppercase label, count. The per-row GroupBadge is gone —
+                      with a heading above them it just repeated itself on
+                      every line. */}
+                  <div className="flex items-center gap-2 border-b border-border bg-muted/30 px-4 py-1.5">
+                    <span className="h-1.5 w-1.5 rounded-full" style={{ background: GROUP_COLOR[group] ?? 'var(--color-muted-foreground)' }} />
+                    <span className="text-[10px] font-semibold uppercase tracking-[0.18em]" style={{ color: GROUP_COLOR[group] ?? 'var(--color-muted-foreground)' }}>
+                      {formatMemberGroup(group)}
+                    </span>
+                    <span className="text-[10px] text-muted-foreground">{rows.length}</span>
+                  </div>
+                  {rows.map((m) => (
                 <div key={m.authentik_id} className="flex items-center gap-3 border-b border-border px-4 py-2.5 last:border-b-0">
                   <ProfileActionsMenu userId={m.authentik_id}>
                     <div className="flex min-w-0 items-center gap-2.5">
@@ -1236,7 +1271,6 @@ function GroupChatInfoModal({ chat, members, messages, isEboard, accent, onAddMe
                       </div>
                     </div>
                   </ProfileActionsMenu>
-                  <GroupBadge group={m.memberGroup ?? m.member_group} />
                   {/* is_auto means they're here through the chat's group or
                       committee, not as an individual. Removing them would
                       delete no row and they'd stay in the chat, so offer the
@@ -1252,6 +1286,8 @@ function GroupChatInfoModal({ chat, members, messages, isEboard, accent, onAddMe
                     <button type="button" onClick={() => onRemoveMember(m.authentik_id)} className="ml-1 shrink-0 rounded-md p-1 text-muted-foreground hover:bg-destructive/10 hover:text-destructive" aria-label={`Remove ${memberDisplayName(m)}`}>
                       <UserMinus size={12} />
                     </button>
+                  ))}
+                </div>
                   ))}
                 </div>
               ))}

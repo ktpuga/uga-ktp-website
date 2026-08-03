@@ -16,6 +16,7 @@ import {
   memberInitials,
   formatMemberGroup,
   formatGraduationDate,
+  MEMBER_GROUP_ORDER,
 } from '@/lib/portal-format';
 import { isRedirectError } from '@/lib/is-redirect-error';
 import ReportButton from './ReportButton';
@@ -31,7 +32,9 @@ import { PALETTES } from '@/components/portal/PortalAccentContext';
 // Rush sits last: rushees aren't members, and the section only appears for
 // eboard/chair/active anyway — the API omits those rows entirely for everyone
 // else, so this order is what a permitted viewer sees, not a permission check.
-const GROUP_ORDER = ['eboard', 'chair', 'active', 'pledge', 'alumni', 'rush'];
+// Canonical list lives in lib/portal-format.js so the directory and the group
+// chat member list can't drift apart. See MEMBER_GROUP_ORDER there.
+const GROUP_ORDER = MEMBER_GROUP_ORDER;
 
 const GROUP_COLOR = {
   eboard: '#7f1d1d',
