@@ -1,6 +1,6 @@
 'use client';
 
-import { LayoutDashboard, Calendar, FolderOpen, Users, Settings, MessageSquare, Vote, CalendarClock, UserSearch } from 'lucide-react';
+import { LayoutDashboard, Megaphone, Calendar, FolderOpen, Users, Settings, MessageSquare, Vote, CalendarClock, UserSearch } from 'lucide-react';
 import PortalShell from '@/components/portal/PortalShell';
 import { useRushCount } from '@/lib/use-rush-count';
 
@@ -15,6 +15,7 @@ function buildNav(hasRushees) {
     heading: 'Main',
     items: [
       { href: '/pledge', label: 'Dashboard', icon: LayoutDashboard },
+      { href: '/pledge/announcements', label: 'Announcements', icon: Megaphone },
       { href: '/pledge/calendar', label: 'Calendar', icon: Calendar },
     ],
   },

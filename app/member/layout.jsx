@@ -1,6 +1,6 @@
 'use client';
 
-import { LayoutDashboard, Calendar, FolderOpen, Users, Settings, MessageSquare, UsersRound, Vote, QrCode, CalendarClock, UserSearch } from 'lucide-react';
+import { LayoutDashboard, Megaphone, Calendar, FolderOpen, Users, Settings, MessageSquare, UsersRound, Vote, QrCode, CalendarClock, UserSearch } from 'lucide-react';
 import { useSession } from 'next-auth/react';
 import PortalShell from '@/components/portal/PortalShell';
 import { useRushCount } from '@/lib/use-rush-count';
@@ -17,6 +17,7 @@ function buildNav(isChair, hasRushees) {
       heading: 'Main',
       items: [
         { href: '/member', label: 'Dashboard', icon: LayoutDashboard },
+        { href: '/member/announcements', label: 'Announcements', icon: Megaphone },
         { href: '/member/calendar', label: 'Calendar', icon: Calendar },
       ],
     },

@@ -9,6 +9,7 @@ export default function MemberDashboard() {
       memberGroupLabel="Active Members"
       calendarHref="/member/calendar"
       filesHref="/member/files"
+      announcementsHref="/member/announcements"
       theme="blue"
     />
   );

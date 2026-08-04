@@ -229,7 +229,7 @@ function RevampedEventsCard({ accent, loading, nextEvents, upcomingCount, calend
   );
 }
 
-function RevampedAnnouncementsCard({ accent, loading, announcements }) {
+function RevampedAnnouncementsCard({ accent, loading, announcements, announcementsHref }) {
   return (
     <div className="flex h-full flex-col overflow-hidden rounded-xl border border-border bg-card">
       <div className="flex items-center justify-between border-b border-border px-6 py-4">
@@ -237,6 +237,13 @@ function RevampedAnnouncementsCard({ accent, loading, announcements }) {
           <div aria-hidden="true" className="h-4 w-0.5 rounded-full" style={{ background: accent.base }} />
           <h2 className="flex items-center gap-1.5 text-sm font-semibold tracking-tight"><Bell className="h-3.5 w-3.5" /> Announcements</h2>
         </div>
+        {/* This card is a preview — bodies are clamped so four fit. The full
+            text lives on the Announcements tab, which is why that tab exists. */}
+        {announcementsHref && (
+          <Link href={announcementsHref} className="flex items-center gap-1 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground">
+            View all
+          </Link>
+        )}
       </div>
 
       {loading ? (
@@ -259,7 +266,7 @@ function RevampedAnnouncementsCard({ accent, loading, announcements }) {
                 >
                   {isCommittee ? 'Committee' : formatAudience(a.audience)}
                 </span>
-                <p className="line-clamp-2 text-xs leading-relaxed text-muted-foreground">{a.body}</p>
+                <p className="line-clamp-4 break-words text-xs leading-relaxed text-muted-foreground">{a.body}</p>
               </li>
             );
           })}
@@ -304,6 +311,7 @@ export default function PortalDashboard({
   memberGroupLabel,
   calendarHref,
   filesHref,
+  announcementsHref,
   theme = 'blue',
 }) {
   const [events, setEvents] = useState([]);
@@ -387,7 +395,7 @@ export default function PortalDashboard({
             <RevampedEventsCard accent={accentTheme} loading={loading} nextEvents={nextEvents} upcomingCount={upcomingCount} calendarHref={calendarHref} />
           </div>
           <div className="lg:col-span-2">
-            <RevampedAnnouncementsCard accent={accentTheme} loading={loading} announcements={announcements} />
+            <RevampedAnnouncementsCard accent={accentTheme} loading={loading} announcements={announcements} announcementsHref={announcementsHref} />
           </div>
         </div>
 

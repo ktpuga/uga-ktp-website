@@ -9,6 +9,7 @@ export default function AlumniDashboard() {
       memberGroupLabel="Members"
       calendarHref="/alumni/calendar"
       filesHref="/alumni/files"
+      announcementsHref="/alumni/announcements"
       theme="amber"
     />
   );
