@@ -96,6 +96,12 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     async jwt({ token, profile, account, trigger, session }) {
       // First sign-in: profile and account are present
       if (profile && account) {
+        // A completed sign-in means there is no error, whatever a previous
+        // token said. This matters now that /login auto-starts SSO: proxy.ts
+        // sends any errored session to /login, so an `error` surviving a fresh
+        // sign-in would be an infinite /login -> Authentik -> /login loop
+        // rather than the single visible failure it used to be.
+        token.error = undefined
         token.sub = profile.sub as string
         token.groups = (profile.groups as string[]) ?? []
         token.access_token = account.access_token
