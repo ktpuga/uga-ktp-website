@@ -72,7 +72,7 @@ export default function RushAnnouncements({ accent = 'violet', title = 'Announce
           <div className="flex h-10 w-10 items-center justify-center rounded-xl" style={{ background: tint(theme.base, 0.1) }}>
             <Megaphone size={18} style={{ color: theme.light }} />
           </div>
-          <p className="text-sm text-muted-foreground">Nothing posted yet — check back once rush kicks off.</p>
+          <p className="text-sm text-muted-foreground">Nothing posted yet, check back once rush kicks off.</p>
         </div>
       ) : (
         <div className="space-y-4">

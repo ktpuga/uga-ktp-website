@@ -6,6 +6,7 @@ import { cn } from '@/lib/utils';
 import {
   ChevronLeft, Plus, Trash2, Download, X, Search, ImageIcon, FileText, FileIcon,
   Link2, ExternalLink, FolderIcon, FolderOpen, Upload, Film, ChevronRight, AlertCircle, Lock,
+  AlertTriangle, Loader2,
 } from 'lucide-react';
 import {
   getPhotos, getAlbums, getGeneralAlbumStats, createAlbum, deleteAlbum, uploadPhoto, deletePhoto,
@@ -118,21 +119,55 @@ function ModalHeader({ accent, title, icon, onClose }) {
   );
 }
 
-function ModalFooter({ accent, onClose, onConfirm, confirmLabel, disabled }) {
+function ModalFooter({ accent, onClose, onConfirm, confirmLabel, disabled, busy }) {
   return (
     <div className="flex items-center justify-end gap-2 border-t border-border px-5 py-4">
-      <button type="button" onClick={onClose} className="rounded-lg border border-border px-4 py-2 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground">Cancel</button>
+      <button type="button" onClick={onClose} disabled={busy} className="rounded-lg border border-border px-4 py-2 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-40">Cancel</button>
       <button
         type="button"
         onClick={onConfirm}
-        disabled={disabled}
-        className="rounded-lg px-4 py-2 text-sm font-semibold text-white transition-opacity disabled:opacity-40"
+        disabled={disabled || busy}
+        className="flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold text-white transition-opacity disabled:opacity-40"
         style={{ background: accent.gradient }}
       >
+        {busy && <Loader2 size={13} className="animate-spin" />}
         {confirmLabel}
       </button>
     </div>
   );
+}
+
+// Inline error for the create modals. They used to hand an async onCreate
+// straight to onClick, so a rejected request was an unhandled rejection and the
+// modal just sat there — the failure looked like a dead button.
+function ModalError({ message }) {
+  if (!message) return null;
+  return (
+    <p className="flex items-start gap-1.5 text-xs text-destructive">
+      <AlertTriangle size={12} className="mt-0.5 shrink-0" /> {message}
+    </p>
+  );
+}
+
+// Wraps an async submit so every create modal reports failure the same way.
+function useModalSubmit(onSubmit) {
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+
+  async function submit(...args) {
+    setBusy(true);
+    setError('');
+    try {
+      await onSubmit(...args);
+    } catch (err) {
+      if (isRedirectError(err)) throw err;
+      setError(err.message ?? 'Something went wrong. Please try again.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return { busy, error, submit };
 }
 
 function FormField({ label, children }) {
@@ -457,6 +492,7 @@ function NewAlbumModal({ accent, onClose, onCreate }) {
   // Defaults to unrestricted, matching how every album behaved before
   // visibility existed. Restricting has to be a deliberate act.
   const [visibility, setVisibility] = useState({ inherit: false, audience: [], committeeIds: [] });
+  const { busy, error, submit } = useModalSubmit(onCreate);
   return (
     <ModalWrapper onClose={onClose} label="New album">
       <ModalHeader accent={accent} title="New Album" icon={<ImageIcon size={14} strokeWidth={1.75} />} onClose={onClose} />
@@ -477,13 +513,15 @@ function NewAlbumModal({ accent, onClose, onCreate }) {
         <FormField label="Who can see this">
           <VisibilityControl value={visibility} onChange={setVisibility} />
         </FormField>
+        <ModalError message={error} />
       </div>
       <ModalFooter
         accent={accent}
         onClose={onClose}
-        onConfirm={() => onCreate(name.trim(), desc.trim(), visibility)}
+        onConfirm={() => submit(name.trim(), desc.trim(), visibility)}
         confirmLabel="Create Album"
         disabled={!name.trim()}
+        busy={busy}
       />
     </ModalWrapper>
   );
@@ -914,6 +952,7 @@ function AlbumsTab({ accent, isEboard, currentUserId }) {
 function NewFolderModal({ accent, onClose, onCreate }) {
   const [name, setName] = useState('');
   const [visibility, setVisibility] = useState({ inherit: false, audience: [], committeeIds: [] });
+  const { busy, error, submit } = useModalSubmit(onCreate);
   return (
     <ModalWrapper onClose={onClose} label="New folder">
       <ModalHeader accent={accent} title="New Folder" icon={<FolderIcon size={14} strokeWidth={1.75} />} onClose={onClose} />
@@ -926,7 +965,7 @@ function NewFolderModal({ accent, onClose, onCreate }) {
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="e.g. Fall 2026 Resources"
-            onKeyDown={(e) => { if (e.key === 'Enter' && name.trim()) onCreate(name.trim(), visibility); }}
+            onKeyDown={(e) => { if (e.key === 'Enter' && name.trim() && !busy) submit(name.trim(), visibility); }}
           />
         </FormField>
         <FormField label="Who can see this">
@@ -934,8 +973,16 @@ function NewFolderModal({ accent, onClose, onCreate }) {
               locked-but-listed folder called "Exec Only" leaks by itself. */}
           <VisibilityControl value={visibility} onChange={setVisibility} />
         </FormField>
+        <ModalError message={error} />
       </div>
-      <ModalFooter accent={accent} onClose={onClose} onConfirm={() => onCreate(name.trim(), visibility)} confirmLabel="Create Folder" disabled={!name.trim()} />
+      <ModalFooter
+        accent={accent}
+        onClose={onClose}
+        onConfirm={() => submit(name.trim(), visibility)}
+        confirmLabel="Create Folder"
+        disabled={!name.trim()}
+        busy={busy}
+      />
     </ModalWrapper>
   );
 }

@@ -87,9 +87,15 @@ export default function VisibilityControl({
 
       {(!inheritable || !inherit) && (
         <>
+          {/* Rush is excluded because albums, folders and documents are gated
+              on SHARED_ALBUM_GROUPS, which has no 'rush' — a rushee can never
+              see this content, and parseAudience rejects the group outright.
+              Offering the pill produced a form that 400'd on submit. */}
           <AudienceSelect
             value={audience}
             onChange={(next) => set({ audience: next })}
+            exclude={['rush']}
+            showHint={false}
           />
 
           {committees.length > 0 && (

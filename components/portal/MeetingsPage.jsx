@@ -253,10 +253,8 @@ export function NewMeetingModal({ accent, presetInvitee, presetCommittee, onClos
   const [error, setError] = useState('');
 
   useEffect(() => {
-    // The full directory. This used to note that a rushee would only see
-    // leadership here — no longer relevant, since rushees can't reach any
-    // meetings surface at all: /rushee/meetings is gone and the API refuses
-    // rush tokens on /meetings. They book fixed interview slots instead.
+    // The full directory. Rushees can't reach any meetings surface at all now,
+    // so the old note about them only seeing leadership no longer applies.
     getMessageableMembers()
       .then((data) => setMembers(Array.isArray(data) ? data : []))
       .catch((err) => { if (isRedirectError(err)) throw err; });

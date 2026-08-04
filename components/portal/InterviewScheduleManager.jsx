@@ -25,9 +25,8 @@ function tint(hex, alpha) {
 const dayLabel = (d) => d.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
 const timeLabel = (d) => d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
 
-// datetime-local speaks local wall-clock with no zone; the API stores
-// timestamptz. Both directions are converted explicitly so a slot entered as
-// 5:00 PM is 5:00 PM in Athens rather than in UTC.
+// datetime-local is local wall-clock with no zone; the API stores timestamptz.
+// Converted explicitly so 5:00 PM means 5:00 PM in Athens, not UTC.
 function toLocalInput(date) {
   const copy = new Date(date);
   copy.setMinutes(copy.getMinutes() - copy.getTimezoneOffset());
@@ -70,8 +69,7 @@ export default function InterviewScheduleManager() {
     try {
       const schedule = await createInterviewSchedule({ title, description, location });
       setSchedules((prev) => [schedule, ...prev]);
-      // Straight into the new schedule — it has no slots yet, and adding them
-      // is the entire reason anyone creates one.
+      // Straight in — adding slots is the reason anyone creates one.
       setOpenId(schedule.id);
     } catch (err) {
       if (isRedirectError(err)) throw err;
@@ -90,10 +88,8 @@ export default function InterviewScheduleManager() {
       setSchedules((prev) => prev.filter((s) => s.id !== schedule.id));
     } catch (err) {
       if (isRedirectError(err)) throw err;
-      // The API refuses with 409 once anyone has booked, and says how many.
-      // Re-asking with that number in the question is the point: "delete this
-      // schedule" and "cancel 23 people's interviews" deserve different
-      // answers, and only the server knows which one this is.
+      // The 409 carries the count. "Delete this schedule" and "cancel 23
+      // people's interviews" deserve different answers, and only the server knows.
       const forced = await confirm(
         `${err.message}\n\nDelete it anyway? Their interviews will be cancelled and they will not be told.`,
         { title: 'People have already booked', confirmLabel: 'Delete anyway' },
@@ -283,10 +279,8 @@ function ScheduleDetail({ scheduleId, accent, onBack }) {
 
   useEffect(() => {
     load();
-    // The full directory for eboard — getMessageableMembers returns /members
-    // for anyone who isn't a rush-only account. Named for messaging, but it is
-    // the directory fetch every portal surface uses, and assigning an
-    // interviewer needs exactly that list.
+    // Named for messaging, but it's the directory fetch every portal uses —
+    // for eboard it returns /members, which is what an interviewer picker needs.
     getMessageableMembers()
       .then((data) => setMembers(Array.isArray(data) ? data : []))
       .catch((err) => { if (isRedirectError(err)) throw err; });
@@ -329,8 +323,7 @@ function ScheduleDetail({ scheduleId, accent, onBack }) {
       await load();
     } catch (err) {
       if (isRedirectError(err)) throw err;
-      // 409 when someone has booked it. Same escalation as deleting a
-      // schedule: the second question is a different question.
+      // 409 when booked. Same escalation as deleting a schedule.
       const forced = await confirm(
         `${err.message}\n\nDelete it anyway? They'll be told their slot was cancelled and asked to pick another.`,
         { title: 'Someone has booked this slot', confirmLabel: 'Delete anyway' },
@@ -536,11 +529,9 @@ function SlotRow({ slot, accent, busy, onDelete, onRelease }) {
   );
 }
 
-// Slots are added one at a time, which is a lot of typing for an interview
-// night. The mitigation is that after each save the next slot starts exactly
-// where the previous one ended and keeps its length, room and capacity — so a
-// 3-hour evening of 20-minute slots is one field of typing and then nine
-// clicks on Add.
+// Slots go in one at a time, so each save prefills the next one starting where
+// the last ended, keeping its length, room and capacity. An evening of
+// 20-minute slots is one field of typing and then repeated clicks on Add.
 function AddSlotForm({ accent, members, defaultLocation, lastSlot, onAdd }) {
   const [startsAt, setStartsAt] = useState(() => toLocalInput(nextHalfHour()));
   const [minutes, setMinutes] = useState(20);
@@ -548,9 +539,8 @@ function AddSlotForm({ accent, members, defaultLocation, lastSlot, onAdd }) {
   const [location, setLocation] = useState('');
   const [interviewerId, setInterviewerId] = useState('');
   const [saving, setSaving] = useState(false);
-  // Tracks the id of the slot the form last chained from, so the prefill runs
-  // once per added slot rather than on every re-render — otherwise typing a
-  // start time would be overwritten the moment the parent refetched.
+  // Keyed on the last slot's id so the prefill runs once per added slot —
+  // otherwise a typed start time is overwritten when the parent refetches.
   const [chainedFrom, setChainedFrom] = useState(null);
 
   useEffect(() => {

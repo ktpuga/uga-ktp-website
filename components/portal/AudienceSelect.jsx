@@ -26,7 +26,10 @@ function tint(hex, alpha) {
 // `exclude` drops groups this particular caller can't actually target. Meetings
 // use it for rush: expandInvitees never invites rushees, so offering the pill
 // would be a control that silently does nothing.
-export default function AudienceSelect({ value, onChange, exclude = [] }) {
+// `showHint={false}` suppresses the footnote for callers that render their own
+// summary of what the selection means — VisibilityControl does, and its
+// "empty = everyone" is the opposite of the excluded-rush wording below.
+export default function AudienceSelect({ value, onChange, exclude = [], showHint = true }) {
   const accent = useAccentPalette();
   const selected = value ?? [];
   const isAll = selected.length === 0;
@@ -71,7 +74,7 @@ export default function AudienceSelect({ value, onChange, exclude = [] }) {
           requires a member group, so anything left unticked is invisible in the
           Rush portal. This used to read "Visible to everyone", which reliably
           produced rush events that no rushee could see. */}
-      {isAll ? (
+      {!showHint ? null : isAll ? (
         <p className="text-xs text-muted-foreground">
           {exclude.includes('rush') ? (
             <>Nobody selected yet.</>

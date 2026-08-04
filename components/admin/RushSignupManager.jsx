@@ -122,7 +122,7 @@ export default function RushSignupManager() {
         <p className="mb-1 text-[11px] font-semibold uppercase tracking-[0.22em]" style={{ color: MAROON.light }}>Admin Panel</p>
         <h1 className="font-serif text-3xl font-normal leading-tight tracking-tight text-foreground">Rush Signup</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Let prospective members create their own accounts, for a fixed window
+          
         </p>
       </div>
 

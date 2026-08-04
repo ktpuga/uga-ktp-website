@@ -168,7 +168,7 @@ export default function RushAnnouncementsManager() {
         <div>
           <p className="mb-1 text-[11px] font-semibold uppercase tracking-[0.22em]" style={{ color: MAROON.light }}>Admin Panel</p>
           <h1 className="font-serif text-3xl font-normal leading-tight tracking-tight text-foreground">Rush Announcements</h1>
-          <p className="mt-1 text-sm text-muted-foreground">Posted to rushees only — separate from chapter announcements</p>
+          <p className="mt-1 text-sm text-muted-foreground">Posted to rushees only, separate from chapter announcements</p>
         </div>
         <button type="button" onClick={() => setEditorFor(null)}
           className="flex items-center gap-1.5 rounded-xl px-4 py-2 text-sm font-semibold text-white shadow-sm hover:opacity-85"

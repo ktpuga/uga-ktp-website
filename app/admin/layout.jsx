@@ -48,10 +48,8 @@ function buildNav(hasRushees) {
     items: [
       { href: '/admin/rush-announcements', label: 'Rush Announcements', icon: Megaphone },
       { href: '/admin/rush-signup', label: 'Rush Signup', icon: QrCode },
-      // Interview slot signup — post times, rushees claim them. Lives in Rush
-      // rather than next to Meetings under Programming: it runs for one week a
-      // year as part of rush, and Meetings is the chapter-wide feature that
-      // rushees can no longer touch.
+      // In Rush rather than beside Meetings: it runs one week a year as part
+      // of rush, and Meetings is the chapter-wide feature rushees can't touch.
       { href: '/admin/interviews', label: 'Interviews', icon: CalendarCheck },
         // Only while rush is running — see useRushCount.
         ...(hasRushees ? [{ href: '/admin/rushees', label: 'Rushees', icon: UserSearch }] : []),

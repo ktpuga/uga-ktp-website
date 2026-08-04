@@ -27,8 +27,7 @@ function formatRange(startsAt, endsAt) {
   return `${dayLabel(start)}, ${timeLabel(start)} – ${timeLabel(end)}`;
 }
 
-// Slots arrive sorted by start time, so grouping by calendar day only needs to
-// watch for the key changing rather than a full sort.
+// Slots arrive sorted, so this only watches for the key changing.
 function groupByDay(slots) {
   const days = [];
   for (const slot of slots) {
@@ -41,8 +40,8 @@ function groupByDay(slots) {
   return days;
 }
 
-// "Taken" vs "2 of 3 left". Capacity 1 is the normal case and reads better
-// without arithmetic in it — "0 of 1 left" is a worse way to say "taken".
+// Capacity 1 reads better without arithmetic — "0 of 1 left" is a worse way to
+// say "taken".
 function seatsLabel(slot) {
   const left = Math.max(0, slot.capacity - slot.booked_count);
   if (slot.capacity === 1) return left === 0 ? 'Taken' : 'Open';
@@ -53,9 +52,8 @@ function seatsLabel(slot) {
 function SlotButton({ slot, accent, disabled, onPick, busy }) {
   const left = Math.max(0, slot.capacity - slot.booked_count);
   const isFull = left === 0;
-  // A full slot stays on the sheet, greyed out. Removing it would make it look
-  // like there were never that many times on offer — a paper sign-up sheet
-  // shows the crossed-out rows too.
+  // Full slots stay on the sheet, greyed out — hiding them would make it look
+  // like fewer times were ever offered.
   const unavailable = isFull || disabled;
 
   return (
@@ -85,8 +83,8 @@ function SlotButton({ slot, accent, disabled, onPick, busy }) {
   );
 }
 
-// The card shown once you have a time. Deliberately replaces the grid rather
-// than sitting above it: the only thing left to decide is whether to keep it.
+// Replaces the grid rather than sitting above it — once you have a time, the
+// only thing left to decide is whether to keep it.
 function BookedCard({ schedule, slot, accent, onCancel, busy }) {
   return (
     <div className="overflow-hidden rounded-2xl border" style={{ borderColor: tint(accent.base, 0.4), background: tint(accent.base, 0.04) }}>
@@ -147,16 +145,10 @@ export default function InterviewSignup() {
 
   useEffect(() => { load(); }, [load]);
 
-  // Booking is contended: forty people click at 8pm and the seat can fill
-  // between the page rendering and the click landing. Every outcome therefore
-  // ends in a refetch — on success to get the authoritative counts, and on
-  // failure because a 409 means this page is already showing stale
-  // availability. Patching state locally would leave the grid claiming a seat
-  // that the server just told us is gone.
+  // Every outcome refetches: a 409 means this page is already stale, so
+  // patching locally would keep claiming a seat the server says is gone.
   async function pick(slot) {
-    // The confirm dialog defaults to a red "Delete" button — it was built for
-    // deletions. Booking a slot is the opposite of destructive, so it gets its
-    // own labels and the normal button variant.
+    // useConfirm defaults to a red "Delete" — booking is not destructive.
     const ok = await confirm(
       `Book your interview for ${formatRange(slot.startDate, slot.endDate)}?`
       + '\n\nYou can only hold one time, but you can change it later if you need to.',
@@ -180,8 +172,7 @@ export default function InterviewSignup() {
   }
 
   async function release(slot) {
-    // Destructive stays destructive: you can lose the time to someone else
-    // between releasing it and picking again, so the red button is honest here.
+    // Stays red: you can lose the time to someone else before re-picking.
     const ok = await confirm(
       `Give up your ${formatRange(slot.startDate, slot.endDate)} interview?`
       + '\n\nThe time goes back on the board and someone else may take it. You will need to pick a new one.',
@@ -193,10 +184,8 @@ export default function InterviewSignup() {
     setError('');
     setNotice('');
     try {
-      // Strictly booking_id, with no fallback to slot.id. They are ids from
-      // different tables that both start at 1, so a `?? slot.id` fallback
-      // wouldn't fail safe — it would delete whichever booking happened to
-      // have that id, which is somebody else's interview.
+      // No `?? slot.id` fallback: different tables, both starting at 1, so it
+      // would cancel whoever else's booking happened to have that id.
       if (!slot.booking_id) throw new Error('Could not work out which booking to cancel. Refresh and try again.');
       await cancelInterviewBooking(slot.booking_id);
       setNotice('Your time was released. Pick a new one below.');
@@ -218,7 +207,7 @@ export default function InterviewSignup() {
         <h1 className="text-2xl font-bold sm:text-3xl" style={{ color: accent.base }}>Interviews</h1>
         <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
           Pick a time that works for you. Once you take a slot it comes off the board for
-          everyone else, so grab one early — and you can change it later if something comes up.
+          everyone else, so grab one early. You can change it later if something comes up.
         </p>
       </div>
 

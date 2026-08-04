@@ -16,10 +16,8 @@ import PortalShell from '@/components/portal/PortalShell';
 // it renders empty for a rushee. They check in by scanning a QR, which opens
 // /checkin/[eventId]/[token] outside the portal.
 //
-// Interviews replaced Meetings here. A rushee proposing a time and summoning
-// named leadership inverted who runs rush; the real use case is eboard posting
-// fixed interview times that candidates claim. /rushee/meetings is gone, and
-// the API refuses rush tokens on /meetings entirely.
+// Interviews replaced Meetings here — /rushee/meetings is gone and the API
+// refuses rush tokens on /meetings entirely.
 //
 // This used to carry a warning that it "must stay in sync with
 // NAV_GROUPING.violet in PortalShell.jsx". There is no longer a second list to

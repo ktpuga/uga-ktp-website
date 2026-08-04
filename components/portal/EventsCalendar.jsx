@@ -56,17 +56,13 @@ function buildGrid(year, month) {
   return cells;
 }
 
-// Meetings and booked interview slots live in their own tables (see ktp-docs:
-// they're kept out of `events` so eboard's unfiltered event view can't expose
-// everyone's private 1-on-1s), so the calendar merges three sources. The ICS
-// feed does the same merge; this is the second of the two places that pays that
-// cost.
+// Meetings and interviews live in their own tables (see ktp-docs), so the
+// calendar merges three sources — as does the ICS feed.
 //
-// `isMeeting` / `isInterview` are not cosmetic. Meeting, interview and event
-// ids all start at 1, and the calendar's delete button calls deleteEvent(id)
-// against /events/:id — so an unguarded Delete on meeting 4 would destroy the
-// unrelated EVENT 4. `createdBy` is deliberately left undefined on both so the
-// existing "isEboard || createdBy === me" checks can't light up either.
+// `isMeeting` / `isInterview` are not cosmetic: all three id sequences start at
+// 1 and the delete button calls deleteEvent(id) against /events/:id, so an
+// unguarded Delete on meeting 4 would destroy the unrelated EVENT 4.
+// `createdBy` is left undefined so the "createdBy === me" checks stay dark too.
 function asCalendarEntry(meeting) {
   return {
     id: `meeting-${meeting.id}`,
@@ -78,14 +74,13 @@ function asCalendarEntry(meeting) {
     audience: null,
     requiresAttendance: false,
     isMeeting: true,
-    // Who it's with, from your point of view — the API works that out, since
-    // it knows who asked. See meetingModel.findForCalendar.
+    // Who it's with, from your point of view — the API knows who asked.
     participants: Array.isArray(meeting.participants) ? meeting.participants : [],
   };
 }
 
-// The API already shapes interviews like events (title, description, location,
-// startDate, endDate), so this only namespaces the id and sets the guard flag.
+// The API already shapes interviews like events, so this only namespaces the
+// id and sets the guard flag.
 function asInterviewEntry(interview) {
   return {
     id: `interview-${interview.id}`,
@@ -97,15 +92,13 @@ function asInterviewEntry(interview) {
     audience: null,
     requiresAttendance: false,
     isInterview: true,
-    // The interviewer, when one is assigned. findForCalendar already builds
-    // "Interview with Ben" as the description; this is just the name.
+    // Just the name — the description already reads "Interview with Ben".
     participants: interview.interviewer_name ? [interview.interviewer_name] : [],
   };
 }
 
-// One fetch used by both calendar variants. A meetings or interviews failure
-// must not blank the chapter calendar, so each degrades to [] rather than
-// rejecting the whole set.
+// One fetch for both calendar variants. Each extra source degrades to [] so a
+// 403 (a rushee hitting /meetings/calendar) can't blank the chapter calendar.
 async function loadCalendarItems() {
   const [events, meetings, interviews] = await Promise.all([
     getEvents(),
@@ -137,13 +130,9 @@ function AudienceBadge({ audience, accent }) {
   );
 }
 
-// Who a meeting or interview is with. Takes the slot an event's audience badge
-// occupies, because "who else is in this" is the equivalent question for
-// something that has participants rather than an audience.
-//
-// Two names are listed, then a count — "with Ann Adams, Ben Brown +3". Listing
-// eight people turns a calendar card into a paragraph, and the Meetings tab is
-// where the full list belongs.
+// Takes the slot an event's audience badge occupies, since "who's in this" is
+// the equivalent question for something with participants. Two names then a
+// count — eight would turn a calendar card into a paragraph.
 function ParticipantBadge({ names, isInterview, accent }) {
   const shown = names.slice(0, 2).join(', ');
   const extra = names.length - 2;
@@ -352,10 +341,8 @@ function RevampedEventsCalendar({ title, description, accentKey }) {
         description: event.description,
         timeRange: formatEventTimeRange(getEventStartDate(event), getEventEndDate(event)),
         location: event.location,
-        // Only real events have an audience. Meetings and interviews have
-        // participants instead, and running them through formatAudience turned
-        // `null` into the badge "ALL MEMBERS" — which read as though everyone
-        // could see your private 1-on-1.
+        // Only real events have an audience. formatAudience(null) returns "All
+        // Members", which badged every private 1-on-1 as visible to everyone.
         audience: (event.isMeeting || event.isInterview) ? null : formatAudience(event.audience),
         participants: Array.isArray(event.participants) ? event.participants : [],
         requiresAttendance: event.requiresAttendance,
@@ -377,9 +364,8 @@ function RevampedEventsCalendar({ title, description, accentKey }) {
     ? new Date(`${selectedDate}T00:00:00`).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })
     : '';
 
-  // Never for a meeting or an interview — see asCalendarEntry. Both are
-  // deleted from their own tabs, and a Delete here would hit /events/:id with
-  // an id belonging to a different table entirely.
+  // Never for a meeting or interview — a Delete here would hit /events/:id
+  // with an id from a different table. They're removed from their own tabs.
   const canDeleteEvent = (ev) => !ev.isMeeting && !ev.isInterview
     && (isEboard || (!!currentUserId && ev.creatorId === currentUserId));
 
