@@ -70,6 +70,8 @@ export const RUSH_EVENTS = [
     id: 'bid_night',
     title: 'Invite Only Event',
     date: 'September 25, 2026',
+    time: 'Will be posted in the portal',
+    location: 'Will be posted in the portal',
     description: `After interviews, check back on your portal for an update!`,
   },
 ]

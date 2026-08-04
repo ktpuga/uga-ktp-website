@@ -170,7 +170,7 @@ export default function Page () {
                       <div className="flex flex-wrap items-center gap-2">
                         <h3 className="text-base font-bold text-white sm:text-lg lg:text-xl">{event.title}</h3>
                         <span className="rounded-full border border-[#d4af37]/50 bg-[#2a1219] px-2 py-0.5 text-[0.65rem] font-semibold uppercase tracking-wide text-[#d4af37]">
-                          TBD
+                          
                         </span>
                       </div>
                       <dl className="mt-2 space-y-1 text-sm text-[#c9b896] lg:mt-3 lg:text-base">
