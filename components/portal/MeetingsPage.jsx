@@ -3,16 +3,17 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useSession } from 'next-auth/react';
 import {
-  AlertTriangle, Calendar, Check, Clock, Loader2, MapPin, Plus, Users, X,
+  AlertTriangle, Calendar, Check, Clock, Loader2, MapPin, Plus, Trash2, Users, X,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
-  getMeetings, createMeeting, respondToMeeting, cancelMeeting, getMessageableMembers, getCommittees,
+  getMeetings, createMeeting, respondToMeeting, cancelMeeting, deleteMeeting, getMessageableMembers, getCommittees,
 } from '@/lib/portal-api';
 import AudienceSelect from '@/components/portal/AudienceSelect';
 import { memberDisplayName, memberInitials } from '@/lib/portal-format';
 import { isRedirectError } from '@/lib/is-redirect-error';
 import { useAccentPalette } from '@/components/portal/PortalAccentContext';
+import { useConfirm } from '@/components/ui/confirm-dialog';
 
 // Kept in sync with MAY_BULK_INVITE in ktp-api's meetingsController.
 const MAY_BULK_INVITE = ['eboard', 'chair', 'active', 'alumni'];
@@ -95,8 +96,12 @@ function InviteeAvatars({ invitees, accent }) {
   );
 }
 
-function MeetingCard({ meeting, currentUserId, accent, onRespond, onCancel, busy }) {
+function MeetingCard({ meeting, currentUserId, accent, onRespond, onCancel, onDelete, busy }) {
   const isOrganizer = meeting.organizer_id === currentUserId;
+  // Same rule the API enforces: over, or already cancelled. `endDate` is the
+  // meeting's own end, so one still in progress counts as upcoming and can't
+  // be deleted out from under the people sitting in it.
+  const canDelete = new Date(meeting.endDate).getTime() < Date.now() || meeting.status === 'cancelled';
   // my_response is null for the organizer — they have nothing to RSVP to,
   // which is what decides whether the buttons render at all.
   // An RSVP can be changed, unlike the old one-shot accept — plans change, and
@@ -146,7 +151,11 @@ function MeetingCard({ meeting, currentUserId, accent, onRespond, onCancel, busy
         </div>
       </div>
 
-      {(canRsvp || (isOrganizer && meeting.status !== 'cancelled')) && (
+      {/* `isOrganizer && canDelete` is a separate term on purpose: the other
+          two are false for a CANCELLED meeting, which would have hidden the
+          whole bar and with it the Delete button — for exactly the meetings
+          it's meant to clean up. */}
+      {(canRsvp || (isOrganizer && meeting.status !== 'cancelled') || (isOrganizer && canDelete)) && (
         <div className="flex items-center justify-end gap-2 border-t border-border px-5 py-3">
           {canRsvp && (
             <>
@@ -187,6 +196,24 @@ function MeetingCard({ meeting, currentUserId, accent, onRespond, onCancel, busy
               className="flex items-center gap-1.5 rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-1.5 text-xs font-medium text-destructive hover:bg-destructive/20 disabled:opacity-40"
             >
               <X size={11} /> Cancel
+            </button>
+          )}
+
+          {/* Delete is offered only where the API will accept it: organizer,
+              and the meeting is over or already cancelled. Cancel and Delete
+              are therefore never both shown for a live upcoming meeting — you
+              cancel it first, then it becomes deletable. Mirrors the rule in
+              meetingsController.deleteMeeting rather than restating it
+              loosely, so the button can't offer something that 400s. */}
+          {isOrganizer && canDelete && (
+            <button
+              type="button"
+              onClick={() => onDelete(meeting.id)}
+              disabled={busy}
+              className="flex items-center gap-1.5 rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-1.5 text-xs font-medium text-destructive hover:bg-destructive/20 disabled:opacity-40"
+              aria-label={`Delete "${meeting.title}" permanently`}
+            >
+              <Trash2 size={11} /> Delete
             </button>
           )}
         </div>
@@ -435,6 +462,7 @@ export function NewMeetingModal({ accent, presetInvitee, presetCommittee, onClos
 
 export default function MeetingsPage() {
   const accent = useAccentPalette();
+  const confirm = useConfirm();
   const { data: session } = useSession();
   const currentUserId = session?.user?.authentik_id ?? session?.user?.id ?? null;
 
@@ -489,6 +517,24 @@ export default function MeetingsPage() {
     }
   }
 
+  // Permanent, and the row disappears for every participant, not just the
+  // organizer — so it asks first. The API re-checks organizer + past/cancelled;
+  // this is the friendly half of the same rule.
+  async function remove(id) {
+    if (!(await confirm('Delete this meeting permanently? It will disappear for everyone who was invited.'))) return;
+    setBusy(true);
+    setError('');
+    try {
+      await deleteMeeting(id);
+      setMeetings((prev) => prev.filter((m) => m.id !== id));
+    } catch (err) {
+      if (isRedirectError(err)) throw err;
+      setError(err.message ?? 'Could not delete that meeting.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
   // Anything still needing your RSVP floats to the top — that's the only part
   // of this page that is actually a to-do rather than a record.
   const { needsYou, upcoming, past } = useMemo(() => {
@@ -516,7 +562,7 @@ export default function MeetingsPage() {
       <div className="space-y-3">
         <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{title}</p>
         {items.map((m) => (
-          <MeetingCard key={m.id} meeting={m} currentUserId={currentUserId} accent={accent} onRespond={respond} onCancel={cancel} busy={busy} />
+          <MeetingCard key={m.id} meeting={m} currentUserId={currentUserId} accent={accent} onRespond={respond} onCancel={cancel} onDelete={remove} busy={busy} />
         ))}
       </div>
     );
