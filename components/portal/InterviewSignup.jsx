@@ -154,9 +154,13 @@ export default function InterviewSignup() {
   // availability. Patching state locally would leave the grid claiming a seat
   // that the server just told us is gone.
   async function pick(slot) {
+    // The confirm dialog defaults to a red "Delete" button — it was built for
+    // deletions. Booking a slot is the opposite of destructive, so it gets its
+    // own labels and the normal button variant.
     const ok = await confirm(
       `Book your interview for ${formatRange(slot.startDate, slot.endDate)}?`
       + '\n\nYou can only hold one time, but you can change it later if you need to.',
+      { title: 'Confirm your interview', confirmLabel: 'Confirm', variant: 'default' },
     );
     if (!ok) return;
 
@@ -176,9 +180,12 @@ export default function InterviewSignup() {
   }
 
   async function release(slot) {
+    // Destructive stays destructive: you can lose the time to someone else
+    // between releasing it and picking again, so the red button is honest here.
     const ok = await confirm(
       `Give up your ${formatRange(slot.startDate, slot.endDate)} interview?`
       + '\n\nThe time goes back on the board and someone else may take it. You will need to pick a new one.',
+      { title: 'Change your interview time?', confirmLabel: 'Release my time' },
     );
     if (!ok) return;
 

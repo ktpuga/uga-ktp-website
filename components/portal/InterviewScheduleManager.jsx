@@ -80,7 +80,10 @@ export default function InterviewScheduleManager() {
   }
 
   async function remove(schedule) {
-    if (!(await confirm(`Delete "${schedule.title}"? Every slot in it goes too.`))) return;
+    if (!(await confirm(
+      `Delete "${schedule.title}"? Every slot in it goes too.`,
+      { title: 'Delete this interview round?' },
+    ))) return;
     setError('');
     try {
       await deleteInterviewSchedule(schedule.id);
@@ -93,6 +96,7 @@ export default function InterviewScheduleManager() {
       // answers, and only the server knows which one this is.
       const forced = await confirm(
         `${err.message}\n\nDelete it anyway? Their interviews will be cancelled and they will not be told.`,
+        { title: 'People have already booked', confirmLabel: 'Delete anyway' },
       );
       if (!forced) return;
       try {
@@ -317,7 +321,7 @@ function ScheduleDetail({ scheduleId, accent, onBack }) {
 
   async function removeSlot(slot) {
     const when = `${dayLabel(new Date(slot.startDate))}, ${timeLabel(new Date(slot.startDate))}`;
-    if (!(await confirm(`Delete the ${when} slot?`))) return;
+    if (!(await confirm(`Delete the ${when} slot?`, { title: 'Delete this slot?' }))) return;
     setBusy(true);
     setError('');
     try {
@@ -327,7 +331,10 @@ function ScheduleDetail({ scheduleId, accent, onBack }) {
       if (isRedirectError(err)) throw err;
       // 409 when someone has booked it. Same escalation as deleting a
       // schedule: the second question is a different question.
-      const forced = await confirm(`${err.message}\n\nDelete it anyway? They'll be told their slot was cancelled and asked to pick another.`);
+      const forced = await confirm(
+        `${err.message}\n\nDelete it anyway? They'll be told their slot was cancelled and asked to pick another.`,
+        { title: 'Someone has booked this slot', confirmLabel: 'Delete anyway' },
+      );
       if (forced) {
         try {
           await deleteInterviewSlot(slot.id, { force: true });
@@ -344,7 +351,11 @@ function ScheduleDetail({ scheduleId, accent, onBack }) {
 
   async function releaseBooking(booking, slot) {
     const who = memberDisplayName(booking);
-    if (!(await confirm(`Release ${who}'s ${timeLabel(new Date(slot.startDate))} slot? They'll be notified and can book another time.`))) return;
+    // Not a deletion — the slot survives, the seat just goes back on the board.
+    if (!(await confirm(
+      `Release ${who}'s ${timeLabel(new Date(slot.startDate))} slot? They'll be notified and can book another time.`,
+      { title: 'Release this booking?', confirmLabel: 'Release' },
+    ))) return;
     setBusy(true);
     setError('');
     try {

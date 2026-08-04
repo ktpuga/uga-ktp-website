@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useSession } from 'next-auth/react';
 import {
   ChevronLeft, ChevronRight, Clock, MapPin, CalendarDays, Trash2, X,
-  CheckSquare, Loader2, AlertCircle,
+  CheckSquare, Loader2, AlertCircle, Users,
 } from 'lucide-react';
 import { getEvents, deleteEvent, getCalendarMeetings, getCalendarInterviews } from '@/lib/portal-api';
 import { formatEventTimeRange, getEventStartDate, getEventEndDate, formatAudience } from '@/lib/portal-format';
@@ -78,6 +78,9 @@ function asCalendarEntry(meeting) {
     audience: null,
     requiresAttendance: false,
     isMeeting: true,
+    // Who it's with, from your point of view — the API works that out, since
+    // it knows who asked. See meetingModel.findForCalendar.
+    participants: Array.isArray(meeting.participants) ? meeting.participants : [],
   };
 }
 
@@ -94,6 +97,9 @@ function asInterviewEntry(interview) {
     audience: null,
     requiresAttendance: false,
     isInterview: true,
+    // The interviewer, when one is assigned. findForCalendar already builds
+    // "Interview with Ben" as the description; this is just the name.
+    participants: interview.interviewer_name ? [interview.interviewer_name] : [],
   };
 }
 
@@ -127,6 +133,32 @@ function AudienceBadge({ audience, accent }) {
       }
     >
       {audience}
+    </span>
+  );
+}
+
+// Who a meeting or interview is with. Takes the slot an event's audience badge
+// occupies, because "who else is in this" is the equivalent question for
+// something that has participants rather than an audience.
+//
+// Two names are listed, then a count — "with Ann Adams, Ben Brown +3". Listing
+// eight people turns a calendar card into a paragraph, and the Meetings tab is
+// where the full list belongs.
+function ParticipantBadge({ names, isInterview, accent }) {
+  const shown = names.slice(0, 2).join(', ');
+  const extra = names.length - 2;
+  const label = names.length === 0
+    ? (isInterview ? 'Interview' : 'Meeting')
+    : `${isInterview ? 'Interview with' : 'With'} ${shown}${extra > 0 ? ` +${extra}` : ''}`;
+
+  return (
+    <span
+      className="inline-flex max-w-full items-center gap-1 truncate rounded-sm px-1.5 py-0.5 text-[10px] font-semibold"
+      style={{ background: tint(accent.base, 0.12), color: accent.light }}
+      title={names.length > 0 ? names.join(', ') : undefined}
+    >
+      <Users size={9} strokeWidth={2.5} className="shrink-0" />
+      <span className="truncate">{label}</span>
     </span>
   );
 }
@@ -177,6 +209,9 @@ function EventCard({ event, accent, canDelete, onDelete, isFirst }) {
 
       <div className="flex flex-wrap gap-1.5 pl-1">
         {event.audience && <AudienceBadge audience={event.audience} accent={accent} />}
+        {(event.isMeeting || event.isInterview) && (
+          <ParticipantBadge names={event.participants} isInterview={event.isInterview} accent={accent} />
+        )}
         {event.requiresAttendance && <AttendanceBadge accent={accent} />}
       </div>
 
@@ -317,7 +352,12 @@ function RevampedEventsCalendar({ title, description, accentKey }) {
         description: event.description,
         timeRange: formatEventTimeRange(getEventStartDate(event), getEventEndDate(event)),
         location: event.location,
-        audience: formatAudience(event.audience),
+        // Only real events have an audience. Meetings and interviews have
+        // participants instead, and running them through formatAudience turned
+        // `null` into the badge "ALL MEMBERS" — which read as though everyone
+        // could see your private 1-on-1.
+        audience: (event.isMeeting || event.isInterview) ? null : formatAudience(event.audience),
+        participants: Array.isArray(event.participants) ? event.participants : [],
         requiresAttendance: event.requiresAttendance,
         creatorId: event.createdBy,
         isMeeting: Boolean(event.isMeeting),
