@@ -68,55 +68,59 @@ function FieldTextarea(props) {
 
 // ─── Targeting picker (Roles / Committees tab switcher) ───
 
-function TargetingPicker({ committeeIds, audience, onCommitteeIdsChange, onAudienceChange, committees }) {
+// Roles AND committees, together. This used to be a two-tab switcher whose
+// switchTab() actively CLEARED the other selection, so the two were mutually
+// exclusive — you could send to rushees, or to the Pledge committee, never
+// both. Nothing below the UI required that: `events.committee_ids` and
+// `announcements.committee_id` are separate columns from `audience`, and both
+// visibility queries already OR them together:
+//
+//     WHERE (untargeted AND you're a member)
+//        OR audience && your_groups
+//        OR committee_ids && your_committees
+//
+// So a row carrying both has always been readable by the union of the two.
+// The xor was purely a UI invention, and this is just removing it.
+//
+// `singleCommittee` exists because announcements store ONE committee
+// (`committee_id`, scalar) while events store many (`committee_ids`, array).
+function TargetingPicker({ committeeIds, audience, onCommitteeIdsChange, onAudienceChange, committees, singleCommittee = false }) {
   const MAROON = useAccentPalette();
-  const [tab, setTab] = useState(committeeIds?.length ? 'committees' : 'roles');
-
-  function switchTab(next) {
-    setTab(next);
-    if (next === 'roles') onCommitteeIdsChange([]);
-    if (next === 'committees') onAudienceChange([]);
-  }
 
   function toggleCommittee(id) {
-    onCommitteeIdsChange(committeeIds.includes(id) ? committeeIds.filter((c) => c !== id) : [...committeeIds, id]);
+    if (committeeIds.includes(id)) {
+      onCommitteeIdsChange(committeeIds.filter((c) => c !== id));
+      return;
+    }
+    onCommitteeIdsChange(singleCommittee ? [id] : [...committeeIds, id]);
   }
+
+  const targeted = (audience?.length ?? 0) > 0 || (committeeIds?.length ?? 0) > 0;
 
   return (
     <div className="space-y-3">
-      <div className="flex items-center justify-between">
-        <FieldLabel>Targeting</FieldLabel>
-        <div className="flex items-center rounded-lg p-0.5" style={{ background: tint(MAROON.base, 0.07) }}>
-          {['roles', 'committees'].map((t) => {
-            const active = tab === t;
-            return (
-              <button
-                key={t}
-                type="button"
-                onClick={() => switchTab(t)}
-                className={cn(
-                  'rounded-md px-3 py-1 text-[11px] font-semibold capitalize transition-all duration-150',
-                  active ? 'text-white shadow-sm' : 'text-muted-foreground hover:text-foreground',
-                )}
-                style={active ? { background: MAROON.gradient } : undefined}
-              >
-                {t}
-              </button>
-            );
-          })}
-        </div>
+      <FieldLabel>Targeting</FieldLabel>
+
+      {/* States the union rule outright, because "picked two things" reads as
+          AND to most people and this is an OR. */}
+      <p className="text-[11px] leading-relaxed text-muted-foreground">
+        {targeted
+          ? 'Anyone who matches the roles OR the committees below will see this — the two add together, they don’t narrow each other.'
+          : 'Nothing selected: every member sees this. Pick roles, committees, or both to narrow it.'}
+      </p>
+
+      <div className="rounded-xl border border-border bg-muted/40 p-4">
+        <p className="mb-3 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Roles</p>
+        <AudienceSelect value={audience} onChange={onAudienceChange} />
       </div>
 
-      {tab === 'roles' && (
+      {committees.length > 0 && (
         <div className="rounded-xl border border-border bg-muted/40 p-4">
-          <AudienceSelect value={audience} onChange={onAudienceChange} />
-        </div>
-      )}
-
-      {tab === 'committees' && (
-        <div className="rounded-xl border border-border bg-muted/40 p-4">
+          <p className="mb-1 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Committees</p>
           <p className="mb-3 text-[11px] text-muted-foreground">
-            Select one or more committees — leave unselected to target all committees
+            {singleCommittee
+              ? 'An announcement can carry one committee. Choosing another replaces it.'
+              : 'Select any number of committees.'}
           </p>
           <div className="flex flex-wrap gap-2">
             {committees.map((c) => {
@@ -149,21 +153,43 @@ function TargetingPicker({ committeeIds, audience, onCommitteeIdsChange, onAudie
 
 // ─── Badge ───
 
+// Renders BOTH badges when both are targeted. This used to return early on
+// committees and never show the audience — correct while the two were mutually
+// exclusive, but now an item can carry both and showing only one would
+// misreport who actually receives it.
 function ItemBadge({ committeeIds, audience, committees }) {
   const MAROON = useAccentPalette();
-  if (committeeIds && committeeIds.length > 0) {
-    const names = committeeIds.map((id) => committees.find((c) => c.id === id)?.name).filter(Boolean);
+  const hasCommittees = committeeIds && committeeIds.length > 0;
+  const hasAudience = audience && audience.length > 0;
+
+  // Neither targeted: one "everyone" badge, same as before.
+  if (!hasCommittees && !hasAudience) {
     return (
-      <span className="inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[11px] font-semibold" style={{ background: MAROON.muted, color: MAROON.light }}>
+      <span className="inline-flex items-center gap-1 rounded-md bg-muted px-2 py-0.5 text-[11px] font-semibold text-muted-foreground">
         <Users size={9} />
-        {names.length > 0 ? names.join(', ') : 'Committee'}
+        {formatAudience(audience)}
       </span>
     );
   }
+
+  const names = hasCommittees
+    ? committeeIds.map((id) => committees.find((c) => c.id === id)?.name).filter(Boolean)
+    : [];
+
   return (
-    <span className="inline-flex items-center gap-1 rounded-md bg-muted px-2 py-0.5 text-[11px] font-semibold text-muted-foreground">
-      <Users size={9} />
-      {formatAudience(audience)}
+    <span className="inline-flex flex-wrap items-center gap-1">
+      {hasAudience && (
+        <span className="inline-flex items-center gap-1 rounded-md bg-muted px-2 py-0.5 text-[11px] font-semibold text-muted-foreground">
+          <Users size={9} />
+          {formatAudience(audience)}
+        </span>
+      )}
+      {hasCommittees && (
+        <span className="inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[11px] font-semibold" style={{ background: MAROON.muted, color: MAROON.light }}>
+          <Users size={9} />
+          {names.length > 0 ? names.join(', ') : 'Committee'}
+        </span>
+      )}
     </span>
   );
 }
@@ -215,7 +241,7 @@ function EmptyState({ label }) {
 
 // ─── Announcements ───
 
-const EMPTY_ANNOUNCEMENT_FORM = { title: '', body: '', audience: [] };
+const EMPTY_ANNOUNCEMENT_FORM = { title: '', body: '', audience: [], committeeIds: [] };
 
 function AnnouncementForm({ initial, onSubmit, onCancel, isEdit, committees }) {
   const MAROON = useAccentPalette();
@@ -239,12 +265,20 @@ function AnnouncementForm({ initial, onSubmit, onCancel, isEdit, committees }) {
           <FieldLabel>Body</FieldLabel>
           <FieldTextarea rows={4} value={form.body} onChange={(e) => setForm((f) => ({ ...f, body: e.target.value }))} placeholder="Write your announcement here…" />
         </div>
-        <div>
-          <FieldLabel>Audience</FieldLabel>
-          <div className="rounded-xl border border-border bg-muted/40 p-4">
-            <AudienceSelect value={form.audience} onChange={(v) => setForm((f) => ({ ...f, audience: v }))} />
-          </div>
-        </div>
+        {/* Was a bare AudienceSelect — announcements could only ever be
+            targeted by role from this form, even though the table has had a
+            `committee_id` column all along and AnnouncementCard already
+            rendered a committee badge for it. The column was simply
+            unreachable from the UI. singleCommittee because that column is a
+            scalar, unlike events' committee_ids array. */}
+        <TargetingPicker
+          singleCommittee
+          committees={committees}
+          committeeIds={form.committeeIds}
+          audience={form.audience}
+          onCommitteeIdsChange={(v) => setForm((f) => ({ ...f, committeeIds: v }))}
+          onAudienceChange={(v) => setForm((f) => ({ ...f, audience: v }))}
+        />
       </div>
 
       <div className="mt-5 flex items-center justify-end gap-2">
@@ -316,13 +350,17 @@ function AnnouncementsTab({ committees }) {
   const editingItem = editingId ? announcements.find((a) => a.id === editingId) : null;
 
   async function handleSubmit(form) {
+    // The picker works in committeeIds[] for both forms; announcements store a
+    // single scalar committee_id. Collapsing here rather than in the picker
+    // keeps events (which really are multi-committee) on the same component.
+    const payload = { ...form, committeeId: form.committeeIds?.[0] ?? null };
     try {
       if (editingId) {
-        const updated = await updateAnnouncement(editingId, form);
+        const updated = await updateAnnouncement(editingId, payload);
         setAnnouncements((prev) => prev.map((a) => (a.id === editingId ? updated : a)));
         setEditingId(null);
       } else {
-        const created = await createAnnouncement(form);
+        const created = await createAnnouncement(payload);
         setAnnouncements((prev) => [created, ...prev]);
         setFormOpen(false);
       }
@@ -376,7 +414,15 @@ function AnnouncementsTab({ committees }) {
             <div key={item.id}>
               {editingId === item.id && editingItem ? (
                 <AnnouncementForm
-                  initial={{ title: editingItem.title, body: editingItem.body, audience: editingItem.audience ?? [] }}
+                  initial={{
+                    title: editingItem.title,
+                    body: editingItem.body,
+                    audience: editingItem.audience ?? [],
+                    // Scalar committee_id -> the array shape the picker uses.
+                    // Without this, editing an announcement that had a
+                    // committee silently cleared it on save.
+                    committeeIds: editingItem.committee_id ? [String(editingItem.committee_id)] : [],
+                  }}
                   onSubmit={handleSubmit}
                   onCancel={handleCancel}
                   isEdit
@@ -579,7 +625,11 @@ function EventsTab({ committees }) {
         location: form.location.trim() || null,
         startDate: startDate.toISOString(),
         endDate: endDate.toISOString(),
-        audience: form.committeeIds.length ? [] : form.audience,
+        // Both are sent. This used to blank the audience whenever any
+        // committee was picked, which is what made the two mutually exclusive
+        // on the wire even after the UI allowed both. eventModel's visibility
+        // query ORs them, so a row carrying both reaches the union.
+        audience: form.audience,
         committeeIds: form.committeeIds,
         requiresAttendance: form.requiresAttendance,
       };
