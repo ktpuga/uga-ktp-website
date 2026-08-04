@@ -17,6 +17,7 @@ import {
   formatMemberGroup,
   formatGraduationDate,
   MEMBER_GROUP_ORDER,
+  LEADERSHIP_GROUPS,
 } from '@/lib/portal-format';
 import { isRedirectError } from '@/lib/is-redirect-error';
 import ReportButton from './ReportButton';
@@ -149,6 +150,9 @@ function ProfileModal({ member, accent, onClose }) {
   const pathname = usePathname();
   const { data: session } = useSession();
   const isSelf = session?.user?.authentik_id === member.id;
+  const canMessage =
+    member.memberGroup !== 'rush'
+    || (session?.user?.groups ?? []).some((g) => LEADERSHIP_GROUPS.includes(g));
   const portalRoot = '/' + (pathname.split('/')[1] || 'member');
   const name = directoryDisplayName(member);
   const graduation = formatGraduationDate(member.graduationDate);
@@ -247,13 +251,19 @@ function ProfileModal({ member, accent, onClose }) {
                 <Mail size={14} /> Email
               </a>
             )}
-            <Link
-              href={`${portalRoot}/messages?with=${member.id}`}
-              className="flex items-center justify-center gap-2 rounded-xl py-2.5 text-sm font-semibold text-white transition-opacity hover:opacity-85"
-              style={{ background: accent.gradient }}
-            >
-              <MessageSquare size={14} /> Message
-            </Link>
+            {/* Only leadership may DM a rushee (ktp-api RUSH_DM_GROUPS). The
+                directory still shows rushees to every member group, so this
+                button is the one place the two rules diverge — offering it to
+                anyone else would just produce a 403 on send. */}
+            {canMessage && (
+              <Link
+                href={`${portalRoot}/messages?with=${member.id}`}
+                className="flex items-center justify-center gap-2 rounded-xl py-2.5 text-sm font-semibold text-white transition-opacity hover:opacity-85"
+                style={{ background: accent.gradient }}
+              >
+                <MessageSquare size={14} /> Message
+              </Link>
+            )}
             {/* Requests time through the meetings flow rather than sending
                 someone off to a third-party booking page. */}
             <button
