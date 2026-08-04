@@ -37,7 +37,10 @@ function buildNav(hasRushees) {
     // Talking TO the chapter, broadcast and direct.
     heading: 'Communication',
     items: [
-      { href: '/admin/announcements', label: 'Announcements', icon: Megaphone },
+      // Named for what the page actually holds: AnnouncementsContent has two
+      // tabs, Announcements and Events, and events are created/edited here
+      // rather than on the Calendar tab. "&" matches "Files & Photos" below.
+      { href: '/admin/announcements', label: 'Announcements & Events', icon: Megaphone },
       { href: '/admin/messages', label: 'Messages', icon: MessageSquare },
     ],
   },

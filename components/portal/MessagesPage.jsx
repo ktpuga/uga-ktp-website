@@ -7,7 +7,7 @@ import { cn } from '@/lib/utils';
 import {
   X, ChevronLeft, Send, Paperclip, Search, Plus, Smile, Trash2, Users,
   ImageIcon, FileIcon, Download, Check, MessageSquare, ChevronDown, Info,
-  UserMinus, AlertCircle, Loader2, Camera, Layers,
+  UserMinus, AlertCircle, Loader2, Camera, Layers, Eye,
 } from 'lucide-react';
 import {
   getConversations, getConversation, sendMessage, markConversationRead, getMember,
@@ -15,7 +15,7 @@ import {
   getGroupChatMessages, sendGroupChatMessage, toggleGroupChatReaction, toggleMessageReaction,
   deleteMessage, deleteGroupChatMessage, markGroupChatRead, getGroupChatMembers,
   addGroupChatMember, removeGroupChatMember, getCommittees, getCommitteeMembers,
-  getMessageableMembers,
+  getMessageableMembers, getAllGroupChats,
 } from '@/lib/portal-api';
 import { memberDisplayName, memberInitials, formatMemberGroup, formatMessageTime, groupMatches, MEMBER_GROUP_ORDER } from '@/lib/portal-format';
 import { isRedirectError } from '@/lib/is-redirect-error';
@@ -637,7 +637,7 @@ function GroupChatList({ chats, currentUserId, accent, isEboard, onSelect, onNew
     <div className="flex h-full flex-col">
       <div className="flex items-center justify-between border-b border-border px-5 py-4" style={{ background: tint(accent.base, 0.03) }}>
         <p className="text-sm font-semibold text-foreground">Group Chats</p>
-        {isEboard && (
+        {isEboard && onNewChat && (
           <button type="button" onClick={onNewChat} className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold text-white transition-opacity hover:opacity-80" style={{ background: accent.gradient }}>
             <Plus size={12} /> New Group Chat
           </button>
@@ -1335,7 +1335,7 @@ function GroupChatInfoModal({ chat, members, messages, isEboard, accent, onAddMe
   );
 }
 
-function GroupChatThread({ chat, currentUserId, isEboard, accent, onBack, onDeleted, onChatUpdated }) {
+function GroupChatThread({ chat, currentUserId, isEboard, accent, onBack, onDeleted, onChatUpdated, readOnly = false }) {
   const confirm = useConfirm();
   const [messages, setMessages] = useState([]);
   const [members, setMembers] = useState([]);
@@ -1353,10 +1353,15 @@ function GroupChatThread({ chat, currentUserId, isEboard, accent, onBack, onDele
         .finally(() => { if (!cancelled) setLoading(false); });
     }
     load();
-    markGroupChatRead(chat.id).catch((err) => { if (isRedirectError(err)) throw err; });
+    // Skipped for oversight: marking a chat read that you aren't in is
+    // meaningless, and the endpoint still requires real membership, so this
+    // would be a 403 on every open.
+    if (!readOnly) {
+      markGroupChatRead(chat.id).catch((err) => { if (isRedirectError(err)) throw err; });
+    }
     const interval = setInterval(load, 5000);
     return () => { cancelled = true; clearInterval(interval); };
-  }, [chat.id]);
+  }, [chat.id, readOnly]);
 
   // Membership is DERIVED from the audience, so the roster has to refetch when
   // the audience changes, not only when the chat changes. Keying on chat.id
@@ -1526,7 +1531,18 @@ function GroupChatThread({ chat, currentUserId, isEboard, accent, onBack, onDele
         <div ref={bottomRef} />
       </div>
 
-      <Composer onSend={handleSend} accent={accent} />
+      {/* Oversight chats are read-only: eboard can see an official chat they
+          aren't in, but posting into it would be a message from someone the
+          members never added. The API refuses it too — sendMessage still
+          requires real membership. */}
+      {readOnly ? (
+        <div className="flex items-center gap-2 border-t border-border bg-muted/40 px-4 py-3 text-xs text-muted-foreground">
+          <Eye size={13} className="shrink-0" />
+          <span>Viewing as eboard. Join this chat to post in it.</span>
+        </div>
+      ) : (
+        <Composer onSend={handleSend} accent={accent} />
+      )}
     </div>
   );
 }
@@ -1594,6 +1610,10 @@ function GroupChatsTab({ currentUserId, isEboard, accent, initialGroupChatId }) 
   const [error, setError] = useState(null);
   const [selected, setSelected] = useState(null);
   const [showNewGC, setShowNewGC] = useState(false);
+  // Eboard only. Off by default — oversight is something you go looking for,
+  // not something that reshapes your Messages tab every time you open it.
+  const [showAll, setShowAll] = useState(false);
+  const [allChats, setAllChats] = useState([]);
 
   useEffect(() => {
     let cancelled = false;
@@ -1607,6 +1627,25 @@ function GroupChatsTab({ currentUserId, isEboard, accent, initialGroupChatId }) 
     const interval = setInterval(load, 7000);
     return () => { cancelled = true; clearInterval(interval); };
   }, []);
+
+  // Fetched only while the oversight view is open. A failure here must not
+  // touch the normal list, so it sets its own error and nothing else.
+  useEffect(() => {
+    if (!showAll || !isEboard) return undefined;
+    let cancelled = false;
+    getAllGroupChats()
+      .then((data) => { if (!cancelled) setAllChats(data); })
+      .catch((err) => {
+        if (isRedirectError(err)) throw err;
+        if (!cancelled) setError(err.message ?? 'Could not load all group chats');
+      });
+    return () => { cancelled = true; };
+  }, [showAll, isEboard]);
+
+  // Which of the oversight chats this person is actually in. Anything else
+  // opens read-only, because they aren't a participant in it.
+  const myChatIds = useMemo(() => new Set(chats.map((c) => c.id)), [chats]);
+  const visibleChats = showAll ? allChats : chats;
 
   useEffect(() => {
     if (!initialGroupChatId) return;
@@ -1634,7 +1673,16 @@ function GroupChatsTab({ currentUserId, isEboard, accent, initialGroupChatId }) 
   return (
     <>
       {selected ? (
-        <GroupChatThread chat={selected} currentUserId={currentUserId} isEboard={isEboard} accent={accent} onBack={() => setSelected(null)} onDeleted={handleDeleted} onChatUpdated={handleChatUpdated} />
+        <GroupChatThread
+          chat={selected}
+          currentUserId={currentUserId}
+          isEboard={isEboard}
+          accent={accent}
+          onBack={() => setSelected(null)}
+          onDeleted={handleDeleted}
+          onChatUpdated={handleChatUpdated}
+          readOnly={!myChatIds.has(selected.id)}
+        />
       ) : loading ? (
         <div className="flex h-full items-center justify-center">
           <Loader2 size={22} className="animate-spin text-muted-foreground" />
@@ -1645,7 +1693,47 @@ function GroupChatsTab({ currentUserId, isEboard, accent, initialGroupChatId }) 
           <p className="text-sm text-muted-foreground">{error}</p>
         </div>
       ) : (
-        <GroupChatList chats={chats} currentUserId={currentUserId} accent={accent} isEboard={isEboard} onSelect={setSelected} onNewChat={() => setShowNewGC(true)} />
+        <div className="flex h-full flex-col">
+          {isEboard && (
+            <div className="flex shrink-0 items-center gap-1 border-b border-border px-3 py-2">
+              {[
+                { id: false, label: 'My chats' },
+                { id: true, label: 'All chapter chats' },
+              ].map((mode) => (
+                <button
+                  key={String(mode.id)}
+                  type="button"
+                  onClick={() => setShowAll(mode.id)}
+                  aria-pressed={showAll === mode.id}
+                  className={cn(
+                    'rounded-lg px-2.5 py-1 text-xs font-medium transition-colors',
+                    showAll === mode.id ? 'text-white' : 'text-muted-foreground hover:bg-muted hover:text-foreground',
+                  )}
+                  style={showAll === mode.id ? { background: accent.gradient } : undefined}
+                >
+                  {mode.label}
+                </button>
+              ))}
+              {showAll && (
+                <span className="ml-auto flex items-center gap-1 pr-1 text-[10px] text-muted-foreground">
+                  <Eye size={10} /> Read-only unless you&apos;re a member
+                </span>
+              )}
+            </div>
+          )}
+          <div className="min-h-0 flex-1">
+            <GroupChatList
+              chats={visibleChats}
+              currentUserId={currentUserId}
+              accent={accent}
+              isEboard={isEboard}
+              onSelect={setSelected}
+              // Creating from the oversight list would be confusing — it isn't
+              // your list of chats, it's every chat.
+              onNewChat={showAll ? null : () => setShowNewGC(true)}
+            />
+          </div>
+        </div>
       )}
 
       {showNewGC && <NewGroupChatModal accent={accent} onClose={() => setShowNewGC(false)} onCreate={handleCreate} />}

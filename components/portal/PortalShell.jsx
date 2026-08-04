@@ -223,7 +223,19 @@ function RevampedNavItem({ href, label, Icon, active, badge, collapsed, accentCo
             <span className="absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full ring-2 ring-card" style={{ background: accentColor }} />
           )}
         </span>
-        <span className={cn('overflow-hidden whitespace-nowrap transition-all duration-300', collapsed ? 'w-0 opacity-0' : 'w-auto opacity-100')}>
+        {/* Wraps rather than clips when expanded. With whitespace-nowrap a
+            label wider than the sidebar was silently cut off mid-word, which
+            capped labels at about 18 characters — "Announcements & Events"
+            didn't fit. Collapsed keeps nowrap so the width animation is
+            unchanged. */}
+        <span
+          className={cn(
+            'overflow-hidden transition-all duration-300',
+            collapsed
+              ? 'w-0 whitespace-nowrap opacity-0'
+              : 'w-auto whitespace-normal leading-tight opacity-100',
+          )}
+        >
           {label}
         </span>
         {!collapsed && badge > 0 && (
@@ -340,7 +352,10 @@ export default function PortalShell({
           <aside
             className={cn(
               'relative hidden h-full shrink-0 flex-col border-r border-border bg-card transition-all duration-300 ease-in-out md:flex',
-              collapsed ? 'md:w-[68px]' : 'md:w-[236px]',
+              // 252 rather than 236 so "Announcements & Events" sits on one
+              // line. Labels wrap if they still don't fit, so this is about
+              // looking right, not about text being readable at all.
+              collapsed ? 'md:w-[68px]' : 'md:w-[252px]',
             )}
             aria-label="Portal navigation"
           >
