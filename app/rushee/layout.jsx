@@ -1,6 +1,6 @@
 'use client';
 
-import { Calendar, LayoutDashboard, Megaphone, MessageSquare, Settings, Vote, CalendarClock } from 'lucide-react';
+import { Calendar, LayoutDashboard, Megaphone, MessageSquare, Settings, Vote, CalendarCheck } from 'lucide-react';
 import PortalShell from '@/components/portal/PortalShell';
 
 // NOTE: this portal lives at /rushee, NOT /rush — /rush is the PUBLIC rush
@@ -15,6 +15,11 @@ import PortalShell from '@/components/portal/PortalShell';
 // No Attendance tab either — AttendancePage lists events you can *manage*, so
 // it renders empty for a rushee. They check in by scanning a QR, which opens
 // /checkin/[eventId]/[token] outside the portal.
+//
+// Interviews replaced Meetings here. A rushee proposing a time and summoning
+// named leadership inverted who runs rush; the real use case is eboard posting
+// fixed interview times that candidates claim. /rushee/meetings is gone, and
+// the API refuses rush tokens on /meetings entirely.
 //
 // This used to carry a warning that it "must stay in sync with
 // NAV_GROUPING.violet in PortalShell.jsx". There is no longer a second list to
@@ -32,7 +37,7 @@ const NAV = [
     heading: 'Take Part',
     items: [
       { href: '/rushee/polls', label: 'Polls', icon: Vote },
-      { href: '/rushee/meetings', label: 'Meetings', icon: CalendarClock },
+      { href: '/rushee/interviews', label: 'Interviews', icon: CalendarCheck },
       { href: '/rushee/messages', label: 'Messages', icon: MessageSquare },
     ],
   },

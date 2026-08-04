@@ -253,8 +253,10 @@ export function NewMeetingModal({ accent, presetInvitee, presetCommittee, onClos
   const [error, setError] = useState('');
 
   useEffect(() => {
-    // getMessageableMembers already applies the rush restriction server-side,
-    // so a rushee only ever sees leadership here — the same list they can DM.
+    // The full directory. This used to note that a rushee would only see
+    // leadership here — no longer relevant, since rushees can't reach any
+    // meetings surface at all: /rushee/meetings is gone and the API refuses
+    // rush tokens on /meetings. They book fixed interview slots instead.
     getMessageableMembers()
       .then((data) => setMembers(Array.isArray(data) ? data : []))
       .catch((err) => { if (isRedirectError(err)) throw err; });

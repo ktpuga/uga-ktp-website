@@ -6,7 +6,7 @@ import {
   ChevronLeft, ChevronRight, Clock, MapPin, CalendarDays, Trash2, X,
   CheckSquare, Loader2, AlertCircle,
 } from 'lucide-react';
-import { getEvents, deleteEvent, getCalendarMeetings } from '@/lib/portal-api';
+import { getEvents, deleteEvent, getCalendarMeetings, getCalendarInterviews } from '@/lib/portal-api';
 import { formatEventTimeRange, getEventStartDate, getEventEndDate, formatAudience } from '@/lib/portal-format';
 import { isRedirectError } from '@/lib/is-redirect-error';
 import { useConfirm } from '@/components/ui/confirm-dialog';
@@ -56,16 +56,17 @@ function buildGrid(year, month) {
   return cells;
 }
 
-// Meetings live in their own table (see ktp-docs: they're kept out of `events`
-// so eboard's unfiltered event view can't expose everyone's private 1-on-1s),
-// so the calendar merges two sources. The ICS feed does the same merge; this
-// is the second of the two places that pays that cost.
+// Meetings and booked interview slots live in their own tables (see ktp-docs:
+// they're kept out of `events` so eboard's unfiltered event view can't expose
+// everyone's private 1-on-1s), so the calendar merges three sources. The ICS
+// feed does the same merge; this is the second of the two places that pays that
+// cost.
 //
-// `isMeeting` is not cosmetic. Meeting ids and event ids both start at 1, and
-// the calendar's delete button calls deleteEvent(id) against /events/:id — so
-// an unguarded Delete on meeting 4 would destroy the unrelated EVENT 4.
-// `createdBy` is deliberately left undefined so the existing
-// "isEboard || createdBy === me" checks can't light up either.
+// `isMeeting` / `isInterview` are not cosmetic. Meeting, interview and event
+// ids all start at 1, and the calendar's delete button calls deleteEvent(id)
+// against /events/:id — so an unguarded Delete on meeting 4 would destroy the
+// unrelated EVENT 4. `createdBy` is deliberately left undefined on both so the
+// existing "isEboard || createdBy === me" checks can't light up either.
 function asCalendarEntry(meeting) {
   return {
     id: `meeting-${meeting.id}`,
@@ -80,16 +81,35 @@ function asCalendarEntry(meeting) {
   };
 }
 
-// One fetch used by both calendar variants. A meetings failure must not blank
-// the chapter calendar, so it degrades to [] rather than rejecting the pair.
+// The API already shapes interviews like events (title, description, location,
+// startDate, endDate), so this only namespaces the id and sets the guard flag.
+function asInterviewEntry(interview) {
+  return {
+    id: `interview-${interview.id}`,
+    title: interview.title,
+    description: interview.description ?? null,
+    location: interview.location ?? null,
+    startDate: interview.startDate,
+    endDate: interview.endDate,
+    audience: null,
+    requiresAttendance: false,
+    isInterview: true,
+  };
+}
+
+// One fetch used by both calendar variants. A meetings or interviews failure
+// must not blank the chapter calendar, so each degrades to [] rather than
+// rejecting the whole set.
 async function loadCalendarItems() {
-  const [events, meetings] = await Promise.all([
+  const [events, meetings, interviews] = await Promise.all([
     getEvents(),
     getCalendarMeetings().catch((err) => { if (isRedirectError(err)) throw err; return []; }),
+    getCalendarInterviews().catch((err) => { if (isRedirectError(err)) throw err; return []; }),
   ]);
   return [
     ...(Array.isArray(events) ? events : []),
     ...(Array.isArray(meetings) ? meetings : []).map(asCalendarEntry),
+    ...(Array.isArray(interviews) ? interviews : []).map(asInterviewEntry),
   ];
 }
 
@@ -301,6 +321,7 @@ function RevampedEventsCalendar({ title, description, accentKey }) {
         requiresAttendance: event.requiresAttendance,
         creatorId: event.createdBy,
         isMeeting: Boolean(event.isMeeting),
+        isInterview: Boolean(event.isInterview),
       };
       if (!map[key]) map[key] = [];
       map[key].push(shaped);
@@ -316,9 +337,11 @@ function RevampedEventsCalendar({ title, description, accentKey }) {
     ? new Date(`${selectedDate}T00:00:00`).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })
     : '';
 
-  // Never for a meeting — see asCalendarEntry. Meetings are cancelled by
-  // their organizer from the Meetings tab, not deleted from the calendar.
-  const canDeleteEvent = (ev) => !ev.isMeeting && (isEboard || (!!currentUserId && ev.creatorId === currentUserId));
+  // Never for a meeting or an interview — see asCalendarEntry. Both are
+  // deleted from their own tabs, and a Delete here would hit /events/:id with
+  // an id belonging to a different table entirely.
+  const canDeleteEvent = (ev) => !ev.isMeeting && !ev.isInterview
+    && (isEboard || (!!currentUserId && ev.creatorId === currentUserId));
 
   const monthEventCount = useMemo(() => {
     return Object.entries(eventsByDate).reduce((sum, [key, evs]) => {

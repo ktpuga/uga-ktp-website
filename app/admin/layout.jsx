@@ -1,6 +1,6 @@
 'use client';
 
-import { BarChart2, Megaphone, Calendar, MessageSquare, Users, UsersRound, Vote, FolderOpen, Image as ImageIcon, ShieldAlert, Settings, Images, QrCode, CalendarClock, UserSearch } from 'lucide-react';
+import { BarChart2, Megaphone, Calendar, MessageSquare, Users, UsersRound, Vote, FolderOpen, Image as ImageIcon, ShieldAlert, Settings, Images, QrCode, CalendarClock, CalendarCheck, UserSearch } from 'lucide-react';
 import PortalShell from '@/components/portal/PortalShell';
 import { useRushCount } from '@/lib/use-rush-count';
 
@@ -48,6 +48,11 @@ function buildNav(hasRushees) {
     items: [
       { href: '/admin/rush-announcements', label: 'Rush Announcements', icon: Megaphone },
       { href: '/admin/rush-signup', label: 'Rush Signup', icon: QrCode },
+      // Interview slot signup — post times, rushees claim them. Lives in Rush
+      // rather than next to Meetings under Programming: it runs for one week a
+      // year as part of rush, and Meetings is the chapter-wide feature that
+      // rushees can no longer touch.
+      { href: '/admin/interviews', label: 'Interviews', icon: CalendarCheck },
         // Only while rush is running — see useRushCount.
         ...(hasRushees ? [{ href: '/admin/rushees', label: 'Rushees', icon: UserSearch }] : []),
     ],
