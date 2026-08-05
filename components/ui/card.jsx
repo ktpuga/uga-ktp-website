@@ -94,7 +94,10 @@ const AVATAR_SIZES = { default: "w-20 h-20", lg: "w-32 h-32 sm:w-36 sm:h-36" };
 const ProfileCard = ({ name, title, bio, avatarSrc, fallbackInitials, instagramUrl, linkedinUrl, otherUrl, email, className, avatarShape = "circle", avatarSize = "default" }) => {
   const squareAvatar = avatarShape === "square";
   return (
-    <div className={`relative rounded-2xl bg-card/80 backdrop-blur-lg border-2 border-transparent bg-clip-padding p-6 text-center shadow-xl flex flex-col items-center justify-center transition-transform duration-300 hover:scale-105 hover:border-gradient-to-tr hover:from-indigo-400 hover:via-fuchsia-400 hover:to-cyan-400 group min-h-[260px] h-full ${className ?? ""}`}>
+    // cn() rather than plain interpolation so a caller's layout class (e.g.
+    // justify-start) actually overrides the default instead of losing to it on
+    // stylesheet order.
+    <div className={cn("relative rounded-2xl bg-card/80 backdrop-blur-lg border-2 border-transparent bg-clip-padding p-6 text-center shadow-xl flex flex-col items-center justify-center transition-transform duration-300 hover:scale-105 hover:border-gradient-to-tr hover:from-indigo-400 hover:via-fuchsia-400 hover:to-cyan-400 group min-h-[260px] h-full", className)}>
       <Avatar className={cn(AVATAR_SIZES[avatarSize] ?? AVATAR_SIZES.default, "mb-4 shadow-lg ring-4 ring-indigo-200 group-hover:ring-fuchsia-300 transition-all duration-300", squareAvatar && "rounded-2xl")}>
         <AvatarImage src={avatarSrc} alt={`${name} Avatar, bio: ${bio}`} />
         <AvatarFallback className={cn(squareAvatar && "rounded-2xl")}>{fallbackInitials}</AvatarFallback>

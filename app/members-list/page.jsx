@@ -56,7 +56,12 @@ function RosterCard({ person, title }) {
       linkedinUrl={linkedinHref(person.linkedinUrl)}
       avatarShape="square"
       avatarSize="lg"
-      className="h-full"
+      // Top-align instead of the card's default vertical centering: grid
+      // stretches every card to the tallest in the row, so centered content
+      // means a name that wraps to two lines pushes its photo up and out of
+      // line with its neighbours'. Anchored to the top, the photos stay level
+      // across the row and the extra line grows downward.
+      className="h-full justify-start"
     />
   );
 }
