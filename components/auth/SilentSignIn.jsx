@@ -2,17 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { signIn } from 'next-auth/react';
-import { markProbeStarted, clearProbeMark } from '@/lib/sso-probe';
-
-// When this tab last asked Authentik whether it has a session. The backstop
-// against a probe that returns *without* an error param and starts over on
-// arrival — ?error= catches the ordinary failure, this catches a loop.
-//
-// Time-boxed rather than once-per-tab: a loop re-enters within milliseconds,
-// while a session expiring an hour later deserves a fresh probe. A permanent
-// flag would silently turn auto-sign-in off for the rest of the tab's life.
-const PROBE_KEY = 'ktp_sso_probed_at';
-const PROBE_COOLDOWN_MS = 30_000;
+import { markProbeStarted, clearEntryMarks, takeAutoSignInSlot } from '@/lib/sso';
 
 // Asks Authentik "is this browser already signed in?" without showing anyone a
 // login form, then either lets the redirect happen or reveals `children`.
@@ -23,34 +13,29 @@ const PROBE_COOLDOWN_MS = 30_000;
 // land on OUR page, where rush signup exists, instead of being dropped on
 // Authentik's login form, where it doesn't.
 //
-// Members keep the one-click behaviour: they have a session, so the probe
-// succeeds and they're in the portal before this paints anything meaningful.
-// Every failure mode degrades to the old manual button, which is why the probe
-// is safe to attempt at all.
-export default function SilentSignIn({ children }) {
-  const [probing, setProbing] = useState(true);
+// It is deliberately NOT the way a *deliberate* sign-in happens. `prompt=none`
+// cannot grant first-time consent, so a brand-new account gets an error here
+// even though its session is perfectly good — see components/auth/StartSignIn
+// for the full sign-in used when we already know the visitor wants in.
+//
+// Every failure mode degrades to the manual button below, which is why the
+// probe is safe to attempt at all.
+export default function SilentSignIn({ enabled, children }) {
+  const [probing, setProbing] = useState(enabled);
 
   useEffect(() => {
-    // sessionStorage throws in some privacy modes. Treating that as "not yet
-    // probed" is the safe direction: the worst case is one redirect to
-    // Authentik, which returns with ?error= and is caught server-side.
-    let lastProbedAt = 0;
-    try {
-      lastProbedAt = Number(sessionStorage.getItem(PROBE_KEY)) || 0;
-    } catch {
-      lastProbedAt = 0;
-    }
-
-    if (Date.now() - lastProbedAt < PROBE_COOLDOWN_MS) {
-      clearProbeMark();
+    // The server has now rendered its decision from the entry cookies, so
+    // they've done their job — drop them before they can affect a later visit.
+    if (!enabled) {
+      clearEntryMarks();
       setProbing(false);
       return undefined;
     }
 
-    try {
-      sessionStorage.setItem(PROBE_KEY, String(Date.now()));
-    } catch {
-      // Ignored — see above.
+    if (!takeAutoSignInSlot()) {
+      clearEntryMarks();
+      setProbing(false);
+      return undefined;
     }
 
     markProbeStarted();
@@ -60,11 +45,11 @@ export default function SilentSignIn({ children }) {
     // the options rather than leaving a spinner forever — this is the login
     // path, so it must never be a dead end.
     const timer = setTimeout(() => {
-      clearProbeMark();
+      clearEntryMarks();
       setProbing(false);
     }, 6000);
     return () => clearTimeout(timer);
-  }, []);
+  }, [enabled]);
 
   if (!probing) return children;
 

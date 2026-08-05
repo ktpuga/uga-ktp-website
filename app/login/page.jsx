@@ -5,7 +5,7 @@ import { cookies } from 'next/headers';
 import { auth } from '@/auth';
 import SignInButton from '@/components/auth/SignInButton';
 import SilentSignIn from '@/components/auth/SilentSignIn';
-import { SSO_PROBE_COOKIE } from '@/lib/sso-probe';
+import { SSO_PROBE_COOKIE, SIGNED_OUT_COOKIE } from '@/lib/sso';
 
 export default async function Login({ searchParams }) {
   const session = await auth();
@@ -26,11 +26,13 @@ export default async function Login({ searchParams }) {
   //                       between us and Authentik, and the visitor never
   //                       sees why it broke.
   //   ktp_signed_out=1    Set by logoutEverywhere. Without it, "sign out"
-  //                       lands here and is immediately undone — and if
-  //                       Authentik's session somehow survived, signing out
-  //                       becomes impossible.
+  //                       lands here and is immediately undone, so sign-out
+  //                       never visibly happens. It covers this one render
+  //                       and is then cleared, so coming back later — after
+  //                       signing into Authentik again, say — auto-starts
+  //                       normally instead of demanding a click.
   const failed = Boolean(params.error);
-  const justSignedOut = cookieStore.get('ktp_signed_out')?.value === '1';
+  const justSignedOut = cookieStore.get(SIGNED_OUT_COOKIE)?.value === '1';
   const autoStart = !failed && !justSignedOut;
 
   // A probe that found no session reports itself exactly like a broken
@@ -94,7 +96,10 @@ export default async function Login({ searchParams }) {
           <p className="mb-4 text-center text-sm text-white/70">You&apos;ve been signed out.</p>
         )}
 
-        {autoStart ? <SilentSignIn>{signInOptions}</SilentSignIn> : signInOptions}
+        {/* Rendered either way: when auto-start is suppressed it shows the
+            options straight away, and clears the entry cookies the render
+            above just consumed. */}
+        <SilentSignIn enabled={autoStart}>{signInOptions}</SilentSignIn>
 
         <div className="mt-8 text-center">
           <Link href="/" className="text-sm text-white/70 hover:text-white hover:underline">
