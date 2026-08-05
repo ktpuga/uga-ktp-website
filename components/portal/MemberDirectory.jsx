@@ -7,7 +7,7 @@ import { useSession } from 'next-auth/react';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import {
-  Users, X, MessageSquare, Mail, ChevronUp, ChevronDown, AlertCircle, Loader2, GraduationCap, BookOpen, CalendarClock,
+  Users, X, MessageSquare, Mail, ChevronUp, ChevronDown, AlertCircle, Loader2, GraduationCap, BookOpen, CalendarClock, Linkedin,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { getMemberDirectory } from '@/lib/portal-api';
@@ -17,6 +17,7 @@ import {
   formatMemberGroup,
   formatGraduationDate,
   formatPledgeClass,
+  linkedinHref,
   MEMBER_GROUP_ORDER,
   LEADERSHIP_GROUPS,
 } from '@/lib/portal-format';
@@ -140,6 +141,34 @@ function GroupBadge({ group }) {
   );
 }
 
+// Rendered only when linkedinHref() accepts the stored value, so an unusable
+// or unsafe entry is silently no button rather than a dead/hostile link.
+//
+// stopPropagation because the directory row is itself a click target that
+// opens the profile modal — without it, following the link would also open
+// the modal behind the new tab.
+function LinkedinLink({ url, className, showLabel = true }) {
+  if (!url) return null;
+  return (
+    <a
+      href={url}
+      target="_blank"
+      rel="noopener noreferrer"
+      onClick={(e) => e.stopPropagation()}
+      className={cn(
+        'inline-flex items-center gap-1 text-[11px] font-medium text-muted-foreground transition-colors hover:text-[#0a66c2]',
+        className
+      )}
+      // Always spelled out, even when the label is hidden — the row variant is
+      // icon-only for width, which a screen reader must not inherit.
+      aria-label="LinkedIn profile (opens in a new tab)"
+    >
+      <Linkedin size={12} />
+      {showLabel && 'LinkedIn'}
+    </a>
+  );
+}
+
 function InfoRow({ icon, label, value, isLast }) {
   return (
     <div className={cn('flex items-center gap-2.5 py-1.5', !isLast && 'border-b border-border')}>
@@ -208,6 +237,7 @@ function ProfileModal({ member, accent, onClose }) {
 
           <h2 className="text-center text-xl font-bold tracking-tight text-foreground">{name}</h2>
           {member.username && <p className="text-xs text-muted-foreground">@{member.username}</p>}
+          <LinkedinLink url={linkedinHref(member.linkedinUrl)} className="mt-1.5" />
 
           <div className="mt-2 flex flex-wrap items-center justify-center gap-1.5">
             <GroupBadge group={member.memberGroup} />
@@ -340,7 +370,10 @@ function DirectoryRow({ member, accent, onClick, showPledgeClass = true }) {
           <DirectoryAvatar member={member} size={36} accent={accent} />
           <div className="min-w-0">
             <p className="truncate text-sm font-semibold text-foreground">{name}</p>
-            {member.username && <p className="text-[11px] text-muted-foreground">@{member.username}</p>}
+            <div className="flex items-center gap-2">
+              {member.username && <p className="truncate text-[11px] text-muted-foreground">@{member.username}</p>}
+              <LinkedinLink url={linkedinHref(member.linkedinUrl)} showLabel={false} className="shrink-0" />
+            </div>
           </div>
         </div>
       </td>

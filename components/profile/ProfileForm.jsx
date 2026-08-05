@@ -19,6 +19,8 @@ import { buildProfilePayload, parseGraduationDate } from '@/lib/profile';
 import { updateProfile, uploadProfilePicture } from '@/lib/portal-api';
 import { saveProfile } from '@/app/complete-profile/actions';
 import { isRedirectError } from '@/lib/is-redirect-error';
+import { linkedinHref } from '@/lib/portal-format';
+import { cn } from '@/lib/utils';
 
 function ProfilePictureField({ authentikId, variant }) {
   const [uploading, setUploading] = useState(false);
@@ -135,6 +137,7 @@ export default function ProfileForm({
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [linkedinError, setLinkedinError] = useState(null);
 
   const graduation = parseGraduationDate(defaultValues.graduation_date);
 
@@ -160,6 +163,18 @@ export default function ProfileForm({
     // the e.target comes from what the user inputs
 
     const formData = new FormData(e.target);
+
+    // Same rule the API enforces, run here so a typo is a message next to the
+    // field instead of a 400 banner at the top of the form. The API is still
+    // the one that decides — this only saves a round trip.
+    const linkedinRaw = formData.get('linkedin_url');
+    if (linkedinRaw && !linkedinHref(linkedinRaw)) {
+      setLinkedinError("That doesn't look like a LinkedIn profile link.");
+      setLoading(false);
+      return;
+    }
+    setLinkedinError(null);
+
     const semester = formData.get('graduation_semester');
     const year = formData.get('graduation_year');
     if (semester && year) {
@@ -344,8 +359,18 @@ export default function ProfileForm({
           name="linkedin_url"
           placeholder="https://linkedin.com/in/..."
           defaultValue={defaultValues.linkedin_url}
-          className={inputClass}
+          maxLength={300}
+          onChange={() => linkedinError && setLinkedinError(null)}
+          aria-invalid={linkedinError ? 'true' : undefined}
+          className={cn(inputClass, linkedinError && 'border-red-500 focus-visible:ring-red-500')}
         />
+        {linkedinError ? (
+          <p className="mt-1 text-xs text-red-600 dark:text-red-400">{linkedinError}</p>
+        ) : (
+          <p className="mt-1 text-xs text-muted-foreground">
+            Paste your profile link, or just your handle. Leave blank to remove it.
+          </p>
+        )}
       </Field>
 
       {/* A rushee has no pledge class yet — that's the thing they're rushing

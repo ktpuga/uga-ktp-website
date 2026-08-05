@@ -8,6 +8,7 @@ import Card from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import Footer from '@/components/ui/footer';
 import { getRoster } from '@/lib/portal-api';
+import { linkedinHref } from '@/lib/portal-format';
 
 const SECTIONS = [
   { key: 'eboard', heading: 'Executive Board', subtitle: 'The leaders driving KTP forward.', title: 'E-Board', bg: 'bg-card', cols: 'sm:grid-cols-3 md:grid-cols-4' },
@@ -49,6 +50,10 @@ function RosterCard({ person, title }) {
       title={personTitle(person, title)}
       avatarSrc={`/api/roster/${person.id}/media`}
       fallbackInitials={initials}
+      // Card already renders a LinkedIn icon under the name when given one;
+      // linkedinHref returns null for anything unsafe or non-LinkedIn, which
+      // simply omits the icon.
+      linkedinUrl={linkedinHref(person.linkedinUrl)}
       avatarShape="square"
       avatarSize="lg"
       className="h-full"
