@@ -106,7 +106,7 @@ export default function Page () {
             <CountdownTimer targetDate="2026-08-31T18:00:00" />
 
             <p className="mt-4 w-full max-w-lg text-balance text-base leading-relaxed text-[#e8e0d5] sm:mt-6 sm:text-lg lg:max-w-3xl md:text-xl">
-              Interest Forms and Applications will be posted here soon. Check back later, or reach out on Instagram if you have questions.
+              
             </p>
 
             {/* The primary CTA sends people to "How Rush Works", NOT straight
