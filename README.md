@@ -6,13 +6,15 @@ The public marketing site **and** the member portal for Kappa Theta Pi, Phi Chap
 
 This repo is the frontend only. All chapter data lives behind [`ktp-api`](https://github.com/ktpuga/ktp-api); this app never talks to PostgreSQL or Immich directly.
 
+> **New here, or looking for something to pick up?** [**TODO.md**](./TODO.md) has the current task list plus the traps that have actually caused bugs in this codebase — the things you can't get from reading the code.
+
 ---
 
 ## How it fits together
 
 | Piece | Role |
 |---|---|
-| **This app** | Public pages + four authenticated portals. Holds no chapter data of its own |
+| **This app** | Public pages + four authenticated portals (`/member`, `/admin`, `/pledge`, `/rushee`). Holds no chapter data of its own |
 | **Authentik** (`auth.ugaktp.com`) | Login, passwords, and group membership. NextAuth stores the resulting access token server-side only |
 | **ktp-api** (`api2.ugaktp.com`) | Every read/write of real chapter data. Called from server actions in `lib/portal-api.js` |
 | **Sanity** | Blog content only (`/blog`). Unrelated to the portal. The Studio is no longer embedded — see [Sanity Studio](#sanity-studio) |
@@ -62,24 +64,32 @@ You need a real account in a real group to see anything past the login screen �
 
 ### Portals
 
-Four portals, one per Authentik group. `/admin` is eboard; `/member` covers both `chair` and `active`.
+Four portals. `/admin` is eboard; `/member` covers `chair`, `active` **and `alumni`**; `/rushee` is for prospective members during rush.
 
-| | `/member` | `/admin` | `/alumni` | `/pledge` |
+| | `/member` | `/admin` | `/pledge` | `/rushee` |
 |---|---|---|---|---|
-| Accent | blue | maroon | amber | teal |
+| Accent | blue | maroon (or blue) | blue | blue |
 | Dashboard | ● | analytics | ● | ● |
+| Announcements | ● | ● | ● | ● |
 | Calendar | ● | ● | ● | ● |
-| Directory | ● | — | ● | ● |
-| Committees | ● | ● | ● | — |
+| Directory | ● | — | ● | — |
+| Rushees | ● | ● | ● | — |
+| Meetings | ● | ● | ● | — |
+| Interviews | — | ● | — | ● |
+| Committees | ● | ● | — | — |
 | Polls | ● | ● | ● | ● |
-| Files & Photos | ● | ● | ● | ● |
+| Files & Photos | ● | ● | ● | — |
 | Messages | ● | ● | ● | ● |
 | Attendance | chair only | ● | — | — |
 | Settings | ● | ● | ● | ● |
 
-Admin additionally has Announcements, Reports, User Management, Homepage Photos, and iOS Homepage Slideshow.
+Admin additionally has Announcements authoring, Reports, User Management, Activity Log, Rush Signup, Rush Announcements, Homepage Photos, and iOS Homepage Slideshow.
 
-Pledges have no Committees tab by design — it isn't hidden with CSS, the route doesn't exist.
+Three deliberate absences, none of them CSS — **the routes don't exist**: pledges have no Committees, `/admin` has no Directory (User Management replaces it), and `/rushee` has no Meetings (Interviews replaced it) or Files.
+
+The **Rushees** tab appears only while `GET /members/rush-count` is above zero, so it shows up during rush and disappears afterwards on its own.
+
+> **There is no `/alumni` portal.** It was a copy of `/member` in amber and was deleted 2026-08-05; alumni share `/member`, and `/alumni/*` 307-redirects there via `next.config.js`. Don't re-add it.
 
 ---
 
@@ -176,7 +186,7 @@ auth.ts                  NextAuth config, token refresh
 
 ### Portal components are shared across all four portals
 
-Nearly everything under `components/portal/` is one component rendered by all four portals, switched by an `accent` (or `theme`) prop — `blue`, `red`, `amber`, `teal`. Editing one of these files changes every portal at once. See [`components/README.md`](components/README.md) before adding anything portal-specific.
+Nearly everything under `components/portal/` is one component rendered by all four portals, switched by an `accent` (or `theme`) prop. In practice that is `blue` everywhere except `/admin`, which is `red` or `blue` per the viewer's own setting; `amber` and `teal` still exist in `PALETTES` but nothing renders them since `/alumni` was removed. Editing one of these files changes every portal at once. See [`components/README.md`](components/README.md) before adding anything portal-specific.
 
 Two conventions that will silently break a portal if missed:
 
