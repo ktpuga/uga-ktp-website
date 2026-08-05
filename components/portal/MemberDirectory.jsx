@@ -65,9 +65,13 @@ function tint(hex, alpha) {
 // Specific role/title if there is one (an eboard member's exec_title, or
 // which committee a chair runs) — shown alongside, not instead of, the
 // group badge, since the internal Directory still wants the raw group too.
+//
+// A chair shows only the committee name. The word "Chair" used to lead it,
+// which read as "Chair, Marketing" directly beside a badge already saying
+// Chair — the badge is the role, this is which one.
 function specificRole(member) {
   if (member.execTitle) return member.execTitle;
-  if (member.chairedCommittees?.length > 0) return `Chair, ${member.chairedCommittees.join(' & ')}`;
+  if (member.chairedCommittees?.length > 0) return member.chairedCommittees.join(' & ');
   return null;
 }
 

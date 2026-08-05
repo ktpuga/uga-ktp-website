@@ -37,10 +37,14 @@ const proxy = auth((req) => {
   if (path.startsWith("/admin") && !groups.includes("eboard"))
     return NextResponse.redirect(new URL(homePortal(groups), req.url))
 
-  if (path.startsWith("/member") && !groups.includes("chair") && !groups.includes("active"))
-    return NextResponse.redirect(new URL(homePortal(groups), req.url))
-
-  if (path.startsWith("/alumni") && !groups.includes("alumni"))
+  // Alumni belong here too — /alumni was a duplicate of this portal and is
+  // gone. See lib/home-portal.js.
+  if (
+    path.startsWith("/member") &&
+    !groups.includes("chair") &&
+    !groups.includes("active") &&
+    !groups.includes("alumni")
+  )
     return NextResponse.redirect(new URL(homePortal(groups), req.url))
 
   if (path.startsWith("/pledge") && !groups.includes("pledge"))
@@ -59,8 +63,6 @@ export const config = {
     "/member/:path*",
     "/admin",
     "/admin/:path*",
-    "/alumni",
-    "/alumni/:path*",
     "/pledge",
     "/pledge/:path*",
     "/rushee",

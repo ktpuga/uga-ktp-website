@@ -2,6 +2,21 @@
 module.exports = {
     output: 'standalone',
 
+    async redirects() {
+        return [
+            // Alumni used to have their own portal at /alumni — the same pages
+            // in amber. They now share /member, so old bookmarks and links in
+            // past emails would 404 without this.
+            //
+            // Deliberately NOT permanent: a 308 is cached by the browser
+            // indefinitely, so if the chapter ever wants an alumni-only portal
+            // back, everyone who followed one of these would keep being sent
+            // to /member with no way to clear it short of a hard reset.
+            { source: '/alumni', destination: '/member', permanent: false },
+            { source: '/alumni/:path*', destination: '/member/:path*', permanent: false },
+        ];
+    },
+
     // Next 16 builds with Turbopack by default, and a custom `webpack()` block
     // makes `next build` fail outright rather than being silently ignored — so
     // the one that used to be here is gone. It only did

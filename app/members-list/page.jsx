@@ -11,7 +11,7 @@ import { getRoster } from '@/lib/portal-api';
 
 const SECTIONS = [
   { key: 'eboard', heading: 'Executive Board', subtitle: 'The leaders driving KTP forward.', title: 'E-Board', bg: 'bg-card', cols: 'sm:grid-cols-3 md:grid-cols-4' },
-  { key: 'chair', heading: 'Committee Chairs', subtitle: 'Running the committees that make the chapter go.', title: 'Chair', bg: 'bg-background', cols: 'sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5' },
+  { key: 'chair', heading: 'Cabinet', subtitle: 'Running the committees that make the chapter go.', title: 'Chair', bg: 'bg-background', cols: 'sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5' },
   { key: 'active', heading: 'Members', subtitle: 'The full active roster of Phi Chapter.', title: 'Member', bg: 'bg-card', cols: 'sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5' },
   { key: 'alumni', heading: 'Alumni', subtitle: 'Celebrating ΚΘΠ alumni and their ongoing impact.', title: 'Alumni', bg: 'bg-background', cols: 'sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5' },
 ];
