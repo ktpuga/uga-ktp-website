@@ -1,6 +1,6 @@
 'use client';
 
-import { BarChart2, Megaphone, Calendar, MessageSquare, Users, UsersRound, Vote, FolderOpen, Image as ImageIcon, ShieldAlert, Settings, Images, QrCode, CalendarClock, CalendarCheck, UserSearch } from 'lucide-react';
+import { BarChart2, Megaphone, Calendar, MessageSquare, Users, UsersRound, Vote, FolderOpen, Image as ImageIcon, ShieldAlert, Settings, Images, QrCode, CalendarClock, CalendarCheck, UserSearch, ScrollText } from 'lucide-react';
 import PortalShell from '@/components/portal/PortalShell';
 import { useRushCount } from '@/lib/use-rush-count';
 
@@ -64,6 +64,10 @@ function buildNav(hasRushees) {
       { href: '/admin/users', label: 'User Management', icon: Users },
       { href: '/admin/committees', label: 'Committees', icon: UsersRound },
       { href: '/admin/reports', label: 'Reports', icon: ShieldAlert },
+      // Everything created, edited or deleted site-wide. Sits with the other
+      // people-oversight tools rather than under Overview: it answers "who
+      // did that", which is a question about people.
+      { href: '/admin/logs', label: 'Activity Log', icon: ScrollText },
     ],
   },
   {
