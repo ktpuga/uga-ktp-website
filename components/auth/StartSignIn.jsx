@@ -20,9 +20,10 @@ export default function StartSignIn() {
   const [stalled, setStalled] = useState(false);
 
   useEffect(() => {
-    // Shared with the /login probe, so the two can't ping-pong: whichever ran
-    // first holds the slot, and the other falls back to showing options.
-    if (!takeAutoSignInSlot()) {
+    // Guards against /auth/redirect ⇄ /auth/start bouncing. Its own slot, NOT
+    // one shared with /login's probe — see lib/sso.js for why sharing broke
+    // signing up from the login page.
+    if (!takeAutoSignInSlot('start')) {
       router.replace('/login');
       return undefined;
     }

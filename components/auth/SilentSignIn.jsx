@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { signIn } from 'next-auth/react';
-import { markProbeStarted, clearEntryMarks, takeAutoSignInSlot } from '@/lib/sso';
+import { markProbeStarted, clearProbeMark, takeAutoSignInSlot } from '@/lib/sso';
 
 // Asks Authentik "is this browser already signed in?" without showing anyone a
 // login form, then either lets the redirect happen or reveals `children`.
@@ -18,22 +18,14 @@ import { markProbeStarted, clearEntryMarks, takeAutoSignInSlot } from '@/lib/sso
 // even though its session is perfectly good — see components/auth/StartSignIn
 // for the full sign-in used when we already know the visitor wants in.
 //
-// Every failure mode degrades to the manual button below, which is why the
-// probe is safe to attempt at all.
-export default function SilentSignIn({ enabled, children }) {
-  const [probing, setProbing] = useState(enabled);
+// The page decides whether to render this — see app/login/page.jsx for the two
+// cases where auto-start is suppressed, both of which would otherwise loop.
+export default function SilentSignIn({ children }) {
+  const [probing, setProbing] = useState(true);
 
   useEffect(() => {
-    // The server has now rendered its decision from the entry cookies, so
-    // they've done their job — drop them before they can affect a later visit.
-    if (!enabled) {
-      clearEntryMarks();
-      setProbing(false);
-      return undefined;
-    }
-
-    if (!takeAutoSignInSlot()) {
-      clearEntryMarks();
+    if (!takeAutoSignInSlot('probe')) {
+      clearProbeMark();
       setProbing(false);
       return undefined;
     }
@@ -45,11 +37,11 @@ export default function SilentSignIn({ enabled, children }) {
     // the options rather than leaving a spinner forever — this is the login
     // path, so it must never be a dead end.
     const timer = setTimeout(() => {
-      clearEntryMarks();
+      clearProbeMark();
       setProbing(false);
     }, 6000);
     return () => clearTimeout(timer);
-  }, [enabled]);
+  }, []);
 
   if (!probing) return children;
 
