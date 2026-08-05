@@ -1271,22 +1271,17 @@ function GroupChatInfoModal({ chat, members, messages, isEboard, accent, onAddMe
                       </div>
                     </div>
                   </ProfileActionsMenu>
-                  {/* is_auto means they're here through the chat's group or
-                      committee, not as an individual. Removing them would
-                      delete no row and they'd stay in the chat, so offer the
-                      explanation instead of a button that does nothing. */}
-                  {isEboard && (m.is_auto ? (
-                    <span
-                      className="ml-1 shrink-0 rounded-md px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground"
-                      title="In this chat because of its groups or committees. Change those to remove them."
-                    >
-                      auto
-                    </span>
-                  ) : (
+                  {/* No remove button for is_auto members, and deliberately no
+                      badge either. They're in the chat through its groups or
+                      committees, so removing them deletes no row and they stay
+                      put — the way to drop them is to change the chat's
+                      audience. Don't "fix" this by adding a button here; it
+                      would look like it worked and change nothing. */}
+                  {isEboard && !m.is_auto && (
                     <button type="button" onClick={() => onRemoveMember(m.authentik_id)} className="ml-1 shrink-0 rounded-md p-1 text-muted-foreground hover:bg-destructive/10 hover:text-destructive" aria-label={`Remove ${memberDisplayName(m)}`}>
                       <UserMinus size={12} />
                     </button>
-                  ))}
+                  )}
                 </div>
                   ))}
                 </div>

@@ -16,6 +16,7 @@ import {
   memberInitials,
   formatMemberGroup,
   formatGraduationDate,
+  formatPledgeClass,
   MEMBER_GROUP_ORDER,
   LEADERSHIP_GROUPS,
 } from '@/lib/portal-format';
@@ -317,7 +318,7 @@ function SortButton({ active, dir, onClick, accent, children }) {
   );
 }
 
-function DirectoryRow({ member, accent, onClick }) {
+function DirectoryRow({ member, accent, onClick, showPledgeClass = true }) {
   const name = directoryDisplayName(member);
   const role = specificRole(member);
 
@@ -344,9 +345,13 @@ function DirectoryRow({ member, accent, onClick }) {
         <span className="text-sm text-muted-foreground">{member.major || '—'}</span>
       </td>
 
-      <td className="hidden px-4 py-3.5 sm:table-cell">
-        <span className="text-sm text-muted-foreground">{member.pledgeClass || '—'}</span>
-      </td>
+      {showPledgeClass && (
+        <td className="hidden px-4 py-3.5 sm:table-cell">
+          <span className="text-sm text-muted-foreground">
+            {formatPledgeClass(member.pledgeClass) || '—'}
+          </span>
+        </td>
+      )}
 
       {/* Badge last, so it sits flush against the right edge on every row.
           Role first would push the badge left by the length of each person's
@@ -364,13 +369,15 @@ function DirectoryRow({ member, accent, onClick }) {
   );
 }
 
-function GroupSection({ group, members, accent, onSelect }) {
+function GroupSection({ group, members, accent, onSelect, showPledgeClass = true }) {
   if (members.length === 0) return null;
 
   return (
     <>
       <tr aria-hidden="true">
-        <td colSpan={4} className="px-6 pb-1 pt-5">
+        {/* Must match the real column count, or the section heading's rule
+            stops short of the table edge when a column is dropped. */}
+        <td colSpan={showPledgeClass ? 4 : 3} className="px-6 pb-1 pt-5">
           <div className="flex items-center gap-2">
             <span className="h-1.5 w-1.5 rounded-full" style={{ background: GROUP_COLOR[group] }} />
             <span className="text-[10px] font-semibold uppercase tracking-[0.18em]" style={{ color: GROUP_COLOR[group] }}>
@@ -381,7 +388,13 @@ function GroupSection({ group, members, accent, onSelect }) {
         </td>
       </tr>
       {members.map((m) => (
-        <DirectoryRow key={m.id ?? m.username} member={m} accent={accent} onClick={() => onSelect(m)} />
+        <DirectoryRow
+          key={m.id ?? m.username}
+          member={m}
+          accent={accent}
+          onClick={() => onSelect(m)}
+          showPledgeClass={showPledgeClass}
+        />
       ))}
     </>
   );
@@ -444,6 +457,9 @@ function RevampedMemberDirectory({ title, description, theme, onlyGroup }) {
 
   const totalCount = members.length;
 
+  // The Rushees tab is this same component with onlyGroup='rush'.
+  const showPledgeClass = onlyGroup !== 'rush';
+
   if (loading) {
     return (
       <div className="space-y-6">
@@ -502,9 +518,13 @@ function RevampedMemberDirectory({ title, description, theme, onlyGroup }) {
                 <th className="hidden px-4 py-3 text-left md:table-cell">
                   <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Major</span>
                 </th>
-                <th className="hidden px-4 py-3 text-left sm:table-cell">
-                  <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Pledge Class</span>
-                </th>
+                {/* Rushees have no pledge class — that's what they're rushing
+                    for — so the column is a full width of dashes on that page. */}
+                {showPledgeClass && (
+                  <th className="hidden px-4 py-3 text-left sm:table-cell">
+                    <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Pledge Class</span>
+                  </th>
+                )}
                 <th className="px-4 py-3 text-right">
                   <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Role</span>
                 </th>
@@ -515,7 +535,14 @@ function RevampedMemberDirectory({ title, description, theme, onlyGroup }) {
                   makes the Rushees tab this same component rather than a
                   second directory to keep in sync. */}
               {(onlyGroup ? [onlyGroup] : GROUP_ORDER).map((group) => (
-                <GroupSection key={group} group={group} members={grouped[group]} accent={accent} onSelect={setSelectedMember} />
+                <GroupSection
+                  key={group}
+                  group={group}
+                  members={grouped[group]}
+                  accent={accent}
+                  onSelect={setSelectedMember}
+                  showPledgeClass={showPledgeClass}
+                />
               ))}
             </tbody>
           </table>
@@ -523,7 +550,13 @@ function RevampedMemberDirectory({ title, description, theme, onlyGroup }) {
 
         <div className="flex items-center gap-2 px-1">
           <div className="h-1.5 w-1.5 rounded-full" style={{ background: accent.light }} aria-hidden="true" />
-          <p className="text-xs text-muted-foreground">{totalCount} member{totalCount !== 1 ? 's' : ''} in chapter</p>
+          {/* "members in chapter" is wrong on the Rushees tab — rushees aren't
+              members, which is the whole distinction this page exists to draw. */}
+          <p className="text-xs text-muted-foreground">
+            {onlyGroup === 'rush'
+              ? `${totalCount} rushee${totalCount !== 1 ? 's' : ''} signed up`
+              : `${totalCount} member${totalCount !== 1 ? 's' : ''} in chapter`}
+          </p>
         </div>
       </div>
 

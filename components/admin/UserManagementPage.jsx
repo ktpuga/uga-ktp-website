@@ -19,7 +19,7 @@ import {
   AlertCircle,
 } from 'lucide-react';
 import { getAdminUsers, updateUserGroup, updateExecTitle } from '@/lib/portal-api';
-import { formatMemberGroup, memberDisplayName, memberInitials } from '@/lib/portal-format';
+import { formatMemberGroup, memberDisplayName, memberInitials, formatPledgeClass } from '@/lib/portal-format';
 import { isRedirectError } from '@/lib/is-redirect-error';
 
 // Palette now comes from the portal accent context so the Admin red/blue
@@ -269,7 +269,7 @@ function UserCard({ user, onChangeGroup, onSaveExecTitle }) {
               {user.email && <span className="max-w-[180px] truncate">{user.email}</span>}
               <span>@{user.username}</span>
               {user.major && <span>{user.major}</span>}
-              {user.pledge_class && <span>Class of {user.pledge_class}</span>}
+              {user.pledge_class && <span>{formatPledgeClass(user.pledge_class)}</span>}
               {user.graduation_date && <span>Grad {formatDate(user.graduation_date)}</span>}
             </div>
             {groupError && <p className="mt-1 text-[11px] text-red-600">{groupError}</p>}
