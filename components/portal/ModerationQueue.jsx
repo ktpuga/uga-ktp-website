@@ -169,7 +169,7 @@ function ReportCard({ report, onResolve, onDismiss }) {
               onChange={(e) => setNote(e.target.value)}
               rows={2}
               placeholder="Optional note for the record…"
-              className="w-full resize-none rounded-xl border border-border bg-muted/30 px-3 py-2 text-xs text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-1"
+              className="w-full resize-y rounded-xl border border-border bg-muted/30 px-3 py-2 text-xs text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-1"
               style={{ ['--tw-ring-color']: tint(MAROON.base, 0.28) }}
               onFocus={(e) => { e.currentTarget.style.borderColor = tint(MAROON.base, 0.35); }}
               onBlur={(e) => { e.currentTarget.style.borderColor = ''; }}

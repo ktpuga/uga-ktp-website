@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import { User, ShieldOff, AlertTriangle, X, UserX, ExternalLink, Info, Calendar } from 'lucide-react';
-import { getProfile, getBlockedUsers, unblockUser, deleteAccount } from '@/lib/portal-api';
+import { getProfile, deleteAccount } from '@/lib/portal-api';
+import { useBlockedMembers, unblockMember } from '@/lib/blocked-members';
 import { normalizeUserProfile } from '@/lib/profile';
 import { formatMemberGroup, memberDisplayName, memberInitials } from '@/lib/portal-format';
 import { isRedirectError } from '@/lib/is-redirect-error';
@@ -85,6 +86,87 @@ function Avatar({ member, size = 32, accent }) {
           {memberInitials(member)}
         </div>
       )}
+    </div>
+  );
+}
+
+// ─── Blocked Members Modal ───
+
+// The blocked list is deliberately out of sight until it has something in it:
+// most members never block anyone, and a permanent empty "you haven't blocked
+// anyone" panel just adds a row of dead UI to Settings. The button that opens
+// this only appears once there's someone to show.
+function BlockedMembersModal({ accent, members, onClose }) {
+  const [busyId, setBusyId] = useState(null);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const h = (e) => { if (e.key === 'Escape') onClose(); };
+    window.addEventListener('keydown', h);
+    return () => window.removeEventListener('keydown', h);
+  }, [onClose]);
+
+  async function handleUnblock(userId) {
+    setBusyId(userId);
+    setError(null);
+    try {
+      // Shared store, so this also flips every Block control on the site.
+      await unblockMember(userId);
+    } catch (err) {
+      if (isRedirectError(err)) throw err;
+      setError(err.message ?? 'Could not unblock that member');
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-label="Blocked members">
+      <div className="absolute inset-0 bg-background/80 backdrop-blur-sm" onClick={onClose} aria-hidden="true" />
+      <div className="relative z-10 w-full max-w-md overflow-hidden rounded-2xl border border-border bg-card shadow-xl">
+        <div className="flex items-center justify-between border-b border-border px-5 py-4" style={{ background: tint(accent.base, 0.03) }}>
+          <div className="flex items-center gap-3">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg text-white" style={{ background: accent.gradient }}>
+              <ShieldOff size={14} strokeWidth={1.75} />
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-foreground">Blocked Members</p>
+              <p className="text-[11px] text-muted-foreground">
+                {members.length} {members.length === 1 ? 'member' : 'members'} blocked
+              </p>
+            </div>
+          </div>
+          <button type="button" onClick={onClose} className="rounded-lg p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground" aria-label="Close">
+            <X size={14} />
+          </button>
+        </div>
+
+        <div className="px-5 py-4">
+          <p className="mb-3 text-xs leading-relaxed text-muted-foreground">
+            People you&apos;ve blocked can&apos;t message you, and you won&apos;t see their messages in group chats.
+          </p>
+          {error && <p className="mb-3 text-sm text-destructive">{error}</p>}
+          <ul role="list" className="max-h-[50vh] divide-y divide-border overflow-y-auto">
+            {members.map((member) => (
+              <li key={member.id} className="flex items-center gap-3 py-3 first:pt-0 last:pb-0">
+                <Avatar member={member} size={34} accent={accent} />
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-medium text-foreground">{memberDisplayName(member)}</p>
+                  {member.username && <p className="text-[11px] text-muted-foreground">@{member.username}</p>}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => handleUnblock(member.id)}
+                  disabled={busyId === member.id}
+                  className="shrink-0 rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:opacity-50"
+                >
+                  {busyId === member.id ? 'Unblocking...' : 'Unblock'}
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
     </div>
   );
 }
@@ -201,17 +283,15 @@ function DeleteAccountModal({ accent, onClose, onConfirm }) {
 function RevampedEditProfilePage({ accentKey, portalLabel }) {
   const accent = PALETTES[accentKey] ?? PALETTES.blue;
   const [profile, setProfile] = useState(null);
-  const [blockedMembers, setBlockedMembers] = useState([]);
+  const { blockedMembers } = useBlockedMembers();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [showBlockedModal, setShowBlockedModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
 
   useEffect(() => {
-    Promise.all([getProfile(), getBlockedUsers()])
-      .then(([profileData, blocked]) => {
-        setProfile(normalizeUserProfile(profileData));
-        setBlockedMembers(Array.isArray(blocked) ? blocked : []);
-      })
+    getProfile()
+      .then((profileData) => setProfile(normalizeUserProfile(profileData)))
       .catch((err) => {
         if (isRedirectError(err)) throw err;
         setError(err.message ?? 'Could not load your settings');
@@ -219,10 +299,11 @@ function RevampedEditProfilePage({ accentKey, portalLabel }) {
       .finally(() => setLoading(false));
   }, []);
 
-  async function handleUnblock(userId) {
-    await unblockUser(userId);
-    setBlockedMembers((prev) => prev.filter((m) => m.id !== userId));
-  }
+  // Unblocking the last member empties the popup, and the button that opened
+  // it is gone too — so close rather than leave an empty dialog up.
+  useEffect(() => {
+    if (blockedMembers.length === 0) setShowBlockedModal(false);
+  }, [blockedMembers.length]);
 
   async function handleDeleteAccount() {
     await deleteAccount();
@@ -285,40 +366,33 @@ function RevampedEditProfilePage({ accentKey, portalLabel }) {
             <CalendarSubscription initialToken={profile?.calendar_feed_token ?? null} />
           </SectionCard>
 
-          <SectionCard
-            accent={accent}
-            icon={<ShieldOff size={14} strokeWidth={1.75} />}
-            title="Blocked Members"
-            description="People you've blocked can't message you, and you won't see their messages in group chats."
-          >
-            {blockedMembers.length === 0 ? (
-              <div className="flex flex-col items-center gap-2 py-6 text-center">
-                <div className="flex h-10 w-10 items-center justify-center rounded-full" style={{ background: tint(accent.base, 0.08) }}>
-                  <UserX size={18} style={{ color: accent.light }} />
-                </div>
-                <p className="text-sm text-muted-foreground">You haven&apos;t blocked anyone.</p>
-              </div>
-            ) : (
-              <ul role="list" className="divide-y divide-border">
-                {blockedMembers.map((member) => (
-                  <li key={member.id} className="flex items-center gap-3 py-3 first:pt-0 last:pb-0">
-                    <Avatar member={member} size={34} accent={accent} />
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-medium text-foreground">{memberDisplayName(member)}</p>
-                      <p className="text-[11px] text-muted-foreground">@{member.username}</p>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => handleUnblock(member.id)}
-                      className="shrink-0 rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-                    >
-                      Unblock
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </SectionCard>
+          {/* Only surfaces once there's actually someone blocked — see
+              BlockedMembersModal for why. */}
+          {blockedMembers.length > 0 && (
+            <SectionCard
+              accent={accent}
+              icon={<ShieldOff size={14} strokeWidth={1.75} />}
+              title="Blocked Members"
+              description="Review who you've blocked, and unblock anyone you'd like to hear from again."
+            >
+              <button
+                type="button"
+                onClick={() => setShowBlockedModal(true)}
+                className="flex w-full items-center justify-between gap-3 rounded-xl border border-border px-4 py-3 text-left transition-colors hover:bg-muted"
+              >
+                <span className="flex items-center gap-2.5">
+                  <UserX size={15} style={{ color: accent.light }} />
+                  <span className="text-sm font-medium text-foreground">View blocked members</span>
+                </span>
+                <span
+                  className="shrink-0 rounded-full px-2 py-0.5 text-[11px] font-semibold text-white"
+                  style={{ background: accent.gradient }}
+                >
+                  {blockedMembers.length}
+                </span>
+              </button>
+            </SectionCard>
+          )}
 
           <SectionCard accent={accent} icon={<AlertTriangle size={14} strokeWidth={1.75} />} title="Danger Zone" danger>
             <div className="flex flex-wrap items-center justify-between gap-4">
@@ -349,6 +423,10 @@ function RevampedEditProfilePage({ accentKey, portalLabel }) {
           Privacy Policy <ExternalLink size={10} />
         </a>
       </div>
+
+      {showBlockedModal && blockedMembers.length > 0 && (
+        <BlockedMembersModal accent={accent} members={blockedMembers} onClose={() => setShowBlockedModal(false)} />
+      )}
 
       {showDeleteModal && (
         <DeleteAccountModal accent={accent} onClose={() => setShowDeleteModal(false)} onConfirm={handleDeleteAccount} />

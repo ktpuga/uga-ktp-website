@@ -97,7 +97,7 @@ function Editor({ announcement, onClose, onSaved }) {
             <div>
               <label htmlFor="rush-body" className="mb-1 block text-xs font-semibold uppercase tracking-wider text-muted-foreground">Message</label>
               <textarea id="rush-body" rows={6} value={body} onChange={(e) => setBody(e.target.value)}
-                placeholder="7pm in Boyd 208. Come meet the chapter — no need to dress up." className={cn(INPUT, 'resize-none')} />
+                placeholder="7pm in Boyd 208. Come meet the chapter — no need to dress up." className={cn(INPUT, 'resize-y')} />
             </div>
 
             {error && (

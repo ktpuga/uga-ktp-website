@@ -399,7 +399,7 @@ function SlideMetaForm({ form, errors, onChange }) {
       <Field label="Subtitle" counter={`${form.subtitle.length}/220`} error={errors.subtitle} htmlFor="slide-subtitle">
         <textarea id="slide-subtitle" rows={2} maxLength={220} value={form.subtitle}
           placeholder="Join us this semester for events, workshops, and networking."
-          onChange={(e) => onChange({ subtitle: e.target.value })} className={cn(INPUT_CLASS, 'resize-none')} />
+          onChange={(e) => onChange({ subtitle: e.target.value })} className={cn(INPUT_CLASS, 'resize-y')} />
       </Field>
 
       <Field label="Alt text" required counter={`${form.altText.length}/300`} error={errors.altText} htmlFor="slide-alt">

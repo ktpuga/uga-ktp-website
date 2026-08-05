@@ -58,7 +58,7 @@ function FieldTextarea(props) {
   return (
     <textarea
       {...props}
-      className="w-full resize-none rounded-lg border border-border bg-card px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground/50 transition-colors focus:outline-none focus:ring-2"
+      className="w-full resize-y rounded-lg border border-border bg-card px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground/50 transition-colors focus:outline-none focus:ring-2"
       style={{ '--tw-ring-color': tint(MAROON.base, 0.3) }}
       onFocus={(e) => { e.currentTarget.style.borderColor = tint(MAROON.base, 0.4); }}
       onBlur={(e) => { e.currentTarget.style.borderColor = ''; }}

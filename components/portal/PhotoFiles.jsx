@@ -20,6 +20,7 @@ import VisibilityControl from '@/components/portal/VisibilityControl';
 import { useConfirm } from '@/components/ui/confirm-dialog';
 import PhotoMedia from './PhotoMedia';
 import ReportButton from './ReportButton';
+import BlockButton from './BlockButton';
 import { PALETTES } from '@/components/portal/PortalAccentContext';
 
 // Palette comes from PortalAccentContext, the single source of truth. Each of
@@ -506,7 +507,7 @@ function NewAlbumModal({ accent, onClose, onCreate }) {
             onChange={(e) => setDesc(e.target.value)}
             rows={2}
             placeholder="A brief description…"
-            className="w-full resize-none rounded-lg border border-border bg-muted/40 px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2"
+            className="w-full resize-y rounded-lg border border-border bg-muted/40 px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2"
             style={{ '--tw-ring-color': tint(accent.base, 0.3) }}
           />
         </FormField>
@@ -765,12 +766,19 @@ function MediaCard({ photo, accent, isEboard, currentUserId, onOpen, onDelete })
               <Download size={11} />
             </a>
             {photo.uploaded_by && photo.uploaded_by !== currentUserId && (
-              <ReportButton
-                contentType="photo"
-                contentId={photo.id}
-                reportedUserId={photo.uploaded_by}
-                className="flex h-5 w-5 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-destructive"
-              />
+              <>
+                <ReportButton
+                  contentType="photo"
+                  contentId={photo.id}
+                  reportedUserId={photo.uploaded_by}
+                  className="flex h-5 w-5 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-destructive"
+                />
+                <BlockButton
+                  userId={photo.uploaded_by}
+                  iconOnly
+                  className="flex h-5 w-5 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-destructive"
+                />
+              </>
             )}
             {canDelete && (
               <button type="button" onClick={(e) => { e.stopPropagation(); onDelete(); }} className="flex h-5 w-5 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-destructive" aria-label="Delete">
@@ -808,12 +816,19 @@ function Lightbox({ photo, accent, isEboard, currentUserId, onClose, onDelete })
               <Download size={13} />
             </a>
             {photo.uploaded_by && photo.uploaded_by !== currentUserId && (
-              <ReportButton
-                contentType="photo"
-                contentId={photo.id}
-                reportedUserId={photo.uploaded_by}
-                className="flex h-7 w-7 items-center justify-center rounded-lg bg-white/10 text-white transition-colors hover:bg-destructive/70"
-              />
+              <>
+                <ReportButton
+                  contentType="photo"
+                  contentId={photo.id}
+                  reportedUserId={photo.uploaded_by}
+                  className="flex h-7 w-7 items-center justify-center rounded-lg bg-white/10 text-white transition-colors hover:bg-destructive/70"
+                />
+                <BlockButton
+                  userId={photo.uploaded_by}
+                  iconOnly
+                  className="flex h-7 w-7 items-center justify-center rounded-lg bg-white/10 text-white transition-colors hover:bg-destructive/70"
+                />
+              </>
             )}
             {canDelete && (
               <button type="button" onClick={onDelete} className="flex h-7 w-7 items-center justify-center rounded-lg bg-white/10 text-white transition-colors hover:bg-destructive/70" aria-label="Delete">

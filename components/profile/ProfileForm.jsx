@@ -314,7 +314,7 @@ export default function ProfileForm({
           maxLength={600}
           placeholder="A sentence or two about yourself. What you're studying, what you're into, what you're hoping to get out of KTP."
           defaultValue={defaultValues.about_me}
-          className={`${inputClass} resize-none`}
+          className={`${inputClass} resize-y`}
         />
       </Field>
 

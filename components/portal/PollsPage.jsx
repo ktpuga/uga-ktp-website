@@ -253,7 +253,7 @@ function CreatePollModal({ accent, committees, onClose, onCreated }) {
 
         <FormField label="Description (optional)">
           <textarea rows={2} value={description} onChange={(e) => setDesc(e.target.value)}
-            placeholder="Add context or details…" className={cn(inputCls(), 'resize-none')}
+            placeholder="Add context or details…" className={cn(inputCls(), 'resize-y')}
             style={fb.style} onFocus={fb.onFocus} onBlur={fb.onBlur} />
         </FormField>
 

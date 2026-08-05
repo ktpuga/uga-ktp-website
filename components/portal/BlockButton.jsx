@@ -3,13 +3,18 @@
 import { useEffect, useState } from 'react';
 import { Ban, CheckCircle2, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { getBlockedUsers, blockUser, unblockUser } from '@/lib/portal-api';
+import { useBlockedMembers, blockMember, unblockMember } from '@/lib/blocked-members';
 import { isRedirectError } from '@/lib/is-redirect-error';
 
-// Self-contained block/unblock toggle — figures out the current state itself
-// (there's no single "is X blocked" endpoint, only the full blocked list) so
-// it can be dropped in anywhere a user is shown without prop-drilling status
-// down from a parent that may not have fetched it.
+// Self-contained block/unblock toggle — reads its own state from the shared
+// blocked-members store (see lib/blocked-members.js) so it can be dropped in
+// anywhere a member is shown without prop-drilling status down from a parent,
+// and without a fetch per instance.
+//
+// `iconOnly` renders it as a bare icon button sized to sit directly beside a
+// ReportButton in a row of small controls (message bubbles, photo tiles).
+// Everywhere blocking is the primary action of its own row, the default
+// labelled button is the right one.
 //
 // Confirmation is a small inline overlay owned by this component, not the
 // shared root-level useConfirm() dialog — this is very often rendered
@@ -17,41 +22,29 @@ import { isRedirectError } from '@/lib/is-redirect-error';
 // stacking a second independent z-50 overlay on top of that one is a real
 // source of click/dismiss bugs. Matches how ReportButton handles its own
 // dialog for the same reason.
-export default function BlockButton({ userId, variant = 'outline', size = 'sm', className = '', onStatusChange }) {
-  const [blocked, setBlocked] = useState(null); // null while loading
+export default function BlockButton({ userId, variant = 'outline', size = 'sm', className = '', iconOnly = false, onStatusChange }) {
+  const { blockedMembers, loaded } = useBlockedMembers();
+  const blocked = blockedMembers.some((m) => m.id === userId);
   const [busy, setBusy] = useState(false);
   const [confirming, setConfirming] = useState(false);
   const [error, setError] = useState(null);
 
+  // Parents use this to react to the state (the DM composer swaps itself for
+  // a "you've blocked this member" notice). Fires on load and on every change,
+  // including one made by a different button elsewhere on the page.
   useEffect(() => {
-    let cancelled = false;
-    getBlockedUsers()
-      .then((list) => {
-        if (cancelled) return;
-        const isBlocked = list.some((u) => u.id === userId);
-        setBlocked(isBlocked);
-        onStatusChange?.(isBlocked);
-      })
-      .catch((err) => {
-        if (isRedirectError(err)) throw err;
-        if (!cancelled) setBlocked(false);
-      });
-    return () => { cancelled = true; };
+    if (loaded) onStatusChange?.(blocked);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [userId]);
+  }, [blocked, loaded]);
 
   async function handleConfirm() {
     setBusy(true);
     setError(null);
     try {
       if (blocked) {
-        await unblockUser(userId);
-        setBlocked(false);
-        onStatusChange?.(false);
+        await unblockMember(userId);
       } else {
-        await blockUser(userId);
-        setBlocked(true);
-        onStatusChange?.(true);
+        await blockMember(userId);
       }
       setConfirming(false);
     } catch (err) {
@@ -62,24 +55,48 @@ export default function BlockButton({ userId, variant = 'outline', size = 'sm', 
     }
   }
 
-  if (blocked === null) return null;
+  if (!loaded) return null;
+
+  const label = blocked ? 'Unblock' : 'Block';
+  const Icon = blocked ? CheckCircle2 : Ban;
+
+  function openConfirm(e) {
+    e.stopPropagation();
+    setError(null);
+    setConfirming(true);
+  }
 
   return (
     <>
-      <Button
-        type="button"
-        variant={variant}
-        size={size}
-        onClick={(e) => {
-          e.stopPropagation();
-          setError(null);
-          setConfirming(true);
-        }}
-        className={`gap-1.5 ${blocked ? 'text-green-700 hover:text-green-800' : 'text-red-600 hover:text-red-700'} ${className}`}
-      >
-        {blocked ? <CheckCircle2 className="h-3.5 w-3.5" /> : <Ban className="h-3.5 w-3.5" />}
-        {blocked ? 'Unblock' : 'Block'}
-      </Button>
+      {iconOnly ? (
+        <button
+          type="button"
+          onClick={openConfirm}
+          title={`${label} this member`}
+          aria-label={`${label} this member`}
+          className={
+            className ||
+            `flex h-7 w-7 items-center justify-center rounded-full text-xs ${
+              blocked
+                ? 'text-green-600 hover:bg-green-50 hover:text-green-700 dark:hover:bg-green-950/30'
+                : 'text-gray-500 hover:bg-red-50 hover:text-red-600 dark:text-slate-400 dark:hover:bg-red-950/30 dark:hover:text-red-400'
+            }`
+          }
+        >
+          <Icon className="h-3.5 w-3.5" />
+        </button>
+      ) : (
+        <Button
+          type="button"
+          variant={variant}
+          size={size}
+          onClick={openConfirm}
+          className={`gap-1.5 ${blocked ? 'text-green-700 hover:text-green-800' : 'text-red-600 hover:text-red-700'} ${className}`}
+        >
+          <Icon className="h-3.5 w-3.5" />
+          {label}
+        </Button>
+      )}
 
       {confirming && (
         <div
@@ -114,7 +131,7 @@ export default function BlockButton({ userId, variant = 'outline', size = 'sm', 
                 onClick={handleConfirm}
                 disabled={busy}
               >
-                {busy ? 'Working...' : blocked ? 'Unblock' : 'Block'}
+                {busy ? 'Working...' : label}
               </Button>
               <Button type="button" variant="outline" onClick={() => setConfirming(false)} disabled={busy}>
                 Cancel
