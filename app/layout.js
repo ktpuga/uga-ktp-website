@@ -7,6 +7,8 @@ import { ConfirmProvider } from "@/components/ui/confirm-dialog";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata = {
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'https://ugaktp.com'),
+  alternates: { canonical: './' },
   title: "Kappa Theta Pi",
   description: "Phi Chapter at UGA. UGA First Professional Technology Fraternity.",
 };
