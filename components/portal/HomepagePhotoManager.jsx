@@ -421,7 +421,7 @@ function EditMetaModal({ photo, onClose, onSave }) {
             value={caption}
             onChange={(e) => setCaption(e.target.value)}
             placeholder="Optional caption"
-            className={cn(inputClass, 'resize-none')}
+            className={cn(inputClass, 'resize-y')}
           />
         </div>
         <p className="text-[11px] text-muted-foreground">Clearing a field removes it from the homepage entirely.</p>

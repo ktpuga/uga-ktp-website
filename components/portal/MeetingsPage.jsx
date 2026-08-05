@@ -352,7 +352,7 @@ export function NewMeetingModal({ accent, presetInvitee, presetCommittee, onClos
 
           <div>
             <label htmlFor="mtg-msg" className="mb-1 block text-xs font-semibold uppercase tracking-wider text-muted-foreground">Note (optional)</label>
-            <textarea id="mtg-msg" rows={3} value={message} onChange={(e) => setMessage(e.target.value)} placeholder="Anything they should know beforehand." className={cn(inputClass, 'resize-none')} />
+            <textarea id="mtg-msg" rows={3} value={message} onChange={(e) => setMessage(e.target.value)} placeholder="Anything they should know beforehand." className={cn(inputClass, 'resize-y')} />
           </div>
 
           {hasPresetCommittee ? (

@@ -241,7 +241,7 @@ function NewScheduleForm({ accent, onCreate }) {
       <div>
         <label htmlFor="sched-desc" className={labelClass}>Notes for rushees (optional)</label>
         <textarea id="sched-desc" rows={2} value={description} onChange={(e) => setDescription(e.target.value)}
-          placeholder="Dress business casual, bring a resume…" className={cn(inputClass, 'resize-none')} />
+          placeholder="Dress business casual, bring a resume…" className={cn(inputClass, 'resize-y')} />
       </div>
       <div className="flex items-center justify-end gap-2">
         <button type="button" onClick={() => setOpen(false)} disabled={saving}

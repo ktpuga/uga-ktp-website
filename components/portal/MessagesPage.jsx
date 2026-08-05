@@ -283,13 +283,22 @@ function MessageBubble({ message, isMine, isEboard, accent, attachmentUrl, onRea
               </button>
               {showEmoji && <EmojiPickerPopover onPick={onReact} onClose={() => setShowEmoji(false)} side={isMine ? 'right' : 'left'} />}
             </div>
+            {/* Report and block sit side by side so blocking is reachable from
+                any message, not just from the DM header or the directory. */}
             {!isMine && (
-              <ReportButton
-                contentType={reportContentType}
-                contentId={message.id}
-                reportedUserId={message.sender_id}
-                className="flex h-6 w-6 items-center justify-center rounded-full border border-border bg-card text-muted-foreground shadow-sm transition-colors hover:text-destructive"
-              />
+              <>
+                <ReportButton
+                  contentType={reportContentType}
+                  contentId={message.id}
+                  reportedUserId={message.sender_id}
+                  className="flex h-6 w-6 items-center justify-center rounded-full border border-border bg-card text-muted-foreground shadow-sm transition-colors hover:text-destructive"
+                />
+                <BlockButton
+                  userId={message.sender_id}
+                  iconOnly
+                  className="flex h-6 w-6 items-center justify-center rounded-full border border-border bg-card text-muted-foreground shadow-sm transition-colors hover:text-destructive"
+                />
+              </>
             )}
             {canDelete && (
               <button

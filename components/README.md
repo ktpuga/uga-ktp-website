@@ -73,6 +73,12 @@ Use a plain `<img>` with an `onError` handler falling back to initials. Prefer t
 
 `ReportButton`, `BlockButton`, and `ProfileActionsMenu` each own their modal/popover state internally. Mount them directly; they need little more than an id and a content type. Don't wrap them in a parent-owned `onReport`/`onBlock` callback — designs generated from mockups tend to assume that shape, and rewiring to it just adds state for no benefit.
 
+`BlockButton` takes `iconOnly` for the compact form that sits beside a `ReportButton` (directory profile card, message bubbles, photo tiles and lightbox); pass the neighbouring control's `className` so they match. `iconOnly` also renders immediately instead of waiting for the blocked list to load — a control that appears a beat after the ones next to it reads as missing. It reads its state from `lib/blocked-members.js`, a module-level store shared by every mounted instance and by the Settings list — **one fetch per session, not one per button**, which is what makes it safe to mount a block control on every message. Any block/unblock goes through `blockMember`/`unblockMember` there, so every other control on screen updates with it. Don't call `blockUser`/`unblockUser`/`getBlockedUsers` from `portal-api` directly in a component; that bypasses the store and leaves the other controls stale.
+
+## Textareas resize vertically
+
+Body/description/note fields use `resize-y`, not `resize-none` (the old default here) and not the browser's `resize: both` — a textarea dragged wider than its dialog breaks the layout. The one deliberate exception is the message composer in `MessagesPage.jsx`, which stays `resize-none` because it auto-grows from JS on every keystroke; a manual drag there would be overwritten on the next character typed.
+
 The same applies to `profile/ProfileForm.jsx`, which is shared with the onboarding flow. Embed it as-is rather than rebuilding its fields.
 
 ## `Legacy*` files — removed 2026-08-02

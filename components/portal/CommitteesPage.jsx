@@ -319,7 +319,7 @@ function ScheduleEventModal({ committeeId, committeeName, accent, onClose, onSch
             value={form.description}
             onChange={(e) => set('description', e.target.value)}
             placeholder="What's on the agenda?"
-            className={cn(fieldClass, 'resize-none')}
+            className={cn(fieldClass, 'resize-y')}
             onFocus={focusOn(accent)}
             onBlur={focusOff()}
           />

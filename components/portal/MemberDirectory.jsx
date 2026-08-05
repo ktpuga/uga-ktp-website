@@ -215,9 +215,13 @@ function ProfileModal({ member, accent, onClose }) {
       <div className="relative z-10 w-full max-w-sm overflow-hidden rounded-2xl border border-border bg-card shadow-xl">
         <div className="h-20 w-full" style={{ background: accent.gradient }} aria-hidden="true" />
 
+        {/* Report and block, side by side. Block used to be a full-width
+            button at the bottom of the card; it's here so the two safety
+            actions read as one pair rather than living at opposite ends. */}
         {!isSelf && (
-          <div className="absolute left-4 top-[5.5rem]">
+          <div className="absolute left-4 top-[5.5rem] flex items-center gap-1">
             <ReportButton contentType="user" reportedUserId={member.id} />
+            <BlockButton userId={member.id} iconOnly />
           </div>
         )}
 
@@ -310,11 +314,6 @@ function ProfileModal({ member, accent, onClose }) {
             </button>
           </div>
 
-          {!isSelf && (
-            <div className="mt-4 w-full">
-              <BlockButton userId={member.id} className="w-full" />
-            </div>
-          )}
         </div>
       </div>
 
