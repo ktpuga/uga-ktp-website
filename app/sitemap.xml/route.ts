@@ -28,7 +28,9 @@ const STATIC_PAGES = [
 ];
 
 export async function GET() {
-  const base  = "https://KTPGeorgia.com";
+  const base = (
+    process.env.NEXT_PUBLIC_SITE_URL || 'https://ugaktp.com'
+  ).replace(/\/$/, '');
   const posts = await client.fetch<{ slug: string; publishedAt: string }[]>(POST_QUERY);
 
   /* --- Static page <url> blocks ------------------------------------ */
@@ -52,7 +54,7 @@ export async function GET() {
 
   /* --- Final XML --------------------------------------------------- */
   const xml = `<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="https://www.sitemaps.org/schemas/sitemap/0.9">
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 ${staticXml}
 ${postXml}
 </urlset>`;
