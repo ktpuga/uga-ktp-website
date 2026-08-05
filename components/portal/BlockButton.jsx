@@ -55,7 +55,13 @@ export default function BlockButton({ userId, variant = 'outline', size = 'sm', 
     }
   }
 
-  if (!loaded) return null;
+  // The labelled button waits for the list so it never flips its own text from
+  // "Block" to "Unblock" under the cursor. The icon variant does NOT wait: it
+  // sits in a row of other small controls, and a control that shows up a beat
+  // after its neighbours reads as "the button isn't there" — which is exactly
+  // how it was reported. Worst case it shows the block icon for a fraction of
+  // a second on someone already blocked, then swaps to the unblock check.
+  if (!loaded && !iconOnly) return null;
 
   const label = blocked ? 'Unblock' : 'Block';
   const Icon = blocked ? CheckCircle2 : Ban;
