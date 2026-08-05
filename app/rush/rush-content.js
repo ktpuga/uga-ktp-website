@@ -124,16 +124,15 @@ We focus on career development, technical growth, and building a tight-knit comm
 // a direct message. There is no separate bid system, and the page shouldn't
 // imply one.
 //
-// Step 3 says where interview signup will be announced rather than linking it.
-// There is no interview-signup feature in the portal yet; the details go out as
-// a rush announcement.
+// Step 3 describes the Interviews tab, which only appears once eboard
+// publishes a schedule — so the copy has to work before it exists too.
 export const RUSH_STEPS = [
   {
     id: 'account',
     label: 'Make an Account with Us',
     body: `Click the button at the bottom of this page, or scan the QR code at any info session, and create an account. It takes about a minute.
 
-Then come back to the main page and sign in to the portal. You can look around before the first event. Have a read through what's posted and see what's coming up.`,
+Build your profile and look around the portal before the first event. Have a read through what's posted and see what's coming up.`,
     detail: 'Takes ~1 minute',
   },
   {
@@ -145,7 +144,7 @@ Then come back to the main page and sign in to the portal. You can look around b
   {
     id: 'interviews',
     label: 'Sign Up for Interviews',
-    body: `Towards the end of rush, we hold short interviews. Signup details get posted as an announcement in your portal, so keep an eye on it around then.`,
+    body: `Towards the end of rush, we hold short interviews. When signup opens, an Interviews tab shows up in your portal — pick whichever day and time works for you and that slot is yours.`,
     detail: 'Towards the end of rush',
   },
   {
