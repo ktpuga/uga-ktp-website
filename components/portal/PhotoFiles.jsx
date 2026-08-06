@@ -14,7 +14,7 @@ import {
   uploadDocument, createDocumentLink, deleteDocument,
   setAlbumVisibility, setFolderVisibility, setDocumentVisibility,
 } from '@/lib/portal-api';
-import { formatPhotoDate } from '@/lib/portal-format';
+import { formatPhotoDate, safeExternalHref } from '@/lib/portal-format';
 import { isRedirectError } from '@/lib/is-redirect-error';
 import VisibilityControl from '@/components/portal/VisibilityControl';
 import { useConfirm } from '@/components/ui/confirm-dialog';
@@ -1106,11 +1106,15 @@ function DocRow({ doc, isFolder, accent, isEboard, onOpenFolder, onPreview, onDe
               <button type="button" onClick={handleNameClick} className="truncate text-sm font-medium text-foreground transition-colors hover:underline" style={{ maxWidth: '28ch' }}>
                 {doc.name ?? doc.filename}
               </button>
-            ) : (
-              <a href={doc.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 truncate text-sm font-medium transition-colors hover:underline" style={{ color: accent.light, maxWidth: '28ch' }}>
+            ) : safeExternalHref(doc.url) ? (
+              <a href={safeExternalHref(doc.url)} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 truncate text-sm font-medium transition-colors hover:underline" style={{ color: accent.light, maxWidth: '28ch' }}>
                 {doc.filename}
                 <ExternalLink size={11} className="shrink-0" />
               </a>
+            ) : (
+              <span className="truncate text-sm font-medium text-muted-foreground" style={{ maxWidth: '28ch' }}>
+                {doc.filename}
+              </span>
             )}
             {isLink && <p className="truncate text-[11px] text-muted-foreground" style={{ maxWidth: '28ch' }}>{doc.url}</p>}
           </div>
@@ -1154,8 +1158,8 @@ function DocRow({ doc, isFolder, accent, isEboard, onOpenFolder, onPreview, onDe
               <Download size={13} />
             </a>
           )}
-          {isLink && (
-            <a href={doc.url} target="_blank" rel="noopener noreferrer" className="flex h-7 items-center justify-center gap-1 rounded-lg border border-border bg-card px-2.5 text-[11px] font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground" aria-label="Open link">
+          {isLink && safeExternalHref(doc.url) && (
+            <a href={safeExternalHref(doc.url)} target="_blank" rel="noopener noreferrer" className="flex h-7 items-center justify-center gap-1 rounded-lg border border-border bg-card px-2.5 text-[11px] font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground" aria-label="Open link">
               <ExternalLink size={11} /> Open
             </a>
           )}
