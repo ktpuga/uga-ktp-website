@@ -64,7 +64,8 @@ export const RUSH_EVENTS = [
     date: 'September 16-18, 2026',
     time: 'Pick a time in the portal',
     location: 'Will be posted in the portal',
-    description: `Sign up for a short interview with the members to show your interest and get to know us better!`,
+    description: `Sign up for a short interview with the members to show your interest and 
+    for us to get to know you better!`,
   },
   {
     id: 'bid_night',
