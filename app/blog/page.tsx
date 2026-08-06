@@ -7,6 +7,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 
 import { client } from '../../sanity/client';
+import { pageMetadata } from '@/lib/seo';
 
 /* ---------- 1. Build an image URL (no external helper) ---------- */
 const { projectId, dataset } = client.config();
@@ -29,6 +30,14 @@ const POSTS_QUERY = groq`
 
 export const revalidate = 30; // ISR every 30 s
 export const dynamic = 'force-dynamic'
+
+export const metadata = pageMetadata({
+  title: 'Blog',
+  description:
+    'Writing from the members of Kappa Theta Pi at UGA on technology, careers, internships and life in tech.',
+  path: '/blog',
+});
+
 export default async function BlogIndex() {
   const posts = await client.fetch<SanityDocument[]>(POSTS_QUERY);
 

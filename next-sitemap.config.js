@@ -32,6 +32,10 @@ const config = {
         // A route, but never a page a human or crawler should land on.
         '/.well-known/apple-app-site-association',
     ],
+
+    additionalPaths: async (config) => [
+        await config.transform(config, '/blog'),
+    ],
     // Additional options if needed
     // transform: async (config, path) => {
     //   // Example: automatically remove trailing slash from all paths

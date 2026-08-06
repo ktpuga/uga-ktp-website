@@ -4,13 +4,35 @@ import React from "react";
 import "./globals.css";
 import SessionProviderWrapper from "@/components/auth/SessionProviderWrapper";
 import { ConfirmProvider } from "@/components/ui/confirm-dialog";
+import { SITE_URL, SITE_NAME, DEFAULT_OG_IMAGE } from "@/lib/seo";
 const inter = Inter({ subsets: ["latin"] });
 
+const HOME_TITLE = "Kappa Theta Pi | Professional Technology Fraternity at UGA";
+const HOME_DESCRIPTION =
+  "Phi Chapter at the University of Georgia. Kappa Theta Pi is UGA's first professional technology fraternity, building a community for students in tech through workshops, tech talks and networking.";
+
 export const metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'https://ugaktp.com'),
+  metadataBase: new URL(SITE_URL),
   alternates: { canonical: './' },
-  title: "Kappa Theta Pi",
-  description: "Phi Chapter at UGA. UGA First Professional Technology Fraternity.",
+  title: {
+    default: HOME_TITLE,
+    template: `%s | ${SITE_NAME}`,
+  },
+  description: HOME_DESCRIPTION,
+  openGraph: {
+    type: "website",
+    siteName: SITE_NAME,
+    url: "/",
+    title: HOME_TITLE,
+    description: HOME_DESCRIPTION,
+    images: [{ url: DEFAULT_OG_IMAGE, alt: SITE_NAME }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: HOME_TITLE,
+    description: HOME_DESCRIPTION,
+    images: [DEFAULT_OG_IMAGE],
+  },
 };
 
 export default function RootLayout({ children }) {

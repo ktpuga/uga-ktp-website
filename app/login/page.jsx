@@ -7,6 +7,12 @@ import SignInButton from '@/components/auth/SignInButton';
 import SilentSignIn from '@/components/auth/SilentSignIn';
 import { SSO_PROBE_COOKIE } from '@/lib/sso';
 
+export const metadata = {
+  title: 'Sign In',
+  description: 'Sign in to the Kappa Theta Pi at UGA member portal.',
+  robots: { index: false, follow: false },
+};
+
 export default async function Login({ searchParams }) {
   const session = await auth();
   // session.error means a token refresh already failed (see auth.ts) — treat
