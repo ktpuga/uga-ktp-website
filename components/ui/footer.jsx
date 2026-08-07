@@ -36,6 +36,13 @@ export class footer extends Component {
               Privacy Policy
             </Link>
             <Link
+              href="/support"
+              className="text-xs hover:underline underline-offset-4 font-['Source Sans Pro']"
+              prefetch={false}
+            >
+              App Support
+            </Link>
+            <Link
               href="/blog"
               className="text-xs hover:underline underline-offset-4 font-['Source Sans Pro']"
               prefetch={false}
