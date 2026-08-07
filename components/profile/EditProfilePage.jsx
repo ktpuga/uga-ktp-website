@@ -345,16 +345,22 @@ function RevampedEditProfilePage({ accentKey, portalLabel }) {
                 </div>
                 <div>
                   <p className="text-sm font-medium text-foreground">@{profile.username}</p>
-                  <p className="text-[11px] text-muted-foreground">Username is managed by Eboard</p>
+                  <p className="text-[11px] text-muted-foreground">You can update your username below.</p>
                 </div>
               </div>
               <div className="flex items-center gap-2">
                 <MemberGroupBadge group={profile.member_group} accent={accent} />
-                <span className="text-[11px] text-muted-foreground">Admin-managed</span>
+                <span className="text-[11px] text-muted-foreground">Member profile</span>
               </div>
             </div>
 
-            <ProfileForm mode="edit" variant="portal" accent={accentKey} defaultValues={profile} />
+            <ProfileForm
+              mode="edit"
+              variant="portal"
+              accent={accentKey}
+              defaultValues={profile}
+              onSuccess={(updatedProfile) => updatedProfile && setProfile(normalizeUserProfile(updatedProfile))}
+            />
           </SectionCard>
 
           <SectionCard
