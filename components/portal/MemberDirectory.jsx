@@ -191,8 +191,6 @@ function ProfileModal({ member, accent, onClose }) {
   const name = directoryDisplayName(member);
   const graduation = formatGraduationDate(member.graduationDate);
   const role = specificRole(member);
-  const isAlumni = member.memberGroup === 'alumni';
-  const contactEmail = isAlumni ? member.personalEmail : (member.email || member.personalEmail);
 
   useEffect(() => {
     document.body.style.overflow = 'hidden';
@@ -264,7 +262,7 @@ function ProfileModal({ member, accent, onClose }) {
             </div>
           )}
 
-          {(member.major || member.pledgeClass || graduation || (!isAlumni && member.email) || member.personalEmail) && (
+          {(member.major || member.pledgeClass || graduation || member.email || member.personalEmail) && (
             <div className={cn('w-full rounded-xl border border-border p-4 text-xs', member.aboutMe ? 'mt-3' : 'mt-5')} style={{ background: tint(accent.base, 0.03) }}>
               {member.major && <InfoRow icon={<BookOpen size={12} />} label="Major" value={member.major} />}
               {member.pledgeClass && <InfoRow icon={<Users size={12} />} label="Pledge Class" value={member.pledgeClass} />}
@@ -272,7 +270,7 @@ function ProfileModal({ member, accent, onClose }) {
               {/* Both addresses are shown when both exist. isLast is computed
                   rather than hardcoded so the divider lands on whichever row
                   actually ends the list. */}
-              {!isAlumni && member.email && (
+              {member.email && (
                 <InfoRow icon={<Mail size={12} />} label="UGA Email" value={member.email} isLast={!member.personalEmail} />
               )}
               {member.personalEmail && (
@@ -284,9 +282,9 @@ function ProfileModal({ member, accent, onClose }) {
           <div className="mt-4 flex w-full flex-col gap-2">
             {/* Prefers the UGA address, falls back to the personal one — an
                 alumnus often has only the latter still working. */}
-            {contactEmail && (
+            {(member.email || member.personalEmail) && (
               <a
-                href={`mailto:${contactEmail}`}
+                href={`mailto:${member.email || member.personalEmail}`}
                 className="flex items-center justify-center gap-2 rounded-xl border border-border py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-muted"
               >
                 <Mail size={14} /> Email

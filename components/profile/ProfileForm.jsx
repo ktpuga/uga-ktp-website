@@ -134,7 +134,6 @@ export default function ProfileForm({
   const isRushee =
     groups.includes('rush') &&
     !groups.some((g) => ['eboard', 'chair', 'active', 'alumni', 'pledge'].includes(g));
-  const isAlumni = groups.includes('alumni') || defaultValues.member_group === 'alumni';
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -192,8 +191,8 @@ export default function ProfileForm({
 
         // this handles the form data to update the users profile
         // check @portal-api
-        const updatedProfile = await updateProfile(buildProfilePayload(formData));
-        result = { success: true, profile: updatedProfile };
+        await updateProfile(buildProfilePayload(formData));
+        result = { success: true };
       } catch (err) {
         if (isRedirectError(err)) throw err;
         result = { error: err.message ?? 'Failed to save profile. Please try again.' };
@@ -218,7 +217,7 @@ export default function ProfileForm({
 
     setSuccess('Profile updated successfully.');
     setLoading(false);
-    onSuccess?.(result.profile);
+    onSuccess?.();
   }
 
   const buttonAccent = variant === 'onboarding' ? 'onboarding' : accent;
@@ -228,20 +227,11 @@ export default function ProfileForm({
     <form onSubmit={handleSubmit} className="space-y-4">
       <ProfilePictureField authentikId={authentikId} variant={variant} />
 
-      <Field label="Username" required variant={variant}>
-        <Input
-          name="username"
-          required
-          minLength={3}
-          maxLength={64}
-          pattern="[A-Za-z0-9._-]+"
-          title="Use 3–64 letters, numbers, periods, underscores, or hyphens."
-          defaultValue={defaultValues.username ?? readOnly.username}
-          autoComplete="username"
-          className={inputClass}
-        />
-        <p className="mt-1 text-xs text-muted-foreground">Use 3–64 letters, numbers, periods, underscores, or hyphens.</p>
-      </Field>
+      {readOnly.username != null && (
+        <Field label="Username" variant={variant}>
+          <Input value={readOnly.username} readOnly disabled className={inputClass} />
+        </Field>
+      )}
 
       {readOnly.memberGroup != null && (
         <Field label="Member Group" variant={variant}>
@@ -331,8 +321,7 @@ export default function ProfileForm({
       {/* Two addresses on purpose. A UGA address stops working after
           graduation, so the personal one is what still reaches an alumnus —
           and a rushee may not have a UGA address yet. Neither is required. */}
-      <div className={`grid grid-cols-1 gap-4 ${isAlumni ? '' : 'sm:grid-cols-2'}`}>
-        {!isAlumni && (
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <Field label="UGA Email" variant={variant}>
           <Input
             type="email"
@@ -342,7 +331,6 @@ export default function ProfileForm({
             className={inputClass}
           />
         </Field>
-        )}
         <Field label="Personal Email" variant={variant}>
           <Input
             type="email"
