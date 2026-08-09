@@ -3,12 +3,13 @@
 import { useEffect, useRef, useState } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { X, AlertTriangle, Trash2 } from 'lucide-react';
+import { X, AlertTriangle, Trash2, Upload } from 'lucide-react';
 import { buildProfilePayload, parseGraduationDate } from '@/lib/profile';
 import {
   adminUpdateUserProfile,
   adminUpdateUsername,
   adminRemoveProfilePicture,
+  adminUploadProfilePicture,
 } from '@/lib/portal-api';
 import { memberDisplayName } from '@/lib/portal-format';
 import { useConfirm } from '@/components/ui/confirm-dialog';
@@ -53,7 +54,12 @@ export default function AdminEditProfileModal({ user, onClose, onSaved }) {
   const [usernameError, setUsernameError] = useState(null);
   const [usernameSaved, setUsernameSaved] = useState(false);
 
-  const [pictureRemoved, setPictureRemoved] = useState(false);
+  // Tracked locally because the card's <img> is keyed off the asset id, and a
+  // replacement lands at the same URL — without a version bump the browser
+  // serves the cached old picture and the upload looks like it did nothing.
+  const [hasPicture, setHasPicture] = useState(Boolean(user.profile_picture_asset_id));
+  const [uploading, setUploading] = useState(false);
+  const fileRef = useRef(null);
 
   const graduation = parseGraduationDate(user.graduation_date);
 
@@ -112,6 +118,35 @@ export default function AdminEditProfileModal({ user, onClose, onSaved }) {
     }
   }
 
+  // Uploads on file select, with no separate save step — matching the member's
+  // own picture field, which behaves the same way.
+  async function handleUploadPicture(e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploading(true);
+    setError(null);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const result = await adminUploadProfilePicture(user.authentik_id, formData);
+      if (result?.error) {
+        setError(result.error);
+        return;
+      }
+      setHasPicture(true);
+      onSaved({ ...user, profile_picture_asset_id: result.profile_picture_asset_id });
+    } catch (err) {
+      if (isRedirectError(err)) throw err;
+      setError(err.message ?? 'Failed to upload profile picture');
+    } finally {
+      setUploading(false);
+      // Cleared so re-picking the same file fires change again.
+      if (fileRef.current) fileRef.current.value = '';
+    }
+  }
+
   async function handleRemovePicture() {
     const ok = await confirm(
       `Remove ${memberDisplayName(user)}'s profile picture? Their card will fall back to their initials. They are not notified.`,
@@ -125,7 +160,7 @@ export default function AdminEditProfileModal({ user, onClose, onSaved }) {
         setError(result.error);
         return;
       }
-      setPictureRemoved(true);
+      setHasPicture(false);
       onSaved({ ...user, profile_picture_asset_id: null });
     } catch (err) {
       if (isRedirectError(err)) throw err;
@@ -276,28 +311,50 @@ export default function AdminEditProfileModal({ user, onClose, onSaved }) {
             />
           </Field>
 
-          {/* Removal only — eboard can take a picture down but can't upload one
-              in someone else's name, which the API enforces by having no admin
-              upload route at all. */}
+          {/* Upload replaces immediately on select, like the member's own
+              picture field. Same 25MB limit and same server-side re-encode to
+              JPEG — the admin route reuses the member route's multer config. */}
           <div className="flex items-center justify-between gap-3 rounded-xl border border-border bg-muted/40 px-4 py-3">
             <div className="min-w-0">
               <p className="text-xs font-medium text-foreground">Profile picture</p>
               <p className="mt-0.5 text-[11px] text-muted-foreground">
-                {pictureRemoved || !user.profile_picture_asset_id
-                  ? 'No picture set — their card shows initials.'
-                  : 'Removing falls their card back to initials. You cannot upload one for them.'}
+                {uploading
+                  ? 'Uploading…'
+                  : hasPicture
+                    ? 'Upload a replacement, or remove it to fall back to their initials.'
+                    : 'No picture set — their card shows initials.'}
               </p>
             </div>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={handleRemovePicture}
-              disabled={pictureRemoved || !user.profile_picture_asset_id}
-              className="shrink-0 text-red-600"
-            >
-              <Trash2 size={13} className="mr-1.5" />
-              Remove
-            </Button>
+
+            <div className="flex shrink-0 items-center gap-2">
+              <input
+                ref={fileRef}
+                type="file"
+                accept="image/jpeg,image/png,image/webp,image/heic,image/heif,image/avif,image/gif,image/tiff"
+                onChange={handleUploadPicture}
+                className="hidden"
+                id={`admin-pfp-${user.authentik_id}`}
+              />
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => fileRef.current?.click()}
+                disabled={uploading}
+              >
+                <Upload size={13} className="mr-1.5" />
+                {hasPicture ? 'Replace' : 'Upload'}
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleRemovePicture}
+                disabled={uploading || !hasPicture}
+                className="text-red-600"
+              >
+                <Trash2 size={13} className="mr-1.5" />
+                Remove
+              </Button>
+            </div>
           </div>
 
           {error && (

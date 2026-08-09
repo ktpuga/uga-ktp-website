@@ -155,6 +155,7 @@ export default function ProfileForm({
   const [success, setSuccess] = useState(null);
   const [loading, setLoading] = useState(false);
   const [linkedinError, setLinkedinError] = useState(null);
+  const [emailError, setEmailError] = useState(null);
 
   const graduation = parseGraduationDate(defaultValues.graduation_date);
 
@@ -191,6 +192,35 @@ export default function ProfileForm({
       return;
     }
     setLinkedinError(null);
+
+    // Everyone except alumni must have a UGA address on file — it's the one
+    // identity fact the chapter can rely on, and the key an archived account is
+    // reclaimed by. Mirrors requiresUgaEmail + isUgaAddress in the API, which
+    // is what actually enforces it; this is only here so a typo lands next to
+    // the field instead of coming back as a banner.
+    //
+    // Domain is taken from the last "@" and compared exactly (or as a
+    // ".uga.edu" suffix) for the same reason the API does it that way: an
+    // endsWith('uga.edu') check would accept "notuga.edu", and a substring
+    // check would accept "uga.edu.example.com".
+    if (!isAlumni) {
+      const raw = String(formData.get('email') ?? '').trim();
+      const at = raw.lastIndexOf('@');
+      const domain = at === -1 ? '' : raw.slice(at + 1).toLowerCase();
+      const isUga = domain === 'uga.edu' || domain.endsWith('.uga.edu');
+
+      if (!raw) {
+        setEmailError('Your UGA email is required.');
+        setLoading(false);
+        return;
+      }
+      if (!isUga) {
+        setEmailError('That isn’t a UGA address — it must end in @uga.edu.');
+        setLoading(false);
+        return;
+      }
+    }
+    setEmailError(null);
 
     const semester = formData.get('graduation_semester');
     const year = formData.get('graduation_year');
@@ -335,9 +365,17 @@ export default function ProfileForm({
         />
       </Field>
 
-      {/* Two addresses on purpose. A UGA address stops working after
-          graduation, so the personal one is what still reaches an alumnus —
-          and a rushee may not have a UGA address yet. Neither is required.
+      {/* Two addresses on purpose, and the split is now asymmetric: the UGA
+          one is REQUIRED for everyone except alumni, the personal one never is.
+
+          Rushees are not an exception. An earlier version of this form left
+          both optional partly because "a rushee may not have a UGA address
+          yet" — that isn't true here; every rushee already has one by the time
+          they sign up. Don't reintroduce that reasoning to loosen the rule.
+
+          The personal address survives for the alumni case alone: a UGA
+          address stops working after graduation, so it's the only one that
+          still reaches an alumnus.
 
           Alumni get only the personal one: see isAlumni above. Their row may
           still hold a UGA address, and omitting the input here means the save
@@ -345,14 +383,22 @@ export default function ProfileForm({
           than taking NULL from the payload. */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {!isAlumni && (
-          <Field label="UGA Email" variant={variant}>
+          <Field label="UGA Email" required variant={variant}>
             <Input
               type="email"
               name="email"
+              required
               placeholder="you@uga.edu"
               defaultValue={defaultValues.email}
-              className={inputClass}
+              onChange={() => emailError && setEmailError(null)}
+              aria-invalid={emailError ? 'true' : undefined}
+              className={cn(inputClass, emailError && 'border-red-500 focus-visible:ring-red-500')}
             />
+            {emailError ? (
+              <p className="mt-1 text-xs text-red-600 dark:text-red-400">{emailError}</p>
+            ) : (
+              <p className="mt-1 text-xs text-muted-foreground">Must be your @uga.edu address.</p>
+            )}
           </Field>
         )}
         <Field label={isAlumni ? 'Email' : 'Personal Email'} variant={variant}>
