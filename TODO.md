@@ -74,7 +74,16 @@ We shipped exactly this bug: document links were validated with `try { new URL(r
 
 Use `linkedinHref()` in `lib/portal-format.js` on the render side, and make sure the API validates on write (`services/urls.js`). If a value fails, render **no link** rather than a broken one.
 
-### 7. Media URLs are cached forever without a cache-buster
+### 7. Some profile fields write to Authentik, not just to us
+
+**Username is the one that does.** Authentik owns login identifiers, so `PUT /users/me/username` writes there first and only mirrors into our database once that succeeds — and it needs an Authentik permission (`Can change User`) that isn't granted by default.
+
+Practical consequences if you touch profile code:
+
+- It's a **separate endpoint and a separate control** (`components/profile/UsernameEditor.jsx`), not a field in `ProfileForm`. Don't "tidy" it back into the form: a rename fails with "that name is taken", which inside the main form surfaces as a whole-form error on a save that was really about someone's bio.
+- The access token keeps the **old** username for the rest of the session after a rename, so anything that writes `username` from `session.user` will silently undo it.
+
+### 8. Media URLs are cached forever without a cache-buster
 
 Profile pictures and group chat photos are served from a fixed URL, so when someone changes their photo the browser keeps showing the old one. This is why photo changes "don't work" — they did work, you're looking at cache. Append `?v=<something that changes>`.
 

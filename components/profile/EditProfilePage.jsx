@@ -11,6 +11,7 @@ import { logoutEverywhere } from '@/lib/auth-actions';
 import { cn } from '@/lib/utils';
 import ProfileForm from './ProfileForm';
 import CalendarSubscription from './CalendarSubscription';
+import UsernameEditor from './UsernameEditor';
 import { PALETTES } from '@/components/portal/PortalAccentContext';
 
 // Palette comes from PortalAccentContext, the single source of truth. Each of
@@ -343,14 +344,15 @@ function RevampedEditProfilePage({ accentKey, portalLabel }) {
                 >
                   {memberInitials(profile)}
                 </div>
-                <div>
-                  <p className="text-sm font-medium text-foreground">@{profile.username}</p>
-                  <p className="text-[11px] text-muted-foreground">Username is managed by Eboard</p>
-                </div>
+                <UsernameEditor
+                  username={profile.username}
+                  accent={accent}
+                  onChange={(username) => setProfile((p) => ({ ...p, username }))}
+                />
               </div>
               <div className="flex items-center gap-2">
                 <MemberGroupBadge group={profile.member_group} accent={accent} />
-                <span className="text-[11px] text-muted-foreground">Admin-managed</span>
+                <span className="text-[11px] text-muted-foreground">Group set by Eboard</span>
               </div>
             </div>
 
