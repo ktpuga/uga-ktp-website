@@ -109,7 +109,15 @@ Both pages now render `AlreadySignedIn` instead of redirecting. If you're editin
 - **`switchAccount()` must not become `logoutEverywhere()`.** It clears only our cookie on purpose: Authentik's session may be the *other* person's brand-new account, and ending it makes them sign up again.
 - **The `prompt=login` on `/login?switch=1` is load-bearing**, not belt-and-braces. Without it, "sign in as someone else" silently reuses Authentik's session and returns the account the person just rejected — a loop, on `/auth/start`.
 - **Every entry point needs its own `takeAutoSignInSlot` name.** Sharing one broke signup once already; see `lib/sso.js`.
-- **`AutoSignIn`'s cooldown branch must not redirect.** It used to `router.replace('/login')` — fine while `/login` was a dead end, a closed loop the day `/login` grew a "Continue to rush signup" button: `/rush/how-it-works` → Authentik → `next=/auth/start` → cooldown → `/login` → back again, every lap faster than the 30-second cooldown. It stops and waits for a click now. **Adding a new button to `/login` is enough to recreate this**, so keep the stop.
+- **`AutoSignIn`'s cooldown branch must not redirect** — it stops and waits for a click. It used to `router.replace('/login')`, which closed a loop the day `/login` gained a button leading back toward `/auth/start`. The guard fires exactly when something upstream is already bouncing the browser, so redirecting hands control to a page that may hand it straight back. Keep the stop.
+
+### 11. "Signed out" may not mean signed out of Authentik
+
+Confirmed 2026-08-09: signing out cleared our cookie but left the **Authentik SSO session alive**, because the OAuth2 provider's *Invalidation flow* was the provider-scoped one (`default-provider-invalidation-flow`), which ends only the application session. `post_logout_redirect_uri` is still honoured, so it looks like it worked.
+
+Nothing in this repo can detect it — a `refresh_token` isn't tied to the browser session. **Don't debug this in code.** Check Authentik → Providers → ktpapp → Invalidation flow, and verify by signing out then opening `auth.ugaktp.com` directly.
+
+This is the enabler for the whole "two sessions in one browser" family, up to and including rush enrollment renaming the account that was still signed in.
 
 ---
 

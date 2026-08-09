@@ -27,27 +27,16 @@ import { takeAutoSignInSlot } from '@/lib/sso';
 //             for the outage caused by two entry points sharing one.
 //   prompt    OIDC `prompt` value. Omitted for an ordinary sign-in; 'login' to
 //             force Authentik to re-ask who is at the keyboard.
-//   children  Extra escape hatches rendered under the manual button once the
-//             cooldown has fired. Whatever a page offers here should be able to
-//             fix the *cause*, not just retry — by that point retrying is
-//             demonstrably what isn't working.
 //
 // ## Never redirect out of the cooldown branch
 //
-// This used to take a `cooldownHref` and `router.replace()` to it, which was
-// harmless while that href was a dead end and became a **closed loop** the
-// moment /login grew a "Continue to rush signup" button:
-//
-//   /rush/how-it-works → Authentik → redirects straight to next=/auth/start
-//     → cooldown still held → /login → "Continue to rush signup"
-//     → /rush/how-it-works → …
-//
-// Each lap took a couple of seconds, so the 30-second cooldown never expired
-// and the loop was indefinite. Stopping dead and making a human press a button
-// breaks any loop of this shape, whatever the other end of it turns out to be —
-// which an automatic redirect can never promise, because it can't know what
-// the page it redirects to will offer next.
-export default function AutoSignIn({ slot, prompt, children }) {
+// This used to take a `cooldownHref` and `router.replace()` to it. That is a
+// loop waiting to happen: the guard fires precisely when something upstream is
+// already bouncing the browser around, and redirecting hands control back to
+// whatever page happens to sit at the other end — which may well offer a way
+// straight back in. Stopping dead and making a human press a button breaks a
+// loop of any shape, which an automatic redirect can never promise.
+export default function AutoSignIn({ slot, prompt }) {
   const [stalled, setStalled] = useState(false);
   const [loopGuarded, setLoopGuarded] = useState(false);
 
@@ -85,8 +74,6 @@ export default function AutoSignIn({ slot, prompt, children }) {
         >
           Try signing in again
         </button>
-
-        {children}
       </div>
     );
   }

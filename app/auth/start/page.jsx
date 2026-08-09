@@ -1,7 +1,5 @@
 import Image from 'next/image';
-import Link from 'next/link';
 import { auth } from '@/auth';
-import { logoutEverywhere } from '@/lib/auth-actions';
 import AutoSignIn from '@/components/auth/AutoSignIn';
 import AlreadySignedIn from '@/components/auth/AlreadySignedIn';
 
@@ -60,36 +58,7 @@ export default async function AuthStart() {
             note="If you just created a new account on this device, this isn't it — the account below was already signed in here."
           />
         ) : (
-          // The escape hatch has to end the AUTHENTIK session, not just retry.
-          // Landing here repeatedly means Authentik sent us straight to `next=`
-          // instead of running the enrollment flow, and the two things that
-          // cause that — a flow plan already used up in this browser's
-          // Authentik session, or a flow that refuses to enroll an
-          // already-authenticated browser — are both state living in
-          // Authentik's cookie. Retrying cannot touch either; a full
-          // RP-initiated logout clears both.
-          //
-          // Plain logoutEverywhere(), NOT logoutEverywhere('rush'): the 'rush'
-          // marker puts "Continue to rush signup" on /login, which is the exact
-          // door back into the loop this page just stopped.
-          <AutoSignIn slot="start">
-            <form action={logoutEverywhere} className="w-full">
-              <button
-                type="submit"
-                className="w-full rounded-md border border-white/25 py-3 text-sm font-semibold text-white transition-colors hover:bg-white/10"
-              >
-                Sign out of everything and start over
-              </button>
-            </form>
-            <p className="text-xs leading-relaxed text-white/45">
-              Use this if signing in keeps bringing you back here. It clears the
-              KTP login this browser is holding — including a half-finished
-              signup — so the next attempt starts clean.{' '}
-              <Link href="/" className="underline underline-offset-2 hover:text-white/70">
-                Back to home
-              </Link>
-            </p>
-          </AutoSignIn>
+          <AutoSignIn slot="start" />
         )}
       </div>
     </div>

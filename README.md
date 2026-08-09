@@ -110,6 +110,8 @@ The access token is available exclusively in server-side code as `session.access
 
 **Signing out** must go through `logoutEverywhere()` in `lib/auth-actions.js`, not NextAuth's `signOut()`. `signOut()` alone clears this app's cookie but leaves the Authentik SSO session intact, so the next login silently re-authenticates as the same person. `logoutEverywhere()` performs a full RP-initiated logout against Authentik's end-session endpoint.
 
+> **If signing out leaves people still signed in to Authentik, it is not this code.** The endpoint it builds matches Authentik's advertised `end_session_endpoint` exactly (verified against the live server). What that endpoint *does* is the OAuth2 provider's **Invalidation flow** setting: `default-provider-invalidation-flow` ends only the application session, `default-invalidation-flow` actually signs the browser out of authentik. New providers default to the former, and it is a trap because `post_logout_redirect_uri` is still honoured, so logout looks like it worked. Set **Providers → ktpapp → Invalidation flow** to `default-invalidation-flow`. Verify by signing out and then opening `auth.ugaktp.com` directly — nothing on our side can detect this, since a `refresh_token` isn't tied to the browser session.
+
 ### Two sessions, and why the entry points ask before assuming
 
 A browser holds **two** independent sessions: ours (the NextAuth cookie) and Authentik's own SSO cookie. Nothing keeps them in step, and a `refresh_token` isn't tied to the browser session, so there is no way to detect a split mid-browse. Every entry point therefore has to ask rather than assume.
@@ -121,13 +123,12 @@ The failure this prevents: a member is signed in, someone enrolls through rush o
 | `/login` | silent `prompt=none` probe (`SilentSignIn`) | **chooser** — Continue as *name* / This isn't me |
 | `/login?switch=1` | full sign-in with `prompt=login` (`AutoSignIn`) | same — `switchAccount()` has already cleared our cookie |
 | `/auth/start` | full sign-in, no `prompt` (`AutoSignIn`) | **chooser** |
-| `/rush/how-it-works` | signup link | "Sign out to sign up", via `logoutEverywhere('rush')` |
+| `/rush/how-it-works` | signup link | "Sign out to sign up", via `logoutEverywhere()` |
 
 - **`switchAccount()`** (`lib/auth-actions.js`) clears *only* our cookie — deliberately **not** `logoutEverywhere()`. Authentik's session may already belong to the other person, and ending it would make them sign up from scratch. It hands off to `prompt=login`, which is what makes the outcome deterministic: Authentik must ask who is at the keyboard instead of silently reusing the session being switched away from.
 - **`/auth/start` is the one chokepoint every rush signup returns through.** The signup link points straight at Authentik and is printed on flyers as a QR code, so the site gets no say in what happens before that page. Any guard for "enrolled on a browser that was already signed in" has to live there; the `/rush/how-it-works` guard only stops the site itself from walking people into it.
 - **`AutoSignIn`** (was `StartSignIn`) is parameterised rather than copied. `slot` MUST be unique per entry point — see `lib/sso.js` for the outage caused by two entry points sharing one cooldown slot.
-- **`AutoSignIn` never redirects out of its cooldown branch.** It used to `router.replace('/login')`, which was a harmless dead end until `/login` grew a "Continue to rush signup" button — then it became a closed loop: `/rush/how-it-works` → Authentik → straight to `next=/auth/start` → cooldown → `/login` → back to `/rush/how-it-works`, each lap fast enough that the 30-second cooldown never expired. It now stops and waits for a click, which breaks a loop of that shape whatever sits at the other end. `/auth/start` passes a **Sign out of everything and start over** escape hatch as `children`, because the usual reason Authentik skips the enrollment flow — a used-up flow plan, or a flow that won't enroll an authenticated browser — is state in Authentik's own cookie that only a full logout clears.
-- **`ktp_signed_out`** now carries a value: any value means "just signed out" (and suppresses the auto-probe, as before); the value `'rush'` additionally tells `/login` to lead with "Continue to rush signup". The enum passed to `logoutEverywhere()` is never treated as a URL — it comes from a client component.
+- **`AutoSignIn` never redirects out of its cooldown branch**, it stops and waits for a click. It used to `router.replace()` to a prop-supplied href, which is a loop waiting to happen: the guard fires exactly when something upstream is already bouncing the browser around, and redirecting hands control to whatever page sits at the other end — which may offer a way straight back in. That is not hypothetical; it happened, with `/login` at the far end. Stopping dead breaks a loop of any shape.
 
 ---
 

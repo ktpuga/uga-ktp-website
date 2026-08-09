@@ -40,27 +40,25 @@ export default async function Login({ searchParams }) {
   // and how accounts got overwritten. One click on the chooser replaces that.
   const alreadySignedIn = Boolean(session && !session.error) && !switching;
 
-  // Auto-start the silent SSO probe unless doing so would loop. All three
-  // suppressions are load bearing:
+  // Auto-start the silent SSO probe unless doing so would loop or override a
+  // choice. Every suppression here is load bearing:
   //
   //   ?error=…            NextAuth sends failures back here. Auto-retrying a
   //                       flow that just failed is an infinite redirect
   //                       between us and Authentik, and the visitor never
   //                       sees why it broke.
-  //   ktp_signed_out      Set by logoutEverywhere. Without it, "sign out"
+  //   ktp_signed_out=1    Set by logoutEverywhere. Without it, "sign out"
   //                       lands here and is immediately undone — and if
   //                       Authentik's session somehow survived, signing out
-  //                       becomes impossible. Any value counts; the value
-  //                       'rush' additionally says they were on their way to
-  //                       rush signup when we made them sign out.
+  //                       becomes impossible.
   //   ?switch=1           The probe is the opposite of what a switch wants:
   //                       prompt=none reuses Authentik's existing session
   //                       silently, which is the account being switched away
   //                       from. AutoSignIn handles this case instead.
+  //   a healthy session    That renders the chooser, and a probe underneath it
+  //                       would race the person's own choice.
   const failed = Boolean(params.error);
-  const signedOutMarker = cookieStore.get('ktp_signed_out')?.value;
-  const justSignedOut = Boolean(signedOutMarker);
-  const headedForRushSignup = signedOutMarker === 'rush';
+  const justSignedOut = cookieStore.get('ktp_signed_out')?.value === '1';
   const autoStart = !failed && !justSignedOut && !switching && !alreadySignedIn;
 
   // A probe that found no session reports itself exactly like a broken
@@ -68,28 +66,7 @@ export default async function Login({ searchParams }) {
   // error. That's the single most common way to arrive here now.
   const probeCameBackEmpty = failed && cookieStore.get(SSO_PROBE_COOKIE)?.value === '1';
 
-  // Rush signup and member sign-in swap places when we're the reason the
-  // person is here: /rush/how-it-works makes an already-signed-in visitor sign
-  // out before creating an account, and dropping them on a page whose loudest
-  // button is "sign in" — the thing they just undid — is how you lose them
-  // one step from finishing.
-  const signInOptions = headedForRushSignup ? (
-    <div>
-      <Link
-        href="/rush/how-it-works"
-        className="block w-full rounded-md bg-[#2A5CCA] py-3 text-center text-sm font-semibold uppercase tracking-wider text-white shadow-lg transition-colors hover:bg-[#3570DB]"
-      >
-        Continue to rush signup
-      </Link>
-
-      <div className="mt-6 border-t border-white/15 pt-6 text-center">
-        <p className="text-sm text-white/60">Already have a KTP account?</p>
-        <div className="mt-3">
-          <SignInButton variant="secondary" />
-        </div>
-      </div>
-    </div>
-  ) : (
+  const signInOptions = (
     <div>
       <SignInButton />
 
@@ -152,11 +129,7 @@ export default async function Login({ searchParams }) {
           </p>
         )}
         {justSignedOut && !failed && (
-          <p className="mb-4 text-center text-sm text-white/70">
-            {headedForRushSignup
-              ? "You've been signed out. You can create your rush account now."
-              : "You've been signed out."}
-          </p>
+          <p className="mb-4 text-center text-sm text-white/70">You&apos;ve been signed out.</p>
         )}
 
         {alreadySignedIn ? (

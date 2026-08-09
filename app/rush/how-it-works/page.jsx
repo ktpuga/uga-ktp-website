@@ -6,7 +6,6 @@ import Link from 'next/link'
 import { RUSH_STEPS } from '@/app/rush/rush-content'
 import { getPublicRushSignup } from '@/lib/portal-api'
 import { logoutEverywhere } from '@/lib/auth-actions'
-import { clearAutoSignInSlot } from '@/lib/sso'
 import { useSession } from 'next-auth/react'
 import React, { useEffect, useState } from 'react'
 
@@ -150,12 +149,12 @@ export default function HowRushWorksPage () {
                 <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-[#c9b896] sm:text-base">
                   This browser is signed in to a KTP account
                   {session?.user?.name ? ` as ${session.user.name}` : ''}. Creating a new
-                  account on top of it mixes the two up, so sign out and we&apos;ll bring you
-                  right back to signup.
+                  account on top of it mixes the two up, so sign out first — the sign-in
+                  page has a rush signup link waiting.
                 </p>
                 <button
                   type="button"
-                  onClick={() => logoutEverywhere('rush')}
+                  onClick={() => logoutEverywhere()}
                   className="mt-6 inline-block w-full rounded-full border-2 border-[#f0d060] bg-[#d4af37] px-8 py-4 text-base font-bold text-[#1a1a1a] shadow-lg transition-colors hover:bg-[#f0d060] sm:w-auto sm:px-12"
                 >
                   Sign out to sign up →
@@ -176,13 +175,6 @@ export default function HowRushWorksPage () {
                 </p>
                 <a
                   href={rushSignupUrl}
-                  // Enrollment ends at /auth/start (the invitation's `next=`),
-                  // and that page's loop guard would otherwise count this
-                  // arrival against an attempt made moments ago in this tab —
-                  // dropping a rushee who just finished signing up on /login
-                  // instead of the profile builder. We know this departure is
-                  // deliberate, so the return is not a loop.
-                  onClick={() => clearAutoSignInSlot('start')}
                   className="mt-6 inline-block w-full rounded-full border-2 border-[#f0d060] bg-[#d4af37] px-8 py-4 text-base font-bold text-[#1a1a1a] shadow-lg transition-colors hover:bg-[#f0d060] sm:w-auto sm:px-12"
                 >
                   Sign up for Rush →
