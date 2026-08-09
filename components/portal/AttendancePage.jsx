@@ -50,13 +50,23 @@ const statusKey = (status) => status ?? 'unmarked';
 
 const inputClass = 'rounded-lg border border-border bg-muted/40 px-2 py-1 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-[var(--portal-ring)]';
 
+// Matches CHECKIN_BUFFER_MS in attendanceController — the 30-minute grace
+// period after the end, so a card doesn't go grey while people file out.
+const CHECKIN_BUFFER_MS = 30 * 60000;
+
 function isLive(event) {
   const start = new Date(getEventStartDate(event)).getTime();
-  // Matches CHECKIN_BUFFER_MS in attendanceController — the 30-minute grace
-  // period after the end, so a card doesn't go grey while people file out.
-  const end = new Date(getEventEndDate(event)).getTime() + 30 * 60000;
+  const end = new Date(getEventEndDate(event)).getTime() + CHECKIN_BUFFER_MS;
   const now = Date.now();
   return now >= start && now <= end;
+}
+
+// "Not live" covers both sides of the window, and they need different wording.
+// Past events stay in the rail all semester and get opened for reference, so
+// telling someone check-in "isn't open yet" for a meeting that happened in
+// September is actively confusing.
+function hasEnded(event) {
+  return Date.now() > new Date(getEventEndDate(event)).getTime() + CHECKIN_BUFFER_MS;
 }
 
 function RosterAvatar({ record, accent, size = 30 }) {
@@ -199,7 +209,9 @@ function QrOverlay({ event, url, accent, onClose }) {
       </div>
       {!isLive(event) && (
         <p className="text-center text-xs text-amber-700 dark:text-amber-500">
-          Check-in isn&apos;t open yet — scanning now will be refused.
+          {hasEnded(event)
+            ? 'Check-in has closed for this event — scanning now will be refused.'
+            : 'Check-in isn’t open yet — scanning now will be refused.'}
         </p>
       )}
     </div>
