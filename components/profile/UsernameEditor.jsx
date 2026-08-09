@@ -9,10 +9,9 @@ import { cn } from '@/lib/utils';
 // Inline rename control for the settings header card.
 //
 // Kept out of ProfileForm on purpose, mirroring the API split: this is the one
-// profile field that writes to Authentik as well as our own database, and the
-// one that can fail with something the member must act on ("that name is
-// taken"). Inside the main form, that failure would surface as a whole-form
-// error on a save that was really about their bio.
+// profile field that also writes to Authentik, and the one that fails with
+// something the member must act on ("that name is taken"). Inside the main
+// form that surfaces as a whole-form error on a save about their bio.
 export default function UsernameEditor({ username, accent, onChange }) {
   const [editing, setEditing] = useState(false);
   const [value, setValue] = useState(username ?? '');
@@ -44,13 +43,18 @@ export default function UsernameEditor({ username, accent, onChange }) {
     setSaving(true);
     setError(null);
     try {
+      // Reports failure as { error } rather than throwing — see portal-api.
       const result = await updateUsername(next);
+      if (result?.error) {
+        setError(result.error);
+        return;
+      }
       onChange?.(result?.username ?? next);
       setEditing(false);
       setSaved(true);
     } catch (err) {
       if (isRedirectError(err)) throw err;
-      setError(err.message ?? 'Could not change your username.');
+      setError('Could not change your username. Please try again.');
     } finally {
       setSaving(false);
     }
