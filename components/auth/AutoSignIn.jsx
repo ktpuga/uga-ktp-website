@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { signIn } from 'next-auth/react';
 import { takeAutoSignInSlot } from '@/lib/sso';
 
@@ -24,60 +23,90 @@ import { takeAutoSignInSlot } from '@/lib/sso';
 // broken" (see lib/home-portal.js, lib/sso.js).
 //
 // Props:
-//   slot         Cooldown key. MUST be unique per entry point — see lib/sso.js
-//                for the outage caused by two entry points sharing one.
-//   prompt       OIDC `prompt` value. Omitted for an ordinary sign-in;
-//                'login' to force Authentik to re-ask who is at the keyboard.
-//   cooldownHref Where to go if the cooldown says this entry point just ran,
-//                which means we're in a redirect loop. Omit it when there is
-//                nowhere safer to send them — the manual button is shown
-//                instead, which breaks the loop just as well because it takes
-//                a human to press.
-export default function AutoSignIn({ slot, prompt, cooldownHref }) {
-  const router = useRouter();
+//   slot      Cooldown key. MUST be unique per entry point — see lib/sso.js
+//             for the outage caused by two entry points sharing one.
+//   prompt    OIDC `prompt` value. Omitted for an ordinary sign-in; 'login' to
+//             force Authentik to re-ask who is at the keyboard.
+//   children  Extra escape hatches rendered under the manual button once the
+//             cooldown has fired. Whatever a page offers here should be able to
+//             fix the *cause*, not just retry — by that point retrying is
+//             demonstrably what isn't working.
+//
+// ## Never redirect out of the cooldown branch
+//
+// This used to take a `cooldownHref` and `router.replace()` to it, which was
+// harmless while that href was a dead end and became a **closed loop** the
+// moment /login grew a "Continue to rush signup" button:
+//
+//   /rush/how-it-works → Authentik → redirects straight to next=/auth/start
+//     → cooldown still held → /login → "Continue to rush signup"
+//     → /rush/how-it-works → …
+//
+// Each lap took a couple of seconds, so the 30-second cooldown never expired
+// and the loop was indefinite. Stopping dead and making a human press a button
+// breaks any loop of this shape, whatever the other end of it turns out to be —
+// which an automatic redirect can never promise, because it can't know what
+// the page it redirects to will offer next.
+export default function AutoSignIn({ slot, prompt, children }) {
   const [stalled, setStalled] = useState(false);
   const [loopGuarded, setLoopGuarded] = useState(false);
 
+  function startSignIn() {
+    signIn('authentik', { callbackUrl: '/auth/redirect' }, prompt ? { prompt } : undefined);
+  }
+
   useEffect(() => {
+    // A held slot means this same entry point ran moments ago, which is the
+    // signature of a redirect loop rather than a person. Stop and hand over.
     if (!takeAutoSignInSlot(slot)) {
-      if (cooldownHref) {
-        router.replace(cooldownHref);
-        return undefined;
-      }
       setLoopGuarded(true);
       return undefined;
     }
 
-    signIn('authentik', { callbackUrl: '/auth/redirect' }, prompt ? { prompt } : undefined);
+    startSignIn();
 
     const timer = setTimeout(() => setStalled(true), 6000);
     return () => clearTimeout(timer);
-  }, [router, slot, prompt, cooldownHref]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [slot, prompt]);
 
-  const showButton = stalled || loopGuarded;
+  if (loopGuarded) {
+    return (
+      <div className="flex flex-col items-center gap-4 text-center" aria-live="polite">
+        <p className="text-sm leading-relaxed text-white/70">
+          Sign-in came back here without finishing. Rather than trying again on
+          a loop, we&apos;ve stopped so you can pick what happens next.
+        </p>
+
+        <button
+          type="button"
+          onClick={startSignIn}
+          className="w-full rounded-md bg-[#2A5CCA] py-3 text-sm font-semibold uppercase tracking-wider text-white shadow-lg transition-colors hover:bg-[#3570DB]"
+        >
+          Try signing in again
+        </button>
+
+        {children}
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col items-center gap-4" aria-live="polite">
-      {!loopGuarded && (
-        <>
-          <div
-            className="h-6 w-6 animate-spin rounded-full border-2 border-white/25 border-t-white"
-            role="status"
-            aria-label="Signing you in"
-          />
-          <p className="text-sm text-white/70">Signing you in…</p>
-        </>
-      )}
+      <div
+        className="h-6 w-6 animate-spin rounded-full border-2 border-white/25 border-t-white"
+        role="status"
+        aria-label="Signing you in"
+      />
+      <p className="text-sm text-white/70">Signing you in…</p>
 
-      {showButton && (
+      {stalled && (
         <button
           type="button"
-          onClick={() =>
-            signIn('authentik', { callbackUrl: '/auth/redirect' }, prompt ? { prompt } : undefined)
-          }
+          onClick={startSignIn}
           className="mt-2 rounded-md border border-white/25 px-4 py-2 text-sm font-medium text-white/90 transition-colors hover:bg-white/10"
         >
-          {loopGuarded ? 'Continue to sign in' : 'Taking a while — click to continue'}
+          Taking a while — click to continue
         </button>
       )}
     </div>

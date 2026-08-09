@@ -166,11 +166,11 @@ export default async function Login({ searchParams }) {
             continueLabel="Continue to my portal"
           />
         ) : switching ? (
-          // No cooldownHref: the only page to fall back to is this one, and
-          // bouncing /login?switch=1 -> /login would re-arm the silent probe
-          // and sign them straight back in as the account they're leaving.
-          // AutoSignIn shows its manual button instead, which breaks a loop
-          // just as well because a person has to press it.
+          // AutoSignIn never redirects out of its cooldown branch — it stops
+          // and waits for a click. That matters most right here: the only page
+          // to fall back to is this one, and bouncing /login?switch=1 ->
+          // /login would re-arm the silent probe and sign them straight back
+          // in as the account they're leaving.
           <AutoSignIn slot="switch" prompt="login" />
         ) : autoStart ? (
           <SilentSignIn>{signInOptions}</SilentSignIn>

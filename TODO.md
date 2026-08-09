@@ -109,6 +109,7 @@ Both pages now render `AlreadySignedIn` instead of redirecting. If you're editin
 - **`switchAccount()` must not become `logoutEverywhere()`.** It clears only our cookie on purpose: Authentik's session may be the *other* person's brand-new account, and ending it makes them sign up again.
 - **The `prompt=login` on `/login?switch=1` is load-bearing**, not belt-and-braces. Without it, "sign in as someone else" silently reuses Authentik's session and returns the account the person just rejected — a loop, on `/auth/start`.
 - **Every entry point needs its own `takeAutoSignInSlot` name.** Sharing one broke signup once already; see `lib/sso.js`.
+- **`AutoSignIn`'s cooldown branch must not redirect.** It used to `router.replace('/login')` — fine while `/login` was a dead end, a closed loop the day `/login` grew a "Continue to rush signup" button: `/rush/how-it-works` → Authentik → `next=/auth/start` → cooldown → `/login` → back again, every lap faster than the 30-second cooldown. It stops and waits for a click now. **Adding a new button to `/login` is enough to recreate this**, so keep the stop.
 
 ---
 
