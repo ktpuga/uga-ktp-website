@@ -15,8 +15,12 @@ import { markProbeStarted, clearProbeMark, takeAutoSignInSlot } from '@/lib/sso'
 //
 // It is deliberately NOT the way a *deliberate* sign-in happens. `prompt=none`
 // cannot grant first-time consent, so a brand-new account gets an error here
-// even though its session is perfectly good — see components/auth/StartSignIn
+// even though its session is perfectly good — see components/auth/AutoSignIn
 // for the full sign-in used when we already know the visitor wants in.
+//
+// It is also NOT the way to switch accounts. `prompt=none` reuses whatever
+// session Authentik is holding, which in a switch is the account being left
+// behind — /login?switch=1 uses AutoSignIn with prompt=login instead.
 //
 // The page decides whether to render this — see app/login/page.jsx for the two
 // cases where auto-start is suppressed, both of which would otherwise loop.

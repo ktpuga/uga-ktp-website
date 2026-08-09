@@ -32,6 +32,25 @@ import NextAuth from "next-auth"
 // again and hitting a false "already used" rejection.
 const inFlightRefreshes = new Map<string, Promise<any>>()
 
+// Reads the claims out of an id_token without verifying its signature.
+//
+// Deliberately unverified: the only caller receives this JSON from a direct
+// server-to-server TLS POST to Authentik's token endpoint, never through the
+// browser, so there is no untrusted hop to defend against. Anything able to
+// forge this could equally forge the access_token sitting beside it in the
+// same response. Do NOT reuse this on anything that arrived from a client.
+function claimsFromIdToken(idToken?: string) {
+  if (!idToken) return null
+  try {
+    const payload = idToken.split(".")[1]
+    if (!payload) return null
+    return JSON.parse(Buffer.from(payload, "base64url").toString("utf8"))
+  } catch (err) {
+    console.error("[auth] could not read refreshed id_token claims:", err)
+    return null
+  }
+}
+
 async function refreshAccessToken(token: any) {
   const refreshToken = token.refresh_token as string
   const existing = inFlightRefreshes.get(refreshToken)
@@ -53,11 +72,34 @@ async function refreshAccessToken(token: any) {
       const refreshed = await response.json()
       if (!response.ok) throw refreshed
 
+      // Re-read `groups` from the refreshed id_token. For an `oidc` provider
+      // Auth.js sets `profile` to the id_token claims themselves (see
+      // @auth/core lib/actions/callback/oauth/callback), so these are exactly
+      // the claims the first sign-in read groups from — not a different or
+      // weaker source.
+      //
+      // Without this, `groups` is frozen at whatever it was the last time
+      // someone did a FULL sign-in, because refreshing keeps the session alive
+      // indefinitely. A rushee accepted into a pledge class would keep `rush`
+      // in their session — proxy.ts would go on gating them into /rushee and
+      // out of /pledge — for up to the 30-day JWT lifetime, with no way to
+      // fix it but signing out.
+      const claims = claimsFromIdToken(refreshed.id_token)
+
       return {
         ...token,
         access_token: refreshed.access_token,
         expires_at: Math.floor(Date.now() / 1000) + refreshed.expires_in,
         refresh_token: refreshed.refresh_token ?? token.refresh_token,
+        // Both fall back to the existing value rather than overwriting with
+        // undefined: a response that omits the claim entirely means "nothing
+        // new to say", never "this person has no groups". Dropping groups here
+        // would demote the user to homePortal()'s no-group fallback.
+        groups: Array.isArray(claims?.groups) ? claims.groups : token.groups,
+        // Kept current for the same reason logoutEverywhere() needs it at all:
+        // it's the id_token_hint for RP-initiated logout, and the one from the
+        // original sign-in can be weeks stale by the time anyone signs out.
+        id_token: refreshed.id_token ?? token.id_token,
         error: undefined,
       }
     } catch (err) {

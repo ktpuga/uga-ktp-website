@@ -5,6 +5,8 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { RUSH_STEPS } from '@/app/rush/rush-content'
 import { getPublicRushSignup } from '@/lib/portal-api'
+import { logoutEverywhere } from '@/lib/auth-actions'
+import { useSession } from 'next-auth/react'
 import React, { useEffect, useState } from 'react'
 
 // Public, like /rush itself — this is aimed at people who don't have an account
@@ -54,6 +56,27 @@ function StepCard ({ step, index, isLast }) {
 export default function HowRushWorksPage () {
   const [scrolled, setScrolled] = useState(false)
   const [rushSignupUrl, setRushSignupUrl] = useState(null)
+
+  // The signup link goes straight to Authentik's enrollment flow, and the new
+  // account it creates becomes Authentik's session for this browser. Doing
+  // that while a KTP account is already open here is what mixes the two up:
+  // our cookie keeps the old member while Authentik holds the new rushee, and
+  // the next time our cookie lapses the member's session is silently rewritten
+  // as the rushee. So make signing out the way through.
+  //
+  // This can't be the only guard — most rushees arrive by scanning a QR code
+  // that points at Authentik directly and never loads this page. /auth/start
+  // catches those on the way back. This just stops the site itself from
+  // walking people into it.
+  const { data: session, status } = useSession()
+  const signedIn = status === 'authenticated' && !session?.error
+  // The signup URL and the session resolve independently, and whichever loses
+  // the race decides what a signed-in visitor sees. Without this, a slow
+  // session lookup renders the live signup link for a beat — long enough to
+  // click, which is the whole thing we're preventing. Treat "don't know yet"
+  // as "not ready", which is what this block already does while the signup
+  // URL is in flight.
+  const sessionKnown = status !== 'loading'
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 10)
@@ -118,7 +141,33 @@ export default function HowRushWorksPage () {
           </ol>
 
           <div className="mt-14 rounded-2xl border-2 border-[#6b1c2a] bg-[#1a1a1a] p-6 text-center sm:mt-20 sm:p-8">
-            {rushSignupUrl ? (
+            {rushSignupUrl && sessionKnown && signedIn ? (
+              <>
+                <h2 className="text-xl font-extrabold text-white sm:text-2xl">
+                  Sign out first
+                </h2>
+                <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-[#c9b896] sm:text-base">
+                  This browser is signed in to a KTP account
+                  {session?.user?.name ? ` as ${session.user.name}` : ''}. Creating a new
+                  account on top of it mixes the two up, so sign out and we&apos;ll bring you
+                  right back to signup.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => logoutEverywhere('rush')}
+                  className="mt-6 inline-block w-full rounded-full border-2 border-[#f0d060] bg-[#d4af37] px-8 py-4 text-base font-bold text-[#1a1a1a] shadow-lg transition-colors hover:bg-[#f0d060] sm:w-auto sm:px-12"
+                >
+                  Sign out to sign up →
+                </button>
+                <p className="mx-auto mt-4 max-w-md text-xs leading-relaxed text-[#8f8676]">
+                  Already have a KTP account? You don&apos;t need a new one —{' '}
+                  <Link href="/login" className="font-semibold text-[#d4af37] underline underline-offset-2 hover:text-[#f0d060]">
+                    go to your portal
+                  </Link>
+                  .
+                </p>
+              </>
+            ) : rushSignupUrl && sessionKnown ? (
               <>
                 <h2 className="text-xl font-extrabold text-white sm:text-2xl">Ready to start?</h2>
                 <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-[#c9b896] sm:text-base">

@@ -103,12 +103,30 @@ The **Rushees** tab appears only while `GET /members/rush-count` is above zero, 
 
 `auth.ts` handles the OIDC session and owns two things worth knowing about:
 
-- **Token refresh.** Authentik access tokens are short-lived. `auth.ts` captures `refresh_token`/`expires_at` (via the `offline_access` scope) and renews automatically. A failed refresh sets `session.error`, which `proxy.ts` above treats as signed-out.
+- **Token refresh.** Authentik access tokens are short-lived. `auth.ts` captures `refresh_token`/`expires_at` (via the `offline_access` scope) and renews automatically. A failed refresh sets `session.error`, which `proxy.ts` above treats as signed-out. The refresh also re-reads `groups` and `id_token` out of the refreshed `id_token` — for an `oidc` provider Auth.js sets `profile` to the id_token claims, so these are the same claims the first sign-in read. Without that, `groups` would be frozen until the next *full* sign-in, and a rushee accepted into a pledge class would keep the rush portal for up to the 30-day JWT lifetime.
 - **Concurrent-refresh de-duplication.** Dashboard pages fire several server actions in parallel, each of which could independently decide to refresh at the same instant — and Authentik rotates refresh tokens on use, so whichever request lands first invalidates the others. An in-flight `Map` collapses concurrent refreshes for the same token into one request. This is safe only because dev and production both run a single Node process.
 
 The access token is available exclusively in server-side code as `session.access_token`. It is never sent to the browser.
 
 **Signing out** must go through `logoutEverywhere()` in `lib/auth-actions.js`, not NextAuth's `signOut()`. `signOut()` alone clears this app's cookie but leaves the Authentik SSO session intact, so the next login silently re-authenticates as the same person. `logoutEverywhere()` performs a full RP-initiated logout against Authentik's end-session endpoint.
+
+### Two sessions, and why the entry points ask before assuming
+
+A browser holds **two** independent sessions: ours (the NextAuth cookie) and Authentik's own SSO cookie. Nothing keeps them in step, and a `refresh_token` isn't tied to the browser session, so there is no way to detect a split mid-browse. Every entry point therefore has to ask rather than assume.
+
+The failure this prevents: a member is signed in, someone enrolls through rush on the same browser, and Authentik's session becomes the new rushee while our cookie still holds the member. The old code redirected on sight of *any* session, which dropped the rushee inside the member's portal — and the moment our cookie lapsed, `/login`'s silent probe asked Authentik who this was, got the rushee, and rewrote the member's session under them.
+
+| Entry point | With no session | With a healthy session |
+| --- | --- | --- |
+| `/login` | silent `prompt=none` probe (`SilentSignIn`) | **chooser** — Continue as *name* / This isn't me |
+| `/login?switch=1` | full sign-in with `prompt=login` (`AutoSignIn`) | same — `switchAccount()` has already cleared our cookie |
+| `/auth/start` | full sign-in, no `prompt` (`AutoSignIn`) | **chooser** |
+| `/rush/how-it-works` | signup link | "Sign out to sign up", via `logoutEverywhere('rush')` |
+
+- **`switchAccount()`** (`lib/auth-actions.js`) clears *only* our cookie — deliberately **not** `logoutEverywhere()`. Authentik's session may already belong to the other person, and ending it would make them sign up from scratch. It hands off to `prompt=login`, which is what makes the outcome deterministic: Authentik must ask who is at the keyboard instead of silently reusing the session being switched away from.
+- **`/auth/start` is the one chokepoint every rush signup returns through.** The signup link points straight at Authentik and is printed on flyers as a QR code, so the site gets no say in what happens before that page. Any guard for "enrolled on a browser that was already signed in" has to live there; the `/rush/how-it-works` guard only stops the site itself from walking people into it.
+- **`AutoSignIn`** (was `StartSignIn`) is parameterised rather than copied. `slot` MUST be unique per entry point — see `lib/sso.js` for the outage caused by two entry points sharing one cooldown slot.
+- **`ktp_signed_out`** now carries a value: any value means "just signed out" (and suppresses the auto-probe, as before); the value `'rush'` additionally tells `/login` to lead with "Continue to rush signup". The enum passed to `logoutEverywhere()` is never treated as a URL — it comes from a client component.
 
 ---
 
@@ -170,13 +188,16 @@ app/
   member|admin|alumni|pledge/   the four portals — each has its own layout.jsx + NAV
   api/                   media proxy routes + NextAuth handler
 components/
+  auth/                  SilentSignIn (prompt=none probe), AutoSignIn (full sign-in),
+                         AlreadySignedIn (the chooser), SignInButton
   portal/                shared portal UI (PortalShell, dashboards, calendar, messages…)
   profile/               settings + the shared ProfileForm
   admin/, analytics/     admin-only surfaces
   ui/                    shadcn-style primitives
 lib/
   portal-api.js          every ktp-api server action
-  auth-actions.js        logoutEverywhere()
+  auth-actions.js        logoutEverywhere(), switchAccount()
+  sso.js                 probe cookie + per-entry-point cooldown slots
   portal-format.js       shared name/group/date formatting
   is-redirect-error.js   the NEXT_REDIRECT guard described above
 sanity/                  blog schema + client
