@@ -134,6 +134,23 @@ export default function ProfileForm({
   const isRushee =
     groups.includes('rush') &&
     !groups.some((g) => ['eboard', 'chair', 'active', 'alumni', 'pledge'].includes(g));
+
+  // An alumnus's UGA address stops working once they graduate, so asking them
+  // to keep one on file is asking for a dead inbox — the personal address is
+  // the only one that still reaches them. The field is dropped rather than
+  // relabelled; the API withholds the same value from the directory
+  // (memberModel.ALUMNI_EMAIL) and preserves whatever is already stored on
+  // save (userModel.updateProfile), so hiding it here loses nothing.
+  //
+  // Prefers member_group, the single group the API resolved, over the raw
+  // session list, for the reason messagesController spells out: Authentik
+  // doesn't remove someone's old group, so the list can still say "active"
+  // for an alumnus. /complete-profile renders this form with no defaults at
+  // all, which is what the fallback is for.
+  const isAlumni = defaultValues.member_group
+    ? defaultValues.member_group === 'alumni'
+    : groups.includes('alumni') &&
+      !groups.some((g) => ['eboard', 'chair', 'active'].includes(g));
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -320,18 +337,25 @@ export default function ProfileForm({
 
       {/* Two addresses on purpose. A UGA address stops working after
           graduation, so the personal one is what still reaches an alumnus —
-          and a rushee may not have a UGA address yet. Neither is required. */}
+          and a rushee may not have a UGA address yet. Neither is required.
+
+          Alumni get only the personal one: see isAlumni above. Their row may
+          still hold a UGA address, and omitting the input here means the save
+          doesn't send one — which is exactly why the API preserves it rather
+          than taking NULL from the payload. */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <Field label="UGA Email" variant={variant}>
-          <Input
-            type="email"
-            name="email"
-            placeholder="you@uga.edu"
-            defaultValue={defaultValues.email}
-            className={inputClass}
-          />
-        </Field>
-        <Field label="Personal Email" variant={variant}>
+        {!isAlumni && (
+          <Field label="UGA Email" variant={variant}>
+            <Input
+              type="email"
+              name="email"
+              placeholder="you@uga.edu"
+              defaultValue={defaultValues.email}
+              className={inputClass}
+            />
+          </Field>
+        )}
+        <Field label={isAlumni ? 'Email' : 'Personal Email'} variant={variant}>
           <Input
             type="email"
             name="personal_email"
