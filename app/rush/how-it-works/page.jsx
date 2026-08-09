@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { RUSH_STEPS } from '@/app/rush/rush-content'
 import { getPublicRushSignup } from '@/lib/portal-api'
 import { logoutEverywhere } from '@/lib/auth-actions'
+import { clearAutoSignInSlot } from '@/lib/sso'
 import { useSession } from 'next-auth/react'
 import React, { useEffect, useState } from 'react'
 
@@ -175,6 +176,13 @@ export default function HowRushWorksPage () {
                 </p>
                 <a
                   href={rushSignupUrl}
+                  // Enrollment ends at /auth/start (the invitation's `next=`),
+                  // and that page's loop guard would otherwise count this
+                  // arrival against an attempt made moments ago in this tab —
+                  // dropping a rushee who just finished signing up on /login
+                  // instead of the profile builder. We know this departure is
+                  // deliberate, so the return is not a loop.
+                  onClick={() => clearAutoSignInSlot('start')}
                   className="mt-6 inline-block w-full rounded-full border-2 border-[#f0d060] bg-[#d4af37] px-8 py-4 text-base font-bold text-[#1a1a1a] shadow-lg transition-colors hover:bg-[#f0d060] sm:w-auto sm:px-12"
                 >
                   Sign up for Rush →
