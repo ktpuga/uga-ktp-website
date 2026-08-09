@@ -235,8 +235,12 @@ function ProfileModal({ member, accent, onClose }) {
         </button>
 
         <div className="flex flex-col items-center px-6 pb-6">
-          <div className="-mt-9 mb-3 rounded-full p-1" style={{ background: 'var(--color-card)' }}>
-            <DirectoryAvatar member={member} size={72} accent={accent} />
+          {/* The ring's negative margin has to track the avatar size: it lifts
+              the circle so it straddles the gradient header's bottom edge, and
+              a fixed value would leave a larger avatar sitting too low. Kept at
+              roughly half the ring's full height (avatar + p-1 on both sides). */}
+          <div className="-mt-14 mb-3 rounded-full p-1" style={{ background: 'var(--color-card)' }}>
+            <DirectoryAvatar member={member} size={112} accent={accent} />
           </div>
 
           <h2 className="text-center text-xl font-bold tracking-tight text-foreground">{name}</h2>

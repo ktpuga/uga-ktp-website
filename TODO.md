@@ -166,7 +166,29 @@ Currently only committee chats and the eboard chat exist. The API already has `g
 
 **Done when:** a member can create a chat, and it does *not* appear in eboard's oversight list.
 
-### E. Granular permissions — *parked until after rush, and genuinely large*
+### E. Alumni "what I'm doing now", custom profile links, and roster visibility
+
+Three related profile additions, raised 2026-08-09 and backlogged the same day. **Yash's scope call: keep it private and member-side only for now** — none of the new fields go on the public `/members-list` roster.
+
+1. **What an alumnus is doing after graduation** — one free-text column (`current_role`), e.g. *"SWE at Google"*, *"Law school at Emory"*. Free text on purpose: it has to cover grad school and everything else, not just a job title.
+2. **Custom links** — a member types a label, pastes a URL, and it appears as a chip at the bottom of their directory card. The row **wraps and re-spaces itself** as links are added.
+3. **Public roster opt-in/out** — let people decide whether they appear on `/members-list` at all.
+
+Put the columns on **all users**, not just alumni, and gate the *form* instead. `about_me` set that precedent deliberately: a column gated to one group has to be migrated the day someone changes group. Only the form needs to know that the role field is an alumni thing.
+
+**Open question when this is picked up:** item 3 is inherently about the public page, so "member-side only" either doesn't apply to it or shelves it entirely. Ask before building it.
+
+Traps already identified, so nobody rediscovers them:
+
+- **Links become `<a href>`, so they are a stored-XSS surface.** They must go through `services/urls.js` → `normalizeWebUrl`, exactly like trap #6 above. `new URL()` is *not* a check — it parses `javascript:alert(1)` happily, which is the bug that was already found and fixed in `documentsController.createLink`. Reject rather than truncate, and store the canonical form.
+- **`memberModel` has three projections** (`findAll`, `findById`, `findPublicRoster`) and a new column shows up in none of them by default. `linkedin_url` sat in the database for months, selected by all three of nothing. Suggest a cap of 5 links, label ≤ 40 chars, URL ≤ 300 (`MAX_URL_LENGTH`).
+- **If the roster toggle is built, `findPublicRosterMember` needs the same filter as `findPublicRoster`** — it re-checks eligibility precisely so a guessed id can't pull a photo that was never listed. Filtering only the list leaves opted-out photos fetchable one by one.
+- **`userModel.updateProfile` is a whole-row upsert and NULLs every absent key.** A field the form doesn't render gets wiped on save — that's the `preserveEmail` trap, and a links/role field hidden from non-alumni would hit it the same way.
+- **`links` as `jsonb`: pass `JSON.stringify(value)`, not the array.** node-postgres serialises a JS array into Postgres *array* literal syntax, which is not valid JSON — the insert either errors or stores something unusable.
+
+**Done when:** an alumnus can say what they're doing and add a few links, both show on their directory card with the link row wrapping cleanly as it grows, and a `javascript:` URL is rejected with a message beside the field.
+
+### F. Granular permissions — *parked until after rush, and genuinely large*
 
 Grant capabilities — upload files, make albums, post announcements and events — to **groups or individual people**, administered through a picker like the existing audience selector. Raised 2026-08-09 and deferred the same day: it's a big change and rush season comes first. **Don't start it without a fresh conversation.**
 
