@@ -21,6 +21,7 @@ import {
 import { getAdminUsers, updateUserGroup, updateExecTitle } from '@/lib/portal-api';
 import { formatMemberGroup, memberDisplayName, memberInitials, formatPledgeClass } from '@/lib/portal-format';
 import { isRedirectError } from '@/lib/is-redirect-error';
+import AdminEditProfileModal from '@/components/admin/AdminEditProfileModal';
 
 // Palette now comes from the portal accent context so the Admin red/blue
 // toggle reaches this page, not just the sidebar. Each component asks for it
@@ -207,7 +208,7 @@ function ExecTitleEdit({ authentikId, value, onSave }) {
 
 // ─── User card ───
 
-function UserCard({ user, onChangeGroup, onSaveExecTitle }) {
+function UserCard({ user, onChangeGroup, onSaveExecTitle, onEditProfile }) {
   const group = normalizeGroup(user.member_group);
   const isEboard = group === 'eboard';
   const [saving, setSaving] = useState(false);
@@ -276,6 +277,15 @@ function UserCard({ user, onChangeGroup, onSaveExecTitle }) {
           </div>
 
           <div className="ml-2 flex shrink-0 flex-col items-end gap-2">
+            <button
+              type="button"
+              onClick={() => onEditProfile(user)}
+              className="flex items-center gap-1 rounded-lg border border-border px-2.5 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+            >
+              <Pencil size={11} />
+              Edit
+            </button>
+
             <a
               href={user.email ? `mailto:${user.email}` : undefined}
               aria-disabled={!user.email}
@@ -308,7 +318,7 @@ function UserCard({ user, onChangeGroup, onSaveExecTitle }) {
 
 // ─── Group tab panel ───
 
-function GroupPanel({ group, users, allUsers, onChangeGroup, onSaveExecTitle }) {
+function GroupPanel({ group, users, allUsers, onChangeGroup, onSaveExecTitle, onEditProfile }) {
   const MAROON = useAccentPalette();
   const [addUserId, setAddUserId] = useState('');
   const [adding, setAdding] = useState(false);
@@ -372,7 +382,13 @@ function GroupPanel({ group, users, allUsers, onChangeGroup, onSaveExecTitle }) 
       ) : (
         <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
           {users.map((u) => (
-            <UserCard key={u.authentik_id} user={u} onChangeGroup={onChangeGroup} onSaveExecTitle={onSaveExecTitle} />
+            <UserCard
+              key={u.authentik_id}
+              user={u}
+              onChangeGroup={onChangeGroup}
+              onSaveExecTitle={onSaveExecTitle}
+              onEditProfile={onEditProfile}
+            />
           ))}
         </div>
       )}
@@ -413,6 +429,10 @@ export default function UserManagementPage() {
   const [search, setSearch] = useState('');
   const [profileFilter, setProfileFilter] = useState('all');
   const [activeTab, setActiveTab] = useState('eboard');
+  // The user whose profile eboard is editing, or null. Holds the row itself
+  // rather than an id so the modal has every field to seed its inputs — the
+  // admin list is the only endpoint that returns all of them.
+  const [editingUser, setEditingUser] = useState(null);
 
   function loadUsers({ refresh = false } = {}) {
     if (refresh) setRefreshing(true);
@@ -443,6 +463,20 @@ export default function UserManagementPage() {
   async function handleSaveExecTitle(authentikId, execTitle) {
     const updated = await updateExecTitle(authentikId, execTitle);
     setUsers((prev) => prev.map((u) => (u.authentik_id === authentikId ? { ...u, exec_title: updated.exec_title } : u)));
+  }
+
+  // Merged rather than replaced: the modal saves profile, username and picture
+  // through three separate routes, and each responds with only what it changed.
+  // Overwriting the row with a username response would blank the rest of the
+  // card until the next refresh.
+  function handleProfileSaved(updated) {
+    if (!updated?.authentik_id) return;
+    setUsers((prev) =>
+      prev.map((u) => (u.authentik_id === updated.authentik_id ? { ...u, ...updated } : u))
+    );
+    setEditingUser((prev) =>
+      prev && prev.authentik_id === updated.authentik_id ? { ...prev, ...updated } : prev
+    );
   }
 
   const stats = useMemo(() => ({
@@ -591,8 +625,18 @@ export default function UserManagementPage() {
             allUsers={users}
             onChangeGroup={handleChangeGroup}
             onSaveExecTitle={handleSaveExecTitle}
+            onEditProfile={setEditingUser}
           />
         )
+      )}
+
+      {editingUser && (
+        <AdminEditProfileModal
+          key={editingUser.authentik_id}
+          user={editingUser}
+          onClose={() => setEditingUser(null)}
+          onSaved={handleProfileSaved}
+        />
       )}
     </div>
   );

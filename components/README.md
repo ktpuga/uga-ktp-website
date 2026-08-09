@@ -92,6 +92,16 @@ The alumni case has a trap worth knowing about before you touch it. `PUT /users/
 
 Both checks prefer the resolved `member_group` over the raw session `groups` list where one is available. Authentik doesn't remove someone's old group when they change status, so the raw list can still say `active` for an alumnus or `rush` for a new pledge.
 
+## Don't point `ProfileForm` at another user
+
+`admin/AdminEditProfileModal.jsx` is a separate form on purpose, and reunifying the two is a trap worth naming.
+
+`ProfileForm` decides what to render by reading the **session**: `isRushee` and `isAlumni` describe whoever is logged in. Eboard editing someone else means the session is the *editor's*, so those checks would answer for the wrong person — an eboard member editing an alumnus would get the eboard field set — and the form posts to `/users/me/profile`, which would save the edit onto the editor's own row.
+
+The two share the parts that actually need to stay in step: `buildProfilePayload` from `lib/profile.js`, so both send byte-identical bodies, and `services/profileFields.js` in the API, so both are validated by one set of rules rather than two copies that drift.
+
+The admin modal also shows **every** field unconditionally, including UGA Email for alumni. It's the surface for fixing bad data, and the directory masks an alumnus's UGA address on read regardless.
+
 ## `Legacy*` files — removed 2026-08-02
 
 Pre-redesign copies kept behind an accent check during the portal revamp. Every portal passes `blue`, `amber` or `red`, all of which took the revamped branch, so they had become unreachable — about 4,400 lines that could never execute.
