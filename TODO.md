@@ -166,6 +166,34 @@ Currently only committee chats and the eboard chat exist. The API already has `g
 
 **Done when:** a member can create a chat, and it does *not* appear in eboard's oversight list.
 
+### E. Granular permissions — *parked until after rush, and genuinely large*
+
+Grant capabilities — upload files, make albums, post announcements and events — to **groups or individual people**, administered through a picker like the existing audience selector. Raised 2026-08-09 and deferred the same day: it's a big change and rush season comes first. **Don't start it without a fresh conversation.**
+
+Today there is no such concept. Permission is a group name spelled out at each route by `requireGroup(...)`:
+
+| Gate | Routes |
+|---|---|
+| `requireGroup("eboard")` | 43 |
+| `requireGroup(...SHARED_ALBUM_GROUPS)` | 12 |
+| `requireGroup(...RUSH_ACCESSIBLE_GROUPS)` | 7 |
+| `requireGroup("eboard", "chair")` | 4 |
+
+Design positions already agreed enough to build from:
+
+- **Grants live in our Postgres, not Authentik**, and are looked up server-side per request. Authentik groups keep doing portal routing. Putting permissions in the JWT re-inherits every staleness problem in trap #10 above — and revocation would only take effect at next full sign-in.
+- **Union only, no explicit deny.** Deny means precedence, precedence means nobody can predict what a person can do.
+- **Permission names are a fixed enum in code**, like `roleGroups.js`. Each must map to a real route — a free-form name typed into a UI is a permission that silently does nothing, which is how this feature usually rots.
+- **Seed the table to reproduce the table above byte for byte**, then let eboard diverge. Makes the migration verifiable rather than a leap.
+- **Eboard keeps a bypass, or at least a lockout guard** — otherwise revoking the grant permission leaves only SQL as a way back in.
+- Build the **per-permission** view first ("who can create albums?"); add a per-person summary later.
+
+The UI is mostly already built: `AudienceSelect.jsx` for group pills, and the "Or pick people" picker in `MeetingsPage.jsx`.
+
+**Still undecided:** the full capability list; whether rushees/pledges can hold grants at all; and whether permissions are global or per-object ("upload files" vs "upload to *this* folder" — the latter is a much bigger feature).
+
+**Blast radius:** 60+ routes and both clients. iOS gets enforcement free since it shares the endpoints, but its UI will show buttons that start 403ing. Needs phasing.
+
 ---
 
 ## Part 3 — Working here
