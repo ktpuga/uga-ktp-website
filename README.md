@@ -202,6 +202,8 @@ lib/
   sso.js                 probe cookie + per-entry-point cooldown slots
   portal-format.js       shared name/group/date formatting
   is-redirect-error.js   the NEXT_REDIRECT guard described above
+  use-unread-counts.js   message badge (per-message read receipts)
+  use-tab-notifications.js  every other sidebar badge (per-tab cursors)
 sanity/                  blog schema + client
 proxy.ts                 portal access control (was middleware.ts before Next 16)
 auth.ts                  NextAuth config, token refresh
@@ -217,6 +219,17 @@ Two conventions that will silently break a portal if missed:
 2. **Adding a colour is one edit** — `PALETTES` in `components/portal/PortalAccentContext.jsx`, the single definition that every shared component imports. (`REVAMPED_ACCENTS` in `PortalShell.jsx` still controls sidebar styling, but a missing key there now falls back to blue instead of emptying the sidebar.)
 
 Also note that several components take an `accent` prop with **no default value**. Omitting it doesn't error — it quietly renders the older unstyled variant. If a page looks unexpectedly plain, check that its wrapper passes an accent.
+
+### Sidebar badges
+
+`PortalShell` renders its nav **four times** — desktop revamped, desktop legacy, and a mobile sheet for each. All four get their number from one `badgeFor(href)` helper, so a new badge is one edit. It used to be inlined as `href.endsWith('/messages')` in all four, which meant anything new either had to be added in four places or badged in some layouts and not others.
+
+Two sources feed it, and they are not interchangeable:
+
+- **Messages** uses `useUnreadCounts()` — genuine per-message read receipts.
+- **Everything else** uses `useTabNotifications()` — a per-tab cursor (`last_seen_at`) compared against each source table. Visiting a tab marks it seen; the tab you are currently on never shows a badge.
+
+Adding a tab means editing `NOTIFICATION_TABS` in `lib/use-tab-notifications.js` **and** `notificationCursorModel.TABS` plus the `CHECK` constraint in the API. A tab present in one and not the other doesn't error — it just never badges.
 
 ### Profile pictures
 

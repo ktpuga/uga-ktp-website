@@ -119,6 +119,17 @@ Nothing in this repo can detect it — a `refresh_token` isn't tied to the brows
 
 This is the enabler for the whole "two sessions in one browser" family, up to and including rush enrollment renaming the account that was still signed in.
 
+### 12. Sidebar badge counts duplicate the API's visibility rules
+
+The per-tab badges (`lib/use-tab-notifications.js` → `GET /notifications/unread`) are counted by SQL in the API's `notificationCursorModel` that **restates** the audience predicate from `announcementModel`, `eventModel`, `pollModel` and `visibility.js`.
+
+That duplication is deliberate — each model owns its own predicate, and the counts have to agree with them — but it means **changing an audience rule in one place and not the other produces a badge for something the member cannot open.** That's a disclosure, not a cosmetic bug. `ktp-api/test/notificationCursors.test.js` covers it, including the "no audience means all *members*, not rushees" case; run it after touching any targeting logic.
+
+Two smaller ones in the same area:
+
+- **The tab list exists twice** — `NOTIFICATION_TABS` here and `notificationCursorModel.TABS` plus a `CHECK` constraint in the API. A tab in one and not the other doesn't error, it just never badges.
+- **Badges render in four places in `PortalShell`** (desktop revamped, desktop legacy, and a mobile sheet for each). They all read `badgeFor(href)` now; don't re-inline a condition into one of them.
+
 ---
 
 ## Part 2 — The to-do list

@@ -63,6 +63,24 @@ are now one, so neither failure mode exists.
 `accent` no longer selects nav structure or the portal's home href (that's the
 `homeHref` prop), so it means only "which palette".
 
+### Nav badges
+
+A nav item's badge number comes from `badgeFor(href)` in `PortalShell`, the one
+place that decides it. The shell renders its nav **four times** — desktop
+revamped, desktop legacy, and a mobile sheet for each — so a condition inlined
+into one of them badges in some layouts and not others. That is exactly what
+`href.endsWith('/messages')` used to do in all four.
+
+Two sources feed it and they are not interchangeable:
+
+- **Messages** — `useUnreadCounts()`, real per-message read receipts.
+- **Everything else** — `useTabNotifications()`, a per-tab cursor. Visiting a
+  tab marks it seen, and the tab currently being viewed never badges.
+
+A new badged tab needs `NOTIFICATION_TABS` in `lib/use-tab-notifications.js`
+**and** `notificationCursorModel.TABS` plus the `CHECK` constraint in the API.
+Missing one side doesn't error — it just never badges.
+
 ## Profile pictures
 
 Use a plain `<img>` with an `onError` handler falling back to initials. Prefer this over `ui/avatar.jsx`'s Radix-based `Avatar` — Radix's `AvatarFallback` can stay visible even after the image successfully loads, which has caused initials-only-avatar bugs here more than once.

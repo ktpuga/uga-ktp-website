@@ -4,11 +4,12 @@ import { useEffect, useState } from 'react';
 import { cn } from '@/lib/utils';
 import {
   CalendarDays, Plus, X, Pencil, Trash2, MapPin, Clock, Users,
-  AlertCircle, Loader2, ArrowRight, QrCode, Bell,
+  AlertCircle, Loader2, ArrowRight, QrCode, Bell, Mail,
 } from 'lucide-react';
 import {
   getAnnouncements, createAnnouncement, updateAnnouncement, deleteAnnouncement,
   getEvents, createEvent, updateEvent, deleteEvent, getCommittees,
+  getNotificationChannels,
 } from '@/lib/portal-api';
 import {
   formatAudience, formatMessageTime, formatEventTimeRange, getEventStartDate, getEventEndDate,
@@ -241,7 +242,55 @@ function EmptyState({ label }) {
 
 // ─── Announcements ───
 
-const EMPTY_ANNOUNCEMENT_FORM = { title: '', body: '', audience: [], committeeIds: [] };
+const EMPTY_ANNOUNCEMENT_FORM = { title: '', body: '', audience: [], committeeIds: [], sendEmail: false };
+
+// Opt-in per post, deliberately. An automatic rule ("important things get
+// emailed") means the sender can't tell what will happen until after it has
+// happened, and the failure mode is mailing the whole chapter by accident.
+// Off by default so the quiet path is the default path.
+//
+// Only offered when creating: the API sends at most once per announcement
+// (announcements.emailed_at), so a checkbox on the edit form would be a
+// control that silently does nothing.
+//
+// Renders NOTHING until the API reports the email channel as configured. Until
+// Resend has credentials the server skips every send, so an always-visible
+// checkbox would post happily and mail nobody with no error on screen — and
+// whoever ticked it would have no reason to doubt it worked. Asking the server
+// rather than reading a duplicated env var also means this appears on its own
+// the moment email is switched on, with no redeploy of this app.
+function EmailOptIn({ checked, onChange, accent, description }) {
+  const [available, setAvailable] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    getNotificationChannels()
+      .then((channels) => { if (!cancelled) setAvailable(Boolean(channels?.email)); })
+      .catch((err) => { if (isRedirectError(err)) throw err; });
+    return () => { cancelled = true; };
+  }, []);
+
+  if (!available) return null;
+
+  return (
+    <label className="flex cursor-pointer items-start gap-3 rounded-lg border border-border p-3 transition-colors hover:bg-muted/40">
+      <input
+        type="checkbox"
+        checked={checked}
+        onChange={(e) => onChange(e.target.checked)}
+        className="mt-0.5 h-4 w-4 shrink-0 cursor-pointer rounded border-border"
+        style={{ accentColor: accent }}
+      />
+      <span>
+        <span className="flex items-center gap-1.5 text-sm font-medium text-foreground">
+          <Mail size={13} />
+          Also send this as an email
+        </span>
+        <span className="mt-0.5 block text-xs text-muted-foreground">{description}</span>
+      </span>
+    </label>
+  );
+}
 
 function AnnouncementForm({ initial, onSubmit, onCancel, isEdit, committees }) {
   const MAROON = useAccentPalette();
@@ -279,6 +328,14 @@ function AnnouncementForm({ initial, onSubmit, onCancel, isEdit, committees }) {
           onCommitteeIdsChange={(v) => setForm((f) => ({ ...f, committeeIds: v }))}
           onAudienceChange={(v) => setForm((f) => ({ ...f, audience: v }))}
         />
+        {!isEdit && (
+          <EmailOptIn
+            checked={Boolean(form.sendEmail)}
+            onChange={(v) => setForm((f) => ({ ...f, sendEmail: v }))}
+            accent={MAROON.base}
+            description="Goes to everyone this announcement targets, except those who turned emails off in their settings. Sent once — editing it later won't email again."
+          />
+        )}
       </div>
 
       <div className="mt-5 flex items-center justify-end gap-2">
@@ -448,7 +505,7 @@ function AnnouncementsTab({ committees }) {
 
 const EMPTY_EVENT_FORM = {
   title: '', description: '', location: '', start: '', end: '',
-  audience: [], committeeIds: [], requiresAttendance: false,
+  audience: [], committeeIds: [], requiresAttendance: false, sendEmail: false,
 };
 
 function EventForm({ initial, onSubmit, onCancel, isEdit, committees, formError }) {
@@ -493,7 +550,16 @@ function EventForm({ initial, onSubmit, onCancel, isEdit, committees, formError 
           <input
             type="checkbox"
             checked={form.requiresAttendance}
-            onChange={(e) => setForm((f) => ({ ...f, requiresAttendance: e.target.checked }))}
+            onChange={(e) => setForm((f) => ({
+              ...f,
+              requiresAttendance: e.target.checked,
+              // Marking an event required pre-ticks the email box below: this
+              // is exactly the case where reaching people who don't have the
+              // app installed matters. Still a default, not a rule — it can be
+              // unticked. Turning required back off leaves the email choice
+              // alone, since they may well still want to email an optional one.
+              sendEmail: e.target.checked ? true : f.sendEmail,
+            }))}
             className="mt-0.5 h-4 w-4 shrink-0 rounded border-border"
             style={{ accentColor: MAROON.base }}
           />
@@ -502,9 +568,20 @@ function EventForm({ initial, onSubmit, onCancel, isEdit, committees, formError 
               <QrCode size={13} style={{ color: MAROON.light }} />
               Track attendance for this event (QR check-in)
             </p>
-            <p className="mt-0.5 text-[11px] text-muted-foreground">Members can scan a QR code to mark attendance at the door</p>
+            <p className="mt-0.5 text-[11px] text-muted-foreground">
+              Members can scan a QR code to mark attendance at the door, and get an extra reminder a day ahead
+            </p>
           </div>
         </label>
+
+        {!isEdit && (
+          <EmailOptIn
+            checked={Boolean(form.sendEmail)}
+            onChange={(v) => setForm((f) => ({ ...f, sendEmail: v }))}
+            accent={MAROON.base}
+            description="Goes to everyone this event targets, except those who turned emails off. Sent once, when the event is created."
+          />
+        )}
 
         <TargetingPicker
           committeeIds={form.committeeIds}
@@ -632,6 +709,7 @@ function EventsTab({ committees }) {
         audience: form.audience,
         committeeIds: form.committeeIds,
         requiresAttendance: form.requiresAttendance,
+        sendEmail: form.sendEmail,
       };
 
       const result = editingId ? await updateEvent(editingId, payload) : await createEvent(payload);

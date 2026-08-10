@@ -12,6 +12,7 @@ import { logoutEverywhere } from '@/lib/auth-actions';
 import { getProfile } from '@/lib/portal-api';
 import { isRedirectError } from '@/lib/is-redirect-error';
 import { useUnreadCounts } from '@/lib/use-unread-counts';
+import { useTabNotifications, tabFromHref } from '@/lib/use-tab-notifications';
 import { cn } from '@/lib/utils';
 import { memberDisplayName, memberInitials, formatMemberGroup } from '@/lib/portal-format';
 import { PortalThemeProvider, usePortalTheme } from './PortalThemeProvider';
@@ -279,7 +280,22 @@ export default function PortalShell({
   const [mounted, setMounted] = useState(false);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const { total: unreadTotal } = useUnreadCounts();
+  const tabCounts = useTabNotifications();
   const { data: session } = useSession();
+
+  // The single place that decides what number a nav item shows. This shell
+  // renders its nav four times (desktop revamped, desktop legacy, and a mobile
+  // sheet for each), and the badge rule used to be inlined in all four as
+  // `href.endsWith('/messages')` — so anything new had to be added in four
+  // places or silently badge in some layouts and not others.
+  //
+  // Messages deliberately keeps its own source: it counts unread messages via
+  // read receipts, not "things added since you last looked".
+  const badgeFor = (href) => {
+    if (href.endsWith('/messages')) return unreadTotal;
+    const tab = tabFromHref(href);
+    return tab ? tabCounts[tab] ?? 0 : 0;
+  };
 
   // The session carries authentik_id, groups and profile_complete — and no name
   // at all. Authentik's invitation flow only ever collects a username, so first
@@ -396,7 +412,7 @@ export default function PortalShell({
                   <ul className="flex flex-col gap-0.5 px-2">
                     {group.items.map(({ href, label, icon: Icon }) => {
                       const active = pathname === href;
-                      const badge = href.endsWith('/messages') ? unreadTotal : 0;
+                      const badge = badgeFor(href);
                       return (
                         <RevampedNavItem
                           key={href}
@@ -530,7 +546,7 @@ export default function PortalShell({
               <nav className="flex flex-col gap-1 border-b border-border bg-card px-2 py-2 md:hidden">
                 {flatNav.map(({ href, label, icon: Icon }) => {
                   const active = pathname === href;
-                  const showBadge = href.endsWith('/messages') && unreadTotal > 0;
+                  const badgeCount = badgeFor(href);
                   return (
                     <Link
                       key={href}
@@ -543,9 +559,9 @@ export default function PortalShell({
                     >
                       <span className="relative shrink-0">
                         <Icon className="h-4 w-4" />
-                        {showBadge && (
+                        {badgeCount > 0 && (
                           <span className="absolute -right-1.5 -top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-600 px-1 text-[9px] font-semibold leading-none text-white">
-                            {unreadTotal > 99 ? '99+' : unreadTotal}
+                            {badgeCount > 99 ? '99+' : badgeCount}
                           </span>
                         )}
                       </span>
@@ -643,7 +659,7 @@ export default function PortalShell({
           <nav className="flex flex-col gap-1 border-b border-slate-200 bg-white px-2 py-2 md:hidden dark:border-border dark:bg-card">
             {flatNav.map(({ href, label, icon: Icon }) => {
               const active = pathname === href;
-              const showBadge = href.endsWith('/messages') && unreadTotal > 0;
+              const badgeCount = badgeFor(href);
               return (
                 <Link
                   key={href}
@@ -656,9 +672,9 @@ export default function PortalShell({
                 >
                   <span className="relative shrink-0">
                     <Icon className="h-4 w-4" />
-                    {showBadge && (
+                    {badgeCount > 0 && (
                       <span className="absolute -right-1.5 -top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-600 px-1 text-[9px] font-semibold leading-none text-white">
-                        {unreadTotal > 99 ? '99+' : unreadTotal}
+                        {badgeCount > 99 ? '99+' : badgeCount}
                       </span>
                     )}
                   </span>
@@ -678,7 +694,7 @@ export default function PortalShell({
         >
           {flatNav.map(({ href, label, icon: Icon }) => {
             const active = pathname === href;
-            const showBadge = href.endsWith('/messages') && unreadTotal > 0;
+            const badgeCount = badgeFor(href);
             return (
               <Link
                 key={href}
@@ -688,9 +704,9 @@ export default function PortalShell({
               >
                 <span className="relative shrink-0">
                   <Icon className="h-4 w-4" />
-                  {showBadge && (
+                  {badgeCount > 0 && (
                     <span className="absolute -right-1.5 -top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-600 px-1 text-[9px] font-semibold leading-none text-white">
-                      {unreadTotal > 99 ? '99+' : unreadTotal}
+                      {badgeCount > 99 ? '99+' : badgeCount}
                     </span>
                   )}
                 </span>

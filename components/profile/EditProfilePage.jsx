@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { User, ShieldOff, AlertTriangle, X, UserX, ExternalLink, Info, Calendar } from 'lucide-react';
+import { User, ShieldOff, AlertTriangle, X, UserX, ExternalLink, Info, Calendar, Mail } from 'lucide-react';
 import { getProfile, deleteAccount } from '@/lib/portal-api';
 import { useBlockedMembers, unblockMember } from '@/lib/blocked-members';
 import { normalizeUserProfile } from '@/lib/profile';
@@ -12,6 +12,7 @@ import { cn } from '@/lib/utils';
 import ProfileForm from './ProfileForm';
 import CalendarSubscription from './CalendarSubscription';
 import UsernameEditor from './UsernameEditor';
+import EmailNotifications from './EmailNotifications';
 import { PALETTES } from '@/components/portal/PortalAccentContext';
 
 // Palette comes from PortalAccentContext, the single source of truth. Each of
@@ -366,6 +367,15 @@ function RevampedEditProfilePage({ accentKey, portalLabel }) {
             description="Put chapter events into Apple Calendar, Google Calendar or Outlook, kept up to date automatically."
           >
             <CalendarSubscription initialToken={profile?.calendar_feed_token ?? null} />
+          </SectionCard>
+
+          <SectionCard
+            accent={accent}
+            icon={<Mail size={14} strokeWidth={1.75} />}
+            title="Email Notifications"
+            description="Choose whether chapter announcements and events also reach your inbox."
+          >
+            <EmailNotifications accent={accent} />
           </SectionCard>
 
           {/* Only surfaces once there's actually someone blocked — see
