@@ -3,13 +3,13 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   AlertTriangle, ArrowLeft, CalendarClock, Check, ChevronRight, Clock, Eye, EyeOff,
-  Loader2, MapPin, Plus, Trash2, User, X,
+  Loader2, MapPin, Pencil, Plus, Trash2, User, X,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
   getInterviewSchedules, getInterviewSchedule, createInterviewSchedule, updateInterviewSchedule,
-  deleteInterviewSchedule, createInterviewSlot, deleteInterviewSlot, cancelInterviewBooking,
-  getMessageableMembers,
+  deleteInterviewSchedule, createInterviewSlot, updateInterviewSlot, deleteInterviewSlot,
+  cancelInterviewBooking, getMessageableMembers,
 } from '@/lib/portal-api';
 import { memberDisplayName, memberInitials } from '@/lib/portal-format';
 import { isRedirectError } from '@/lib/is-redirect-error';
@@ -83,25 +83,32 @@ export default function InterviewScheduleManager() {
       { title: 'Delete this interview round?' },
     ))) return;
     setError('');
+    const drop = () => setSchedules((prev) => prev.filter((s) => s.id !== schedule.id));
+
     try {
-      await deleteInterviewSchedule(schedule.id);
-      setSchedules((prev) => prev.filter((s) => s.id !== schedule.id));
-    } catch (err) {
-      if (isRedirectError(err)) throw err;
+      const first = await deleteInterviewSchedule(schedule.id);
+      if (first.ok) return drop();
+
+      // Only the "people have booked" refusal is worth offering to override.
+      // Anything else is a real failure, and forcing it would just fail again —
+      // offering "Delete anyway" for a network error is alarming and useless.
+      if (first.code !== 'has_bookings') return setError(first.error);
+
       // The 409 carries the count. "Delete this schedule" and "cancel 23
       // people's interviews" deserve different answers, and only the server knows.
       const forced = await confirm(
-        `${err.message}\n\nDelete it anyway? Their interviews will be cancelled and they will not be told.`,
+        `${first.error}\n\nDelete it anyway? Their interviews will be cancelled and they will not be told.`,
         { title: 'People have already booked', confirmLabel: 'Delete anyway' },
       );
       if (!forced) return;
-      try {
-        await deleteInterviewSchedule(schedule.id, { force: true });
-        setSchedules((prev) => prev.filter((s) => s.id !== schedule.id));
-      } catch (forceErr) {
-        if (isRedirectError(forceErr)) throw forceErr;
-        setError(forceErr.message ?? 'Could not delete that schedule.');
-      }
+
+      const second = await deleteInterviewSchedule(schedule.id, { force: true });
+      if (second.ok) drop();
+      else setError(second.error);
+    } catch (err) {
+      // requireAccessToken() still redirects by throwing, and that must pass.
+      if (isRedirectError(err)) throw err;
+      setError(err.message ?? 'Could not delete that schedule.');
     }
   }
 
@@ -265,6 +272,7 @@ function ScheduleDetail({ scheduleId, accent, onBack }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
+  const [editingId, setEditingId] = useState(null);
 
   const load = useCallback(async () => {
     try {
@@ -313,30 +321,55 @@ function ScheduleDetail({ scheduleId, accent, onBack }) {
     }
   }
 
+  // Returns an error message for the edit form to show, or null on success.
+  // Deliberately not routed through the page-level banner: the message is about
+  // the fields you are looking at, and the 409 for lowering capacity below the
+  // seats already taken has no ?force escape the way deleting does — it is a
+  // hard stop, so it has to read as an explanation rather than an escalation.
+  async function saveSlot(slot, payload) {
+    try {
+      // Returns { error } rather than throwing — see lib/portal-api.js. A
+      // thrown message would reach the reader as React's #441 digest, which is
+      // exactly the explanation this 409 is supposed to give them.
+      const result = await updateInterviewSlot(slot.id, payload);
+      if (result?.error) return result.error;
+      setEditingId(null);
+      await load();
+      return null;
+    } catch (err) {
+      // requireAccessToken() still redirects by throwing, and that must pass.
+      if (isRedirectError(err)) throw err;
+      return err.message ?? 'Could not save that slot.';
+    }
+  }
+
   async function removeSlot(slot) {
     const when = `${dayLabel(new Date(slot.startDate))}, ${timeLabel(new Date(slot.startDate))}`;
     if (!(await confirm(`Delete the ${when} slot?`, { title: 'Delete this slot?' }))) return;
     setBusy(true);
     setError('');
     try {
-      await deleteInterviewSlot(slot.id);
-      await load();
-    } catch (err) {
-      if (isRedirectError(err)) throw err;
-      // 409 when booked. Same escalation as deleting a schedule.
+      const first = await deleteInterviewSlot(slot.id);
+      // Awaited, not returned: `return load()` would let the finally below
+      // clear `busy` while the refetch was still in flight.
+      if (first.ok) { await load(); return; }
+
+      // 409 when booked. Same escalation as deleting a schedule, and the same
+      // rule that only that refusal earns one.
+      if (first.code !== 'has_bookings') return setError(first.error);
+
       const forced = await confirm(
-        `${err.message}\n\nDelete it anyway? They'll be told their slot was cancelled and asked to pick another.`,
+        `${first.error}\n\nDelete it anyway? They'll be told their slot was cancelled and asked to pick another.`,
         { title: 'Someone has booked this slot', confirmLabel: 'Delete anyway' },
       );
-      if (forced) {
-        try {
-          await deleteInterviewSlot(slot.id, { force: true });
-          await load();
-        } catch (forceErr) {
-          if (isRedirectError(forceErr)) throw forceErr;
-          setError(forceErr.message ?? 'Could not delete that slot.');
-        }
-      }
+      if (!forced) return;
+
+      const second = await deleteInterviewSlot(slot.id, { force: true });
+      if (second.ok) await load();
+      else setError(second.error);
+    } catch (err) {
+      if (isRedirectError(err)) throw err;
+      setError(err.message ?? 'Could not delete that slot.');
     } finally {
       setBusy(false);
     }
@@ -461,7 +494,13 @@ function ScheduleDetail({ scheduleId, accent, onBack }) {
                         key={slot.id}
                         slot={slot}
                         accent={accent}
+                        members={members}
+                        defaultLocation={schedule.location}
                         busy={busy}
+                        editing={editingId === slot.id}
+                        onEdit={() => setEditingId(slot.id)}
+                        onCancelEdit={() => setEditingId(null)}
+                        onSave={saveSlot}
                         onDelete={() => removeSlot(slot)}
                         onRelease={(booking) => releaseBooking(booking, slot)}
                       />
@@ -477,15 +516,19 @@ function ScheduleDetail({ scheduleId, accent, onBack }) {
   );
 }
 
-function SlotRow({ slot, accent, busy, onDelete, onRelease }) {
+function SlotRow({
+  slot, accent, members, defaultLocation, busy,
+  editing, onEdit, onCancelEdit, onSave, onDelete, onRelease,
+}) {
   const left = Math.max(0, slot.capacity - slot.booked_count);
+  const when = timeLabel(new Date(slot.startDate));
 
   return (
     <div className="rounded-xl border border-border bg-card px-4 py-3">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="min-w-0">
           <p className="text-sm font-semibold text-foreground">
-            {timeLabel(new Date(slot.startDate))} – {timeLabel(new Date(slot.endDate))}
+            {when} – {timeLabel(new Date(slot.endDate))}
           </p>
           <p className="flex flex-wrap items-center gap-x-2.5 gap-y-0.5 text-[11px] text-muted-foreground">
             <span>{slot.booked_count} of {slot.capacity} booked{left > 0 ? ` · ${left} open` : ' · full'}</span>
@@ -493,16 +536,44 @@ function SlotRow({ slot, accent, busy, onDelete, onRelease }) {
             {slot.interviewer_name && <span className="flex items-center gap-1"><User size={9} /> {slot.interviewer_name}</span>}
           </p>
         </div>
-        <button
-          type="button"
-          onClick={onDelete}
-          disabled={busy}
-          className="rounded-lg border border-destructive/30 bg-destructive/10 p-1.5 text-destructive hover:bg-destructive/20 disabled:opacity-40"
-          aria-label={`Delete the ${timeLabel(new Date(slot.startDate))} slot`}
-        >
-          <Trash2 size={12} />
-        </button>
+        <div className="flex items-center gap-1.5">
+          <button
+            type="button"
+            onClick={editing ? onCancelEdit : onEdit}
+            disabled={busy}
+            aria-expanded={editing}
+            className={cn(
+              'rounded-lg border border-border p-1.5 disabled:opacity-40',
+              editing ? 'bg-muted text-foreground' : 'text-muted-foreground hover:bg-muted',
+            )}
+            aria-label={`${editing ? 'Stop editing' : 'Edit'} the ${when} slot`}
+          >
+            {editing ? <X size={12} /> : <Pencil size={12} />}
+          </button>
+          <button
+            type="button"
+            onClick={onDelete}
+            disabled={busy}
+            className="rounded-lg border border-destructive/30 bg-destructive/10 p-1.5 text-destructive hover:bg-destructive/20 disabled:opacity-40"
+            aria-label={`Delete the ${when} slot`}
+          >
+            <Trash2 size={12} />
+          </button>
+        </div>
       </div>
+
+      {/* Deliberately not keyed on the slot: a refetch triggered by something
+          else on the page must not throw away what's half-typed in here. */}
+      {editing && (
+        <EditSlotForm
+          slot={slot}
+          accent={accent}
+          members={members}
+          defaultLocation={defaultLocation}
+          onSave={onSave}
+          onCancel={onCancelEdit}
+        />
+      )}
 
       {slot.bookings.length > 0 && (
         <div className="mt-2.5 flex flex-wrap gap-1.5 border-t border-border pt-2.5">
@@ -529,79 +600,39 @@ function SlotRow({ slot, accent, busy, onDelete, onRelease }) {
   );
 }
 
-// Slots go in one at a time, so each save prefills the next one starting where
-// the last ended, keeping its length, room and capacity. An evening of
-// 20-minute slots is one field of typing and then repeated clicks on Add.
-function AddSlotForm({ accent, members, defaultLocation, lastSlot, onAdd }) {
-  const [startsAt, setStartsAt] = useState(() => toLocalInput(nextHalfHour()));
-  const [minutes, setMinutes] = useState(20);
-  const [capacity, setCapacity] = useState(1);
-  const [location, setLocation] = useState('');
-  const [interviewerId, setInterviewerId] = useState('');
-  const [saving, setSaving] = useState(false);
-  // Keyed on the last slot's id so the prefill runs once per added slot —
-  // otherwise a typed start time is overwritten when the parent refetches.
-  const [chainedFrom, setChainedFrom] = useState(null);
-
-  useEffect(() => {
-    if (!lastSlot || lastSlot.id === chainedFrom) return;
-    const end = new Date(lastSlot.endDate);
-    const start = new Date(lastSlot.startDate);
-    if (Number.isNaN(end.getTime())) return;
-    setStartsAt(toLocalInput(end));
-    const length = Math.round((end.getTime() - start.getTime()) / 60000);
-    if (length > 0) setMinutes(length);
-    setCapacity(lastSlot.capacity);
-    setLocation(lastSlot.location ?? '');
-    setInterviewerId(lastSlot.interviewer_id ?? '');
-    setChainedFrom(lastSlot.id);
-  }, [lastSlot, chainedFrom]);
-
-  const endsAt = useMemo(() => {
-    const start = new Date(startsAt);
-    if (Number.isNaN(start.getTime())) return null;
-    return new Date(start.getTime() + minutes * 60000);
-  }, [startsAt, minutes]);
-
-  async function submit() {
-    if (!endsAt) return;
-    setSaving(true);
-    await onAdd({
-      startsAt: new Date(startsAt).toISOString(),
-      endsAt: endsAt.toISOString(),
-      location: location.trim() || null,
-      capacity,
-      interviewerId: interviewerId || null,
-    });
-    setSaving(false);
-  }
+// Both forms drive the same five fields, so the inputs live here once and each
+// parent keeps its own state — AddSlotForm chains from the previous slot,
+// EditSlotForm starts from the slot being edited.
+//
+// `idPrefix` is load-bearing rather than decoration: the add form and an open
+// edit form are on the page at the same time, and duplicate DOM ids silently
+// break clicking a label to focus its field.
+function SlotFields({ idPrefix, value, onChange, members, defaultLocation, seatsHint, footer }) {
+  const set = (patch) => onChange({ ...value, ...patch });
 
   return (
-    <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
-      <p className="mb-3 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-        <Plus size={12} /> Add a slot
-      </p>
+    <>
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <div className="sm:col-span-2 lg:col-span-1">
-          <label htmlFor="slot-start" className={labelClass}>Starts</label>
-          <input id="slot-start" type="datetime-local" value={startsAt}
-            onChange={(e) => setStartsAt(e.target.value)} className={inputClass} />
+          <label htmlFor={`${idPrefix}-start`} className={labelClass}>Starts</label>
+          <input id={`${idPrefix}-start`} type="datetime-local" value={value.startsAt}
+            onChange={(e) => set({ startsAt: e.target.value })} className={inputClass} />
         </div>
         <div>
-          <label htmlFor="slot-len" className={labelClass}>Length (min)</label>
-          <input id="slot-len" type="number" min={5} step={5} value={minutes}
-            onChange={(e) => setMinutes(Math.max(5, Number(e.target.value) || 5))} className={inputClass} />
+          <label htmlFor={`${idPrefix}-len`} className={labelClass}>Length (min)</label>
+          <input id={`${idPrefix}-len`} type="number" min={5} step={5} value={value.minutes}
+            onChange={(e) => set({ minutes: Math.max(5, Number(e.target.value) || 5) })} className={inputClass} />
         </div>
         <div>
-          <label htmlFor="slot-cap" className={labelClass}>Seats</label>
-          <input id="slot-cap" type="number" min={1} value={capacity}
-            onChange={(e) => setCapacity(Math.max(1, Number(e.target.value) || 1))} className={inputClass} />
-          <p className="mt-1 text-[10px] text-muted-foreground">1 unless you run rooms in parallel.</p>
+          <label htmlFor={`${idPrefix}-cap`} className={labelClass}>Seats</label>
+          <input id={`${idPrefix}-cap`} type="number" min={1} value={value.capacity}
+            onChange={(e) => set({ capacity: Math.max(1, Number(e.target.value) || 1) })} className={inputClass} />
+          {seatsHint && <p className="mt-1 text-[10px] text-muted-foreground">{seatsHint}</p>}
         </div>
         <div>
-          <label htmlFor="slot-interviewer" className={labelClass}>Interviewer</label>
-          <select id="slot-interviewer" value={interviewerId}
-            onChange={(e) => setInterviewerId(e.target.value)} className={inputClass}>
+          <label htmlFor={`${idPrefix}-interviewer`} className={labelClass}>Interviewer</label>
+          <select id={`${idPrefix}-interviewer`} value={value.interviewerId}
+            onChange={(e) => set({ interviewerId: e.target.value })} className={inputClass}>
             <option value="">Not decided</option>
             {members.map((m) => (
               <option key={m.id} value={m.id}>{memberDisplayName(m)}</option>
@@ -612,23 +643,196 @@ function AddSlotForm({ accent, members, defaultLocation, lastSlot, onAdd }) {
 
       <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
         <div>
-          <label htmlFor="slot-loc" className={labelClass}>Room (optional)</label>
-          <input id="slot-loc" type="text" value={location} onChange={(e) => setLocation(e.target.value)}
+          <label htmlFor={`${idPrefix}-loc`} className={labelClass}>Room (optional)</label>
+          <input id={`${idPrefix}-loc`} type="text" value={value.location}
+            onChange={(e) => set({ location: e.target.value })}
             placeholder={defaultLocation || 'Same as the round'} className={inputClass} />
         </div>
-        <div className="flex items-end justify-between gap-3">
-          <p className="text-[11px] text-muted-foreground">
-            {endsAt
-              ? <>Ends <span className="font-semibold text-foreground">{timeLabel(endsAt)}</span></>
-              : 'Pick a valid start time'}
-          </p>
-          <button type="button" onClick={submit} disabled={saving || !endsAt}
-            className="flex items-center gap-1.5 rounded-lg px-4 py-2 text-sm font-semibold text-white disabled:opacity-40"
-            style={{ background: accent.gradient }}>
-            {saving ? <Loader2 size={13} className="animate-spin" /> : <Check size={13} />} Add slot
-          </button>
-        </div>
+        <div className="flex items-end justify-between gap-3">{footer}</div>
       </div>
+    </>
+  );
+}
+
+// A stored window is two timestamps; both forms edit it as a start plus a
+// length, so this is the way back. The DB has CHECK (ends_at > starts_at), so
+// the fallback only covers an unparseable date.
+function lengthInMinutes(startDate, endDate) {
+  const minutes = Math.round((new Date(endDate).getTime() - new Date(startDate).getTime()) / 60000);
+  return Number.isFinite(minutes) && minutes > 0 ? minutes : 20;
+}
+
+function useEndsAt(startsAt, minutes) {
+  return useMemo(() => {
+    const start = new Date(startsAt);
+    if (Number.isNaN(start.getTime())) return null;
+    return new Date(start.getTime() + minutes * 60000);
+  }, [startsAt, minutes]);
+}
+
+const endsLabel = (endsAt) => (endsAt
+  ? <>Ends <span className="font-semibold text-foreground">{timeLabel(endsAt)}</span></>
+  : 'Pick a valid start time');
+
+// Slots go in one at a time, so each save prefills the next one starting where
+// the last ended, keeping its length, room and capacity. An evening of
+// 20-minute slots is one field of typing and then repeated clicks on Add.
+function AddSlotForm({ accent, members, defaultLocation, lastSlot, onAdd }) {
+  const [fields, setFields] = useState(() => ({
+    startsAt: toLocalInput(nextHalfHour()),
+    minutes: 20,
+    capacity: 1,
+    location: '',
+    interviewerId: '',
+  }));
+  const [saving, setSaving] = useState(false);
+  // Keyed on the last slot's id so the prefill runs once per added slot —
+  // otherwise a typed start time is overwritten when the parent refetches.
+  const [chainedFrom, setChainedFrom] = useState(null);
+
+  useEffect(() => {
+    if (!lastSlot || lastSlot.id === chainedFrom) return;
+    const end = new Date(lastSlot.endDate);
+    if (Number.isNaN(end.getTime())) return;
+    setFields({
+      startsAt: toLocalInput(end),
+      minutes: lengthInMinutes(lastSlot.startDate, lastSlot.endDate),
+      capacity: lastSlot.capacity,
+      location: lastSlot.location ?? '',
+      interviewerId: lastSlot.interviewer_id ?? '',
+    });
+    setChainedFrom(lastSlot.id);
+  }, [lastSlot, chainedFrom]);
+
+  const endsAt = useEndsAt(fields.startsAt, fields.minutes);
+
+  async function submit() {
+    if (!endsAt) return;
+    setSaving(true);
+    await onAdd({
+      startsAt: new Date(fields.startsAt).toISOString(),
+      endsAt: endsAt.toISOString(),
+      location: fields.location.trim() || null,
+      capacity: fields.capacity,
+      interviewerId: fields.interviewerId || null,
+    });
+    setSaving(false);
+  }
+
+  return (
+    <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
+      <p className="mb-3 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+        <Plus size={12} /> Add a slot
+      </p>
+      <SlotFields
+        idPrefix="slot-add"
+        value={fields}
+        onChange={setFields}
+        members={members}
+        defaultLocation={defaultLocation}
+        seatsHint="1 unless you run rooms in parallel."
+        footer={(
+          <>
+            <p className="text-[11px] text-muted-foreground">{endsLabel(endsAt)}</p>
+            <button type="button" onClick={submit} disabled={saving || !endsAt}
+              className="flex items-center gap-1.5 rounded-lg px-4 py-2 text-sm font-semibold text-white disabled:opacity-40"
+              style={{ background: accent.gradient }}>
+              {saving ? <Loader2 size={13} className="animate-spin" /> : <Check size={13} />} Add slot
+            </button>
+          </>
+        )}
+      />
+    </div>
+  );
+}
+
+// Editing happens in place so the day it sits in, and the people already booked
+// into it, stay on screen while you change it.
+function EditSlotForm({ slot, accent, members, defaultLocation, onSave, onCancel }) {
+  const original = useMemo(() => ({
+    startsAt: toLocalInput(new Date(slot.startDate)),
+    minutes: lengthInMinutes(slot.startDate, slot.endDate),
+    capacity: slot.capacity,
+    location: slot.location ?? '',
+    interviewerId: slot.interviewer_id ?? '',
+  }), [slot.startDate, slot.endDate, slot.capacity, slot.location, slot.interviewer_id]);
+
+  const [fields, setFields] = useState(original);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+
+  const endsAt = useEndsAt(fields.startsAt, fields.minutes);
+  const changed = Object.keys(original).some((key) => fields[key] !== original[key]);
+  // Only the START triggers the API's "your interview time changed" push, so
+  // this warning tracks that field and not the others.
+  const startMoved = fields.startsAt !== original.startsAt;
+
+  async function submit() {
+    if (!endsAt) return;
+    setSaving(true);
+    setError('');
+    const failure = await onSave(slot, {
+      startsAt: new Date(fields.startsAt).toISOString(),
+      endsAt: endsAt.toISOString(),
+      // An empty room and "Not decided" are sent as explicit nulls so the API
+      // clears those columns. Omitting the key would leave the old value in
+      // place and the edit would look like it saved while changing nothing.
+      location: fields.location.trim() || null,
+      capacity: fields.capacity,
+      interviewerId: fields.interviewerId || null,
+    });
+    setSaving(false);
+    // Stays open on failure, so the values that caused it are still on screen
+    // to correct. Lowering seats below the booked count has no force override.
+    if (failure) setError(failure);
+  }
+
+  return (
+    <div className="mt-3 rounded-xl border border-border bg-muted/20 p-4">
+      <p className="mb-3 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+        <Pencil size={11} /> Edit this slot
+      </p>
+
+      <SlotFields
+        idPrefix={`slot-edit-${slot.id}`}
+        value={fields}
+        onChange={setFields}
+        members={members}
+        defaultLocation={defaultLocation}
+        seatsHint={slot.booked_count > 0
+          ? `${slot.booked_count} booked — seats can't go below that.`
+          : undefined}
+        footer={(
+          <>
+            <p className="text-[11px] text-muted-foreground">{endsLabel(endsAt)}</p>
+            <div className="flex items-center gap-2">
+              <button type="button" onClick={onCancel} disabled={saving}
+                className="rounded-lg border border-border px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-muted disabled:opacity-40">
+                Cancel
+              </button>
+              <button type="button" onClick={submit} disabled={saving || !endsAt || !changed}
+                className="flex items-center gap-1.5 rounded-lg px-4 py-2 text-sm font-semibold text-white disabled:opacity-40"
+                style={{ background: accent.gradient }}>
+                {saving ? <Loader2 size={13} className="animate-spin" /> : <Check size={13} />} Save
+              </button>
+            </div>
+          </>
+        )}
+      />
+
+      {startMoved && slot.booked_count > 0 && (
+        <p className="mt-3 flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-[11px] text-amber-900 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-200">
+          <AlertTriangle size={12} className="mt-0.5 shrink-0" />
+          Moving this slot tells {slot.booked_count === 1 ? 'the person' : `all ${slot.booked_count} people`} who
+          booked it that their interview time changed. Changing the length, room, seats or interviewer doesn&apos;t.
+        </p>
+      )}
+
+      {error && (
+        <p className="mt-3 flex items-start gap-2 rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-[11px] text-destructive">
+          <AlertTriangle size={12} className="mt-0.5 shrink-0" /> {error}
+        </p>
+      )}
     </div>
   );
 }
