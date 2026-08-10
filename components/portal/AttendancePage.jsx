@@ -4,13 +4,15 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { QRCodeSVG } from 'qrcode.react';
 import {
-  AlertTriangle, CalendarDays, Clock, Loader2, MapPin, QrCode, Users, X,
+  AlertTriangle, CalendarDays, Clock, Loader2, Lock, MapPin, QrCode, Unlock, Users, X,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { getEvents, getAttendanceCode, getAttendanceList, setAttendanceStatus } from '@/lib/portal-api';
+import {
+  getEvents, getAttendanceCode, getAttendanceList, setAttendanceStatus, setAttendanceFinalized,
+} from '@/lib/portal-api';
 import {
   memberDisplayName, memberInitials, formatMemberGroup,
-  getEventStartDate, getEventEndDate, formatEventTimeRange,
+  getEventStartDate, getEventEndDate, formatEventTimeRange, formatEventDateShort,
 } from '@/lib/portal-format';
 import { isRedirectError } from '@/lib/is-redirect-error';
 import { useAccentPalette } from '@/components/portal/PortalAccentContext';
@@ -48,6 +50,18 @@ const COUNT_ORDER = ['unmarked', 'present', 'excused', 'absent'];
 
 const statusKey = (status) => status ?? 'unmarked';
 
+// A roster row is NOT a member row. display_name and member_group are frozen
+// into event_attendance when the roster is materialised, so the live fields
+// memberDisplayName()/memberInitials() read simply aren't there — and for a
+// deleted account (user_id set to NULL by the FK) there is no user row to read
+// at all. Shaping the frozen name as the preferred name reuses both helpers
+// unchanged; username is the joined fallback for rows the backfill left
+// without a frozen name.
+const rosterPerson = (record) => ({
+  preferred_name: record.display_name,
+  username: record.username,
+});
+
 const inputClass = 'rounded-lg border border-border bg-muted/40 px-2 py-1 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-[var(--portal-ring)]';
 
 // Matches CHECKIN_BUFFER_MS in attendanceController — the 30-minute grace
@@ -67,6 +81,26 @@ function isLive(event) {
 // September is actively confusing.
 function hasEnded(event) {
   return Date.now() > new Date(getEventEndDate(event)).getTime() + CHECKIN_BUFFER_MS;
+}
+
+// An event that is over and never finalised is the one state where the roster
+// silently keeps drifting: it re-syncs on every read, so the day a pledge is
+// initiated the September meeting they attended starts listing them as an
+// active member. Worth flagging wherever a past event appears.
+function needsFinalizing(event) {
+  return hasEnded(event) && !event.attendanceFinalizedAt;
+}
+
+function NotFinalizedPill({ className }) {
+  return (
+    <span className={cn(
+      'flex shrink-0 items-center gap-1 rounded-full border border-amber-200 bg-amber-50 px-1.5 py-0.5 text-[9px] font-semibold text-amber-800 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-300',
+      className,
+    )}
+    >
+      <AlertTriangle size={9} /> Not finalized
+    </span>
+  );
 }
 
 function RosterAvatar({ record, accent, size = 30 }) {
@@ -94,7 +128,7 @@ function RosterAvatar({ record, accent, size = 30 }) {
           className="flex h-full w-full select-none items-center justify-center font-semibold text-white"
           style={{ background: accent.gradient, fontSize: size * 0.37 }}
         >
-          {memberInitials(record)}
+          {memberInitials(rosterPerson(record))}
         </div>
       )}
     </div>
@@ -103,7 +137,10 @@ function RosterAvatar({ record, accent, size = 30 }) {
 
 function AttendanceRow({ record, eventId, accent, onStatusChange, busy }) {
   const style = STATUS_STYLES[statusKey(record.status)];
-  const name = memberDisplayName(record);
+  const name = memberDisplayName(rosterPerson(record));
+  // The account is gone; the row survives under its frozen name. There is no
+  // id left to address a PUT to, so the status can be read but not changed.
+  const departed = record.user_id == null;
 
   return (
     <div className="flex items-center justify-between gap-3 border-b border-border px-4 py-2.5 last:border-b-0">
@@ -111,7 +148,14 @@ function AttendanceRow({ record, eventId, accent, onStatusChange, busy }) {
         <RosterAvatar record={record} accent={accent} />
         <div className="min-w-0">
           <p className="truncate text-sm font-medium text-foreground">{name}</p>
-          <p className="truncate text-[11px] text-muted-foreground">{formatMemberGroup(record.member_group)}</p>
+          <p className="truncate text-[11px] text-muted-foreground">
+            {/* The backfill deliberately left member_group NULL on rows that
+                predate freezing rather than stamping today's group, so say so
+                instead of letting formatMemberGroup's fallback assert
+                "Member". */}
+            {record.member_group ? formatMemberGroup(record.member_group) : 'Group not recorded'}
+            {departed && ' · account deleted'}
+          </p>
         </div>
       </div>
       <div className="flex shrink-0 items-center gap-2">
@@ -120,7 +164,7 @@ function AttendanceRow({ record, eventId, accent, onStatusChange, busy }) {
         </span>
         <select
           value={record.status ?? ''}
-          disabled={busy}
+          disabled={busy || departed}
           onChange={(e) => onStatusChange(eventId, record.user_id, e.target.value)}
           aria-label={`Attendance status for ${name}`}
           className={cn(inputClass, 'disabled:opacity-40')}
@@ -161,6 +205,7 @@ function EventRailCard({ event, accent, selected, onSelect }) {
             <span className="h-1 w-1 animate-pulse rounded-full bg-white" /> Live
           </span>
         )}
+        {needsFinalizing(event) && <NotFinalizedPill />}
       </div>
       <p className="mt-1 flex items-center gap-1.5 text-[11px] text-muted-foreground">
         <Clock size={10} /> {formatEventTimeRange(getEventStartDate(event), getEventEndDate(event))}
@@ -218,11 +263,12 @@ function QrOverlay({ event, url, accent, onClose }) {
   );
 }
 
-function EventRoster({ event, accent }) {
+function EventRoster({ event, accent, onFinalizedChange }) {
   const [checkinUrl, setCheckinUrl] = useState(null);
   const [showQr, setShowQr] = useState(false);
   const [records, setRecords] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [finalizing, setFinalizing] = useState(false);
   // Per user, not one flag for the whole roster. Taking attendance means
   // marking people in quick succession, and a single shared `busy` disabled
   // every row on the page for each round trip — so the second person you
@@ -253,15 +299,22 @@ function EventRoster({ event, accent }) {
 
   const loadList = useCallback(async () => {
     try {
+      // { finalizedAt, records } — an object, not the bare array this used to
+      // get. An Array.isArray() check on the wrapper is false, which silently
+      // rendered an empty roster.
       const data = await getAttendanceList(event.id);
-      setRecords(Array.isArray(data) ? data : []);
+      setRecords(Array.isArray(data?.records) ? data.records : []);
+      // Reported upward rather than kept here, so the rail's "Not finalized"
+      // pill and this pane read the same value — the list of events is fetched
+      // once at mount and would otherwise go stale the moment you finalize.
+      onFinalizedChange(event.id, data?.finalizedAt ?? null);
     } catch (err) {
       if (isRedirectError(err)) throw err;
       setError(err.message ?? 'Could not load attendance');
     } finally {
       setLoading(false);
     }
-  }, [event.id]);
+  }, [event.id, onFinalizedChange]);
 
   useEffect(() => {
     loadList();
@@ -292,6 +345,24 @@ function EventRoster({ event, accent }) {
     }
   }
 
+  async function handleFinalize(next) {
+    setFinalizing(true);
+    setError('');
+    try {
+      const data = await setAttendanceFinalized(event.id, next);
+      onFinalizedChange(event.id, data?.finalizedAt ?? null);
+      // The server syncs the roster one last time before freezing it, so
+      // finalizing can add people — re-read rather than trusting what's on
+      // screen.
+      await loadList();
+    } catch (err) {
+      if (isRedirectError(err)) throw err;
+      setError(err.message ?? 'Could not change the finalized state');
+    } finally {
+      setFinalizing(false);
+    }
+  }
+
   const counts = useMemo(() => records.reduce(
     (acc, r) => ({ ...acc, [statusKey(r.status)]: (acc[statusKey(r.status)] ?? 0) + 1 }),
     {},
@@ -308,15 +379,28 @@ function EventRoster({ event, accent }) {
               {event.location && <span className="flex items-center gap-1.5"><MapPin size={11} /> {event.location}</span>}
             </p>
           </div>
-          <button
-            type="button"
-            onClick={() => setShowQr(true)}
-            disabled={!checkinUrl}
-            className="flex shrink-0 items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-semibold text-white shadow-sm transition-opacity disabled:opacity-40"
-            style={{ background: accent.gradient }}
-          >
-            <QrCode size={13} /> {checkinUrl ? 'Show QR code' : 'Loading code…'}
-          </button>
+          <div className="flex shrink-0 items-center gap-2">
+            <button
+              type="button"
+              onClick={() => handleFinalize(!event.attendanceFinalizedAt)}
+              disabled={finalizing}
+              className="flex items-center gap-1.5 rounded-lg border border-border bg-card px-3 py-2 text-xs font-semibold text-muted-foreground transition-colors hover:text-foreground disabled:opacity-40"
+            >
+              {finalizing
+                ? <Loader2 size={13} className="animate-spin" />
+                : (event.attendanceFinalizedAt ? <Unlock size={13} /> : <Lock size={13} />)}
+              {event.attendanceFinalizedAt ? 'Reopen roster' : 'Finalize roster'}
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowQr(true)}
+              disabled={!checkinUrl}
+              className="flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-semibold text-white shadow-sm transition-opacity disabled:opacity-40"
+              style={{ background: accent.gradient }}
+            >
+              <QrCode size={13} /> {checkinUrl ? 'Show QR code' : 'Loading code…'}
+            </button>
+          </div>
         </div>
 
         <div className="mt-3 flex flex-wrap items-center gap-1.5">
@@ -330,6 +414,22 @@ function EventRoster({ event, accent }) {
           ))}
           <span className="text-[10px] text-muted-foreground">· refreshes every few seconds</span>
         </div>
+
+        {/* Which of the two states this roster is in, in words — the pill in
+            the rail only says something is wrong, not what finalizing does. */}
+        {event.attendanceFinalizedAt ? (
+          <p className="mt-2 flex items-center gap-1.5 text-[11px] text-muted-foreground">
+            <Lock size={11} className="shrink-0" />
+            Roster finalized {formatEventDateShort(event.attendanceFinalizedAt)} — frozen, and nobody
+            new is added. Marks can still be changed.
+          </p>
+        ) : needsFinalizing(event) && (
+          <p className="mt-2 flex items-start gap-1.5 text-[11px] text-amber-700 dark:text-amber-500">
+            <AlertTriangle size={11} className="mt-0.5 shrink-0" />
+            This event is over and its roster isn&apos;t finalized, so it still changes as people
+            move between groups. Finalize it to keep this record as it stands.
+          </p>
+        )}
       </div>
 
       {error && (
@@ -352,9 +452,12 @@ function EventRoster({ event, accent }) {
         </div>
       ) : (
         <div className="max-h-[calc(100vh-20rem)] min-h-[18rem] overflow-y-auto portal-scroll">
-          {records.map((record) => (
+          {records.map((record, i) => (
             <AttendanceRow
-              key={record.user_id}
+              // user_id is NULL for every deleted account, so two of them would
+              // share a key. The list is server-ordered and read-only for those
+              // rows, so the index is a safe tiebreaker.
+              key={record.user_id ?? `deleted-${i}`}
               record={record}
               eventId={event.id}
               accent={accent}
@@ -379,6 +482,7 @@ export default function AttendancePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [selectedId, setSelectedId] = useState(null);
+  const [tab, setTab] = useState(null);
 
   useEffect(() => {
     getEvents()
@@ -388,6 +492,21 @@ export default function AttendancePage() {
         setError(err.message ?? 'Could not load events');
       })
       .finally(() => setLoading(false));
+  }, []);
+
+  // The roster pane reads the authoritative finalized state on every poll;
+  // this folds it back into the one events array the rail renders from.
+  // Returning `prev` untouched when nothing changed matters — otherwise the
+  // 5-second poll would hand back a new array forever and re-bucket the rail
+  // on every tick.
+  const handleFinalizedChange = useCallback((eventId, finalizedAt) => {
+    setEvents((prev) => {
+      const i = prev.findIndex((e) => e.id === eventId);
+      if (i === -1 || (prev[i].attendanceFinalizedAt ?? null) === finalizedAt) return prev;
+      const next = [...prev];
+      next[i] = { ...next[i], attendanceFinalizedAt: finalizedAt };
+      return next;
+    });
   }, []);
 
   const groups = session?.user?.groups ?? [];
@@ -413,19 +532,56 @@ export default function AttendancePage() {
     return { ...buckets, ordered: [...buckets.live, ...buckets.upcoming, ...buckets.past] };
   }, [events, canManageAll, myId]);
 
-  // Land on something useful rather than an empty pane: whatever is live, else
-  // the next one up. Only auto-picks when nothing is selected, so it never
-  // yanks the pane away from a deliberate choice on a poll refresh.
-  useEffect(() => {
-    if (selectedId == null && ordered.length > 0) setSelectedId(ordered[0].id);
-  }, [ordered, selectedId]);
+  // Live events sit under Upcoming, not their own tab: a meeting that started
+  // ten minutes ago is the one you're taking attendance at, so it has to be on
+  // the tab you land on. It keeps its own section heading and Live pill.
+  const { tabs, activeTab, visible } = useMemo(() => {
+    const all = [
+      {
+        key: 'upcoming',
+        label: 'Upcoming',
+        count: live.length + upcoming.length,
+        sections: [
+          { title: 'Happening now', items: live },
+          { title: 'Upcoming', items: upcoming },
+        ],
+      },
+      {
+        key: 'past',
+        label: 'Past',
+        count: past.length,
+        // Surfaced on the tab itself, because a past event that was never
+        // finalized is a roster still quietly rewriting itself, and nobody
+        // opens the Past tab looking for it.
+        flagged: past.filter(needsFinalizing).length,
+        sections: [{ title: 'Past', items: past }],
+      },
+    ];
+    // Defaulted rather than stored: a chapter with nothing upcoming should open
+    // on Past instead of an empty pane, without a state write to get there.
+    const key = tab ?? (live.length + upcoming.length > 0 ? 'upcoming' : 'past');
+    const active = all.find((t) => t.key === key) ?? all[0];
+    return {
+      tabs: all,
+      activeTab: active,
+      visible: active.sections.flatMap((s) => s.items),
+    };
+  }, [live, upcoming, past, tab]);
 
-  const selected = ordered.find((e) => e.id === selectedId) ?? null;
-  const sections = [
-    { title: 'Happening now', items: live },
-    { title: 'Upcoming', items: upcoming },
-    { title: 'Past', items: past },
-  ];
+  // Keep the pane on something that's actually in the visible tab — this both
+  // does the initial pick and follows a tab switch. It only fires when the
+  // selection falls out of view, so a poll refresh never yanks the pane away
+  // from a deliberate choice.
+  useEffect(() => {
+    if (visible.length === 0) {
+      setSelectedId(null);
+    } else if (!visible.some((e) => e.id === selectedId)) {
+      setSelectedId(visible[0].id);
+    }
+  }, [visible, selectedId]);
+
+  const selected = visible.find((e) => e.id === selectedId) ?? null;
+  const sections = activeTab.sections.filter((s) => s.items.length > 0);
 
   return (
     <div className="mx-auto max-w-6xl px-4 pb-16 pt-8 sm:px-6 lg:px-8">
@@ -458,50 +614,104 @@ export default function AttendancePage() {
         </div>
       ) : (
         <div className="grid gap-5 lg:grid-cols-[17rem_1fr]">
-          {/* Mobile: the rail collapses to a dropdown above the roster rather
-              than stacking a full-height event list on top of it. */}
-          <div className="lg:hidden">
-            <label htmlFor="attendance-event" className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              Event
-            </label>
-            <select
-              id="attendance-event"
-              value={selectedId ?? ''}
-              onChange={(e) => setSelectedId(e.target.value)}
-              className="w-full rounded-xl border border-border bg-card px-3 py-2.5 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-[var(--portal-ring)]"
-            >
-              {sections.filter((s) => s.items.length > 0).map((section) => (
-                <optgroup key={section.title} label={section.title}>
-                  {section.items.map((event) => (
-                    <option key={event.id} value={event.id}>{event.title}</option>
+          <div className="lg:sticky lg:top-6 lg:self-start">
+            <div className="flex gap-1 rounded-xl border border-border bg-card p-1">
+              {tabs.map((t) => {
+                const isActive = t.key === activeTab.key;
+                return (
+                  <button
+                    key={t.key}
+                    type="button"
+                    onClick={() => setTab(t.key)}
+                    aria-pressed={isActive}
+                    className={cn(
+                      'flex flex-1 items-center justify-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors',
+                      isActive ? '' : 'text-muted-foreground hover:text-foreground',
+                    )}
+                    style={isActive ? { background: tint(accent.base, 0.12), color: accent.base } : undefined}
+                  >
+                    {t.label}
+                    <span className={cn('text-[10px]', isActive ? 'opacity-70' : 'text-muted-foreground')}>
+                      {t.count}
+                    </span>
+                    {t.flagged > 0 && (
+                      <span
+                        className="h-1.5 w-1.5 rounded-full bg-amber-500"
+                        title={`${t.flagged} past event${t.flagged === 1 ? '' : 's'} not finalized`}
+                      />
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Nothing in this tab: the roster pane beside it says so, so the
+                rail stays quiet rather than repeating it. */}
+            {sections.length === 0 ? null : (
+              <>
+                {/* Mobile: the rail collapses to a dropdown above the roster
+                    rather than stacking a full-height event list on top of it. */}
+                <div className="mt-3 lg:hidden">
+                  <label htmlFor="attendance-event" className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                    Event
+                  </label>
+                  <select
+                    id="attendance-event"
+                    value={selectedId ?? ''}
+                    onChange={(e) => setSelectedId(e.target.value)}
+                    className="w-full rounded-xl border border-border bg-card px-3 py-2.5 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-[var(--portal-ring)]"
+                  >
+                    {sections.map((section) => (
+                      <optgroup key={section.title} label={section.title}>
+                        {section.items.map((event) => (
+                          <option key={event.id} value={event.id}>
+                            {needsFinalizing(event) ? `⚠ ${event.title}` : event.title}
+                          </option>
+                        ))}
+                      </optgroup>
+                    ))}
+                  </select>
+                </div>
+
+                <aside className="mt-3 hidden max-h-[calc(100vh-14rem)] space-y-5 overflow-y-auto portal-scroll pr-1 lg:block">
+                  {sections.map((section) => (
+                    <div key={section.title} className="space-y-2">
+                      <p className="px-1 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                        {section.title}
+                      </p>
+                      {section.items.map((event) => (
+                        <EventRailCard
+                          key={event.id}
+                          event={event}
+                          accent={accent}
+                          selected={event.id === selectedId}
+                          onSelect={(e) => setSelectedId(e.id)}
+                        />
+                      ))}
+                    </div>
                   ))}
-                </optgroup>
-              ))}
-            </select>
+                </aside>
+              </>
+            )}
           </div>
 
-          <aside className="hidden lg:block">
-            <div className="max-h-[calc(100vh-12rem)] space-y-5 overflow-y-auto portal-scroll pr-1 lg:sticky lg:top-6">
-              {sections.filter((s) => s.items.length > 0).map((section) => (
-                <div key={section.title} className="space-y-2">
-                  <p className="px-1 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-                    {section.title}
-                  </p>
-                  {section.items.map((event) => (
-                    <EventRailCard
-                      key={event.id}
-                      event={event}
-                      accent={accent}
-                      selected={event.id === selectedId}
-                      onSelect={(e) => setSelectedId(e.id)}
-                    />
-                  ))}
-                </div>
-              ))}
+          {selected ? (
+            <EventRoster
+              key={selected.id}
+              event={selected}
+              accent={accent}
+              onFinalizedChange={handleFinalizedChange}
+            />
+          ) : (
+            <div className="flex h-48 flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-border bg-card text-center">
+              <CalendarDays size={20} className="text-muted-foreground" />
+              <p className="text-sm text-muted-foreground">
+                {activeTab.key === 'past'
+                  ? 'No past events with attendance yet.'
+                  : 'Nothing coming up with attendance turned on.'}
+              </p>
             </div>
-          </aside>
-
-          {selected && <EventRoster key={selected.id} event={selected} accent={accent} />}
+          )}
         </div>
       )}
     </div>
