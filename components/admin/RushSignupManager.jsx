@@ -223,7 +223,7 @@ export default function RushSignupManager() {
                       <p className="flex items-start gap-1.5 text-[11px] text-muted-foreground">
                         <ShieldCheck size={11} className="mt-0.5 shrink-0" />
                         Print the QR on the rush flyer. Accounts made through it get the{' '}
-                        <strong>rush</strong> group — no photos, documents or member directory.
+                        <strong>rush</strong> group, with no photos, documents or member directory.
                       </p>
                     </div>
                   </div>
@@ -239,7 +239,7 @@ export default function RushSignupManager() {
             <div className="space-y-4 p-5">
               <div className="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-[11px] text-amber-800 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-300">
                 <Info size={11} className="mt-0.5 shrink-0" />
-                Issuing a separate code per event tells you which one actually converts — the signup
+                Issuing a separate code per event tells you which one actually converts. The signup
                 is attributed to whichever link it came from.
               </div>
 

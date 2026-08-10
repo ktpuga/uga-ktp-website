@@ -108,7 +108,7 @@ export default function EmailNotifications({ accent }) {
             Email me important announcements and events
           </span>
           <span className="mt-0.5 block text-xs text-muted-foreground">
-            Only what Eboard marks as worth emailing — typically required events and
+            Only what Eboard marks as worth emailing, typically required events and
             time-sensitive announcements. Everything still appears in the portal either way.
           </span>
         </span>

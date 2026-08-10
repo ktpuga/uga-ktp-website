@@ -92,8 +92,11 @@ function asInterviewEntry(interview) {
     audience: null,
     requiresAttendance: false,
     isInterview: true,
-    // Just the name — the description already reads "Interview with Ben".
-    participants: interview.interviewer_name ? [interview.interviewer_name] : [],
+    // Always empty. This calendar entry only ever belongs to the CANDIDATE, and
+    // candidates aren't told who is conducting their interview — the API stopped
+    // sending a name for this feed (findForCalendar), so there is nothing to
+    // badge here. Don't reinstate it from another field.
+    participants: [],
   };
 }
 

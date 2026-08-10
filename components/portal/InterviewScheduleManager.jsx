@@ -305,7 +305,7 @@ function NewScheduleForm({ accent, committees, onCreate }) {
       <div>
         <label htmlFor="sched-loc" className={labelClass}>Where (optional)</label>
         <input id="sched-loc" type="text" value={location} onChange={(e) => setLocation(e.target.value)}
-          placeholder="Boyd 204 — individual slots can override this" className={inputClass} />
+          placeholder="Boyd 204 (individual slots can override this)" className={inputClass} />
       </div>
       <div>
         <label htmlFor="sched-desc" className={labelClass}>Notes for rushees (optional)</label>
@@ -558,7 +558,7 @@ function ScheduleDetail({ scheduleId, accent, committees, onBack }) {
             </div>
             <p className="border-t border-border px-5 py-3 text-[11px] text-muted-foreground">
               {schedule.published
-                ? 'Rushees can see these times and book them right now. Unpublishing stops new signups — it does not cancel anyone who already booked.'
+                ? 'Rushees can see these times and book them right now. Unpublishing stops new signups, but it does not cancel anyone who already booked.'
                 : 'This is a draft. Nothing here is visible to rushees until you publish it, so take your time adding slots.'}
             </p>
           </div>
@@ -941,10 +941,10 @@ function EditSlotForm({ slot, accent, defaultLocation, onSave, onCancel }) {
         onChange={setFields}
         defaultLocation={defaultLocation}
         seatsHint={slot.booked_count > 0
-          ? `${slot.booked_count} booked — seats can't go below that.`
+          ? `${slot.booked_count} booked, so seats can't go below that.`
           : undefined}
         interviewersHint={(slot.interviewers?.length ?? 0) > 0
-          ? `${slot.interviewers.length} signed up — can't go below that.`
+          ? `${slot.interviewers.length} signed up, so it can't go below that.`
           : undefined}
         footer={(
           <>

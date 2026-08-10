@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
-  AlertTriangle, CalendarCheck, CalendarClock, Check, Loader2, MapPin, User, X,
+  AlertTriangle, CalendarCheck, CalendarClock, Check, Loader2, MapPin, X,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { getAvailableInterviews, bookInterviewSlot, cancelInterviewBooking } from '@/lib/portal-api';
@@ -70,8 +70,10 @@ function SlotButton({ slot, accent, disabled, onPick, busy, fallbackLocation }) 
       onClick={() => onPick(slot)}
       // Built from the same parts the tile shows, so a screen reader hears the
       // room before committing rather than after.
+      // Comma-joined rather than dash-joined: a screen reader gets a clean pause
+      // between the time, the room and the availability.
       aria-label={[`Book ${timeLabel(new Date(slot.startDate))}`, where, seatsLabel(slot)]
-        .filter(Boolean).join(' — ')}
+        .filter(Boolean).join(', ')}
       className={cn(
         'flex min-w-0 flex-col items-start gap-0.5 rounded-xl border px-3 py-2.5 text-left transition-all duration-150',
         unavailable
@@ -86,19 +88,15 @@ function SlotButton({ slot, accent, disabled, onPick, busy, fallbackLocation }) 
       <span className="text-[10px] text-muted-foreground">{seatsLabel(slot)}</span>
       {/* `w-full` + `truncate` are load-bearing: these tiles sit in a 4-column
           grid, and a room name like "Miller Learning Center 248" would otherwise
-          stretch the track and break the row. Same for the interviewer line,
-          which is now a comma-joined list once several people sign up to run a
-          slot rather than the single name it used to be. */}
+          stretch the track and break the row.
+
+          There is deliberately no interviewer here. Who conducts the interview
+          isn't shown to candidates at all — the API stops selecting it for this
+          audience (findAvailableForUser), so there is nothing to render. */}
       {where && (
         <span className="flex w-full items-center gap-1 text-[10px] text-muted-foreground">
           <MapPin size={9} className="shrink-0" />
           <span className="truncate" title={where}>{where}</span>
-        </span>
-      )}
-      {slot.interviewer_name && (
-        <span className="flex w-full items-center gap-1 text-[10px] text-muted-foreground">
-          <User size={9} className="shrink-0" />
-          <span className="truncate" title={slot.interviewer_name}>{slot.interviewer_name}</span>
         </span>
       )}
     </button>
@@ -121,11 +119,8 @@ function BookedCard({ schedule, slot, accent, onCancel, busy }) {
               <MapPin size={11} /> {slot.location ?? schedule.location}
             </p>
           )}
-          {slot.interviewer_name && (
-            <p className="mt-0.5 flex items-center gap-1.5 text-xs text-muted-foreground">
-              <User size={11} /> with {slot.interviewer_name}
-            </p>
-          )}
+          {/* No interviewer here either — see SlotButton. The API doesn't send
+              one for this audience, so this card can't show one by accident. */}
           <p className="mt-2 text-[11px] text-muted-foreground">
             This is on your calendar. Please be there a few minutes early.
           </p>
@@ -304,7 +299,7 @@ function ScheduleBoard({ schedule, accent, busy, onPick, onRelease }) {
           <p className="mt-1 flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
             <MapPin size={11} /> {schedule.location}
             {hasRoomOverride && (
-              <span className="text-muted-foreground/70">— unless a time below says otherwise</span>
+              <span className="text-muted-foreground/70">(unless a time below says otherwise)</span>
             )}
           </p>
         )}

@@ -220,7 +220,7 @@ function DeleteConfirmModal({ committeeName, accent, onClose, onConfirm }) {
           <div>
             <p className="text-sm font-semibold text-foreground">Delete &ldquo;{committeeName}&rdquo;?</p>
             <p className="mt-1 text-xs text-muted-foreground leading-relaxed">
-              This will permanently delete the committee and its linked group chat — all members will be removed from the chat automatically. This cannot be undone.
+              This will permanently delete the committee and its linked group chat. All members will be removed from the chat automatically. This cannot be undone.
             </p>
           </div>
         </div>
@@ -294,7 +294,7 @@ function ScheduleEventModal({ committeeId, committeeName, accent, onClose, onSch
 
   return (
     <ModalWrapper onClose={onClose} label="Schedule event" maxWidth="max-w-lg">
-      <ModalHeader accent={accent} title={`Schedule Event — ${committeeName}`} icon={<CalendarPlus size={14} strokeWidth={1.75} />} onClose={onClose} />
+      <ModalHeader accent={accent} title={`Schedule Event for ${committeeName}`} icon={<CalendarPlus size={14} strokeWidth={1.75} />} onClose={onClose} />
       <div className="max-h-[70vh] space-y-4 overflow-y-auto p-5">
         <p className="rounded-xl border border-border bg-muted/40 px-3 py-2 text-[11px] leading-relaxed text-muted-foreground">
           Goes on the calendar for everyone on <span className="font-medium text-foreground">{committeeName}</span>, no RSVP. Use <span className="font-medium text-foreground">New Meeting</span> instead if you want people to accept or decline.
@@ -678,7 +678,7 @@ function CommitteeDetail({ committee, currentUserId, isEboard, accent, onBack, o
       {canSchedule && (
         <div className="mb-5 rounded-xl border border-border bg-muted/40 px-4 py-3">
           <p className="text-xs leading-relaxed text-muted-foreground">
-            <span className="font-semibold text-foreground">New Meeting</span> asks this committee to RSVP — it shows in their Meetings tab, and reaches the subscribed calendar of whoever accepts. Private to the people invited.{' '}
+            <span className="font-semibold text-foreground">New Meeting</span> asks this committee to RSVP. It shows in their Meetings tab, and reaches the subscribed calendar of whoever accepts. Private to the people invited.{' '}
             <span className="font-semibold text-foreground">Schedule Event</span> puts it on the chapter calendar for the whole committee, no RSVP, and can take attendance by QR code.
           </p>
         </div>
@@ -688,7 +688,7 @@ function CommitteeDetail({ committee, currentUserId, isEboard, accent, onBack, o
         <div className="mb-5 flex items-center gap-3 rounded-xl border px-4 py-3" style={{ background: tint(accent.base, 0.04), borderColor: tint(accent.base, 0.18) }}>
           <MessageSquare size={15} style={{ color: accent.light }} />
           <p className="text-xs leading-relaxed text-muted-foreground">
-            This committee has a linked group chat — membership is kept in sync automatically. Joining or leaving this committee adds or removes you from the chat instantly.
+            This committee has a linked group chat, and membership is kept in sync automatically. Joining or leaving this committee adds or removes you from the chat instantly.
           </p>
         </div>
       )}

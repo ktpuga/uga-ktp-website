@@ -229,7 +229,7 @@ function DeleteAccountModal({ accent, onClose, onConfirm }) {
           <div className="rounded-xl border border-border bg-muted/30 px-4 py-3">
             <p className="mb-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">What stays in place</p>
             <ul className="space-y-1 text-xs text-muted-foreground">
-              <li className="flex items-start gap-1.5"><span className="mt-0.5">•</span> Messages and photos — attributed to &ldquo;Deleted Member&rdquo;</li>
+              <li className="flex items-start gap-1.5"><span className="mt-0.5">•</span> Messages and photos, attributed to &ldquo;Deleted Member&rdquo;</li>
               <li className="flex items-start gap-1.5"><span className="mt-0.5">•</span> Committee and event history</li>
             </ul>
           </div>
@@ -240,7 +240,7 @@ function DeleteAccountModal({ accent, onClose, onConfirm }) {
           >
             <Info size={13} className="mt-0.5 shrink-0" style={{ color: accent.light }} />
             <p className="text-xs leading-relaxed text-muted-foreground">
-              This only deletes your <span className="font-semibold text-foreground">KTP Life profile</span>. It does <span className="font-semibold text-foreground">not</span> remove your Authentik / SSO account — an eboard officer handles that separately.
+              This only deletes your <span className="font-semibold text-foreground">KTP Life profile</span>. It does <span className="font-semibold text-foreground">not</span> remove your Authentik / SSO account, which an eboard officer handles separately.
             </p>
           </div>
 

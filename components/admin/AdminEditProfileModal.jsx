@@ -322,7 +322,7 @@ export default function AdminEditProfileModal({ user, onClose, onSaved }) {
                   ? 'Uploading…'
                   : hasPicture
                     ? 'Upload a replacement, or remove it to fall back to their initials.'
-                    : 'No picture set — their card shows initials.'}
+                    : 'No picture set, so their card shows initials.'}
               </p>
             </div>
 

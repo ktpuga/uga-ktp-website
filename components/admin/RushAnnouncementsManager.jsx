@@ -82,7 +82,7 @@ function Editor({ announcement, onClose, onSaved }) {
           <div className="space-y-4 p-5">
             <div className="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-[11px] text-amber-800 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-300">
               <Info size={11} className="mt-0.5 shrink-0" />
-              This goes to <strong>rushees</strong>, not the chapter. It&apos;s a separate feed from chapter announcements — nothing posted here reaches members&apos; announcement tab, and nothing internal reaches rushees.
+              This goes to <strong>rushees</strong>, not the chapter. It&apos;s a separate feed from chapter announcements. Nothing posted here reaches members&apos; announcement tab, and nothing internal reaches rushees.
             </div>
 
             <div>
@@ -97,7 +97,7 @@ function Editor({ announcement, onClose, onSaved }) {
             <div>
               <label htmlFor="rush-body" className="mb-1 block text-xs font-semibold uppercase tracking-wider text-muted-foreground">Message</label>
               <textarea id="rush-body" rows={6} value={body} onChange={(e) => setBody(e.target.value)}
-                placeholder="7pm in Boyd 208. Come meet the chapter — no need to dress up." className={cn(INPUT, 'resize-y')} />
+                placeholder="7pm in Boyd 208. Come meet the chapter, no need to dress up." className={cn(INPUT, 'resize-y')} />
             </div>
 
             {error && (

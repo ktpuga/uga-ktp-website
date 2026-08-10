@@ -255,8 +255,8 @@ function QrOverlay({ event, url, accent, onClose }) {
       {!isLive(event) && (
         <p className="text-center text-xs text-amber-700 dark:text-amber-500">
           {hasEnded(event)
-            ? 'Check-in has closed for this event — scanning now will be refused.'
-            : 'Check-in isn’t open yet — scanning now will be refused.'}
+            ? 'Check-in has closed for this event. Scanning now will be refused.'
+            : 'Check-in isn’t open yet. Scanning now will be refused.'}
         </p>
       )}
     </div>
@@ -420,8 +420,8 @@ function EventRoster({ event, accent, onFinalizedChange }) {
         {event.attendanceFinalizedAt ? (
           <p className="mt-2 flex items-center gap-1.5 text-[11px] text-muted-foreground">
             <Lock size={11} className="shrink-0" />
-            Roster finalized {formatEventDateShort(event.attendanceFinalizedAt)} — frozen, and nobody
-            new is added. Marks can still be changed.
+            Roster finalized {formatEventDateShort(event.attendanceFinalizedAt)}. It is frozen, and
+            nobody new is added. Marks can still be changed.
           </p>
         ) : needsFinalizing(event) && (
           <p className="mt-2 flex items-start gap-1.5 text-[11px] text-amber-700 dark:text-amber-500">
@@ -447,7 +447,7 @@ function EventRoster({ event, accent, onFinalizedChange }) {
           <Users size={20} className="text-muted-foreground" />
           <p className="text-sm text-muted-foreground">Nobody is on this event&apos;s roster.</p>
           <p className="text-xs text-muted-foreground/80">
-            The roster is the event&apos;s audience — check who it&apos;s targeted at on the event itself.
+            The roster is the event&apos;s audience. Check who it&apos;s targeted at on the event itself.
           </p>
         </div>
       ) : (

@@ -282,7 +282,7 @@ export default function ModerationQueue() {
           {activeTab === 'open' ? (
             <>
               <ShieldCheck size={28} className="text-muted-foreground" />
-              <p className="text-sm text-muted-foreground">No open reports — queue is clear.</p>
+              <p className="text-sm text-muted-foreground">No open reports. The queue is clear.</p>
             </>
           ) : (
             <>

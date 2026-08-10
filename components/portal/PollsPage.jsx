@@ -292,7 +292,7 @@ function CreatePollModal({ accent, committees, onClose, onCreated }) {
           <span className="text-sm text-foreground">Allow selecting multiple options</span>
         </label>
 
-        <FormField label="Closes At (optional — leave blank to close manually)">
+        <FormField label="Closes At (optional, leave blank to close manually)">
           <div className="relative">
             <Calendar size={13} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
             <input type="datetime-local" value={expiresAt} onChange={(e) => setExpires(e.target.value)}

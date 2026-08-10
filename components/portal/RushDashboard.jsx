@@ -132,7 +132,7 @@ export default function RushDashboard() {
           >
             {latest.length === 0 ? (
               <p className="px-5 py-6 text-sm text-muted-foreground">
-                Nothing posted yet — check back once rush kicks off.
+                Nothing posted yet. Check back once rush kicks off.
               </p>
             ) : (
               <ul className="divide-y divide-border">
@@ -191,7 +191,7 @@ export default function RushDashboard() {
           <SectionCard icon={<MessageSquare size={14} />} title="Questions?">
             <div className="px-5 py-4">
               <p className="text-sm text-muted-foreground">
-                Message the exec board or a committee chair directly — they&apos;re the people running rush.
+                Message the exec board or a committee chair directly. They&apos;re the people running rush.
               </p>
               <Link
                 href="/rushee/messages"

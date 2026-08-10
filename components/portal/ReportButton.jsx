@@ -90,7 +90,7 @@ export default function ReportButton({
               <div className="text-center">
                 <p className="font-semibold text-gray-900 dark:text-slate-100">Report submitted</p>
                 <p className="mt-1 text-sm text-gray-600 dark:text-slate-400">
-                  Thanks — eboard will review this.
+                  Thanks. Eboard will review this.
                 </p>
                 <Button className="mt-4 w-full" onClick={close}>Close</Button>
               </div>

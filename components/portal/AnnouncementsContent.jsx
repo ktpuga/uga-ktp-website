@@ -106,7 +106,7 @@ function TargetingPicker({ committeeIds, audience, onCommitteeIdsChange, onAudie
           AND to most people and this is an OR. */}
       <p className="text-[11px] leading-relaxed text-muted-foreground">
         {targeted
-          ? 'Anyone who matches the roles OR the committees below will see this — the two add together, they don’t narrow each other.'
+          ? 'Anyone who matches the roles OR the committees below will see this. The two add together, they don’t narrow each other.'
           : 'Nothing selected: every member sees this. Pick roles, committees, or both to narrow it.'}
       </p>
 
@@ -333,7 +333,7 @@ function AnnouncementForm({ initial, onSubmit, onCancel, isEdit, committees }) {
             checked={Boolean(form.sendEmail)}
             onChange={(v) => setForm((f) => ({ ...f, sendEmail: v }))}
             accent={MAROON.base}
-            description="Goes to everyone this announcement targets, except those who turned emails off in their settings. Sent once — editing it later won't email again."
+            description="Goes to everyone this announcement targets, except those who turned emails off in their settings. Sent once, so editing it later won't email again."
           />
         )}
       </div>

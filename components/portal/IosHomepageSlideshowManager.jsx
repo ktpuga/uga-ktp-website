@@ -696,7 +696,7 @@ function SlideModal({ slide, activeCount, onClose, onCreate, onRegister, onSaveM
             {atCapacity && (
               <div className="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-800 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-300">
                 <Info size={12} className="mt-0.5 shrink-0" />
-                The slideshow already has {MAX_ACTIVE} active slides. This one can be saved as inactive — deactivate another to make room for it.
+                The slideshow already has {MAX_ACTIVE} active slides. This one can be saved as inactive. Deactivate another to make room for it.
               </div>
             )}
 
@@ -752,7 +752,7 @@ function CapacityMeter({ activeCount }) {
         </div>
         <p className={cn('mt-2 text-xs', atCap ? 'text-destructive' : nearCap ? 'text-amber-700 dark:text-amber-400' : 'text-muted-foreground')}>
           {atCap
-            ? 'At capacity — deactivate a slide before activating another.'
+            ? 'At capacity. Deactivate a slide before activating another.'
             : `${MAX_ACTIVE - activeCount} slot${MAX_ACTIVE - activeCount !== 1 ? 's' : ''} available`}
         </p>
       </div>
@@ -826,7 +826,7 @@ function ScheduleTimeline({ slides }) {
                 {gapRanges.map((r) => (r.start === r.end
                   ? fmt(startMs + r.start * DAY_MS)
                   : `${fmt(startMs + r.start * DAY_MS)}–${fmt(startMs + r.end * DAY_MS)}`)).join(', ')}
-                {' '}— the app slideshow will be empty on those dates.
+                . The app slideshow will be empty on those dates.
               </div>
             </div>
           )}
@@ -950,7 +950,7 @@ function SlideRow({
           type="button"
           onClick={onToggleActive}
           disabled={busy || blockedByCap}
-          title={blockedByCap ? `At ${MAX_ACTIVE} active slides — deactivate another first` : undefined}
+          title={blockedByCap ? `At ${MAX_ACTIVE} active slides. Deactivate another first.` : undefined}
           className={cn(
             'flex items-center gap-1 rounded-lg border px-2.5 py-1.5 text-xs font-medium transition-colors disabled:opacity-40',
             slide.isActive ? 'border-border text-muted-foreground hover:bg-muted' : 'border-transparent text-white hover:opacity-85',
@@ -1224,7 +1224,7 @@ export default function IosHomepageSlideshowManager() {
         <div className="flex h-32 flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-border bg-card">
           <ImageIcon size={20} className="text-muted-foreground" />
           <p className="text-sm text-muted-foreground">
-            {slides.length === 0 ? 'No slides yet — add the first one above.' : `No ${FILTERS.find((f) => f.id === filter)?.label.toLowerCase()} slides.`}
+            {slides.length === 0 ? 'No slides yet. Add the first one above.' : `No ${FILTERS.find((f) => f.id === filter)?.label.toLowerCase()} slides.`}
           </p>
         </div>
       ) : (

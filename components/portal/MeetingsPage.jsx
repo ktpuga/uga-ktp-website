@@ -80,7 +80,7 @@ function InviteeAvatars({ invitees, accent }) {
       {invitees.slice(0, 5).map((person) => (
         <span
           key={person.id}
-          title={`${memberDisplayName(person)}${person.response !== 'pending' ? ` — ${person.response}` : ''}`}
+          title={`${memberDisplayName(person)}${person.response !== 'pending' ? ` (${person.response})` : ''}`}
           className="flex h-6 w-6 items-center justify-center rounded-full border-2 border-card text-[9px] font-semibold text-white"
           style={{ background: accent.gradient }}
         >

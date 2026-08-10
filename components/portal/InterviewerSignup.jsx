@@ -115,7 +115,7 @@ export default function InterviewerSignup() {
         <h1 className="text-2xl font-bold sm:text-3xl" style={{ color: accent.base }}>Interviews</h1>
         <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
           Pick the interview slots you can cover. Eboard sets the times and how many
-          interviewers each one needs — claim the ones that work for you, and you&apos;ll
+          interviewers each one needs. Claim the ones that work for you, and you&apos;ll
           see who you&apos;re interviewing.
         </p>
         {totalMine > 0 && (

@@ -328,7 +328,7 @@ function GroupPanel({ group, users, allUsers, onChangeGroup, onSaveExecTitle, on
     () =>
       allUsers
         .filter((u) => normalizeGroup(u.member_group) !== group)
-        .map((u) => ({ value: u.authentik_id, label: `${memberDisplayName(u)} — ${formatMemberGroup(normalizeGroup(u.member_group))}` })),
+        .map((u) => ({ value: u.authentik_id, label: `${memberDisplayName(u)} (${formatMemberGroup(normalizeGroup(u.member_group))})` })),
     [allUsers, group]
   );
 

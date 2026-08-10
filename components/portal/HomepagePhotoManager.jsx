@@ -241,7 +241,7 @@ function AddMediaModal({ onClose, onUpload, onRegisterImmich }) {
               <p className="text-sm font-medium text-foreground">Click or drag files here</p>
               <p className="text-xs text-muted-foreground">JPEG, PNG, WebP, MP4, MOV, WebM · up to 250 MB each</p>
               <p className="text-[11px] text-muted-foreground/70">
-                Videos autoplay muted &amp; looping on the public homepage — keep them short.
+                Videos autoplay muted &amp; looping on the public homepage, so keep them short.
               </p>
             </div>
             <input
@@ -930,7 +930,7 @@ export default function HomepagePhotoManager() {
       ) : photos.length === 0 ? (
         <div className="flex h-48 flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-border bg-card">
           <ImageIcon size={26} className="text-muted-foreground" />
-          <p className="text-sm text-muted-foreground">No homepage photos yet — add one with the button above.</p>
+          <p className="text-sm text-muted-foreground">No homepage photos yet. Add one with the button above.</p>
         </div>
       ) : (
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
@@ -979,7 +979,7 @@ export default function HomepagePhotoManager() {
             <span>
               <span className="font-medium text-foreground">{removeTarget.title || 'This item'}</span>{' '}
               will be removed from the public gallery.{' '}
-              <span className="font-semibold text-foreground">The file stays in Immich — it is not deleted.</span>{' '}
+              <span className="font-semibold text-foreground">The file stays in Immich. It is not deleted.</span>{' '}
               You can re-add it at any time.
             </span>
           )}
@@ -996,7 +996,7 @@ export default function HomepagePhotoManager() {
           body={(
             <span>
               They&apos;ll be removed from the homepage.{' '}
-              <span className="font-semibold text-foreground">Files stay in Immich — nothing is deleted.</span>
+              <span className="font-semibold text-foreground">Files stay in Immich. Nothing is deleted.</span>
             </span>
           )}
           confirmLabel="Remove all"
