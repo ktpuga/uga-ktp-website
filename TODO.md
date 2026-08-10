@@ -176,7 +176,15 @@ It was **not** "mostly a UI job", and the two things it turned up are worth keep
 1. **`updateSlot` was write-only.** `COALESCE($n, column)` reads NULL as "keep", so a room or interviewer could be set and never unset — the request returned 200 and changed nothing. It now builds its `SET` clause from a fixed column allowlist. **`updateSchedule` still has the old pattern** for `description`/`location`; nothing edits those yet, so fix it before building a form that does.
 2. **The delete-409 dialogs had been showing React's #441 digest in production** instead of "N people have already booked this slot" — see trap #8. `deleteInterviewSlot` and `deleteInterviewSchedule` now return `{ ok }` / `{ error, code }`, and only `has_bookings` earns the "Delete anyway" escalation (previously *any* failure did, including a network error).
 
-### C2. Interviewer signup — API + eboard UI done, **member page still missing**
+### ~~C2. Interviewer signup~~ — DONE, shipped 2026-08-10
+
+The member page shipped in `3a577b4 "Members portal interviewer scheduling"`: `/member/interviews`, `components/portal/InterviewerSignup.jsx`, and a nav entry that keys off `rounds.length > 0` so the tab can never appear for someone the API would then 403.
+
+One thing that changed after it shipped, and is worth knowing before touching the rushee side: **candidates are no longer told who is interviewing them, anywhere.** `findAvailableForUser` and `findForCalendar` stopped selecting interviewer names in the SQL rather than stripping them later, which also covers the ICS feed. Don't reinstate a name from another field.
+
+Historical detail follows.
+
+### C2 (original). Interviewer signup — API + eboard UI done, **member page still missing**
 
 Members of committees eboard designates sign up to **run** interviews; eboard sets a max per slot. Migration `1787600000000`, plus `interviewer_committee_ids` per round and `interviewer_capacity` per slot.
 
@@ -191,11 +199,21 @@ Two things to know before building it:
 
 **Done when:** a pledge-committee member sees the published rounds at `/member/interviews`, claims a slot, sees it marked as theirs, and can withdraw — and a rushee gets nothing, not even the nav entry.
 
-### D. Member-created group chats
+### ~~D. Member-created group chats~~ — BUILT 2026-08-10, not yet clicked through in a browser
 
-Currently only committee chats and the eboard chat exist. The API already has `group_chats.is_member_created` waiting for this. The rule Yash set: **eboard cannot see member-made chats unless someone files a report.**
+Any member except a rushee can create a chat, it doesn't appear in eboard's oversight list, and eboard can't administer it either. Full write-up at [docs → Messaging → Member-created chats](https://docs.ugaktp.com/website/messaging#member-created-chats), plus the group chat section of `ktp-api/README.md`.
 
-**Done when:** a member can create a chat, and it does *not* appear in eboard's oversight list.
+**The part that wasn't in the original scope, and mattered most.** The privacy rule had only ever been enforced on the *read* path. `DELETE /:id`, `PUT /:id/photo`, `PATCH /:id/audience` and both `/:id/members` routes were `requireGroup("eboard")` and never consulted `is_member_created` — so **eboard could delete or repopulate a chat they were forbidden to read.** Those five now carry no `requireGroup` at all; administration is decided per chat in `groupChatsController.loadAdministrable`, because a router-level group check can't express "unless a member made it".
+
+Three decisions, all Yash's: every member group except `rush` may create; the report escape hatch is in scope; **creator-only** administration.
+
+Also built, and each one mirrors a specific refusal in the API: a leave route (with all four of its 409 cases reflected in the UI so the button only shows when it works), a Chapter/Personal choice for eboard, and copy in the create modal telling members what the privacy rule actually is — neither half of it is guessable.
+
+**Still open:**
+
+- **Nobody has clicked any of it in a browser.** Worth a pass on: a member creating a chat, eboard confirming it's absent from "All chapter chats", leaving a chat, and that eboard's existing committee chat admin still behaves exactly as before (that's the regression risk from moving the gate out of the router).
+- **There is no rename route, for any chat, for anyone.** The design says a creator renames their chat; that endpoint has never existed, so it was left rather than quietly widening the change.
+- **`reports.content_id` accepts any string.** `canRead` is immune because it casts the column the safe way, but nothing validates the value on write — one report filed with a junk `content_id` would break any consumer that parses it as a number. Belongs on item B, not here.
 
 ### E. Alumni "what I'm doing now", custom profile links, and roster visibility
 

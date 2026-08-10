@@ -89,6 +89,10 @@ Three deliberate absences, none of them CSS — **the routes don't exist**: pled
 
 The **Rushees** tab appears only while `GET /members/rush-count` is above zero, so it shows up during rush and disappears afterwards on its own.
 
+**Messages is shared by all four portals, including `/rushee`** — `components/portal/MessagesPage.jsx` is one component rendered by four routes. That's why anything new in the Group Chats tab has to be gated on a real group check rather than on `!isEboard`: the **New Group Chat** button uses `canCreateChats()`, a positive list of the five member groups, so rushees don't get it. Never write that gate as "not `rush`" — an accepted rushee keeps the `rush` group in Authentik until someone removes it, so an exclusion test locks out real pledges and actives.
+
+Within that tab, `canAdministerChat()` mirrors the API: an official chat is eboard's, a member-created chat belongs to whoever made it, and eboard administers neither of the latter. Both helpers exist only so the UI doesn't offer buttons that are guaranteed to 403 — the server re-checks every call.
+
 > **There is no `/alumni` portal.** It was a copy of `/member` in amber and was deleted 2026-08-05; alumni share `/member`, and `/alumni/*` 307-redirects there via `next.config.js`. Don't re-add it.
 
 ---
