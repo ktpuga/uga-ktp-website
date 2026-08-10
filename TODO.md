@@ -89,7 +89,11 @@ React replaces it with the generic **"An error occurred in the Server Components
 
 If the failure is meant to be *read by a person*, **return `{ error }` instead of throwing** and check for it at the call site. `uploadProfilePicture` and `updateUsername` in `lib/portal-api.js` are the pattern. Throwing is still right for `redirect('/login')`, which isn't a message.
 
-This shipped wrong once already, on the username feature.
+**Every export in `lib/portal-api.js` is a Server Action** — the `'use server'` is on line 1 and covers the whole file, which is easy to forget when a function looks like a plain fetch wrapper.
+
+This has now shipped wrong **twice**: first on the username feature, then on interview deletion, where the "N people have already booked this slot" warning — the only thing standing between a misclick and real cancelled interviews — read as the #441 digest in production for six days. Nobody reported it; it was found by reading the file while building something else.
+
+**A useful smell: any endpoint that answers 409 is carrying a message somebody has to read.**
 
 ### 9. Media URLs are cached forever without a cache-buster
 
@@ -163,13 +167,29 @@ The website half is inline field-level errors, matching the pattern now in `Prof
 
 **Done when:** a bad value produces a message beside the field instead of a red banner or a silent save.
 
-### C. Interview slot editing UI
+### ~~C. Interview slot editing UI~~ — DONE, shipped 2026-08-10
 
-`PATCH /interviews/slots/:id` exists, works and is documented, but nothing calls it — editing a slot today means deleting and re-adding it. `InterviewScheduleManager.jsx` is where it goes.
+The pencil on a slot row expands an inline edit form. `ktp-api 329e519` + `uga-ktp-website 5ea692f`, both live.
 
-This is mostly a UI job: the API already handles the awkward case, returning **409** if you lower capacity below the number of people already booked. Surface that as a readable message rather than a generic failure. (`DELETE` behaves the same way — 409 if booked, `?force=true` to override.)
+It was **not** "mostly a UI job", and the two things it turned up are worth keeping:
 
-**Done when:** eboard can change a slot's time or capacity in place, and the over-capacity 409 reads as an explanation rather than an error.
+1. **`updateSlot` was write-only.** `COALESCE($n, column)` reads NULL as "keep", so a room or interviewer could be set and never unset — the request returned 200 and changed nothing. It now builds its `SET` clause from a fixed column allowlist. **`updateSchedule` still has the old pattern** for `description`/`location`; nothing edits those yet, so fix it before building a form that does.
+2. **The delete-409 dialogs had been showing React's #441 digest in production** instead of "N people have already booked this slot" — see trap #8. `deleteInterviewSlot` and `deleteInterviewSchedule` now return `{ ok }` / `{ error, code }`, and only `has_bookings` earns the "Delete anyway" escalation (previously *any* failure did, including a network error).
+
+### C2. Interviewer signup — API + eboard UI done, **member page still missing**
+
+Members of committees eboard designates sign up to **run** interviews; eboard sets a max per slot. Migration `1787600000000`, plus `interviewer_committee_ids` per round and `interviewer_capacity` per slot.
+
+**⛔ Deploy order:** run the migration **first** (it's additive and safe against live code), then push API and website **together**. The new API is not backward compatible with the old forms, which send `interviewer_id`.
+
+Still to build: **`/member/interviews`** and a nav entry conditional on committee membership. `buildNav(isChair, hasRushees)` in `app/member/layout.jsx` already does conditional items, so follow that. The API is finished: `GET /interviews/interviewer-schedules`, `POST /interviews/slots/:id/interviewers`, `DELETE /interviews/slots/:id/interviewers/:userId`.
+
+Two things to know before building it:
+
+- **The member page is read-only except for claiming a slot.** No editing, no adding slots — that stays in `/admin/interviews`.
+- **The interviewer view includes rushee names.** Deliberate (an interviewer needs to know who they're meeting), but `POST /committees/:id/join` is **self-service** and there's no eboard route to remove someone from a committee, so the audience is wider than the committee roster implies.
+
+**Done when:** a pledge-committee member sees the published rounds at `/member/interviews`, claims a slot, sees it marked as theirs, and can withdraw — and a rushee gets nothing, not even the nav entry.
 
 ### D. Member-created group chats
 

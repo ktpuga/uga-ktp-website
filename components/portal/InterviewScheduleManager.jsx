@@ -3,13 +3,13 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   AlertTriangle, ArrowLeft, CalendarClock, Check, ChevronRight, Clock, Eye, EyeOff,
-  Loader2, MapPin, Pencil, Plus, Trash2, User, X,
+  Loader2, MapPin, Pencil, Plus, Trash2, Users, X,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
   getInterviewSchedules, getInterviewSchedule, createInterviewSchedule, updateInterviewSchedule,
   deleteInterviewSchedule, createInterviewSlot, updateInterviewSlot, deleteInterviewSlot,
-  cancelInterviewBooking, getMessageableMembers,
+  cancelInterviewBooking, withdrawInterviewer, getCommittees,
 } from '@/lib/portal-api';
 import { memberDisplayName, memberInitials } from '@/lib/portal-format';
 import { isRedirectError } from '@/lib/is-redirect-error';
@@ -47,6 +47,7 @@ export default function InterviewScheduleManager() {
   const confirm = useConfirm();
 
   const [schedules, setSchedules] = useState([]);
+  const [committees, setCommittees] = useState([]);
   const [openId, setOpenId] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -64,10 +65,20 @@ export default function InterviewScheduleManager() {
 
   useEffect(() => { load(); }, [load]);
 
-  async function create({ title, description, location }) {
+  useEffect(() => {
+    // Its own catch: the committee list only drives the "who may staff this
+    // round" picker, and losing it must not take the schedules down with it.
+    getCommittees()
+      .then((data) => setCommittees(Array.isArray(data) ? data : []))
+      .catch((err) => { if (isRedirectError(err)) throw err; });
+  }, []);
+
+  async function create({ title, description, location, interviewerCommitteeIds }) {
     setError('');
     try {
-      const schedule = await createInterviewSchedule({ title, description, location });
+      const schedule = await createInterviewSchedule({
+        title, description, location, interviewerCommitteeIds,
+      });
       setSchedules((prev) => [schedule, ...prev]);
       // Straight in — adding slots is the reason anyone creates one.
       setOpenId(schedule.id);
@@ -117,6 +128,7 @@ export default function InterviewScheduleManager() {
       <ScheduleDetail
         scheduleId={openId}
         accent={accent}
+        committees={committees}
         onBack={() => { setOpenId(null); load(); }}
       />
     );
@@ -139,7 +151,7 @@ export default function InterviewScheduleManager() {
         </div>
       )}
 
-      <NewScheduleForm accent={accent} onCreate={create} />
+      <NewScheduleForm accent={accent} committees={committees} onCreate={create} />
 
       {loading ? (
         <div className="mt-6 flex h-32 items-center justify-center gap-2 rounded-2xl border border-border bg-card text-sm text-muted-foreground">
@@ -205,19 +217,69 @@ function ScheduleRow({ schedule, accent, onOpen, onDelete }) {
   );
 }
 
-function NewScheduleForm({ accent, onCreate }) {
+// Which committees may sign up to RUN this round. Pills rather than a multi-select
+// because that is what AudienceSelect already trained everyone here to expect.
+//
+// Selecting nothing is a real, meaningful state — the API fails CLOSED, so a
+// round with no committee is staffed by eboard alone. The empty caption says so
+// rather than leaving it to be discovered.
+function InterviewerCommitteeSelect({ committees, selected, onChange, accent, idPrefix }) {
+  const toggle = (id) => onChange(
+    selected.includes(id) ? selected.filter((c) => c !== id) : [...selected, id],
+  );
+
+  return (
+    <div>
+      <p className={labelClass} id={`${idPrefix}-committees-label`}>Who can sign up to interview</p>
+      {committees.length === 0 ? (
+        <p className="text-xs text-muted-foreground">No committees exist yet.</p>
+      ) : (
+        <div className="flex flex-wrap gap-1.5" role="group" aria-labelledby={`${idPrefix}-committees-label`}>
+          {committees.map((committee) => {
+            const on = selected.includes(String(committee.id));
+            return (
+              <button
+                key={committee.id}
+                type="button"
+                onClick={() => toggle(String(committee.id))}
+                aria-pressed={on}
+                className={cn(
+                  'rounded-full border px-3 py-1 text-xs font-medium',
+                  on ? 'border-transparent text-white' : 'border-border text-muted-foreground hover:bg-muted',
+                )}
+                style={on ? { background: accent.gradient } : undefined}
+              >
+                {committee.name}
+              </button>
+            );
+          })}
+        </div>
+      )}
+      <p className="mt-1.5 text-[10px] text-muted-foreground">
+        {selected.length === 0
+          ? 'Nobody outside eboard can sign up to interview this round.'
+          : 'Members of these committees can claim interviewer spots on any published slot.'}
+      </p>
+    </div>
+  );
+}
+
+function NewScheduleForm({ accent, committees, onCreate }) {
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [location, setLocation] = useState('');
+  const [committeeIds, setCommitteeIds] = useState([]);
   const [saving, setSaving] = useState(false);
 
   async function submit() {
     if (!title.trim()) return;
     setSaving(true);
-    await onCreate({ title: title.trim(), description, location });
+    await onCreate({
+      title: title.trim(), description, location, interviewerCommitteeIds: committeeIds,
+    });
     setSaving(false);
-    setTitle(''); setDescription(''); setLocation(''); setOpen(false);
+    setTitle(''); setDescription(''); setLocation(''); setCommitteeIds([]); setOpen(false);
   }
 
   if (!open) {
@@ -250,6 +312,13 @@ function NewScheduleForm({ accent, onCreate }) {
         <textarea id="sched-desc" rows={2} value={description} onChange={(e) => setDescription(e.target.value)}
           placeholder="Dress business casual, bring a resume…" className={cn(inputClass, 'resize-y')} />
       </div>
+      <InterviewerCommitteeSelect
+        committees={committees}
+        selected={committeeIds}
+        onChange={setCommitteeIds}
+        accent={accent}
+        idPrefix="sched-new"
+      />
       <div className="flex items-center justify-end gap-2">
         <button type="button" onClick={() => setOpen(false)} disabled={saving}
           className="rounded-lg border border-border px-4 py-2 text-sm font-medium text-muted-foreground hover:bg-muted disabled:opacity-40">
@@ -265,10 +334,9 @@ function NewScheduleForm({ accent, onCreate }) {
   );
 }
 
-function ScheduleDetail({ scheduleId, accent, onBack }) {
+function ScheduleDetail({ scheduleId, accent, committees, onBack }) {
   const confirm = useConfirm();
   const [schedule, setSchedule] = useState(null);
-  const [members, setMembers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
@@ -285,14 +353,43 @@ function ScheduleDetail({ scheduleId, accent, onBack }) {
     }
   }, [scheduleId]);
 
-  useEffect(() => {
-    load();
-    // Named for messaging, but it's the directory fetch every portal uses —
-    // for eboard it returns /members, which is what an interviewer picker needs.
-    getMessageableMembers()
-      .then((data) => setMembers(Array.isArray(data) ? data : []))
-      .catch((err) => { if (isRedirectError(err)) throw err; });
-  }, [load]);
+  useEffect(() => { load(); }, [load]);
+
+  // Changing who may staff the round. Sent snake_case because
+  // updateInterviewSchedule is a deliberate pass-through of only the keys given.
+  async function saveCommittees(ids) {
+    setBusy(true);
+    setError('');
+    try {
+      const updated = await updateInterviewSchedule(scheduleId, { interviewer_committee_ids: ids });
+      setSchedule((prev) => ({ ...prev, ...updated }));
+    } catch (err) {
+      if (isRedirectError(err)) throw err;
+      setError(err.message ?? 'Could not change who can interview.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function removeInterviewer(slot, interviewer) {
+    const who = memberDisplayName(interviewer);
+    if (!(await confirm(
+      `Remove ${who} from the ${timeLabel(new Date(slot.startDate))} slot? They'll be notified and can sign up for another time.`,
+      { title: 'Remove this interviewer?', confirmLabel: 'Remove' },
+    ))) return;
+    setBusy(true);
+    setError('');
+    try {
+      const result = await withdrawInterviewer(slot.id, interviewer.id);
+      if (result.ok) await load();
+      else setError(result.error);
+    } catch (err) {
+      if (isRedirectError(err)) throw err;
+      setError(err.message ?? 'Could not remove that interviewer.');
+    } finally {
+      setBusy(false);
+    }
+  }
 
   async function togglePublished() {
     setBusy(true);
@@ -466,9 +563,18 @@ function ScheduleDetail({ scheduleId, accent, onBack }) {
             </p>
           </div>
 
+          <div className="mb-6 rounded-2xl border border-border bg-card p-5 shadow-sm">
+            <InterviewerCommitteeSelect
+              committees={committees}
+              selected={schedule.interviewer_committee_ids ?? []}
+              onChange={saveCommittees}
+              accent={accent}
+              idPrefix={`sched-${schedule.id}`}
+            />
+          </div>
+
           <AddSlotForm
             accent={accent}
-            members={members}
             defaultLocation={schedule.location}
             lastSlot={lastSlot}
             onAdd={addSlot}
@@ -494,7 +600,6 @@ function ScheduleDetail({ scheduleId, accent, onBack }) {
                         key={slot.id}
                         slot={slot}
                         accent={accent}
-                        members={members}
                         defaultLocation={schedule.location}
                         busy={busy}
                         editing={editingId === slot.id}
@@ -503,6 +608,7 @@ function ScheduleDetail({ scheduleId, accent, onBack }) {
                         onSave={saveSlot}
                         onDelete={() => removeSlot(slot)}
                         onRelease={(booking) => releaseBooking(booking, slot)}
+                        onRemoveInterviewer={(interviewer) => removeInterviewer(slot, interviewer)}
                       />
                     ))}
                   </div>
@@ -517,11 +623,13 @@ function ScheduleDetail({ scheduleId, accent, onBack }) {
 }
 
 function SlotRow({
-  slot, accent, members, defaultLocation, busy,
-  editing, onEdit, onCancelEdit, onSave, onDelete, onRelease,
+  slot, accent, defaultLocation, busy,
+  editing, onEdit, onCancelEdit, onSave, onDelete, onRelease, onRemoveInterviewer,
 }) {
   const left = Math.max(0, slot.capacity - slot.booked_count);
   const when = timeLabel(new Date(slot.startDate));
+  const interviewers = slot.interviewers ?? [];
+  const interviewerSpotsLeft = Math.max(0, slot.interviewer_capacity - interviewers.length);
 
   return (
     <div className="rounded-xl border border-border bg-card px-4 py-3">
@@ -533,7 +641,11 @@ function SlotRow({
           <p className="flex flex-wrap items-center gap-x-2.5 gap-y-0.5 text-[11px] text-muted-foreground">
             <span>{slot.booked_count} of {slot.capacity} booked{left > 0 ? ` · ${left} open` : ' · full'}</span>
             {slot.location && <span className="flex items-center gap-1"><MapPin size={9} /> {slot.location}</span>}
-            {slot.interviewer_name && <span className="flex items-center gap-1"><User size={9} /> {slot.interviewer_name}</span>}
+            <span className="flex items-center gap-1">
+              <Users size={9} /> {interviewers.length} of {slot.interviewer_capacity} interviewer
+              {slot.interviewer_capacity === 1 ? '' : 's'}
+              {interviewerSpotsLeft === 0 ? ' · covered' : ''}
+            </span>
           </p>
         </div>
         <div className="flex items-center gap-1.5">
@@ -568,11 +680,32 @@ function SlotRow({
         <EditSlotForm
           slot={slot}
           accent={accent}
-          members={members}
           defaultLocation={defaultLocation}
           onSave={onSave}
           onCancel={onCancelEdit}
         />
+      )}
+
+      {interviewers.length > 0 && (
+        <div className="mt-2.5 flex flex-wrap items-center gap-1.5 border-t border-border pt-2.5">
+          <span className="flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+            <Users size={9} /> Interviewing
+          </span>
+          {interviewers.map((interviewer) => (
+            <span key={interviewer.id} className="flex items-center gap-1.5 rounded-full border border-border bg-muted/40 py-1 pl-2 pr-2">
+              <span className="text-[11px] font-medium text-foreground">{memberDisplayName(interviewer)}</span>
+              <button
+                type="button"
+                onClick={() => onRemoveInterviewer(interviewer)}
+                disabled={busy}
+                className="text-muted-foreground hover:text-destructive disabled:opacity-40"
+                aria-label={`Remove ${memberDisplayName(interviewer)} from this slot`}
+              >
+                <X size={11} />
+              </button>
+            </span>
+          ))}
+        </div>
       )}
 
       {slot.bookings.length > 0 && (
@@ -607,7 +740,7 @@ function SlotRow({
 // `idPrefix` is load-bearing rather than decoration: the add form and an open
 // edit form are on the page at the same time, and duplicate DOM ids silently
 // break clicking a label to focus its field.
-function SlotFields({ idPrefix, value, onChange, members, defaultLocation, seatsHint, footer }) {
+function SlotFields({ idPrefix, value, onChange, defaultLocation, seatsHint, interviewersHint, footer }) {
   const set = (patch) => onChange({ ...value, ...patch });
 
   return (
@@ -630,14 +763,13 @@ function SlotFields({ idPrefix, value, onChange, members, defaultLocation, seats
           {seatsHint && <p className="mt-1 text-[10px] text-muted-foreground">{seatsHint}</p>}
         </div>
         <div>
-          <label htmlFor={`${idPrefix}-interviewer`} className={labelClass}>Interviewer</label>
-          <select id={`${idPrefix}-interviewer`} value={value.interviewerId}
-            onChange={(e) => set({ interviewerId: e.target.value })} className={inputClass}>
-            <option value="">Not decided</option>
-            {members.map((m) => (
-              <option key={m.id} value={m.id}>{memberDisplayName(m)}</option>
-            ))}
-          </select>
+          <label htmlFor={`${idPrefix}-interviewers`} className={labelClass}>Interviewers</label>
+          <input id={`${idPrefix}-interviewers`} type="number" min={1} value={value.interviewerCapacity}
+            onChange={(e) => set({ interviewerCapacity: Math.max(1, Number(e.target.value) || 1) })}
+            className={inputClass} />
+          <p className="mt-1 text-[10px] text-muted-foreground">
+            {interviewersHint ?? 'How many members can claim this slot.'}
+          </p>
         </div>
       </div>
 
@@ -677,13 +809,13 @@ const endsLabel = (endsAt) => (endsAt
 // Slots go in one at a time, so each save prefills the next one starting where
 // the last ended, keeping its length, room and capacity. An evening of
 // 20-minute slots is one field of typing and then repeated clicks on Add.
-function AddSlotForm({ accent, members, defaultLocation, lastSlot, onAdd }) {
+function AddSlotForm({ accent, defaultLocation, lastSlot, onAdd }) {
   const [fields, setFields] = useState(() => ({
     startsAt: toLocalInput(nextHalfHour()),
     minutes: 20,
     capacity: 1,
     location: '',
-    interviewerId: '',
+    interviewerCapacity: 1,
   }));
   const [saving, setSaving] = useState(false);
   // Keyed on the last slot's id so the prefill runs once per added slot —
@@ -699,7 +831,8 @@ function AddSlotForm({ accent, members, defaultLocation, lastSlot, onAdd }) {
       minutes: lengthInMinutes(lastSlot.startDate, lastSlot.endDate),
       capacity: lastSlot.capacity,
       location: lastSlot.location ?? '',
-      interviewerId: lastSlot.interviewer_id ?? '',
+      // Chained like the rest: a whole evening usually wants the same staffing.
+      interviewerCapacity: lastSlot.interviewer_capacity ?? 1,
     });
     setChainedFrom(lastSlot.id);
   }, [lastSlot, chainedFrom]);
@@ -714,7 +847,7 @@ function AddSlotForm({ accent, members, defaultLocation, lastSlot, onAdd }) {
       endsAt: endsAt.toISOString(),
       location: fields.location.trim() || null,
       capacity: fields.capacity,
-      interviewerId: fields.interviewerId || null,
+      interviewerCapacity: fields.interviewerCapacity,
     });
     setSaving(false);
   }
@@ -728,7 +861,6 @@ function AddSlotForm({ accent, members, defaultLocation, lastSlot, onAdd }) {
         idPrefix="slot-add"
         value={fields}
         onChange={setFields}
-        members={members}
         defaultLocation={defaultLocation}
         seatsHint="1 unless you run rooms in parallel."
         footer={(
@@ -748,14 +880,14 @@ function AddSlotForm({ accent, members, defaultLocation, lastSlot, onAdd }) {
 
 // Editing happens in place so the day it sits in, and the people already booked
 // into it, stay on screen while you change it.
-function EditSlotForm({ slot, accent, members, defaultLocation, onSave, onCancel }) {
+function EditSlotForm({ slot, accent, defaultLocation, onSave, onCancel }) {
   const original = useMemo(() => ({
     startsAt: toLocalInput(new Date(slot.startDate)),
     minutes: lengthInMinutes(slot.startDate, slot.endDate),
     capacity: slot.capacity,
     location: slot.location ?? '',
-    interviewerId: slot.interviewer_id ?? '',
-  }), [slot.startDate, slot.endDate, slot.capacity, slot.location, slot.interviewer_id]);
+    interviewerCapacity: slot.interviewer_capacity ?? 1,
+  }), [slot.startDate, slot.endDate, slot.capacity, slot.location, slot.interviewer_capacity]);
 
   const [fields, setFields] = useState(original);
   const [saving, setSaving] = useState(false);
@@ -763,9 +895,19 @@ function EditSlotForm({ slot, accent, members, defaultLocation, onSave, onCancel
 
   const endsAt = useEndsAt(fields.startsAt, fields.minutes);
   const changed = Object.keys(original).some((key) => fields[key] !== original[key]);
-  // Only the START triggers the API's "your interview time changed" push, so
-  // this warning tracks that field and not the others.
+  // Only the START triggers the API's "time changed" pushes, so this warning
+  // tracks that field and not the others.
   const startMoved = fields.startsAt !== original.startsAt;
+
+  // Two separate audiences get told, and a slot can have either without the
+  // other — an unbooked slot someone signed up to run still needs the warning.
+  const signedUp = slot.interviewers?.length ?? 0;
+  const notifyList = [
+    slot.booked_count > 0
+      && `${slot.booked_count === 1 ? 'the rushee' : `all ${slot.booked_count} rushees`} who booked it`,
+    signedUp > 0
+      && `${signedUp === 1 ? 'the member' : `all ${signedUp} members`} signed up to interview it`,
+  ].filter(Boolean);
 
   async function submit() {
     if (!endsAt) return;
@@ -779,7 +921,7 @@ function EditSlotForm({ slot, accent, members, defaultLocation, onSave, onCancel
       // place and the edit would look like it saved while changing nothing.
       location: fields.location.trim() || null,
       capacity: fields.capacity,
-      interviewerId: fields.interviewerId || null,
+      interviewerCapacity: fields.interviewerCapacity,
     });
     setSaving(false);
     // Stays open on failure, so the values that caused it are still on screen
@@ -797,10 +939,12 @@ function EditSlotForm({ slot, accent, members, defaultLocation, onSave, onCancel
         idPrefix={`slot-edit-${slot.id}`}
         value={fields}
         onChange={setFields}
-        members={members}
         defaultLocation={defaultLocation}
         seatsHint={slot.booked_count > 0
           ? `${slot.booked_count} booked — seats can't go below that.`
+          : undefined}
+        interviewersHint={(slot.interviewers?.length ?? 0) > 0
+          ? `${slot.interviewers.length} signed up — can't go below that.`
           : undefined}
         footer={(
           <>
@@ -820,11 +964,11 @@ function EditSlotForm({ slot, accent, members, defaultLocation, onSave, onCancel
         )}
       />
 
-      {startMoved && slot.booked_count > 0 && (
+      {startMoved && notifyList.length > 0 && (
         <p className="mt-3 flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-[11px] text-amber-900 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-200">
           <AlertTriangle size={12} className="mt-0.5 shrink-0" />
-          Moving this slot tells {slot.booked_count === 1 ? 'the person' : `all ${slot.booked_count} people`} who
-          booked it that their interview time changed. Changing the length, room, seats or interviewer doesn&apos;t.
+          Moving this slot notifies {notifyList.join(' and ')}. Changing the length,
+          room or either count doesn&apos;t.
         </p>
       )}
 
