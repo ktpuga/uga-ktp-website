@@ -49,21 +49,31 @@ function seatsLabel(slot) {
   return `${left} of ${slot.capacity} left`;
 }
 
-function SlotButton({ slot, accent, disabled, onPick, busy }) {
+function SlotButton({ slot, accent, disabled, onPick, busy, fallbackLocation }) {
   const left = Math.max(0, slot.capacity - slot.booked_count);
   const isFull = left === 0;
   // Full slots stay on the sheet, greyed out — hiding them would make it look
   // like fewer times were ever offered.
   const unavailable = isFull || disabled;
 
+  // Where the interview actually is, resolved the same way BookedCard and the
+  // ICS feed's COALESCE(s.location, sc.location) resolve it. A slot may override
+  // the round's room, and until now that override was invisible until AFTER
+  // booking — so a rushee could pick 5:20 without knowing it was in a different
+  // building from the 5:00 above it.
+  const where = slot.location ?? fallbackLocation ?? null;
+
   return (
     <button
       type="button"
       disabled={unavailable || busy}
       onClick={() => onPick(slot)}
-      aria-label={`Book ${timeLabel(new Date(slot.startDate))} — ${seatsLabel(slot)}`}
+      // Built from the same parts the tile shows, so a screen reader hears the
+      // room before committing rather than after.
+      aria-label={[`Book ${timeLabel(new Date(slot.startDate))}`, where, seatsLabel(slot)]
+        .filter(Boolean).join(' — ')}
       className={cn(
-        'flex flex-col items-start gap-0.5 rounded-xl border px-3 py-2.5 text-left transition-all duration-150',
+        'flex min-w-0 flex-col items-start gap-0.5 rounded-xl border px-3 py-2.5 text-left transition-all duration-150',
         unavailable
           ? 'cursor-not-allowed border-border bg-muted/40 opacity-55'
           : 'border-border bg-card hover:-translate-y-0.5 hover:shadow-sm',
@@ -74,9 +84,21 @@ function SlotButton({ slot, accent, disabled, onPick, busy }) {
         {timeLabel(new Date(slot.startDate))}
       </span>
       <span className="text-[10px] text-muted-foreground">{seatsLabel(slot)}</span>
+      {/* `w-full` + `truncate` are load-bearing: these tiles sit in a 4-column
+          grid, and a room name like "Miller Learning Center 248" would otherwise
+          stretch the track and break the row. Same for the interviewer line,
+          which is now a comma-joined list once several people sign up to run a
+          slot rather than the single name it used to be. */}
+      {where && (
+        <span className="flex w-full items-center gap-1 text-[10px] text-muted-foreground">
+          <MapPin size={9} className="shrink-0" />
+          <span className="truncate" title={where}>{where}</span>
+        </span>
+      )}
       {slot.interviewer_name && (
-        <span className="flex items-center gap-1 text-[10px] text-muted-foreground">
-          <User size={9} /> {slot.interviewer_name}
+        <span className="flex w-full items-center gap-1 text-[10px] text-muted-foreground">
+          <User size={9} className="shrink-0" />
+          <span className="truncate" title={slot.interviewer_name}>{slot.interviewer_name}</span>
         </span>
       )}
     </button>
@@ -259,6 +281,11 @@ function ScheduleBoard({ schedule, accent, busy, onPick, onRelease }) {
   const openSeats = (schedule.slots ?? [])
     .reduce((sum, slot) => sum + Math.max(0, slot.capacity - slot.booked_count), 0);
 
+  // Now that each tile names its own room, a header room that some slots don't
+  // use would read as a contradiction rather than a default. Say which it is.
+  const hasRoomOverride = (schedule.slots ?? [])
+    .some((slot) => slot.location && slot.location !== schedule.location);
+
   return (
     <section className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
       <div className="border-b border-border px-5 py-4" style={{ background: tint(accent.base, 0.03) }}>
@@ -274,8 +301,11 @@ function ScheduleBoard({ schedule, accent, busy, onPick, onRelease }) {
           <p className="mt-1 whitespace-pre-line text-xs text-muted-foreground">{schedule.description}</p>
         )}
         {schedule.location && (
-          <p className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground">
+          <p className="mt-1 flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
             <MapPin size={11} /> {schedule.location}
+            {hasRoomOverride && (
+              <span className="text-muted-foreground/70">— unless a time below says otherwise</span>
+            )}
           </p>
         )}
       </div>
@@ -305,6 +335,7 @@ function ScheduleBoard({ schedule, accent, busy, onPick, onRelease }) {
                       slot={slot}
                       accent={accent}
                       busy={busy}
+                      fallbackLocation={schedule.location}
                       onPick={onPick}
                     />
                   ))}
