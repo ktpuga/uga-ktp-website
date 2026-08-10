@@ -209,10 +209,11 @@ Three decisions, all Yash's: every member group except `rush` may create; the re
 
 Also built, and each one mirrors a specific refusal in the API: a leave route (with all four of its 409 cases reflected in the UI so the button only shows when it works), a Chapter/Personal choice for eboard, and copy in the create modal telling members what the privacy rule actually is — neither half of it is guessable.
 
-**Still open:**
+**Renaming** (`PATCH /group-chats/:id`) came last, 2026-08-10. There had been no rename route for any chat, for anyone. It needs no special case for the auto-managed chats: a committee chat is named once at creation and **there is no committee update function anywhere**, and the Eboard chat is found by `is_eboard_chat`, never by name. Build committee renaming and that changes.
 
-- **Nobody has clicked any of it in a browser.** Worth a pass on: a member creating a chat, eboard confirming it's absent from "All chapter chats", leaving a chat, and that eboard's existing committee chat admin still behaves exactly as before (that's the regression risk from moving the gate out of the router).
-- **There is no rename route, for any chat, for anyone.** The design says a creator renames their chat; that endpoint has never existed, so it was left rather than quietly widening the change.
+**Confirmed working in a browser by Yash, 2026-08-10.**
+
+**Still open:**
 - **`reports.content_id` accepts any string.** `canRead` is immune because it casts the column the safe way, but nothing validates the value on write — one report filed with a junk `content_id` would break any consumer that parses it as a number. Belongs on item B, not here.
 
 ### E. Alumni "what I'm doing now", custom profile links, and roster visibility

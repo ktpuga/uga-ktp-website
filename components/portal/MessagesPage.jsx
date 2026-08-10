@@ -7,7 +7,7 @@ import { cn } from '@/lib/utils';
 import {
   X, ChevronLeft, Send, Paperclip, Search, Plus, Smile, Trash2, Users,
   ImageIcon, FileIcon, Download, Check, MessageSquare, ChevronDown, Info,
-  UserMinus, AlertCircle, Loader2, Camera, Layers, Eye,
+  UserMinus, AlertCircle, Loader2, Camera, Layers, Eye, Pencil,
 } from 'lucide-react';
 import {
   getConversations, getConversation, sendMessage, markConversationRead, getMember,
@@ -16,6 +16,7 @@ import {
   deleteMessage, deleteGroupChatMessage, markGroupChatRead, getGroupChatMembers,
   addGroupChatMember, removeGroupChatMember, getCommittees, getCommitteeMembers,
   getMessageableMembers, getAllGroupChats, createMemberGroupChat, leaveGroupChat,
+  renameGroupChat,
 } from '@/lib/portal-api';
 import { memberDisplayName, memberInitials, formatMemberGroup, formatMessageTime, groupMatches, MEMBER_GROUP_ORDER } from '@/lib/portal-format';
 import { isRedirectError } from '@/lib/is-redirect-error';
@@ -1252,6 +1253,10 @@ function GroupChatInfoModal({ chat, members, messages, isEboard, canAdminister, 
   const [photoError, setPhotoError] = useState(null);
   const [leaving, setLeaving] = useState(false);
   const [leaveError, setLeaveError] = useState(null);
+  const [renaming, setRenaming] = useState(false);
+  const [draftName, setDraftName] = useState(chat.name);
+  const [savingName, setSavingName] = useState(false);
+  const [nameError, setNameError] = useState(null);
   const photoRef = useRef(null);
   const attachments = useMemo(() => messages.filter((m) => m.attachment), [messages]);
 
@@ -1278,6 +1283,28 @@ function GroupChatInfoModal({ chat, members, messages, isEboard, canAdminister, 
       setLeaveError(result.error);
       setLeaving(false);
     }
+  }
+
+  async function handleRename() {
+    const next = draftName.trim();
+    if (!next || next === chat.name) {
+      setRenaming(false);
+      setDraftName(chat.name);
+      return;
+    }
+    setSavingName(true);
+    setNameError(null);
+    const result = await renameGroupChat(chat.id, next);
+    if (result?.error) {
+      setNameError(result.error);
+      setSavingName(false);
+      return;
+    }
+    // Lifts the new name to the thread header and the chat list, which both
+    // render from the chat object rather than refetching.
+    onChatUpdated(result.chat);
+    setSavingName(false);
+    setRenaming(false);
   }
 
   // Members arrive in whatever order the SQL returned, which put eboard,
@@ -1355,8 +1382,59 @@ function GroupChatInfoModal({ chat, members, messages, isEboard, canAdminister, 
               </>
             )}
           </div>
-          <h2 className="text-center text-lg font-bold tracking-tight text-foreground">{chat.name}</h2>
+          {renaming ? (
+            <div className="w-full space-y-2">
+              <input
+                autoFocus
+                type="text"
+                value={draftName}
+                onChange={(e) => setDraftName(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') handleRename();
+                  // Escape restores the stored name rather than leaving the
+                  // edited draft on screen, which would read as saved.
+                  if (e.key === 'Escape') { setRenaming(false); setDraftName(chat.name); setNameError(null); }
+                }}
+                aria-label="Chat name"
+                className="w-full rounded-lg border border-border bg-muted/40 px-3 py-2 text-center text-sm font-semibold text-foreground focus:outline-none focus:ring-2"
+                style={{ '--tw-ring-color': tint(accent.base, 0.3) }}
+              />
+              <div className="flex justify-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => { setRenaming(false); setDraftName(chat.name); setNameError(null); }}
+                  className="rounded-lg border border-border px-3 py-1 text-xs font-medium text-muted-foreground hover:bg-muted hover:text-foreground"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleRename}
+                  disabled={savingName || !draftName.trim()}
+                  className="rounded-lg px-3 py-1 text-xs font-semibold text-white transition-opacity disabled:opacity-40"
+                  style={{ background: accent.gradient }}
+                >
+                  {savingName ? 'Saving…' : 'Save'}
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="flex items-center gap-1.5">
+              <h2 className="text-center text-lg font-bold tracking-tight text-foreground">{chat.name}</h2>
+              {canAdminister && (
+                <button
+                  type="button"
+                  onClick={() => { setDraftName(chat.name); setRenaming(true); }}
+                  className="rounded-md p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                  aria-label="Rename chat"
+                >
+                  <Pencil size={12} />
+                </button>
+              )}
+            </div>
+          )}
           <p className="text-xs text-muted-foreground">{members.length} member{members.length !== 1 ? 's' : ''}</p>
+          {nameError && <p className="mt-1 text-xs text-destructive">{nameError}</p>}
           {photoError && <p className="text-xs text-destructive">{photoError}</p>}
         </div>
 
