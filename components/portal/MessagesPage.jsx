@@ -15,7 +15,7 @@ import {
   getGroupChatMessages, sendGroupChatMessage, toggleGroupChatReaction, toggleMessageReaction,
   deleteMessage, deleteGroupChatMessage, markGroupChatRead, getGroupChatMembers,
   addGroupChatMember, removeGroupChatMember, getCommittees, getCommitteeMembers,
-  getMessageableMembers, getAllGroupChats,
+  getMessageableMembers, getAllGroupChats, createMemberGroupChat, leaveGroupChat,
 } from '@/lib/portal-api';
 import { memberDisplayName, memberInitials, formatMemberGroup, formatMessageTime, groupMatches, MEMBER_GROUP_ORDER } from '@/lib/portal-format';
 import { isRedirectError } from '@/lib/is-redirect-error';
@@ -46,6 +46,32 @@ const GROUP_BG = {
   eboard: 'rgba(127,29,29,0.10)', chair: 'rgba(126,34,206,0.10)', active: 'rgba(29,78,216,0.10)',
   pledge: 'rgba(21,128,61,0.10)', alumni: 'rgba(180,83,9,0.10)',
 };
+
+// ─── Who may do what to a chat ───
+//
+// Both of these mirror the API deliberately, and neither is the authority: the
+// server re-checks every one of these calls. They exist so the UI doesn't offer
+// a button that is guaranteed to 403.
+
+// Mirrors canAdminister in groupChatsController. An official chat is eboard's;
+// a member-created one belongs to whoever made it, and eboard is deliberately
+// NOT its administrator — they cannot even read one without an open report, so
+// letting them delete or repopulate it would be the larger power.
+function canAdministerChat(chat, { isEboard, currentUserId }) {
+  if (!chat) return false;
+  if (chat.is_member_created) return chat.created_by === currentUserId;
+  return isEboard;
+}
+
+// Mirrors requireGroup on POST /group-chats/member. A POSITIVE list, never
+// "not rush": an accepted rushee keeps the rush group in Authentik until
+// somebody removes it (see the API's constants/roleGroups.js), so an exclusion
+// test would lock real pledges and actives out for as long as that stale group
+// lingers. Matching on ANY of these is what makes ['rush','pledge'] a pledge.
+const CHAT_CREATOR_GROUPS = ['eboard', 'chair', 'active', 'alumni', 'pledge'];
+function canCreateChats(groups) {
+  return (groups ?? []).some((g) => CHAT_CREATOR_GROUPS.includes(g));
+}
 
 function tint(hex, alpha) {
   const h = hex.replace('#', '');
@@ -641,12 +667,12 @@ function DMThread({ conversation, currentUserId, isEboard, accent, onBack }) {
 
 // ─── Group chat list + thread ───
 
-function GroupChatList({ chats, currentUserId, accent, isEboard, onSelect, onNewChat }) {
+function GroupChatList({ chats, currentUserId, accent, canCreate, onSelect, onNewChat }) {
   return (
     <div className="flex h-full flex-col">
       <div className="flex items-center justify-between border-b border-border px-5 py-4" style={{ background: tint(accent.base, 0.03) }}>
         <p className="text-sm font-semibold text-foreground">Group Chats</p>
-        {isEboard && onNewChat && (
+        {canCreate && onNewChat && (
           <button type="button" onClick={onNewChat} className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold text-white transition-opacity hover:opacity-80" style={{ background: accent.gradient }}>
             <Plus size={12} /> New Group Chat
           </button>
@@ -954,7 +980,10 @@ function MemberChip({ member, selected, accent, onToggle }) {
   );
 }
 
-function NewGroupChatModal({ accent, onClose, onCreate }) {
+// `isEboard` decides whether the OFFICIAL/PERSONAL choice appears at all.
+// Everyone else only ever makes a personal chat, so they are shown no choice
+// rather than a disabled control explaining a power they don't have.
+function NewGroupChatModal({ accent, isEboard, onClose, onCreate }) {
   const [name, setName] = useState('');
   const [members, setMembers] = useState([]);
   const [loadingMembers, setLoadingMembers] = useState(true);
@@ -965,6 +994,10 @@ function NewGroupChatModal({ accent, onClose, onCreate }) {
   const [query, setQuery] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState(null);
+  // Eboard defaults to official — that is what the button meant before this
+  // existed, and defaulting the other way would quietly turn chapter chats into
+  // private ones that oversight can't see.
+  const [official, setOfficial] = useState(isEboard);
 
   useEffect(() => {
     getMessageableMembers().then(setMembers).catch((err) => { if (isRedirectError(err)) throw err; }).finally(() => setLoadingMembers(false));
@@ -989,7 +1022,16 @@ function NewGroupChatModal({ accent, onClose, onCreate }) {
     setSubmitting(true);
     setError(null);
     try {
-      await onCreate(name.trim(), [...selectedIds], audience, committeeIds);
+      // A personal chat sends neither list. Passing empty arrays rather than
+      // whatever happens to be in state matters: switching to Personal after
+      // ticking a group would otherwise silently create a chapter-wide chat.
+      const message = official
+        ? await onCreate(name.trim(), [...selectedIds], audience, committeeIds, true)
+        : await onCreate(name.trim(), [...selectedIds], [], [], false);
+      if (message) {
+        setError(message);
+        setSubmitting(false);
+      }
     } catch (err) {
       if (isRedirectError(err)) throw err;
       setError(err.message ?? 'Failed to create group chat');
@@ -1005,7 +1047,10 @@ function NewGroupChatModal({ accent, onClose, onCreate }) {
 
   // Mirrors the backend's 400: a chat with no groups, no committees and no
   // individuals would have exactly one member (the creator, auto-added).
-  const hasTarget = selectedIds.size > 0 || audience.length > 0 || committeeIds.length > 0;
+  // A personal chat has only the individual list to satisfy it.
+  const hasTarget = official
+    ? selectedIds.size > 0 || audience.length > 0 || committeeIds.length > 0
+    : selectedIds.size > 0;
   const canCreate = name.trim().length > 0 && hasTarget && !submitting;
 
   return (
@@ -1025,6 +1070,51 @@ function NewGroupChatModal({ accent, onClose, onCreate }) {
         </div>
 
         <div className="flex-1 space-y-5 overflow-y-auto p-5">
+          {isEboard && (
+            <div>
+              <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Kind of chat</p>
+              <div className="flex gap-2">
+                {[
+                  { value: true, label: 'Chapter chat' },
+                  { value: false, label: 'Personal chat' },
+                ].map((option) => (
+                  <button
+                    key={String(option.value)}
+                    type="button"
+                    onClick={() => setOfficial(option.value)}
+                    aria-pressed={official === option.value}
+                    className={cn(
+                      'flex-1 rounded-lg border px-3 py-2 text-xs font-semibold transition-all duration-150',
+                      official === option.value
+                        ? 'border-transparent text-white'
+                        : 'border-border bg-card text-muted-foreground hover:text-foreground',
+                    )}
+                    style={official === option.value ? { background: accent.gradient } : undefined}
+                  >
+                    {option.label}
+                  </button>
+                ))}
+              </div>
+              <p className="mt-1.5 text-[11px] text-muted-foreground">
+                {official
+                  ? 'An official chapter space. Other eboard members can see it in chapter oversight.'
+                  : 'Private to the people you add. Eboard cannot read it unless someone reports a message in it.'}
+              </p>
+            </div>
+          )}
+
+          {/* Eboard gets this as the caption under their Chapter/Personal
+              choice. Everyone else has no choice to caption, so the privacy
+              rule is stated on its own. It is the whole point of the feature,
+              and it is not guessable: a member has no reason to assume eboard
+              can't read their chat, or that reporting a message changes that. */}
+          {!isEboard && (
+            <p className="rounded-xl border border-border bg-muted/40 px-3 py-2 text-[11px] leading-relaxed text-muted-foreground">
+              This chat is private to the people you add. Eboard can&apos;t read it unless
+              someone reports a message in it.
+            </p>
+          )}
+
           <div>
             <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-muted-foreground">Chat Name</label>
             <input
@@ -1043,12 +1133,14 @@ function NewGroupChatModal({ accent, onClose, onCreate }) {
               pledge promoted to active silently stayed in the pledge chat and
               never appeared in the actives chat. Stored as the chat's audience
               instead, so membership follows the person's current role. */}
-          <div>
-            <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Groups</p>
-            <AudienceSelect value={audience} onChange={setAudience} />
-          </div>
+          {official && (
+            <div>
+              <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Groups</p>
+              <AudienceSelect value={audience} onChange={setAudience} />
+            </div>
+          )}
 
-          {committees.length > 0 && (
+          {official && committees.length > 0 && (
             <div>
               <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Committees</p>
               <div className="flex flex-wrap gap-2 rounded-xl border border-border bg-muted/40 p-3">
@@ -1081,7 +1173,7 @@ function NewGroupChatModal({ accent, onClose, onCreate }) {
 
           <div>
             <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              Add Individually
+              {official ? 'Add Individually' : 'Who is in it'}
               {selectedIds.size > 0 && (
                 <span className="ml-2 rounded-full px-1.5 py-0.5 text-[10px] font-bold text-white" style={{ background: accent.base }}>{selectedIds.size}</span>
               )}
@@ -1150,13 +1242,43 @@ function AttachmentTile({ message, chatId }) {
   );
 }
 
-function GroupChatInfoModal({ chat, members, messages, isEboard, accent, onAddMember, onAddMany, onRemoveMember, onChatUpdated, onClose }) {
+// `canAdminister` is per-chat (see canAdministerChat); `isEboard` survives only
+// for the audience editor, which is an official-chat concept a member-created
+// chat must never show — the API 409s it even for the creator.
+function GroupChatInfoModal({ chat, members, messages, isEboard, canAdminister, currentUserId, readOnly, accent, onAddMember, onAddMany, onRemoveMember, onChatUpdated, onLeave, onClose }) {
   const [tab, setTab] = useState('members');
   const [adding, setAdding] = useState(false);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [photoError, setPhotoError] = useState(null);
+  const [leaving, setLeaving] = useState(false);
+  const [leaveError, setLeaveError] = useState(null);
   const photoRef = useRef(null);
   const attachments = useMemo(() => messages.filter((m) => m.attachment), [messages]);
+
+  // Every condition here mirrors a refusal in leaveGroupChat, so the button
+  // only appears when it will actually work:
+  //
+  //   readOnly           you're viewing this through eboard oversight, not in it
+  //   my own row missing you belong via the audience, so there is no row to
+  //                      delete and leaving would silently do nothing
+  //   is_eboard_chat     reconciled from Authentik on every login, so a leave
+  //                      would undo itself the next time you signed in
+  //   creator            nobody else could administer the chat afterwards
+  const myRow = members.find((m) => m.authentik_id === currentUserId);
+  const isCreatorOfOwnChat = chat.is_member_created && chat.created_by === currentUserId;
+  const canLeave = !readOnly && Boolean(myRow) && !myRow?.is_auto
+    && !chat.is_eboard_chat && !isCreatorOfOwnChat;
+
+  async function handleLeave() {
+    setLeaving(true);
+    setLeaveError(null);
+    const result = await onLeave();
+    // Only reached when it failed; a success unmounts this modal.
+    if (result?.error) {
+      setLeaveError(result.error);
+      setLeaving(false);
+    }
+  }
 
   // Members arrive in whatever order the SQL returned, which put eboard,
   // pledges and alumni next to each other with no structure. Grouped by member
@@ -1218,7 +1340,7 @@ function GroupChatInfoModal({ chat, members, messages, isEboard, accent, onAddMe
         <div className="flex flex-col items-center px-5 pb-4">
           <div className="relative -mt-8 mb-2">
             <GroupChatAvatar chat={chat} size={64} accent={accent} />
-            {isEboard && (
+            {canAdminister && (
               <>
                 <button
                   type="button"
@@ -1286,7 +1408,7 @@ function GroupChatInfoModal({ chat, members, messages, isEboard, accent, onAddMe
                       put — the way to drop them is to change the chat's
                       audience. Don't "fix" this by adding a button here; it
                       would look like it worked and change nothing. */}
-                  {isEboard && !m.is_auto && (
+                  {canAdminister && !m.is_auto && m.authentik_id !== currentUserId && (
                     <button type="button" onClick={() => onRemoveMember(m.authentik_id)} className="ml-1 shrink-0 rounded-md p-1 text-muted-foreground hover:bg-destructive/10 hover:text-destructive" aria-label={`Remove ${memberDisplayName(m)}`}>
                       <UserMinus size={12} />
                     </button>
@@ -1297,15 +1419,22 @@ function GroupChatInfoModal({ chat, members, messages, isEboard, accent, onAddMe
               ))}
               {members.length === 0 && <p className="py-6 text-center text-sm text-muted-foreground">No members yet.</p>}
 
-              {isEboard && (
+              {canAdminister && (
                 <div className="space-y-4 border-t border-border p-4">
                   {/* Editing the audience replaced a "quick add by group"
                       control that expanded a group into individual rows. That
                       was a snapshot: it captured who was in the group at that
                       moment and never updated, which is the exact problem
                       audiences exist to solve. Groups and committees belong
-                      here as live membership; individuals stay separate. */}
-                  <ChatAudienceEditor chat={chat} accent={accent} onChatUpdated={onChatUpdated} />
+                      here as live membership; individuals stay separate.
+
+                      Official chats only. A member-created chat is exactly the
+                      people its creator picked, and the API refuses an audience
+                      on one even from the creator, so rendering this here would
+                      be a control whose only outcome is a 409. */}
+                  {isEboard && !chat.is_member_created && (
+                    <ChatAudienceEditor chat={chat} accent={accent} onChatUpdated={onChatUpdated} />
+                  )}
 
                   <div className="space-y-3">
                     <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Individual members</p>
@@ -1317,6 +1446,20 @@ function GroupChatInfoModal({ chat, members, messages, isEboard, accent, onAddMe
                       </button>
                     )}
                   </div>
+                </div>
+              )}
+
+              {canLeave && (
+                <div className="border-t border-border p-4">
+                  <button
+                    type="button"
+                    onClick={handleLeave}
+                    disabled={leaving}
+                    className="w-full rounded-lg border border-destructive/30 py-2 text-xs font-semibold text-destructive transition-colors hover:bg-destructive/10 disabled:opacity-40"
+                  >
+                    {leaving ? 'Leaving…' : 'Leave this chat'}
+                  </button>
+                  {leaveError && <p className="mt-2 text-xs text-destructive">{leaveError}</p>}
                 </div>
               )}
             </div>
@@ -1339,8 +1482,9 @@ function GroupChatInfoModal({ chat, members, messages, isEboard, accent, onAddMe
   );
 }
 
-function GroupChatThread({ chat, currentUserId, isEboard, accent, onBack, onDeleted, onChatUpdated, readOnly = false }) {
+function GroupChatThread({ chat, currentUserId, isEboard, accent, onBack, onDeleted, onLeft, onChatUpdated, readOnly = false }) {
   const confirm = useConfirm();
+  const canAdminister = canAdministerChat(chat, { isEboard, currentUserId });
   const [messages, setMessages] = useState([]);
   const [members, setMembers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -1426,6 +1570,18 @@ function GroupChatThread({ chat, currentUserId, isEboard, accent, onBack, onDele
     }
   }
 
+  // Returns the failure to the modal rather than alerting, because these are
+  // 409s whose message is the whole explanation. On success the chat leaves the
+  // list and the thread unmounts, so there is nothing to report.
+  async function handleLeave() {
+    const result = await leaveGroupChat(chat.id);
+    if (result?.ok) {
+      onLeft(chat.id);
+      return null;
+    }
+    return result;
+  }
+
   async function handleAddMember(member) {
     try {
       await addGroupChatMember(chat.id, member.id);
@@ -1472,7 +1628,7 @@ function GroupChatThread({ chat, currentUserId, isEboard, accent, onBack, onDele
           <button type="button" onClick={() => setInfoOpen(true)} className="rounded-lg p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground" aria-label="Chat info">
             <Info size={15} />
           </button>
-          {isEboard && (
+          {canAdminister && (
             <button type="button" onClick={handleDeleteChat} className="rounded-lg p-1.5 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive" aria-label="Delete chat">
               <Trash2 size={15} />
             </button>
@@ -1486,11 +1642,15 @@ function GroupChatThread({ chat, currentUserId, isEboard, accent, onBack, onDele
           members={members}
           messages={messages}
           isEboard={isEboard}
+          canAdminister={canAdminister}
+          currentUserId={currentUserId}
+          readOnly={readOnly}
           accent={accent}
           onAddMember={handleAddMember}
           onAddMany={handleAddMany}
           onRemoveMember={handleRemoveMember}
           onChatUpdated={onChatUpdated}
+          onLeave={handleLeave}
           onClose={() => setInfoOpen(false)}
         />
       )}
@@ -1608,7 +1768,7 @@ function MessagesTab({ currentUserId, isEboard, accent, initialWithId }) {
   );
 }
 
-function GroupChatsTab({ currentUserId, isEboard, accent, initialGroupChatId }) {
+function GroupChatsTab({ currentUserId, isEboard, canCreate, accent, initialGroupChatId }) {
   const [chats, setChats] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -1668,10 +1828,27 @@ function GroupChatsTab({ currentUserId, isEboard, accent, initialGroupChatId }) 
     setChats((prev) => prev.map((c) => (c.id === updatedChat.id ? updatedChat : c)));
   }
 
-  async function handleCreate(name, memberIds, audience, committeeIds) {
+  function handleLeft(chatId) {
+    setChats((prev) => prev.filter((c) => c.id !== chatId));
+    setSelected(null);
+  }
+
+  // Returns an error STRING for the modal to display, or nothing on success.
+  // The official path still throws on failure (createGroupChat is unchanged and
+  // eboard-only); the member path returns { error } because its messages have
+  // to survive production, where a thrown Server Action becomes React #441.
+  async function handleCreate(name, memberIds, audience, committeeIds, official) {
+    if (!official) {
+      const result = await createMemberGroupChat({ name, memberIds });
+      if (result?.error) return result.error;
+      setChats((prev) => [result.chat, ...prev]);
+      setShowNewGC(false);
+      return null;
+    }
     const chat = await createGroupChat({ name, memberIds, audience, committeeIds });
     setChats((prev) => [chat, ...prev]);
     setShowNewGC(false);
+    return null;
   }
 
   return (
@@ -1684,6 +1861,7 @@ function GroupChatsTab({ currentUserId, isEboard, accent, initialGroupChatId }) 
           accent={accent}
           onBack={() => setSelected(null)}
           onDeleted={handleDeleted}
+          onLeft={handleLeft}
           onChatUpdated={handleChatUpdated}
           readOnly={!myChatIds.has(selected.id)}
         />
@@ -1730,7 +1908,7 @@ function GroupChatsTab({ currentUserId, isEboard, accent, initialGroupChatId }) 
               chats={visibleChats}
               currentUserId={currentUserId}
               accent={accent}
-              isEboard={isEboard}
+              canCreate={canCreate}
               onSelect={setSelected}
               // Creating from the oversight list would be confusing — it isn't
               // your list of chats, it's every chat.
@@ -1740,7 +1918,7 @@ function GroupChatsTab({ currentUserId, isEboard, accent, initialGroupChatId }) 
         </div>
       )}
 
-      {showNewGC && <NewGroupChatModal accent={accent} onClose={() => setShowNewGC(false)} onCreate={handleCreate} />}
+      {showNewGC && <NewGroupChatModal accent={accent} isEboard={isEboard} onClose={() => setShowNewGC(false)} onCreate={handleCreate} />}
     </>
   );
 }
@@ -1755,6 +1933,9 @@ function RevampedMessagesContent({ accentKey }) {
   const groupChatId = searchParams.get('groupChat');
   const currentUserId = session?.user?.authentik_id;
   const isEboard = session?.user?.groups?.includes('eboard') ?? false;
+  // Rushees reach this same component through /rushee/messages, so the create
+  // button has to be gated on a real group check rather than on "not eboard".
+  const canCreate = canCreateChats(session?.user?.groups);
   const { dmCount, groupChatCount } = useUnreadCounts();
 
   const [activeTab, setActiveTab] = useState(groupChatId ? 'groups' : 'messages');
@@ -1795,7 +1976,7 @@ function RevampedMessagesContent({ accentKey }) {
           <MessagesTab currentUserId={currentUserId} isEboard={isEboard} accent={accent} initialWithId={withId} />
         )}
         {activeTab === 'groups' && (
-          <GroupChatsTab currentUserId={currentUserId} isEboard={isEboard} accent={accent} initialGroupChatId={groupChatId} />
+          <GroupChatsTab currentUserId={currentUserId} isEboard={isEboard} canCreate={canCreate} accent={accent} initialGroupChatId={groupChatId} />
         )}
       </div>
     </div>
