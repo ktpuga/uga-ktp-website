@@ -31,6 +31,7 @@ import {
 } from '@/lib/portal-api';
 import { memberDisplayName } from '@/lib/portal-format';
 import { isRedirectError } from '@/lib/is-redirect-error';
+import { TEXT_LIMITS } from '@/lib/text-limits';
 import { PALETTES } from '@/components/portal/PortalAccentContext';
 
 // Palette comes from PortalAccentContext, the single source of truth. Each of
@@ -193,7 +194,11 @@ function CreatePollModal({ accent, committees, onClose, onCreated }) {
     && options.filter((o) => o.trim()).length >= 2
     && (targeting === 'chapter' ? selectedAudience.length > 0 : selectedCommittee !== null);
 
-  function addOption() { setOptions((prev) => [...prev, '']); }
+  // Capped to match the API, which rejects past this. Without the cap the
+  // button keeps adding rows that the save is then refused for.
+  function addOption() {
+    setOptions((prev) => (prev.length >= TEXT_LIMITS.OPTION_COUNT ? prev : [...prev, '']));
+  }
   function removeOption(i) { setOptions((prev) => prev.filter((_, idx) => idx !== i)); }
   function setOption(i, val) { setOptions((prev) => prev.map((o, idx) => (idx === i ? val : o))); }
 
@@ -247,12 +252,12 @@ function CreatePollModal({ accent, committees, onClose, onCreated }) {
       <ModalHeader accent={accent} title="New Poll" icon={<BarChart3 size={14} strokeWidth={1.75} />} onClose={onClose} />
       <div className="max-h-[72vh] space-y-5 overflow-y-auto p-5">
         <FormField label="Question">
-          <input autoFocus type="text" value={question} onChange={(e) => setQuestion(e.target.value)}
+          <input autoFocus type="text" maxLength={TEXT_LIMITS.QUESTION} value={question} onChange={(e) => setQuestion(e.target.value)}
             placeholder="What should we vote on?" className={inputCls()} {...fb} />
         </FormField>
 
         <FormField label="Description (optional)">
-          <textarea rows={2} value={description} onChange={(e) => setDesc(e.target.value)}
+          <textarea rows={2} maxLength={TEXT_LIMITS.DESCRIPTION} value={description} onChange={(e) => setDesc(e.target.value)}
             placeholder="Add context or details…" className={cn(inputCls(), 'resize-y')}
             style={fb.style} onFocus={fb.onFocus} onBlur={fb.onBlur} />
         </FormField>
@@ -264,7 +269,7 @@ function CreatePollModal({ accent, committees, onClose, onCreated }) {
                 <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[10px] font-bold text-white" style={{ background: accent.gradient }}>
                   {i + 1}
                 </span>
-                <input type="text" value={opt} onChange={(e) => setOption(i, e.target.value)}
+                <input type="text" maxLength={TEXT_LIMITS.OPTION} value={opt} onChange={(e) => setOption(i, e.target.value)}
                   placeholder={`Option ${i + 1}`} className={cn(inputCls(), 'flex-1')} {...fb} />
                 {options.length > 2 && (
                   <button type="button" onClick={() => removeOption(i)} className="shrink-0 rounded-lg p-1 text-muted-foreground hover:text-destructive" aria-label="Remove option">
@@ -273,9 +278,11 @@ function CreatePollModal({ accent, committees, onClose, onCreated }) {
                 )}
               </div>
             ))}
-            <button type="button" onClick={addOption} className="mt-1 flex items-center gap-1.5 text-xs font-medium transition-opacity hover:opacity-75" style={{ color: accent.light }}>
-              <Plus size={12} /> Add option
-            </button>
+            {options.length < TEXT_LIMITS.OPTION_COUNT && (
+              <button type="button" onClick={addOption} className="mt-1 flex items-center gap-1.5 text-xs font-medium transition-opacity hover:opacity-75" style={{ color: accent.light }}>
+                <Plus size={12} /> Add option
+              </button>
+            )}
           </div>
         </FormField>
 

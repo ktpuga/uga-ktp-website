@@ -11,12 +11,13 @@ import {
   updateRushAnnouncement,
 } from '@/lib/portal-api';
 import { isRedirectError } from '@/lib/is-redirect-error';
+import { TEXT_LIMITS } from '@/lib/text-limits';
 
 // Palette now comes from the portal accent context so the Admin red/blue
 // toggle reaches this page, not just the sidebar. Each component asks for it
 // directly — no prop threading through the sub-components in this file.
 
-const MAX_TITLE = 150;
+const MAX_TITLE = TEXT_LIMITS.TITLE;
 
 function tint(hex, alpha) {
   const h = hex.replace('#', '');
@@ -96,7 +97,7 @@ function Editor({ announcement, onClose, onSaved }) {
 
             <div>
               <label htmlFor="rush-body" className="mb-1 block text-xs font-semibold uppercase tracking-wider text-muted-foreground">Message</label>
-              <textarea id="rush-body" rows={6} value={body} onChange={(e) => setBody(e.target.value)}
+              <textarea id="rush-body" rows={6} maxLength={TEXT_LIMITS.BODY} value={body} onChange={(e) => setBody(e.target.value)}
                 placeholder="7pm in Boyd 208. Come meet the chapter, no need to dress up." className={cn(INPUT, 'resize-y')} />
             </div>
 

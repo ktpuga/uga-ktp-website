@@ -120,6 +120,37 @@ The two share the parts that actually need to stay in step: `buildProfilePayload
 
 The admin modal also shows **every** field unconditionally, including UGA Email for alumni. It's the surface for fixing bad data, and the directory masks an alumnus's UGA address on read regardless.
 
+## Every profile field is validated by the API, and the message has to survive
+
+The rules live once, in `services/profileFields.js` — names ≤100 and trimmed before the required check, `major` ≤120, `pledge_class` ≤50, `phone` 7–15 digits, `dob` a real `YYYY-MM-DD` date no later than today, and `graduation_date` a semester plus a four-digit year. `about_me` is the one field that truncates instead of rejecting. Full table: [API docs](https://docs.ugaktp.com/api/endpoints#put-usersmeprofile).
+
+Two consequences for this form:
+
+- **`updateProfile` returns `{ error }` and does not throw.** It used to go through `apiPut`, which throws on a non-ok response, and a thrown Server Action error becomes React #441 in production (trap 8 in `TODO.md`). That was survivable while the only 400s came from rules the form pre-empts on the client; it stopped being survivable once a phone number or a graduation year could fail. Anything else here that a member must read needs the same shape.
+- **The `maxLength` attributes are a mirror of the API's caps, not an independent opinion.** They exist so the field stops accepting input rather than round-tripping to a rejection. If you change a cap, change it in `services/profileFields.js` first, since that is the one that is actually enforced.
+- **A rejected save shows the message beside the field, not in the banner.** The API returns `{ message, field }`; `Field` takes an `error` prop and renders it under its input. The same `Field`/`error`/`name` shape exists in `admin/AdminEditProfileModal.jsx`, because both forms post to the same API normalizer and get the same field key back.
+
+  Three things about it that are easy to get wrong:
+
+  - **`field` is optional and always will be.** A 500, a fetch failure or a permission error carries no field, and both forms fall back to the banner for those. An error with nowhere to go must never be swallowed.
+  - **The key is the API's field name, not an input's `name`.** `graduation_date` is one API key but two inputs, `graduation_semester` and `graduation_year`. That is why `Field` puts `data-field` on its wrapper and the scroll-into-view queries that, rather than looking up an input.
+  - **Clearing is handled once, by an `onChange` on the `<form>`.** Only the named field clears it, so editing an unrelated input leaves the message in place. Per-input handlers are exactly how `email` and `linkedin_url` each grew their own copy of this logic, and two of them had already drifted apart in colour class.
+
+  The pre-existing `emailError` and `linkedinError` states are a **different** thing and both remain: those are client-side pre-checks that run before the request to save a round trip. The server error can be showing on another field at the same time.
+
+## `lib/text-limits.js` — the compose-form caps
+
+The same rule as above, for everything that is not a profile field: announcement and event titles and bodies, poll questions and options, committee, album, folder and group chat names, document link names.
+
+`TEXT_LIMITS` mirrors `ktp-api`'s `services/textLimits.js` **exactly**, and neither file changes without the other. Two copies across two repos is the unavoidable minimum; what this replaced was worse, a single `const MAX_TITLE = 150` in `RushAnnouncementsManager.jsx` and bare literals or nothing everywhere else.
+
+The API rejects over-length input regardless — it has to, since `maxLength` is a DOM attribute a client can simply not send. These exist so a member meets the limit while typing.
+
+Two things worth knowing before adding one:
+
+- **`maxLength` stops typing silently.** On a short field that reads as the field being broken. Pair it with a counter, as `RushAnnouncementsManager` does, wherever the limit is realistically reachable.
+- **Check the wrapper spreads props.** `AnnouncementsContent` and `PhotoFiles` both route their inputs through local `FieldInput`/`FieldTextarea` components. Both spread onto the element *before* setting `className`/`style`, so `maxLength` survives — but a wrapper that listed its props explicitly would drop it, and `next build` would not notice, because compiling a client component never renders it.
+
 ## `Legacy*` files — removed 2026-08-02
 
 Pre-redesign copies kept behind an accent check during the portal revamp. Every portal passes `blue`, `amber` or `red`, all of which took the revamped branch, so they had become unreachable — about 4,400 lines that could never execute.

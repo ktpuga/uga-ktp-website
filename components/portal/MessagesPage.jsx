@@ -26,6 +26,7 @@ import ReportButton from './ReportButton';
 import AudienceSelect from './AudienceSelect';
 import BlockButton from './BlockButton';
 import ProfileActionsMenu from './ProfileActionsMenu';
+import { TEXT_LIMITS } from '@/lib/text-limits';
 import { PALETTES } from '@/components/portal/PortalAccentContext';
 
 // Palette comes from PortalAccentContext, the single source of truth. Each of
@@ -397,6 +398,7 @@ function Composer({ onSend, accent, disabled }) {
           <textarea
             ref={textRef}
             rows={1}
+            maxLength={TEXT_LIMITS.MESSAGE}
             value={body}
             onChange={(e) => { setBody(e.target.value); e.target.style.height = 'auto'; e.target.style.height = `${Math.min(e.target.scrollHeight, 120)}px`; }}
             onKeyDown={handleKeyDown}
@@ -1121,6 +1123,7 @@ function NewGroupChatModal({ accent, isEboard, onClose, onCreate }) {
             <input
               autoFocus
               type="text"
+              maxLength={TEXT_LIMITS.NAME}
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="e.g. Fall 2026 Pledges"
@@ -1387,6 +1390,7 @@ function GroupChatInfoModal({ chat, members, messages, isEboard, canAdminister, 
               <input
                 autoFocus
                 type="text"
+                maxLength={TEXT_LIMITS.NAME}
                 value={draftName}
                 onChange={(e) => setDraftName(e.target.value)}
                 onKeyDown={(e) => {

@@ -15,6 +15,7 @@ import {
   formatAudience, formatMessageTime, formatEventTimeRange, getEventStartDate, getEventEndDate,
 } from '@/lib/portal-format';
 import { isRedirectError } from '@/lib/is-redirect-error';
+import { TEXT_LIMITS } from '@/lib/text-limits';
 import { useConfirm } from '@/components/ui/confirm-dialog';
 import AudienceSelect from '@/components/portal/AudienceSelect';
 import { useAccentPalette } from '@/components/portal/PortalAccentContext';
@@ -308,11 +309,11 @@ function AnnouncementForm({ initial, onSubmit, onCancel, isEdit, committees }) {
       <div className="space-y-4">
         <div>
           <FieldLabel>Title</FieldLabel>
-          <FieldInput value={form.title} onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))} placeholder="e.g. Chapter meeting this Thursday" />
+          <FieldInput maxLength={TEXT_LIMITS.TITLE} value={form.title} onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))} placeholder="e.g. Chapter meeting this Thursday" />
         </div>
         <div>
           <FieldLabel>Body</FieldLabel>
-          <FieldTextarea rows={4} value={form.body} onChange={(e) => setForm((f) => ({ ...f, body: e.target.value }))} placeholder="Write your announcement here…" />
+          <FieldTextarea rows={4} maxLength={TEXT_LIMITS.BODY} value={form.body} onChange={(e) => setForm((f) => ({ ...f, body: e.target.value }))} placeholder="Write your announcement here…" />
         </div>
         {/* Was a bare AudienceSelect — announcements could only ever be
             targeted by role from this form, even though the table has had a
@@ -524,15 +525,15 @@ function EventForm({ initial, onSubmit, onCancel, isEdit, committees, formError 
       <div className="space-y-4">
         <div>
           <FieldLabel>Title</FieldLabel>
-          <FieldInput value={form.title} onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))} placeholder="e.g. Alumni Networking Dinner" />
+          <FieldInput maxLength={TEXT_LIMITS.TITLE} value={form.title} onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))} placeholder="e.g. Alumni Networking Dinner" />
         </div>
         <div>
           <FieldLabel>Description</FieldLabel>
-          <FieldTextarea rows={3} value={form.description} onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))} placeholder="Event details, dress code, notes…" />
+          <FieldTextarea rows={3} maxLength={TEXT_LIMITS.DESCRIPTION} value={form.description} onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))} placeholder="Event details, dress code, notes…" />
         </div>
         <div>
           <FieldLabel>Location</FieldLabel>
-          <FieldInput value={form.location} onChange={(e) => setForm((f) => ({ ...f, location: e.target.value }))} placeholder="Location TBD" />
+          <FieldInput maxLength={TEXT_LIMITS.LOCATION} value={form.location} onChange={(e) => setForm((f) => ({ ...f, location: e.target.value }))} placeholder="Location TBD" />
         </div>
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">

@@ -21,6 +21,7 @@ import {
 } from '@/lib/portal-api';
 import { memberDisplayName, memberInitials } from '@/lib/portal-format';
 import { isRedirectError } from '@/lib/is-redirect-error';
+import { TEXT_LIMITS } from '@/lib/text-limits';
 import { NewMeetingModal } from './MeetingsPage';
 import { PALETTES } from '@/components/portal/PortalAccentContext';
 
@@ -176,6 +177,7 @@ function NewCommitteeModal({ accent, onClose, onCreated }) {
           <input
             autoFocus
             type="text"
+            maxLength={TEXT_LIMITS.NAME}
             value={name}
             onChange={(e) => setName(e.target.value)}
             onKeyDown={(e) => { if (e.key === 'Enter' && name.trim()) handleCreate(); }}
@@ -304,6 +306,7 @@ function ScheduleEventModal({ committeeId, committeeName, accent, onClose, onSch
           <input
             autoFocus
             type="text"
+            maxLength={TEXT_LIMITS.TITLE}
             value={form.title}
             onChange={(e) => set('title', e.target.value)}
             placeholder="e.g. Weekly Sync"
@@ -316,6 +319,7 @@ function ScheduleEventModal({ committeeId, committeeName, accent, onClose, onSch
         <FormField label="Description (optional)">
           <textarea
             rows={2}
+            maxLength={TEXT_LIMITS.DESCRIPTION}
             value={form.description}
             onChange={(e) => set('description', e.target.value)}
             placeholder="What's on the agenda?"
@@ -330,6 +334,7 @@ function ScheduleEventModal({ committeeId, committeeName, accent, onClose, onSch
             <MapPin size={13} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
             <input
               type="text"
+              maxLength={TEXT_LIMITS.LOCATION}
               value={form.location}
               onChange={(e) => set('location', e.target.value)}
               placeholder="e.g. Engineering Library 204 or Zoom"

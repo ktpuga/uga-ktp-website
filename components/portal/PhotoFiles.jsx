@@ -21,6 +21,7 @@ import { useConfirm } from '@/components/ui/confirm-dialog';
 import PhotoMedia from './PhotoMedia';
 import ReportButton from './ReportButton';
 import BlockButton from './BlockButton';
+import { TEXT_LIMITS } from '@/lib/text-limits';
 import { PALETTES } from '@/components/portal/PortalAccentContext';
 
 // Palette comes from PortalAccentContext, the single source of truth. Each of
@@ -499,13 +500,14 @@ function NewAlbumModal({ accent, onClose, onCreate }) {
       <ModalHeader accent={accent} title="New Album" icon={<ImageIcon size={14} strokeWidth={1.75} />} onClose={onClose} />
       <div className="max-h-[70vh] space-y-4 overflow-y-auto p-5">
         <FormField label="Album Name">
-          <FieldInput accent={accent} autoFocus type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Spring Formal 2026" />
+          <FieldInput accent={accent} autoFocus type="text" maxLength={TEXT_LIMITS.TITLE} value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Spring Formal 2026" />
         </FormField>
         <FormField label="Description (optional)">
           <textarea
             value={desc}
             onChange={(e) => setDesc(e.target.value)}
             rows={2}
+            maxLength={TEXT_LIMITS.DESCRIPTION}
             placeholder="A brief description…"
             className="w-full resize-y rounded-lg border border-border bg-muted/40 px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2"
             style={{ '--tw-ring-color': tint(accent.base, 0.3) }}
@@ -977,6 +979,7 @@ function NewFolderModal({ accent, onClose, onCreate }) {
             accent={accent}
             autoFocus
             type="text"
+            maxLength={TEXT_LIMITS.NAME}
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="e.g. Fall 2026 Resources"
@@ -1011,7 +1014,7 @@ function AddLinkModal({ accent, onClose, onAdd }) {
       <ModalHeader accent={accent} title="Add Link" icon={<Link2 size={14} strokeWidth={1.75} />} onClose={onClose} />
       <div className="space-y-4 p-5">
         <FormField label="Display Name">
-          <FieldInput accent={accent} autoFocus type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Spring Budget (Google Sheets)" />
+          <FieldInput accent={accent} autoFocus type="text" maxLength={TEXT_LIMITS.FILENAME} value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Spring Budget (Google Sheets)" />
         </FormField>
         <FormField label="URL">
           <FieldInput accent={accent} type="url" value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://docs.google.com/…" />

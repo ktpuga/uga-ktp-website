@@ -29,11 +29,19 @@ import { isRedirectError } from '@/lib/is-redirect-error';
 // see on their own form). This is the surface for fixing bad data, and the
 // directory masks an alumnus's UGA address on read regardless.
 
-function Field({ label, children, hint }) {
+// `error` and `name` work the same way as in components/profile/ProfileForm.jsx
+// — see the note there. Both forms post to the same normalizer in the API
+// (services/profileFields.js), so they get the same field key back and must
+// present it the same way; eboard editing someone else's profile hits exactly
+// the rejections a member hits editing their own.
+function Field({ label, children, hint, error, name }) {
   return (
-    <div>
+    <div data-field={name}>
       <label className="mb-1 block text-xs font-medium text-foreground">{label}</label>
       {children}
+      {error ? (
+        <p role="alert" className="mt-1 text-[11px] text-red-600 dark:text-red-400">{error}</p>
+      ) : null}
       {hint && <p className="mt-1 text-[11px] text-muted-foreground">{hint}</p>}
     </div>
   );
@@ -45,6 +53,11 @@ export default function AdminEditProfileModal({ user, onClose, onSaved }) {
 
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
+  // The API's per-field rejection, placed next to the input it names. See the
+  // Field comment above.
+  const [serverFieldError, setServerFieldError] = useState(null);
+  const fieldError = (name) =>
+    serverFieldError?.field === name ? serverFieldError.message : undefined;
 
   // Username is its own save with its own error, mirroring the API's split:
   // it's the only field that writes to Authentik, and "that name is taken"
@@ -75,6 +88,7 @@ export default function AdminEditProfileModal({ user, onClose, onSaved }) {
     e.preventDefault();
     setSaving(true);
     setError(null);
+    setServerFieldError(null);
 
     // Same builder the member's own form uses, so the two payloads can't drift.
     const payload = buildProfilePayload(new FormData(formRef.current));
@@ -82,7 +96,16 @@ export default function AdminEditProfileModal({ user, onClose, onSaved }) {
     try {
       const result = await adminUpdateUserProfile(user.authentik_id, payload);
       if (result?.error) {
-        setError(result.error);
+        // Beside the field when the API named one, in the banner otherwise —
+        // an error with nowhere to go must never be swallowed.
+        if (result.field) {
+          setServerFieldError({ field: result.field, message: result.error });
+          formRef.current
+            ?.querySelector(`[data-field="${CSS.escape(result.field)}"]`)
+            ?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        } else {
+          setError(result.error);
+        }
         return;
       }
       onSaved(result);
@@ -199,7 +222,19 @@ export default function AdminEditProfileModal({ user, onClose, onSaved }) {
           </button>
         </div>
 
-        <form ref={formRef} onSubmit={handleSubmit} className="space-y-4 px-5 py-4">
+        {/* Cleared once here rather than per input: the message is stale as
+            soon as the offending field is edited, and only that field clears
+            it, so editing something else leaves it in place. */}
+        <form
+          ref={formRef}
+          onSubmit={handleSubmit}
+          onChange={(e) => {
+            if (serverFieldError && e.target?.name === serverFieldError.field) {
+              setServerFieldError(null);
+            }
+          }}
+          className="space-y-4 px-5 py-4"
+        >
           {/* Username saves on its own — see the state comment above. */}
           <Field
             label="Username"
@@ -229,28 +264,28 @@ export default function AdminEditProfileModal({ user, onClose, onSaved }) {
           </Field>
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <Field label="First Name">
-              <Input name="first_name" required defaultValue={user.first_name ?? ''} />
+            <Field label="First Name" name="first_name" error={fieldError('first_name')}>
+              <Input name="first_name" required maxLength={100} defaultValue={user.first_name ?? ''} />
             </Field>
-            <Field label="Last Name">
-              <Input name="last_name" required defaultValue={user.last_name ?? ''} />
+            <Field label="Last Name" name="last_name" error={fieldError('last_name')}>
+              <Input name="last_name" required maxLength={100} defaultValue={user.last_name ?? ''} />
             </Field>
           </div>
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <Field label="Preferred Name">
-              <Input name="preferred_name" defaultValue={user.preferred_name ?? ''} />
+            <Field label="Preferred Name" name="preferred_name" error={fieldError('preferred_name')}>
+              <Input name="preferred_name" maxLength={100} defaultValue={user.preferred_name ?? ''} />
             </Field>
-            <Field label="Date of Birth">
+            <Field label="Date of Birth" name="dob" error={fieldError('dob')}>
               <Input type="date" name="dob" defaultValue={(user.dob ?? '').split('T')[0]} />
             </Field>
           </div>
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <Field label="Major">
-              <Input name="major" defaultValue={user.major ?? ''} />
+            <Field label="Major" name="major" error={fieldError('major')}>
+              <Input name="major" maxLength={120} defaultValue={user.major ?? ''} />
             </Field>
-            <Field label="Graduation">
+            <Field label="Graduation" name="graduation_date" error={fieldError('graduation_date')}>
               <div className="flex gap-2">
                 <select
                   name="graduation_semester"
@@ -274,6 +309,8 @@ export default function AdminEditProfileModal({ user, onClose, onSaved }) {
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <Field
+              name="email"
+              error={fieldError('email')}
               label="UGA Email"
               hint={
                 user.member_group === 'alumni'
@@ -283,25 +320,25 @@ export default function AdminEditProfileModal({ user, onClose, onSaved }) {
             >
               <Input type="email" name="email" defaultValue={user.email ?? ''} />
             </Field>
-            <Field label="Personal Email">
+            <Field label="Personal Email" name="personal_email" error={fieldError('personal_email')}>
               <Input type="email" name="personal_email" defaultValue={user.personal_email ?? ''} />
             </Field>
           </div>
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <Field label="Phone Number">
-              <Input type="tel" name="phone" defaultValue={user.phone ?? ''} />
+            <Field label="Phone Number" name="phone" error={fieldError('phone')}>
+              <Input type="tel" name="phone" maxLength={25} defaultValue={user.phone ?? ''} />
             </Field>
-            <Field label="Pledge Class">
-              <Input name="pledge_class" defaultValue={user.pledge_class ?? ''} />
+            <Field label="Pledge Class" name="pledge_class" error={fieldError('pledge_class')}>
+              <Input name="pledge_class" maxLength={50} defaultValue={user.pledge_class ?? ''} />
             </Field>
           </div>
 
-          <Field label="LinkedIn URL" hint="Rejected if it isn't a real LinkedIn profile link. Leave blank to remove.">
+          <Field label="LinkedIn URL" hint="Rejected if it isn't a real LinkedIn profile link. Leave blank to remove." name="linkedin_url" error={fieldError('linkedin_url')}>
             <Input name="linkedin_url" maxLength={300} defaultValue={user.linkedin_url ?? ''} />
           </Field>
 
-          <Field label="About Me" hint="Truncated to 600 characters.">
+          <Field label="About Me" hint="Truncated to 600 characters." name="about_me" error={fieldError('about_me')}>
             <textarea
               name="about_me"
               rows={4}

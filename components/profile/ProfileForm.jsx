@@ -96,18 +96,35 @@ const ACCENT_BUTTON = {
   onboarding: 'bg-[#2A5CCA] hover:bg-[#3570DB]',
 };
 
-function Field({ label, required, variant, children }) {
+// `error` is the API's message for THIS field, placed here rather than in the
+// banner at the top of the form. It lives on Field instead of on each input so
+// there is one piece of markup to keep consistent: the alternative is the
+// bespoke per-field block that `email` and `linkedin_url` already carry, and
+// two of those had already drifted apart in colour class.
+//
+// Rendered inside the same <div> as the label and input, so a long message
+// reflows the field rather than the grid row next to it.
+//
+// `name` is the API's field key, which is not always an input's `name`.
+// Graduation forces the distinction: the API rejects `graduation_date`, but the
+// form collects it as two inputs, `graduation_semester` and `graduation_year`.
+// Anchoring `data-field` on this wrapper rather than looking up an input by
+// name means the scroll-into-view works for every field including that one.
+function Field({ label, required, variant, children, error, name }) {
   const labelClass =
     variant === 'onboarding'
       ? 'block text-sm font-medium text-white/80 mb-1'
       : 'block text-sm font-medium text-foreground mb-1';
 
   return (
-    <div>
+    <div data-field={name}>
       <label className={labelClass}>
         {label} {required && <span className="text-red-500">*</span>}
       </label>
       {children}
+      {error ? (
+        <p role="alert" className="mt-1 text-xs text-red-600 dark:text-red-400">{error}</p>
+      ) : null}
     </div>
   );
 }
@@ -156,6 +173,17 @@ export default function ProfileForm({
   const [loading, setLoading] = useState(false);
   const [linkedinError, setLinkedinError] = useState(null);
   const [emailError, setEmailError] = useState(null);
+  // Errors the API attributed to a specific input, keyed by its `name`. The two
+  // states above are the CLIENT-side pre-checks, which run before the request
+  // and are a different thing: they save a round trip, this reports what the
+  // server actually refused. Both can be showing at once on different fields.
+  const [serverFieldError, setServerFieldError] = useState(null);
+
+  // The API names one field per rejection, so at most one of these is ever
+  // non-null. Written as a lookup rather than a per-field state so adding a
+  // field to the form does not mean adding a piece of error plumbing too.
+  const fieldError = (name) =>
+    serverFieldError?.field === name ? serverFieldError.message : undefined;
 
   const graduation = parseGraduationDate(defaultValues.graduation_date);
 
@@ -175,6 +203,7 @@ export default function ProfileForm({
     e.preventDefault();
     setLoading(true);
     setError(null);
+    setServerFieldError(null);
     setSuccess(null);
 
     // FormData = new FormData(e.target)
@@ -238,8 +267,13 @@ export default function ProfileForm({
 
         // this handles the form data to update the users profile
         // check @portal-api
-        await updateProfile(buildProfilePayload(formData));
-        result = { success: true };
+        //
+        // updateProfile returns { error } rather than throwing, so a rejected
+        // field arrives with the API's own message ("Phone number must have
+        // between 7 and 15 digits") instead of React's #441 digest. The catch
+        // stays for the redirect it has to rethrow, and as a backstop.
+        const saved = await updateProfile(buildProfilePayload(formData));
+        result = saved?.error ? { error: saved.error, field: saved.field } : { success: true };
       } catch (err) {
         if (isRedirectError(err)) throw err;
         result = { error: err.message ?? 'Failed to save profile. Please try again.' };
@@ -247,7 +281,21 @@ export default function ProfileForm({
     }
 
     if (result.error) {
-      setError(result.error);
+      // A named field gets the message beside it. Everything else — a 500, a
+      // network failure, an older API that sends no `field` — still needs the
+      // banner, because a message with nowhere to go must not silently vanish.
+      if (result.field) {
+        setServerFieldError({ field: result.field, message: result.error });
+        setError(null);
+        // The field can be off-screen on a long form, so a message placed next
+        // to it is invisible without this and the save looks like it did
+        // nothing at all. Optional chaining because an unrecognised field key
+        // must not throw — the message is already rendered either way.
+        document.querySelector(`[data-field="${CSS.escape(result.field)}"]`)
+          ?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      } else {
+        setError(result.error);
+      }
       setLoading(false);
       return;
     }
@@ -270,8 +318,21 @@ export default function ProfileForm({
   const buttonAccent = variant === 'onboarding' ? 'onboarding' : accent;
   const submitLabel = mode === 'create' ? 'Complete Profile' : 'Save Changes';
 
+  // Clearing on change is handled once on the form rather than with an onChange
+  // on each input: the message is stale the moment the offending field is
+  // edited, and per-input handlers is how `email` and `linkedin_url` each ended
+  // up with their own copy of this logic. Only the named field clears it, so
+  // editing an unrelated input leaves the message where it is.
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <form
+      onSubmit={handleSubmit}
+      onChange={(e) => {
+        if (serverFieldError && e.target?.name === serverFieldError.field) {
+          setServerFieldError(null);
+        }
+      }}
+      className="space-y-4"
+    >
       <ProfilePictureField authentikId={authentikId} variant={variant} />
 
       {readOnly.username != null && (
@@ -287,38 +348,41 @@ export default function ProfileForm({
       )}
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <Field label="First Name" required variant={variant}>
+        <Field label="First Name" required variant={variant} name="first_name" error={fieldError('first_name')}>
           <Input
             name="first_name"
             required
+            maxLength={100}
             defaultValue={defaultValues.first_name}
             className={inputClass}
           />
         </Field>
-        <Field label="Last Name" required variant={variant}>
+        <Field label="Last Name" required variant={variant} name="last_name" error={fieldError('last_name')}>
           <Input
             name="last_name"
             required
+            maxLength={100}
             defaultValue={defaultValues.last_name}
             className={inputClass}
           />
         </Field>
       </div>
 
-      <Field label="Preferred Name" variant={variant}>
+      <Field label="Preferred Name" variant={variant} name="preferred_name" error={fieldError('preferred_name')}>
         <Input
           name="preferred_name"
           placeholder="Leave blank to use first name"
+          maxLength={100}
           defaultValue={defaultValues.preferred_name}
           className={inputClass}
         />
       </Field>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <Field label="Date of Birth" variant={variant}>
+        <Field label="Date of Birth" variant={variant} name="dob" error={fieldError('dob')}>
           <Input type="date" name="dob" defaultValue={defaultValues.dob} className={inputClass} />
         </Field>
-        <Field label="Graduation" variant={variant}>
+        <Field label="Graduation" variant={variant} name="graduation_date" error={fieldError('graduation_date')}>
           <div className="flex gap-2">
             <select
               name="graduation_semester"
@@ -340,10 +404,11 @@ export default function ProfileForm({
         </Field>
       </div>
 
-      <Field label="Major" variant={variant}>
+      <Field label="Major" variant={variant} name="major" error={fieldError('major')}>
         <Input
           name="major"
           placeholder="e.g. Computer Science"
+          maxLength={120}
           defaultValue={defaultValues.major}
           className={inputClass}
         />
@@ -354,7 +419,7 @@ export default function ProfileForm({
           it's on everyone's profile — there's nothing rush-specific about a
           person describing themselves. 600 matches the cap in
           userController.updateProfile, which truncates rather than rejects. */}
-      <Field label="About Me" variant={variant}>
+      <Field label="About Me" variant={variant} name="about_me" error={fieldError('about_me')}>
         <textarea
           name="about_me"
           rows={4}
@@ -383,7 +448,7 @@ export default function ProfileForm({
           than taking NULL from the payload. */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {!isAlumni && (
-          <Field label="UGA Email" required variant={variant}>
+          <Field label="UGA Email" required variant={variant} name="email" error={fieldError('email')}>
             <Input
               type="email"
               name="email"
@@ -401,7 +466,7 @@ export default function ProfileForm({
             )}
           </Field>
         )}
-        <Field label={isAlumni ? 'Email' : 'Personal Email'} variant={variant}>
+        <Field label={isAlumni ? 'Email' : 'Personal Email'} variant={variant} name="personal_email" error={fieldError('personal_email')}>
           <Input
             type="email"
             name="personal_email"
@@ -413,18 +478,19 @@ export default function ProfileForm({
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <Field label="Phone Number" variant={variant}>
+        <Field label="Phone Number" variant={variant} name="phone" error={fieldError('phone')}>
           <Input
             type="tel"
             name="phone"
             placeholder="(555) 000-0000"
+            maxLength={25}
             defaultValue={defaultValues.phone}
             className={inputClass}
           />
         </Field>
       </div>
 
-      <Field label="LinkedIn URL" variant={variant}>
+      <Field label="LinkedIn URL" variant={variant} name="linkedin_url" error={fieldError('linkedin_url')}>
         <Input
           name="linkedin_url"
           placeholder="https://linkedin.com/in/..."
@@ -446,10 +512,11 @@ export default function ProfileForm({
       {/* A rushee has no pledge class yet — that's the thing they're rushing
           to get. It reappears automatically once they're given the group. */}
       {!isRushee && (
-        <Field label="Pledge Class" variant={variant}>
+        <Field label="Pledge Class" variant={variant} name="pledge_class" error={fieldError('pledge_class')}>
           <Input
             name="pledge_class"
             placeholder="e.g. Alpha, Beta, Gamma"
+            maxLength={50}
             defaultValue={defaultValues.pledge_class}
             className={inputClass}
           />

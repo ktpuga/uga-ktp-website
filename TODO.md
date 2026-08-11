@@ -157,15 +157,50 @@ The tricky part isn't adding `?v=` — it's picking a value that changes **when 
 
 **Done when:** changing your photo updates it in the directory, the sidebar, messages and user management without a hard refresh, and avatars still come from cache on an ordinary page load.
 
-### B. Form-level input validation — *the big one, coordinate first*
+### ~~B. Form-level input validation~~ — DONE 2026-08-11
 
-There is **no validation library anywhere** and almost nothing checks *format* — only presence. Profile fields (`phone`, `major`, `pledge_class`, `preferred_name`, both emails, `dob`, `graduation_date`) are unbounded free text, as are announcement/event/poll/committee/album/document titles and bodies.
+**The "hand-roll or add a schema library" question is settled: hand-rolled.** The API is plain CommonJS with no TypeScript, so zod's main benefit (inferred static types) buys nothing, and the rules that have actually caught bugs here are domain rules a schema library would not express any better. `services/validate.js` in `ktp-api` holds the primitives (`intId`, `uuid`, `boundedText`, `enumValue`, `isoDate`, `dateOnly`, `intIdArray`, `uuidArray`), each returning `{ value }` or `{ error }` and never throwing.
 
-The website half is inline field-level errors, matching the pattern now in `ProfileForm.jsx` for LinkedIn: validate on submit, show the message next to the field, keep the API as the real authority.
+**Done on the API side:**
 
-**Talk to Yash before starting** — whether to hand-roll or add a schema library is his call, and the API half has to agree with the website half.
+- **All profile fields.** `phone`, `major`, `pledge_class`, `preferred_name`, `dob`, `graduation_date` and both names are bounded and format-checked in `services/profileFields.js`, which is the single normalizer behind both the member's own save and eboard's edit-anyone route.
+- **Reports.** `content_id` was a one-request denial of service against every eboard group chat read.
+- **Poll and announcement `audience`** — which turned up a live bug: they validated against the wrong allowlist, so the portal's **Rushee pill returned 400** and nothing could be announced to rushees.
+- **The id arrays.** The `.map(Number).filter(Number.isInteger)` idiom silently **dropped** a malformed id rather than rejecting it, so a request naming five committees and one typo returned 200 having applied four. All five call sites now use `intIdArray`: `committee_ids` on group chat create and audience update and on meeting create, `interviewer_committee_ids` on interview schedule create and update, and `option_ids` on a poll vote. Pinned by `test/idArrays.test.js`.
 
-**Done when:** a bad value produces a message beside the field instead of a red banner or a silent save.
+  Interviews were the worst of them, and the reason is worth keeping: a **non-array** fell into the same branch as an empty list, which there means "no committee may staff this round". So sending `"3"` instead of `[3]` did not fail, it shut the round and looked deliberate. An absent key still means "leave it alone", which is what PATCH depends on.
+
+  `visibility.js` was the sixth site, done in the same pass. `parseAudience` is the **write-side** audience parser shared by album create, folder create and the three visibility-update routes. It is the one where the old behaviour was unsafe rather than just wrong: dropping an id from a *restriction* widens who can see the content, so restricting a folder to five committees and one typo returned 200 having restricted it to four.
+
+- **The uuid lists**, which failed the opposite way. Nothing was dropped: `member_ids`, `invitee_ids`, `user_id` and the `:userId` param went through untouched into a `UUID` column, so a malformed one was `22P02` and a **500** rather than a 400. `createMemberGroupChat` is the clearest case, the id reached `userModel.findById` before its own "no longer has an account" check could answer.
+
+- **Titles and bodies**, which were unbounded everywhere. Announcement and rush announcement titles and bodies, event title/description/location, poll question/description/option labels and option count, committee, album, folder and group chat names, document link names. Caps live in one place, `services/textLimits.js`, mirrored on the website by `lib/text-limits.js`. Pinned by `test/textLimits.test.js`, including that the boundary is inclusive.
+
+  They **reject rather than truncate**, which is the opposite of `about_me`. The difference is that a bio is one field of many on a save worth keeping, whereas nobody re-reads an announcement they just published to check whether the last paragraph survived.
+
+  Two scalar ids got fixed alongside, because they sat in the statements being rewritten and were the same 500: `committee_id` on announcements and polls, `parent_id` on a folder, `folder_id` on a document link.
+
+- **Message bodies and reactions**, done as their own pass because the cap had to fit around two existing rules. A message may have **no body** when it carries an attachment, so the length check is `required: false` and the either-or check still answers; and it runs **before `storeAttachment`**, so a rejected message cannot leave an orphaned upload. `MESSAGE` is 4000, its own number rather than sharing `BODY`, because every message goes back through the sync envelope on each catch-up and its opening becomes a push notification. `recipient_id` was validated as a uuid in the same pass, another 500.
+
+  `REACTION` is 32 and is a **length** check, not an is-it-an-emoji check: `.length` counts UTF-16 code units and 👨‍👩‍👧‍👦 is 11 of them, so a tight cap rejects ordinary emoji. Reactions are aggregated into a blob returned with every read of a conversation, so an unbounded one is paid for on every later fetch.
+
+  Fixing this exposed **unrealistic test fixtures**: `rushMessaging.test.js` and `notifications.test.js` used ids like `"rushee-id"` and `"recipient"`. `users.authentik_id` is `UUID PRIMARY KEY`, so those shapes would have been 22P02 and a 500 in production — the tests were passing against a looser API than the one that exists. Now real uuids.
+
+**Still open on the API side: nothing from this item.**
+
+**The website half is done too.**
+
+- **`maxLength` mirrors** on every compose form and the message composer, so caps are met while typing rather than as a rejection after clicking save.
+- **`updateProfile` returns `{ error }` rather than throwing**, so the API's message reaches the member intact instead of becoming React #441 (trap 8 above).
+- **Per-field errors.** The API now returns `{ message, field }` from both profile routes and both username routes. `ProfileForm` and `AdminEditProfileModal` render the message under the named input and scroll it into view. All 12 field keys the API can produce are wired in both forms, checked mechanically against `profileFields.js` rather than by eye.
+
+  `field` is **optional and stays that way**: a 500, a fetch failure or a permission error carries none, and both forms fall back to the banner, because an error with nowhere to go must never be swallowed. The key is the API's field name and not an input's — `graduation_date` is one key but two inputs — which is why the lookup anchors on a `data-field` wrapper instead of an input `name`.
+
+  The existing `emailError`/`linkedinError` states stay: those are client-side pre-checks that save a round trip, a different thing from reporting what the server refused.
+
+  **No iOS change was needed, verified rather than assumed:** iOS decodes errors as `struct ErrorResponse { let message: String? }` in `KTPServices/CheckInService.swift`, and Swift's `JSONDecoder` ignores unknown keys.
+
+**Done when:** ~~a bad value produces a message beside the field instead of a red banner or a silent save.~~ **Met.**
 
 ### ~~C. Interview slot editing UI~~ — DONE, shipped 2026-08-10
 
@@ -213,8 +248,7 @@ Also built, and each one mirrors a specific refusal in the API: a leave route (w
 
 **Confirmed working in a browser by Yash, 2026-08-10.**
 
-**Still open:**
-- **`reports.content_id` accepts any string.** `canRead` is immune because it casts the column the safe way, but nothing validates the value on write — one report filed with a junk `content_id` would break any consumer that parses it as a number. Belongs on item B, not here.
+**Nothing open.** The one thing that was, `reports.content_id` accepting any string, is **done** under item B: `createReport` now validates it, so no new junk rows can arrive to break a consumer that reads the column as a number.
 
 ### E. Alumni "what I'm doing now", custom profile links, and roster visibility
 
