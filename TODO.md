@@ -166,7 +166,7 @@ Every avatar URL in the app is now built by `lib/avatar.js` and versioned on the
 
 **Done when:** ~~changing your photo updates it in the directory, the sidebar, messages and user management without a hard refresh, and avatars still come from cache on an ordinary page load.~~ **Met.** Nothing re-downloads on an ordinary page load: the URL is stable until the asset id changes.
 
-**Not clicked through in a browser yet** — worth a pass on: uploading a new photo and watching the sidebar change without a refresh, then checking the directory, messages and user management in the same session.
+**Live and confirmed in a browser by Yash, 2026-08-11** ("clicked through and looks good"), covering the sidebar updating without a refresh and the directory, messages and user management in the same session.
 
 ### ~~B. Form-level input validation~~ — DONE 2026-08-11
 
@@ -230,7 +230,7 @@ One thing that changed after it shipped, and is worth knowing before touching th
 
 Historical detail follows.
 
-### C2 (original). Interviewer signup — API + eboard UI done, **member page still missing**
+### ~~C2 (original, superseded 2026-08-10)~~ — kept only as the record of what the API looked like before the member page shipped
 
 Members of committees eboard designates sign up to **run** interviews; eboard sets a max per slot. Migration `1787600000000`, plus `interviewer_committee_ids` per round and `interviewer_capacity` per slot.
 
@@ -245,7 +245,7 @@ Two things to know before building it:
 
 **Done when:** a pledge-committee member sees the published rounds at `/member/interviews`, claims a slot, sees it marked as theirs, and can withdraw — and a rushee gets nothing, not even the nav entry.
 
-### ~~D. Member-created group chats~~ — BUILT 2026-08-10, not yet clicked through in a browser
+### ~~D. Member-created group chats~~ — DONE, shipped and confirmed 2026-08-10
 
 Any member except a rushee can create a chat, it doesn't appear in eboard's oversight list, and eboard can't administer it either. Full write-up at [docs → Messaging → Member-created chats](https://docs.ugaktp.com/website/messaging#member-created-chats), plus the group chat section of `ktp-api/README.md`.
 
@@ -261,7 +261,7 @@ Also built, and each one mirrors a specific refusal in the API: a leave route (w
 
 **Nothing open.** The one thing that was, `reports.content_id` accepting any string, is **done** under item B: `createReport` now validates it, so no new junk rows can arrive to break a consumer that reads the column as a number.
 
-### E. Alumni "what I'm doing now", custom profile links, and roster visibility
+### ~~E. Alumni "what I'm doing now", custom profile links, and roster visibility~~ — DONE 2026-08-11
 
 **ALL THREE PARTS BUILT 2026-08-11.**
 
@@ -284,9 +284,11 @@ It is **not** part of the profile upsert, which would have been the easy mistake
 
 The traps identified in advance all held up and are now enforced in code: links go through `normalizeWebUrl` (trap #6), `memberModel`'s three projections each needed the columns added by hand, and the `jsonb` param is `JSON.stringify`'d because node-postgres turns a JS array into Postgres *array* literal syntax.
 
-**Done when:** ~~an alumnus can say what they're doing and add a few links, both show on their directory card with the link row wrapping cleanly as it grows, and a `javascript:` URL is rejected with a message beside the field.~~ **Met for parts 1 and 2.**
+**Done when:** ~~an alumnus can say what they're doing and add a few links, both show on their directory card with the link row wrapping cleanly as it grows, and a `javascript:` URL is rejected with a message beside the field.~~ **Met, all three parts.**
 
-**Not clicked through in a browser yet, and NEITHER migration has been run.** Until `npm run migrate up`, every profile read and write 500s — these are not optional or deferrable like a feature migration, because `userModel.findById` selects all three new columns.
+**Both migrations (`1787800000000`, `1787900000000`) are run, and it is live and browser-confirmed.** Keeping the reason they were never optional, because it applies to the next column added here: `userModel.findById` selects all three, so an unrun migration 500s **every profile read and write**, rather than merely leaving a new feature inert.
+
+**Part 1 was later widened.** `doing_now` was put on the **public roster card** as well (under the role, above the LinkedIn button), reversing the original member-side-only call. `links` was deliberately **not** part of that reversal and stays on the directory card only.
 
 ### F. Granular permissions — *parked until after rush, and genuinely large*
 
@@ -318,7 +320,7 @@ The UI is mostly already built: `AudienceSelect.jsx` for group pills, and the "O
 
 ---
 
-### ~~G. Gallery collections~~ — BUILT 2026-08-11, not yet clicked through in a browser
+### ~~G. Gallery collections~~ — DONE, shipped and confirmed 2026-08-11
 
 Eboard can run several homepage galleries instead of one flat list. `homepage_photo_collections` groups `homepage_photos` by a nullable `collection_id`; the migration backfilled every existing photo into one "Chapter Gallery" so the live homepage rendered identically the moment it ran.
 
@@ -333,7 +335,7 @@ Two things worth knowing before touching it:
 1. **Route order in `routes/homepagePhotos.js` is load-bearing.** `PUT /:id` matches a single segment, so it also matches `/collections` and would silently answer `PUT /collections` with the photo handler. Every `/collections` route sits above the `/:id` routes and a test asserts it.
 2. **Deleting a collection deletes its photos** (`ON DELETE CASCADE`). The API refuses with a 409 and the real count until `?force=true`, so the confirmation quotes a number rather than guessing. Immich assets survive.
 
-**Not clicked through in a browser yet** — worth a pass on: creating a collection, uploading into it, reordering inside one collection without disturbing another, and the delete-with-photos warning.
+**Migration run, live, and confirmed in a browser by Yash** ("looks great, works well") — creating a collection, uploading into it, reordering inside one collection, and the delete-with-photos warning.
 
 ### ~~H. Committee membership has no gatekeeping~~ — FIXED 2026-08-11
 
@@ -351,7 +353,7 @@ That is not only a tidiness problem, because committee membership is already loa
 
 So today, restricting an album to the Exec committee is a request, not a boundary: anyone who wants in clicks Join. The API README already hedges this ("a designated committee is a softer boundary than its roster implies") but the consequence had not been written down.
 
-**Done when:** ~~joining requires approval, and eboard can remove a member.~~ **Met**, except the activity log — the global middleware captures these routes automatically, but nobody has confirmed the new paths appear at /admin/logs. Worth one look.
+**Done when:** ~~joining requires approval, and eboard can remove a member.~~ **Met.** The activity log was the last open question and Yash confirmed it 2026-08-11: the five new committee routes appear at /admin/logs without any controller-level logging call, which is the global middleware working as designed.
 
 **Shipped:** migration `1788100000000`, `committee_join_requests`, five routes, 15 tests, and the UI (Request to Join / Requested-withdraw, the chair approval queue, per-row remove). Verified by a 9-assertion render probe — the two that matter assert the queue does NOT render for a plain member or for someone who merely requested.
 
@@ -373,6 +375,29 @@ Three conclusions already reached, so nobody re-derives them:
 3. **Check the GitHub plan before promising GitHub SSO.** SAML SSO and SCIM are GitHub **Enterprise Cloud** features; a free or Team org cannot enforce them. Proxmox is fine, it speaks OIDC and maps groups.
 
 **Why the ordering is not negotiable:** wiring committee groups to Proxmox while join is self-service and removal does not exist means any member can grant themselves infrastructure access and nobody can revoke it.
+
+---
+
+### ~~I. Eboard-typed traits~~ — DONE 2026-08-11
+
+Eboard types short **label/value pairs** onto any member — *Concentration: Fintech*, *Hometown: Atlanta, GA*, *Interned at: Delta* — shown on the member's directory card **and** on the public roster, under their role and above the LinkedIn button. Set from **Admin → Users → Edit**. Migration `1788000000000`, column `traits JSONB NOT NULL DEFAULT '[]'`.
+
+Full write-ups: [docs → Profiles & directory → Traits](https://docs.ugaktp.com/website/profiles-and-directory#traits), plus the `traits` row of the schema table in `ktp-api/README.md`. Website side: `components/profile/TraitsField.jsx`, wired into `AdminEditProfileModal.jsx`, read by `MemberDirectory.jsx` and `app/members-list/page.jsx`.
+
+**The design decision worth carrying forward: "eboard-only" is a property of which routes exist, not of a check.** `traits` is deliberately absent from `PROFILE_FIELDS` in `services/profileFields.js`, the list shared by the self-service write and eboard's edit-anyone write. A key on that list is settable by the member, whatever the UI offers. So there is **no shape of request to `PUT /users/me/profile` that reaches the column** — the only writer is the eboard-only `PUT /admin/users/:id/traits`. A rule enforced by routing cannot later be got wrong by someone appending a key to an array.
+
+That matters more than it looks, because **these land on a page with no authentication**. The public roster is chapter-authored text, and eboard-only is the reason for that, not a side effect.
+
+Four more things the build settled:
+
+- **It generalises `exec_title` without replacing it.** That column stays exactly as it is: `rosterController` prefers it for the card's subtitle and two controllers reason about "eboard member with an exec_title". Folding it in would be a rewrite of live behaviour to save one column. **A trait is additive; a role is not.**
+- **Caps live in application code, not a `CHECK`** — 6 traits, label ≤40, value ≤80. A constraint violation is a `23514` surfacing as a 500; the service layer answers 400 with a message and the offending field name.
+- **`DEFAULT '[]'` rather than nullable**, because both clients map over this and `null.map` is a crash where `(x ?? []).map` is a guard somebody eventually forgets on one of the two cards.
+- **The edit modal makes two writes behind one Save, and traits go first on purpose.** A rejected trait then leaves the rest of the profile untouched, rather than reporting an error on a form whose other changes have already been committed.
+
+`jsonb` for the same reasons as `links`: a short, ordered, wholly eboard-owned list, always read and written in one piece. Nothing joins to an individual trait and nothing queries across them.
+
+**Done when:** ~~eboard can add, edit and clear traits on any member, they render on both the directory card and the public roster, and a member cannot set their own by any route.~~ **Met.** Pinned by `ktp-api/test/memberTraits.test.js` and an 8-assertion render probe.
 
 ---
 
