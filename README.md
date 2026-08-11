@@ -72,8 +72,7 @@ Four portals. `/admin` is eboard; `/member` covers `chair`, `active` **and `alum
 | Dashboard | ● | analytics | ● | ● |
 | Announcements | ● | ● | ● | ● |
 | Calendar | ● | ● | ● | ● |
-| Directory | ● | — | ● | — |
-| Rushees | ● | ● | ● | — |
+| Directory | ● | ● | ● | — |
 | Meetings | ● | ● | ● | — |
 | Interviews | — | ● | — | ● |
 | Committees | ● | ● | — | — |
@@ -85,9 +84,21 @@ Four portals. `/admin` is eboard; `/member` covers `chair`, `active` **and `alum
 
 Admin additionally has Announcements authoring, Reports, User Management, Activity Log, Rush Signup, Rush Announcements, Homepage Photos, and iOS Homepage Slideshow.
 
-Three deliberate absences, none of them CSS — **the routes don't exist**: pledges have no Committees, `/admin` has no Directory (User Management replaces it), and `/rushee` has no Meetings (Interviews replaced it) or Files.
+Two deliberate absences, neither of them CSS — **the routes don't exist**: pledges have no Committees, and `/rushee` has no Meetings (Interviews replaced it) or Files.
 
-The **Rushees** tab appears only while `GET /members/rush-count` is above zero, so it shows up during rush and disappears afterwards on its own.
+**The Directory is a tab bar over a grid of profile cards** — one tab per member group: E-Board, Chairs, Members, Pledges, Alumni, and Rushees — rendered by `components/portal/MemberDirectory.jsx`. All three portals that have it render the same component; only the title, blurb and accent differ.
+
+A group with nobody in it gets no tab, which is what makes **Rushees** a rush-season thing with no toggle to remember: `/members` never returns rush rows, the directory fetches `?group=rush` alongside it (`getMemberDirectoryWithRushees`), and out of season, or for a viewer who may not see rushees, that comes back empty and the tab isn't drawn. Rushees used to be a separate sidebar entry gated on `GET /members/rush-count`; that entry, its pages and the `useRushCount` hook are gone.
+
+A card shows the photo, name, `@username`, major, pledge class and (for eboard and chairs) the role, and **no group badge** — the tab already says the group. Every field but the name can be null and the whole Rushees tab has no pledge class, so each block is conditional: a name-only card is centred and composed rather than a row of gaps. Three things in there are worth knowing before editing it:
+
+- **`readableGroupText(hex, dark)`** re-derives the six `GROUP_COLOR` swatches per theme, keeping the hue and moving only the lightness (34% light, 70% dark). Those colours were picked for a white card and are unreadable on a dark one. It also colours the group badge in the profile modal. Add a colour to `GROUP_COLOR` and its dark variant comes for free; don't hardcode a second palette.
+- **Initials fall back to a gradient seeded from the member's id** via `lib/seed.js`, shared with the empty-album covers in `PhotoFiles.jsx`. Same member, same colour everywhere, no `Math.random()`.
+- **The tab bar handles its own overflow** — scroll-snap, an edge fade on whichever side has more, and chevrons. The fades resolve to `card` because the bar sits inside the directory panel; `background` would paint a pale block over it.
+
+Search filters the open tab on name and `@username`, and exists for the Rushees tab specifically. Tabs are built from the unfiltered groups, so a search can never make one disappear underneath the person typing.
+
+`/admin` gained Directory on 2026-08-11, under **People**. User Management sits beside it and does not replace it: that page is an editing tool, and eboard had no read-only view of the chapter at all.
 
 **Messages is shared by all four portals, including `/rushee`** — `components/portal/MessagesPage.jsx` is one component rendered by four routes. That's why anything new in the Group Chats tab has to be gated on a real group check rather than on `!isEboard`: the **New Group Chat** button uses `canCreateChats()`, a positive list of the five member groups, so rushees don't get it. Never write that gate as "not `rush`" — an accepted rushee keeps the `rush` group in Authentik until someone removes it, so an exclusion test locks out real pledges and actives.
 

@@ -236,7 +236,7 @@ Members of committees eboard designates sign up to **run** interviews; eboard se
 
 **⛔ Deploy order:** run the migration **first** (it's additive and safe against live code), then push API and website **together**. The new API is not backward compatible with the old forms, which send `interviewer_id`.
 
-Still to build: **`/member/interviews`** and a nav entry conditional on committee membership. `buildNav(isChair, hasRushees)` in `app/member/layout.jsx` already does conditional items, so follow that. The API is finished: `GET /interviews/interviewer-schedules`, `POST /interviews/slots/:id/interviewers`, `DELETE /interviews/slots/:id/interviewers/:userId`.
+Still to build: **`/member/interviews`** and a nav entry conditional on committee membership. `buildNav(isChair, canInterview)` in `app/member/layout.jsx` already does conditional items, so follow that. The API is finished: `GET /interviews/interviewer-schedules`, `POST /interviews/slots/:id/interviewers`, `DELETE /interviews/slots/:id/interviewers/:userId`.
 
 Two things to know before building it:
 

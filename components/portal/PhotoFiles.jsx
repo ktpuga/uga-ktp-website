@@ -16,6 +16,7 @@ import {
 } from '@/lib/portal-api';
 import { formatPhotoDate, safeExternalHref } from '@/lib/portal-format';
 import { isRedirectError } from '@/lib/is-redirect-error';
+import { seedValues } from '@/lib/seed';
 import VisibilityControl from '@/components/portal/VisibilityControl';
 import { useConfirm } from '@/components/ui/confirm-dialog';
 import PhotoMedia from './PhotoMedia';
@@ -196,21 +197,9 @@ function FieldInput(props) {
 
 // ─── Albums tab ───
 
-// djb2 — deterministic, dependency-free. Every visual property of an empty
-// album's cover is derived from this, so the same album always looks identical
-// on every render, device and reload. Nothing here may use Math.random().
-function djb2(value) {
-  let hash = 5381;
-  for (let i = 0; i < value.length; i += 1) {
-    hash = ((hash << 5) + hash) ^ value.charCodeAt(i);
-    hash >>>= 0;
-  }
-  return hash;
-}
-
-function seedValues(id, count) {
-  return Array.from({ length: count }, (_, i) => djb2(`${id}:${i}`));
-}
+// Every visual property of an empty album's cover is derived from seedValues,
+// so the same album always looks identical on every render, device and reload.
+// See lib/seed.js — nothing built on it may use Math.random().
 
 // The general shared album is synthetic (id: null) and never comes from the
 // API, so hashing its id would seed every render from the string "null".

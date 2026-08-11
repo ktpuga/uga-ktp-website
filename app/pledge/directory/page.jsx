@@ -6,7 +6,7 @@ export default function PledgeDirectoryPage() {
   return (
     <MemberDirectory
       title="Directory"
-      description="Get to know the brothers and members of the chapter"
+      description="Browse every member group and this season's rushees"
       theme="blue"
     />
   );

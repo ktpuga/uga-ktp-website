@@ -1,19 +1,19 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useSession } from 'next-auth/react';
-import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import {
-  Users, X, MessageSquare, Mail, ChevronUp, ChevronDown, AlertCircle, Loader2, GraduationCap, BookOpen, CalendarClock, Linkedin,
+  Users, X, MessageSquare, Mail, AlertTriangle, RefreshCw, Search, ArrowUpDown,
+  ChevronLeft, ChevronRight, GraduationCap, BookOpen, CalendarClock, Linkedin,
   // Aliased because `Link` in this file is next/link, imported above. Without
   // the alias the two silently collide and the chip renders a router link.
   Link as LinkIcon,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { getMemberDirectory } from '@/lib/portal-api';
+import { getMemberDirectoryWithRushees } from '@/lib/portal-api';
 import {
   memberDisplayName,
   memberInitials,
@@ -27,22 +27,37 @@ import {
 } from '@/lib/portal-format';
 import { profilePictureSrc, avatarAssetId } from '@/lib/avatar';
 import { isRedirectError } from '@/lib/is-redirect-error';
+import { seedValues } from '@/lib/seed';
 import ReportButton from './ReportButton';
 import BlockButton from './BlockButton';
 import { NewMeetingModal } from './MeetingsPage';
 import { PALETTES } from '@/components/portal/PortalAccentContext';
+import { usePortalTheme } from './PortalThemeProvider';
 
 // Palette comes from PortalAccentContext, the single source of truth. Each of
 // these files used to carry its own ACCENT_THEMES copy; they had already
 // drifted (MemberDirectory was missing 'red' entirely, and every copy still
 // had a real teal that nothing rendered — pledge passes 'blue').
 
-// Rush sits last: rushees aren't members, and the section only appears for
-// eboard/chair/active anyway — the API omits those rows entirely for everyone
-// else, so this order is what a permitted viewer sees, not a permission check.
+// Tab order, left to right. Rush sits last: rushees aren't members, and the tab
+// only appears for someone the API actually returns rush rows to, so this order
+// is what a permitted viewer sees, not a permission check.
 // Canonical list lives in lib/portal-format.js so the directory and the group
 // chat member list can't drift apart. See MEMBER_GROUP_ORDER there.
 const GROUP_ORDER = MEMBER_GROUP_ORDER;
+
+// Plural, because a tab names a set of people rather than one person's badge —
+// "Pledges", not the "Pledge" that formatMemberGroup gives a single row. Alumni
+// and E-Board are already their own plural, and Members reads better than
+// "Actives" for the base tier (it matches what formatMemberGroup calls them).
+const TAB_LABEL = {
+  eboard: 'E-Board',
+  chair: 'Chairs',
+  active: 'Members',
+  pledge: 'Pledges',
+  alumni: 'Alumni',
+  rush: 'Rushees',
+};
 
 const GROUP_COLOR = {
   eboard: '#7f1d1d',
@@ -53,19 +68,66 @@ const GROUP_COLOR = {
   rush: '#0e7490',
 };
 
-const GROUP_BG = {
-  eboard: 'rgba(127,29,29,0.10)',
-  chair: 'rgba(126,34,206,0.10)',
-  active: 'rgba(29,78,216,0.10)',
-  pledge: 'rgba(21,128,61,0.10)',
-  alumni: 'rgba(180,83,9,0.10)',
-  rush: 'rgba(14,116,144,0.10)',
-};
-
 function tint(hex, alpha) {
   const h = hex.replace('#', '');
   const n = parseInt(h, 16);
   return `rgba(${(n >> 16) & 255},${(n >> 8) & 255},${n & 255},${alpha})`;
+}
+
+// #rrggbb to [h, s, l], h in 0-360 and s/l in 0-100.
+function hexToHsl(hex) {
+  const clean = hex.replace('#', '');
+  const r = parseInt(clean.slice(0, 2), 16) / 255;
+  const g = parseInt(clean.slice(2, 4), 16) / 255;
+  const b = parseInt(clean.slice(4, 6), 16) / 255;
+  const max = Math.max(r, g, b);
+  const min = Math.min(r, g, b);
+  const l = (max + min) / 2;
+  const d = max - min;
+  let h = 0;
+  let s = 0;
+  if (d !== 0) {
+    s = d / (1 - Math.abs(2 * l - 1));
+    if (max === r) h = ((g - b) / d) % 6;
+    else if (max === g) h = (b - r) / d + 2;
+    else h = (r - g) / d + 4;
+    h *= 60;
+    if (h < 0) h += 360;
+  }
+  return [h, s * 100, l * 100];
+}
+
+// The six GROUP_COLOR swatches were picked to sit on a white card: they are
+// dark and saturated, which is exactly wrong on a dark one. The old tab bar
+// dodged that by keeping every label on `text-foreground` and letting the
+// colour appear only in a 2px underline, so group identity barely read at all.
+//
+// This keeps the hue (which is the identity) and re-derives only the lightness
+// for the theme actually being rendered, so the same six groups stay legible
+// and stay distinguishable in both. Deriving beats hardcoding a second palette:
+// a new group added to GROUP_COLOR gets its dark variant for free, and the two
+// can't drift.
+function readableGroupText(hex, dark) {
+  const [h, s] = hexToHsl(hex);
+  // Light mode: the swatch is already dark enough. Only guarantee a saturation
+  // floor, so the less vivid hues don't read as grey.
+  if (!dark) return `hsl(${h.toFixed(0)} ${Math.max(s, 55).toFixed(0)}% 34%)`;
+  // Dark mode: lift well clear of the card behind it, and pull saturation back
+  // so a bright hue on near-black doesn't vibrate.
+  const outS = Math.max(42, Math.min(62, s * 0.82));
+  return `hsl(${h.toFixed(0)} ${outS.toFixed(0)}% 70%)`;
+}
+
+// Initials tiles are seeded per member rather than painted in the portal
+// accent. A tab of 61 rushees is mostly initials (few of them have uploaded a
+// photo yet), and in one accent colour that is 61 identical blue circles with
+// nothing to catch the eye on. Seeded from the member's id, so their tile is
+// the same colour on the card and in the modal it opens, on every device.
+function avatarGradient(member) {
+  const [s0, s1] = seedValues(String(member.id ?? member.username ?? 'member'), 2);
+  const hue1 = s0 % 360;
+  const hue2 = (hue1 + 35 + (s1 % 55)) % 360;
+  return `linear-gradient(135deg, hsl(${hue1} 68% 52%) 0%, hsl(${hue2} 62% 40%) 100%)`;
 }
 
 // Specific role/title if there is one (an eboard member's exec_title, or
@@ -95,30 +157,9 @@ function directorySortLabel(member) {
   return [last, first, fallback].filter(Boolean).join(' ') || 'Member';
 }
 
-const THEMES = {
-  blue: {
-    heading: 'text-blue-900 dark:text-blue-100',
-    avatarClass: 'bg-blue-900 text-white dark:bg-blue-700',
-    blobA: 'from-indigo-500 via-fuchsia-500 to-cyan-400',
-    blobB: 'from-cyan-400 via-indigo-500 to-fuchsia-500',
-  },
-  amber: {
-    heading: 'text-amber-900 dark:text-amber-100',
-    avatarClass: 'bg-amber-900 text-white dark:bg-amber-700',
-    blobA: 'from-amber-400 via-orange-300 to-yellow-200',
-    blobB: 'from-yellow-200 via-amber-400 to-orange-300',
-  },
-  teal: {
-    heading: 'text-teal-900 dark:text-teal-100',
-    avatarClass: 'bg-teal-900 text-white dark:bg-teal-700',
-    blobA: 'from-teal-400 via-cyan-300 to-emerald-200',
-    blobB: 'from-emerald-200 via-teal-400 to-cyan-300',
-  },
-};
-
 // ─── Directory (all portals) ───
 
-function DirectoryAvatar({ member, size, accent }) {
+function DirectoryAvatar({ member, size }) {
   const px = `${size}px`;
   return (
     <Avatar style={{ width: px, height: px }} className="shrink-0">
@@ -127,7 +168,7 @@ function DirectoryAvatar({ member, size, accent }) {
       )}
       <AvatarFallback
         className="font-semibold text-white"
-        style={{ background: accent.gradient, fontSize: size * 0.36 }}
+        style={{ background: avatarGradient(member), fontSize: size * 0.36 }}
       >
         {memberInitials(member)}
       </AvatarFallback>
@@ -135,11 +176,20 @@ function DirectoryAvatar({ member, size, accent }) {
   );
 }
 
+// Same colour treatment as the tabs, for the same reason: this badge is a dark
+// swatch on a card, so in dark mode it used to be near-invisible.
 function GroupBadge({ group }) {
+  const { theme } = usePortalTheme();
+  const dark = theme === 'dark';
+  const color = GROUP_COLOR[group];
+
   return (
     <span
       className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide"
-      style={{ background: GROUP_BG[group] ?? 'var(--color-muted)', color: GROUP_COLOR[group] ?? 'var(--color-muted-foreground)' }}
+      style={{
+        background: color ? tint(color, dark ? 0.22 : 0.10) : 'var(--color-muted)',
+        color: color ? readableGroupText(color, dark) : 'var(--color-muted-foreground)',
+      }}
     >
       {formatMemberGroup(group)}
     </span>
@@ -195,10 +245,10 @@ function MemberLinks({ links, accent }) {
 // Rendered only when linkedinHref() accepts the stored value, so an unusable
 // or unsafe entry is silently no button rather than a dead/hostile link.
 //
-// stopPropagation because the directory row is itself a click target that
+// stopPropagation because the surface behind this is itself a click target that
 // opens the profile modal — without it, following the link would also open
 // the modal behind the new tab.
-function LinkedinLink({ url, className, showLabel = true }) {
+function LinkedinLink({ url, className }) {
   if (!url) return null;
   return (
     <a
@@ -210,12 +260,12 @@ function LinkedinLink({ url, className, showLabel = true }) {
         'inline-flex items-center gap-1 text-[11px] font-medium text-muted-foreground transition-colors hover:text-[#0a66c2]',
         className
       )}
-      // Always spelled out, even when the label is hidden — the row variant is
-      // icon-only for width, which a screen reader must not inherit.
+      // Spelled out rather than left to the visible label, which is short
+      // enough to be ambiguous read on its own.
       aria-label="LinkedIn profile (opens in a new tab)"
     >
       <Linkedin size={12} />
-      {showLabel && 'LinkedIn'}
+      LinkedIn
     </a>
   );
 }
@@ -291,7 +341,7 @@ function ProfileModal({ member, accent, onClose }) {
               a fixed value would leave a larger avatar sitting too low. Kept at
               roughly half the ring's full height (avatar + p-1 on both sides). */}
           <div className="-mt-14 mb-3 rounded-full p-1" style={{ background: 'var(--color-card)' }}>
-            <DirectoryAvatar member={member} size={112} accent={accent} />
+            <DirectoryAvatar member={member} size={112} />
           </div>
 
           <h2 className="text-center text-xl font-bold tracking-tight text-foreground">{name}</h2>
@@ -419,108 +469,214 @@ function ProfileModal({ member, accent, onClose }) {
   );
 }
 
-function SortButton({ active, dir, onClick, accent, children }) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={cn(
-        'flex items-center gap-1 text-xs font-semibold uppercase tracking-wider transition-colors',
-        active ? 'text-foreground' : 'text-muted-foreground hover:text-foreground',
-      )}
-      style={active ? { color: accent.light } : undefined}
-    >
-      {children}
-      <span className="flex flex-col" aria-hidden="true">
-        <ChevronUp size={9} strokeWidth={3} className={cn('transition-opacity', active && dir === 'asc' ? 'opacity-100' : 'opacity-30')} />
-        <ChevronDown size={9} strokeWidth={3} className={cn('-mt-0.5 transition-opacity', active && dir === 'desc' ? 'opacity-100' : 'opacity-30')} />
-      </span>
-    </button>
-  );
-}
-
-function DirectoryRow({ member, accent, onClick, showPledgeClass = true }) {
+// One card per person, replacing the table row this used to be.
+//
+// It shows the name, @username, major, pledge class and (for eboard and chairs)
+// the role, and deliberately nothing else. There is no group badge: the tab you
+// are on already says the group, and repeating it on all 61 cards is noise.
+//
+// Every field except the name can be null, and on the Rushees tab the pledge
+// class is null for everyone, so absence has to look deliberate rather than
+// broken. Each block is conditional and the card is centred, which is what lets
+// a photo-and-name-only card still read as composed.
+function MemberCard({ member, accent, onClick }) {
   const name = directoryDisplayName(member);
   const role = specificRole(member);
+  const pledgeClass = formatPledgeClass(member.pledgeClass);
 
   return (
-    <tr
-      className="group cursor-pointer border-b border-border transition-colors last:border-b-0 hover:bg-muted/40"
-      onClick={onClick}
+    <div
+      className="flex cursor-pointer flex-col items-center gap-2 rounded-2xl border border-border bg-card p-4 text-center shadow-sm transition-shadow hover:shadow-md"
       role="button"
       tabIndex={0}
-      onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && onClick()}
+      onClick={onClick}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          // Space scrolls the grid otherwise, so the card under the cursor
+          // opens and the page jumps at the same time.
+          e.preventDefault();
+          onClick();
+        }
+      }}
       aria-label={`View ${name}'s profile`}
     >
-      <td className="px-6 py-3.5">
-        <div className="flex items-center gap-3">
-          <DirectoryAvatar member={member} size={36} accent={accent} />
-          <div className="min-w-0">
-            <p className="truncate text-sm font-semibold text-foreground">{name}</p>
-            <div className="flex items-center gap-2">
-              {member.username && <p className="truncate text-[11px] text-muted-foreground">@{member.username}</p>}
-              <LinkedinLink url={linkedinHref(member.linkedinUrl)} showLabel={false} className="shrink-0" />
-            </div>
-          </div>
+      <DirectoryAvatar member={member} size={64} />
+
+      <div className="w-full min-w-0">
+        <p className="truncate text-sm font-semibold text-foreground">{name}</p>
+        {member.username && <p className="truncate text-xs text-muted-foreground">@{member.username}</p>}
+      </div>
+
+      {(member.major || pledgeClass) && (
+        <div className="flex w-full min-w-0 flex-col items-center gap-0.5 text-[11px] text-muted-foreground">
+          {/* BookOpen for the major and Users for the pledge class, matching
+              the info rows in the modal this card opens. The two are one click
+              apart, so a different icon for the same field reads as a
+              different field. */}
+          {member.major && (
+            <span className="flex w-full min-w-0 items-center justify-center gap-1">
+              <BookOpen size={11} className="shrink-0" />
+              <span className="truncate">{member.major}</span>
+            </span>
+          )}
+          {pledgeClass && (
+            <span className="flex items-center gap-1">
+              <Users size={11} className="shrink-0" />
+              {pledgeClass}
+            </span>
+          )}
         </div>
-      </td>
-
-      <td className="hidden px-4 py-3.5 md:table-cell">
-        <span className="text-sm text-muted-foreground">{member.major || '—'}</span>
-      </td>
-
-      {showPledgeClass && (
-        <td className="hidden px-4 py-3.5 sm:table-cell">
-          <span className="text-sm text-muted-foreground">
-            {formatPledgeClass(member.pledgeClass) || '—'}
-          </span>
-        </td>
       )}
 
-      {/* Badge last, so it sits flush against the right edge on every row.
-          Role first would push the badge left by the length of each person's
-          title, leaving the group column ragged down the list — only the
-          leadership rows have a title at all. */}
-      <td className="px-4 py-3.5 text-right">
-        <div className="flex items-center justify-end gap-2">
-          {role && (
-            <span className="hidden max-w-[160px] truncate text-[11px] text-muted-foreground lg:inline">{role}</span>
-          )}
-          <GroupBadge group={member.memberGroup} />
-        </div>
-      </td>
-    </tr>
+      {/* The portal accent, not the member group's colour. Only 14 of ~94
+          people have a role at all, so colouring it by group would put a second
+          group marker on exactly the cards that least need one. */}
+      {role && (
+        <span
+          className="mt-0.5 max-w-full truncate rounded-full px-2.5 py-0.5 text-[10px] font-semibold"
+          style={{ background: tint(accent.base, 0.12), color: accent.light }}
+        >
+          {role}
+        </span>
+      )}
+    </div>
   );
 }
 
-function GroupSection({ group, members, accent, onSelect, showPledgeClass = true }) {
-  if (members.length === 0) return null;
+function MemberCardSkeleton() {
+  return (
+    <div className="flex animate-pulse flex-col items-center gap-2 rounded-2xl border border-border bg-card p-4">
+      <div className="h-16 w-16 rounded-full bg-muted" />
+      <div className="h-3.5 w-20 rounded bg-muted" />
+      <div className="h-2.5 w-14 rounded bg-muted" />
+    </div>
+  );
+}
+
+// One tab per member group, replacing the stacked sections this used to scroll
+// through.
+//
+// Every tab carries a solid dot in its group's hue whether it is selected or
+// not, which is what makes the group identity survive: colouring only the
+// active tab means five of the six are unlabelled at any moment. The colours
+// themselves go through readableGroupText, so they hold up on a dark card.
+//
+// Six tabs with counts do not fit a phone, and a bare scrolling row gives no
+// sign there is anything past the right edge. So: scroll-snap, a fade on
+// whichever side has more to show, and a chevron that appears with it.
+function GroupTabs({ tabs, active, onSelect, dark }) {
+  const scrollRef = useRef(null);
+  const [canLeft, setCanLeft] = useState(false);
+  const [canRight, setCanRight] = useState(false);
+
+  const updateEdges = useCallback(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    setCanLeft(el.scrollLeft > 4);
+    setCanRight(el.scrollLeft + el.clientWidth < el.scrollWidth - 4);
+  }, []);
+
+  // Re-measured on resize and whenever the tab count changes: a chapter whose
+  // last rushee is removed mid-session loses a tab, and the fade has to go with
+  // it rather than pointing at nothing.
+  useEffect(() => {
+    updateEdges();
+    window.addEventListener('resize', updateEdges);
+    return () => window.removeEventListener('resize', updateEdges);
+  }, [updateEdges, tabs.length]);
+
+  function scrollByAmount(direction) {
+    scrollRef.current?.scrollBy({ left: direction * 180, behavior: 'smooth' });
+  }
 
   return (
-    <>
-      <tr aria-hidden="true">
-        {/* Must match the real column count, or the section heading's rule
-            stops short of the table edge when a column is dropped. */}
-        <td colSpan={showPledgeClass ? 4 : 3} className="px-6 pb-1 pt-5">
-          <div className="flex items-center gap-2">
-            <span className="h-1.5 w-1.5 rounded-full" style={{ background: GROUP_COLOR[group] }} />
-            <span className="text-[10px] font-semibold uppercase tracking-[0.18em]" style={{ color: GROUP_COLOR[group] }}>
-              {formatMemberGroup(group)}
-            </span>
-            <span className="text-[10px] text-muted-foreground">{members.length}</span>
-          </div>
-        </td>
-      </tr>
-      {members.map((m) => (
-        <DirectoryRow
-          key={m.id ?? m.username}
-          member={m}
-          accent={accent}
-          onClick={() => onSelect(m)}
-          showPledgeClass={showPledgeClass}
-        />
-      ))}
-    </>
+    <div className="relative">
+      <div
+        ref={scrollRef}
+        onScroll={updateEdges}
+        role="tablist"
+        aria-label="Member groups"
+        className="flex gap-1.5 overflow-x-auto scroll-smooth px-1 py-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        style={{ scrollSnapType: 'x proximity' }}
+      >
+        {tabs.map(({ group, count }) => {
+          const isActive = group === active;
+          // Reachable only if a new group lands in MEMBER_GROUP_ORDER without a
+          // GROUP_COLOR entry, which is a slate-grey tab rather than a crash.
+          const color = GROUP_COLOR[group] ?? '#64748b';
+          const text = readableGroupText(color, dark);
+
+          return (
+            <button
+              key={group}
+              type="button"
+              role="tab"
+              aria-selected={isActive}
+              onClick={() => onSelect(group)}
+              style={{
+                scrollSnapAlign: 'start',
+                background: isActive ? tint(color, dark ? 0.22 : 0.12) : undefined,
+                color: isActive ? text : undefined,
+              }}
+              className={cn(
+                'flex shrink-0 items-center gap-2 whitespace-nowrap rounded-full px-4 py-2 text-sm font-medium transition-colors',
+                isActive ? 'font-semibold' : 'text-muted-foreground hover:bg-muted/60',
+              )}
+            >
+              <span className="h-2 w-2 shrink-0 rounded-full" style={{ background: text }} aria-hidden="true" />
+              {TAB_LABEL[group] ?? formatMemberGroup(group)}
+              <span
+                className={cn(
+                  'rounded-full px-1.5 py-0.5 text-[10px] font-bold leading-none tabular-nums',
+                  isActive ? 'bg-background/70' : 'bg-muted text-muted-foreground',
+                )}
+                style={isActive ? { color: text } : undefined}
+              >
+                {count}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Fades to card, not to background: this row sits inside the directory
+          panel, and fading to the page colour would draw a pale block over it. */}
+      <div
+        className={cn(
+          'pointer-events-none absolute inset-y-0 left-0 w-8 bg-gradient-to-r from-card to-transparent transition-opacity',
+          canLeft ? 'opacity-100' : 'opacity-0',
+        )}
+        aria-hidden="true"
+      />
+      <div
+        className={cn(
+          'pointer-events-none absolute inset-y-0 right-0 w-8 bg-gradient-to-l from-card to-transparent transition-opacity',
+          canRight ? 'opacity-100' : 'opacity-0',
+        )}
+        aria-hidden="true"
+      />
+
+      {canLeft && (
+        <button
+          type="button"
+          onClick={() => scrollByAmount(-1)}
+          aria-label="Scroll tabs left"
+          className="absolute left-0 top-1/2 z-10 flex h-7 w-7 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border border-border bg-card shadow-sm"
+        >
+          <ChevronLeft size={13} className="text-muted-foreground" />
+        </button>
+      )}
+      {canRight && (
+        <button
+          type="button"
+          onClick={() => scrollByAmount(1)}
+          aria-label="Scroll tabs right"
+          className="absolute right-0 top-1/2 z-10 flex h-7 w-7 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border border-border bg-card shadow-sm"
+        >
+          <ChevronRight size={13} className="text-muted-foreground" />
+        </button>
+      )}
+    </div>
   );
 }
 
@@ -536,23 +692,38 @@ function DirectoryHeader({ title, description, accent }) {
   );
 }
 
-function RevampedMemberDirectory({ title, description, theme, onlyGroup }) {
+function RevampedMemberDirectory({ title, description, theme }) {
   const accent = PALETTES[theme] ?? PALETTES.blue;
+  // The group colours are derived per theme rather than written twice, so the
+  // tab bar needs to know which one is on screen. usePortalTheme defaults to
+  // light with no provider above it, which is the safe way to be wrong.
+  const { theme: portalTheme } = usePortalTheme();
+  const isDark = portalTheme === 'dark';
+
   const [members, setMembers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [sortDir, setSortDir] = useState('asc');
   const [selectedMember, setSelectedMember] = useState(null);
+  const [chosenGroup, setChosenGroup] = useState(null);
+  const [query, setQuery] = useState('');
 
-  useEffect(() => {
-    getMemberDirectory(onlyGroup ? { group: onlyGroup } : undefined)
+  // Extracted from the effect so the error state's Try again button can run the
+  // real fetch again. A button that only clears the error would put the empty
+  // directory back on screen and call it recovered.
+  const load = useCallback(() => {
+    setLoading(true);
+    setError(null);
+    getMemberDirectoryWithRushees()
       .then(setMembers)
       .catch((err) => {
         if (isRedirectError(err)) throw err;
         setError(err.message ?? 'Could not load directory');
       })
       .finally(() => setLoading(false));
-  }, [onlyGroup]);
+  }, []);
+
+  useEffect(() => { load(); }, [load]);
 
   function toggleSort() {
     setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
@@ -579,19 +750,68 @@ function RevampedMemberDirectory({ title, description, theme, onlyGroup }) {
     return map;
   }, [members, sortDir]);
 
-  const totalCount = members.length;
+  // An empty group gets no tab at all. That is what keeps the Rushees tab a
+  // rush-season thing without a permission branch here: the API returns no rush
+  // rows out of season, or to a viewer who may not see them, and either way the
+  // tab simply isn't drawn. Same rule as the sidebar entry it replaced.
+  const tabs = GROUP_ORDER
+    .filter((g) => grouped[g].length > 0)
+    .map((g) => ({ group: g, count: grouped[g].length }));
 
-  // The Rushees tab is this same component with onlyGroup='rush'.
-  const showPledgeClass = onlyGroup !== 'rush';
+  // Derived rather than stored, so the first render lands on a real tab without
+  // a state write, and a chapter that loses its last rushee mid-session falls
+  // back instead of staring at a tab that no longer exists.
+  const activeGroup = tabs.some((t) => t.group === chosenGroup) ? chosenGroup : tabs[0]?.group;
+  const inGroup = activeGroup ? grouped[activeGroup] : [];
+
+  // Search filters within the open tab only, and the tabs themselves are built
+  // from the unfiltered groups above, so searching can never make a tab vanish
+  // underneath the person typing.
+  //
+  // It exists because of the Rushees tab: 60+ cards is past the point where
+  // scanning works. Name and username only, which is what someone opening the
+  // directory is holding in their head.
+  const trimmedQuery = query.trim();
+  const visible = useMemo(() => {
+    const q = trimmedQuery.toLowerCase();
+    if (!q) return inGroup;
+    return inGroup.filter((m) => {
+      const haystack = [directoryDisplayName(m), m.username];
+      return haystack.some((v) => v && v.toLowerCase().includes(q));
+    });
+  }, [inGroup, trimmedQuery]);
+
+  // Everyone actually in the chapter. Rushees are excluded rather than counted:
+  // they now arrive in the same fetch as members, so members.length would quietly
+  // start reporting a bigger chapter than there is.
+  const chapterCount = members.length - grouped.rush.length;
+
+  // The number under a list should be the length of the list above it. With a
+  // query on screen that means the match count, not the group's size, and
+  // without one the chapter total stays beside it so splitting into tabs
+  // doesn't cost the one figure this line used to give. Rushees are excluded
+  // from that total and counted on their own: they aren't members, which is the
+  // whole distinction the tabs exist to draw.
+  let countLine;
+  if (trimmedQuery) {
+    countLine = `${visible.length} of ${inGroup.length} matching "${trimmedQuery}"`;
+  } else if (activeGroup === 'rush') {
+    countLine = `${inGroup.length} rushee${inGroup.length !== 1 ? 's' : ''} signed up`;
+  } else {
+    countLine = `${inGroup.length} of ${chapterCount} member${chapterCount !== 1 ? 's' : ''} in chapter`;
+  }
 
   if (loading) {
     return (
-      <div className="space-y-6">
+      <div className="space-y-4">
         <DirectoryHeader title={title} description={description} accent={accent} />
-        <div className="flex h-64 items-center justify-center rounded-2xl border border-border bg-card">
-          <div className="flex flex-col items-center gap-3">
-            <Loader2 size={26} className="animate-spin text-muted-foreground" />
-            <p className="text-sm text-muted-foreground">Loading members…</p>
+        {/* Skeleton cards rather than a spinner, because the grid they stand in
+            for is the whole screen: the layout settles once, not twice. */}
+        <div className="rounded-2xl border border-border bg-card p-4 shadow-sm sm:p-6">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+            {Array.from({ length: 10 }).map((_, i) => (
+              <MemberCardSkeleton key={i} />
+            ))}
           </div>
         </div>
       </div>
@@ -600,13 +820,21 @@ function RevampedMemberDirectory({ title, description, theme, onlyGroup }) {
 
   if (error) {
     return (
-      <div className="space-y-6">
+      <div className="space-y-4">
         <DirectoryHeader title={title} description={description} accent={accent} />
-        <div className="flex h-64 items-center justify-center rounded-2xl border border-border bg-card">
-          <div className="flex flex-col items-center gap-3 text-center">
-            <AlertCircle size={26} className="text-destructive" />
+        <div className="rounded-2xl border border-border bg-card p-4 shadow-sm sm:p-6">
+          <div className="flex flex-col items-center gap-3 rounded-xl border border-dashed border-border py-16 text-center">
+            <AlertTriangle size={22} className="text-destructive" />
             <p className="text-sm font-medium text-foreground">Failed to load directory</p>
             <p className="text-xs text-muted-foreground">{error}</p>
+            <button
+              type="button"
+              onClick={load}
+              className="mt-1 flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold text-white transition-opacity hover:opacity-85"
+              style={{ background: accent.gradient }}
+            >
+              <RefreshCw size={11} /> Try again
+            </button>
           </div>
         </div>
       </div>
@@ -615,7 +843,7 @@ function RevampedMemberDirectory({ title, description, theme, onlyGroup }) {
 
   if (members.length === 0) {
     return (
-      <div className="space-y-6">
+      <div className="space-y-4">
         <DirectoryHeader title={title} description={description} accent={accent} />
         <div className="flex h-64 items-center justify-center rounded-2xl border border-border bg-card">
           <div className="flex flex-col items-center gap-3">
@@ -632,55 +860,64 @@ function RevampedMemberDirectory({ title, description, theme, onlyGroup }) {
       <div className="space-y-4">
         <DirectoryHeader title={title} description={description} accent={accent} />
 
-        <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
-          <table className="w-full border-collapse">
-            <thead>
-              <tr className="border-b border-border" style={{ background: tint(accent.base, 0.03) }}>
-                <th className="px-6 py-3 text-left">
-                  <SortButton active dir={sortDir} onClick={toggleSort} accent={accent}>Name</SortButton>
-                </th>
-                <th className="hidden px-4 py-3 text-left md:table-cell">
-                  <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Major</span>
-                </th>
-                {/* Rushees have no pledge class — that's what they're rushing
-                    for — so the column is a full width of dashes on that page. */}
-                {showPledgeClass && (
-                  <th className="hidden px-4 py-3 text-left sm:table-cell">
-                    <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Pledge Class</span>
-                  </th>
-                )}
-                <th className="px-4 py-3 text-right">
-                  <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Role</span>
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {/* Filtered to one group when onlyGroup is set — that's what
-                  makes the Rushees tab this same component rather than a
-                  second directory to keep in sync. */}
-              {(onlyGroup ? [onlyGroup] : GROUP_ORDER).map((group) => (
-                <GroupSection
-                  key={group}
-                  group={group}
-                  members={grouped[group]}
-                  accent={accent}
-                  onSelect={setSelectedMember}
-                  showPledgeClass={showPledgeClass}
-                />
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <div className="rounded-2xl border border-border bg-card p-4 shadow-sm sm:p-6">
+          <GroupTabs tabs={tabs} active={activeGroup} onSelect={setChosenGroup} dark={isDark} />
 
-        <div className="flex items-center gap-2 px-1">
-          <div className="h-1.5 w-1.5 rounded-full" style={{ background: accent.light }} aria-hidden="true" />
-          {/* "members in chapter" is wrong on the Rushees tab — rushees aren't
-              members, which is the whole distinction this page exists to draw. */}
-          <p className="text-xs text-muted-foreground">
-            {onlyGroup === 'rush'
-              ? `${totalCount} rushee${totalCount !== 1 ? 's' : ''} signed up`
-              : `${totalCount} member${totalCount !== 1 ? 's' : ''} in chapter`}
-          </p>
+          <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="relative w-full sm:max-w-xs">
+              <Search size={14} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
+              <input
+                type="text"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder={`Search ${TAB_LABEL[activeGroup] ?? 'members'}…`}
+                aria-label={`Search ${TAB_LABEL[activeGroup] ?? 'members'}`}
+                className="w-full rounded-lg border border-border bg-muted/40 py-2 pl-9 pr-8 text-sm text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-1"
+                style={{ '--tw-ring-color': tint(accent.base, 0.4) }}
+              />
+              {query && (
+                <button
+                  type="button"
+                  onClick={() => setQuery('')}
+                  aria-label="Clear search"
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground transition-colors hover:text-foreground"
+                >
+                  <X size={13} />
+                </button>
+              )}
+            </div>
+
+            <button
+              type="button"
+              onClick={toggleSort}
+              className="flex items-center gap-1.5 self-start rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground sm:self-auto"
+            >
+              <ArrowUpDown size={12} />
+              Last name {sortDir === 'asc' ? 'A–Z' : 'Z–A'}
+            </button>
+          </div>
+
+          <div className="mt-5">
+            {visible.length === 0 ? (
+              <div className="flex flex-col items-center gap-2 rounded-xl border border-dashed border-border py-16 text-center">
+                <Search size={20} className="text-muted-foreground" />
+                <p className="text-sm text-muted-foreground">No matches for &ldquo;{trimmedQuery}&rdquo;</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+                {visible.map((m) => (
+                  <MemberCard
+                    key={m.id ?? m.username}
+                    member={m}
+                    accent={accent}
+                    onClick={() => setSelectedMember(m)}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+
+          <p className="mt-4 text-center text-xs text-muted-foreground">{countLine}</p>
         </div>
       </div>
 
@@ -696,6 +933,6 @@ function RevampedMemberDirectory({ title, description, theme, onlyGroup }) {
 // now renders with the blue palette (see the PALETTES lookup), which beats
 // maintaining a second copy of the whole UI — two copies is what let the
 // CircleCheck/BlockButton fix keep disappearing from one of them.
-export default function MemberDirectory({ title = 'Directory', description = 'Browse chapter members', theme = 'blue', onlyGroup }) {
-  return <RevampedMemberDirectory title={title} description={description} theme={theme} onlyGroup={onlyGroup} />;
+export default function MemberDirectory({ title = 'Directory', description = 'Browse chapter members', theme = 'blue' }) {
+  return <RevampedMemberDirectory title={title} description={description} theme={theme} />;
 }

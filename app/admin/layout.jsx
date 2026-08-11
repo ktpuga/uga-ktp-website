@@ -1,8 +1,7 @@
 'use client';
 
-import { BarChart2, Megaphone, Calendar, MessageSquare, Users, UsersRound, Vote, FolderOpen, Image as ImageIcon, ShieldAlert, Settings, Images, QrCode, CalendarClock, CalendarCheck, UserSearch, ScrollText } from 'lucide-react';
+import { BarChart2, Megaphone, Calendar, MessageSquare, Users, UsersRound, Vote, FolderOpen, Image as ImageIcon, ShieldAlert, Settings, Images, QrCode, CalendarClock, CalendarCheck, BookUser, ScrollText } from 'lucide-react';
 import PortalShell from '@/components/portal/PortalShell';
-import { useRushCount } from '@/lib/use-rush-count';
 
 // The sidebar renders exactly this, in this order.
 //
@@ -17,7 +16,7 @@ import { useRushCount } from '@/lib/use-rush-count';
 //     sits with the other people-management tools.
 //
 // Nothing was added or removed — all 16 items are still here.
-function buildNav(hasRushees) {
+function buildNav() {
   return [
   {
     heading: 'Overview',
@@ -54,13 +53,19 @@ function buildNav(hasRushees) {
       // In Rush rather than beside Meetings: it runs one week a year as part
       // of rush, and Meetings is the chapter-wide feature rushees can't touch.
       { href: '/admin/interviews', label: 'Interviews', icon: CalendarCheck },
-        // Only while rush is running — see useRushCount.
-        ...(hasRushees ? [{ href: '/admin/rushees', label: 'Rushees', icon: UserSearch }] : []),
+      // Rushees used to be a fourth entry here, appearing only during rush.
+      // They're a tab inside the Directory now (People, below), so looking
+      // somebody up is one destination whoever they are.
     ],
   },
   {
     heading: 'People',
     items: [
+      // The same directory the member and pledge portals get, unchanged.
+      // Eboard had no read-only view of the chapter at all: User Management
+      // below is an editing tool, and answering "what's their major" meant
+      // opening an edit form for somebody you had no intention of editing.
+      { href: '/admin/directory', label: 'Directory', icon: BookUser },
       { href: '/admin/users', label: 'User Management', icon: Users },
       { href: '/admin/committees', label: 'Committees', icon: UsersRound },
       { href: '/admin/reports', label: 'Reports', icon: ShieldAlert },
@@ -86,10 +91,8 @@ function buildNav(hasRushees) {
 }
 
 export default function AdminLayout({ children }) {
-  const rushCount = useRushCount();
-
   return (
-    <PortalShell portalName="Admin Portal" accent="red" homeHref="/admin" nav={buildNav(rushCount > 0)} responsive={false}>
+    <PortalShell portalName="Admin Portal" accent="red" homeHref="/admin" nav={buildNav()} responsive={false}>
       {children}
     </PortalShell>
   );

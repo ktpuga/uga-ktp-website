@@ -1,9 +1,8 @@
 'use client';
 
-import { LayoutDashboard, Megaphone, Calendar, FolderOpen, Users, Settings, MessageSquare, UsersRound, Vote, QrCode, CalendarClock, UserSearch, ClipboardList } from 'lucide-react';
+import { LayoutDashboard, Megaphone, Calendar, FolderOpen, Users, Settings, MessageSquare, UsersRound, Vote, QrCode, CalendarClock, ClipboardList } from 'lucide-react';
 import { useSession } from 'next-auth/react';
 import PortalShell from '@/components/portal/PortalShell';
-import { useRushCount } from '@/lib/use-rush-count';
 import { useInterviewerRounds } from '@/lib/use-interviewer-rounds';
 
 // The sidebar renders exactly this, in this order. It used to be a flat array
@@ -12,7 +11,7 @@ import { useInterviewerRounds } from '@/lib/use-interviewer-rounds';
 // vanished from the sidebar. Now there is only this.
 const ATTENDANCE_ITEM = { href: '/member/attendance', label: 'Attendance', icon: QrCode };
 
-function buildNav(isChair, hasRushees, canInterview) {
+function buildNav(isChair, canInterview) {
   return [
     {
       heading: 'Main',
@@ -25,9 +24,10 @@ function buildNav(isChair, hasRushees, canInterview) {
     {
       heading: 'Community',
       items: [
+        // Rushees used to be a sibling entry here. They're a tab inside the
+        // Directory now, along with every other member group, so there is one
+        // place to look people up rather than two.
         { href: '/member/directory', label: 'Directory', icon: Users },
-        // Only while rush is running — see useRushCount.
-        ...(hasRushees ? [{ href: '/member/rushees', label: 'Rushees', icon: UserSearch }] : []),
         { href: '/member/meetings', label: 'Meetings', icon: CalendarClock },
         // Only for members of a committee eboard designated on a published
         // interview round. The API decides that — it returns no rounds to
@@ -58,7 +58,6 @@ function buildNav(isChair, hasRushees, canInterview) {
 export default function MemberLayout({ children }) {
   const { data: session } = useSession();
   const isChair = session?.user?.groups?.includes('chair') ?? false;
-  const rushCount = useRushCount();
   const { rounds } = useInterviewerRounds();
 
   return (
@@ -66,7 +65,7 @@ export default function MemberLayout({ children }) {
       portalName="Member Portal"
       accent="blue"
       homeHref="/member"
-      nav={buildNav(isChair, rushCount > 0, rounds.length > 0)}
+      nav={buildNav(isChair, rounds.length > 0)}
     >
       {children}
     </PortalShell>
