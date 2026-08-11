@@ -11,10 +11,10 @@ import { getRoster } from '@/lib/portal-api';
 import { linkedinHref } from '@/lib/portal-format';
 
 const SECTIONS = [
-  { key: 'eboard', heading: 'Executive Board', subtitle: 'The leaders driving KTP forward.', title: 'E-Board', bg: 'bg-card', cols: 'sm:grid-cols-3 md:grid-cols-4' },
-  { key: 'chair', heading: 'Cabinet', subtitle: 'Running the committees that make the chapter go.', title: 'Chair', bg: 'bg-background', cols: 'sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5' },
-  { key: 'active', heading: 'Members', subtitle: 'The full active roster of Phi Chapter.', title: 'Member', bg: 'bg-card', cols: 'sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5' },
-  { key: 'alumni', heading: 'Alumni', subtitle: 'Celebrating ΚΘΠ alumni and their ongoing impact.', title: 'Alumni', bg: 'bg-background', cols: 'sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5' },
+  { key: 'eboard', heading: 'Executive Board', title: 'E-Board', bg: 'bg-card', cols: 'sm:grid-cols-3 md:grid-cols-4' },
+  { key: 'chair', heading: 'Cabinet', title: 'Chair', bg: 'bg-background', cols: 'sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5' },
+  { key: 'active', heading: 'Members', title: 'Member', bg: 'bg-card', cols: 'sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5' },
+  { key: 'alumni', heading: 'Alumni', title: 'Alumni', bg: 'bg-background', cols: 'sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5' },
 ];
 
 // Deliberately First + Last name here, not the shared memberDisplayName()
@@ -157,7 +157,7 @@ export default function MembersListPage() {
           <div className="container mx-auto max-w-2xl px-4 pb-16 text-center text-sm text-slate-500">Loading roster...</div>
         )}
 
-        {roster && SECTIONS.map(({ key, heading, subtitle, title, bg, cols }) => {
+        {roster && SECTIONS.map(({ key, heading, title, bg, cols }) => {
           const people = roster[key] ?? [];
           if (people.length === 0) return null;
 
@@ -166,7 +166,6 @@ export default function MembersListPage() {
               <div className="container mx-auto max-w-6xl px-4 md:px-6">
                 <div className="text-center">
                   <h2 className="text-3xl font-bold tracking-tight md:text-4xl text-primary">{heading}</h2>
-                  <p className="mx-auto mt-3 max-w-2xl text-lg text-foreground">{subtitle}</p>
                 </div>
                 <div className={`mt-12 grid grid-cols-2 gap-8 text-sm ${cols}`}>
                   {people.map((person) => (
