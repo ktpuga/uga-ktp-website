@@ -14,6 +14,7 @@ import {
   memberDisplayName, memberInitials, formatMemberGroup,
   getEventStartDate, getEventEndDate, formatEventTimeRange, formatEventDateShort,
 } from '@/lib/portal-format';
+import { profilePictureSrc } from '@/lib/avatar';
 import { isRedirectError } from '@/lib/is-redirect-error';
 import { useAccentPalette } from '@/components/portal/PortalAccentContext';
 
@@ -116,7 +117,7 @@ function RosterAvatar({ record, accent, size = 30 }) {
     <div className="shrink-0 overflow-hidden rounded-full" style={{ width: size, height: size }}>
       {assetId && !failed ? (
         <img
-          src={`/api/users/${record.user_id}/profile-picture/media?v=${assetId}`}
+          src={profilePictureSrc(record.user_id, assetId)}
           alt=""
           width={size}
           height={size}

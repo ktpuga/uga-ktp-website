@@ -20,12 +20,21 @@ import { updateProfile, uploadProfilePicture } from '@/lib/portal-api';
 import { saveProfile } from '@/app/complete-profile/actions';
 import { isRedirectError } from '@/lib/is-redirect-error';
 import { linkedinHref } from '@/lib/portal-format';
+import { PROFILE_LIMITS } from '@/lib/text-limits';
+import { LinksField, LinksHiddenInput, useProfileLinks } from './LinksField';
+import { profilePictureSrc, announceProfilePictureChange } from '@/lib/avatar';
 import { cn } from '@/lib/utils';
 
-function ProfilePictureField({ authentikId, variant }) {
+function ProfilePictureField({ authentikId, assetId, variant }) {
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState(null);
-  const [version, setVersion] = useState(0);
+  // The Immich asset id, seeded from the saved profile and replaced by whatever
+  // the upload returns. This used to be a counter starting at 0, which changed
+  // the URL only after an upload in this session: the member saw their own new
+  // photo, and every other surface in the portal kept the old one. Keying on
+  // the real id means the URL is the same for everyone looking at this member
+  // and changes for all of them at once. See lib/avatar.js.
+  const [currentAssetId, setCurrentAssetId] = useState(assetId ?? null);
 
   async function handleFileChange(e) {
     const file = e.target.files?.[0];
@@ -40,7 +49,13 @@ function ProfilePictureField({ authentikId, variant }) {
       if (result?.error) {
         setError(result.error);
       } else {
-        setVersion((v) => v + 1);
+        // Fall back to a timestamp only if the API ever stops returning the id.
+        // Repainting with a stale URL would show the member the picture they
+        // just replaced and read as a failed upload, which is worse than
+        // spending one uncached fetch.
+        const nextId = result?.profile_picture_asset_id ?? String(Date.now());
+        setCurrentAssetId(nextId);
+        announceProfilePictureChange(nextId);
       }
     } catch (err) {
       if (isRedirectError(err)) throw err;
@@ -58,7 +73,7 @@ function ProfilePictureField({ authentikId, variant }) {
       <Avatar className="h-16 w-16">
         {authentikId && (
           <AvatarImage
-            src={`/api/users/${authentikId}/profile-picture/media?v=${version}`}
+            src={profilePictureSrc(authentikId, currentAssetId)}
             alt="Profile picture"
           />
         )}
@@ -186,6 +201,11 @@ export default function ProfileForm({
     serverFieldError?.field === name ? serverFieldError.message : undefined;
 
   const graduation = parseGraduationDate(defaultValues.graduation_date);
+
+  // Shared with AdminEditProfileModal. See components/profile/LinksField.jsx
+  // for why: both forms feed the same whole-row payload builder, so a form that
+  // forgets this field erases the member's links on an unrelated save.
+  const linkRows = useProfileLinks(defaultValues.links);
 
   const inputClass =
     variant === 'onboarding'
@@ -333,7 +353,11 @@ export default function ProfileForm({
       }}
       className="space-y-4"
     >
-      <ProfilePictureField authentikId={authentikId} variant={variant} />
+      <ProfilePictureField
+        authentikId={authentikId}
+        assetId={defaultValues.profile_picture_asset_id}
+        variant={variant}
+      />
 
       {readOnly.username != null && (
         <Field label="Username" variant={variant}>
@@ -429,6 +453,43 @@ export default function ProfileForm({
           className={`${inputClass} resize-y`}
         />
       </Field>
+
+      {/* Alumni only, and only the FORM is gated — the column is on every user
+          and the API validates it for everyone. A column gated to one group has
+          to be migrated the day somebody changes group, which happens here
+          every spring; `about_me` set that precedent deliberately.
+
+          Free text rather than a company/title pair because it has to cover
+          "Law school at Emory" and "Taking a year off" as comfortably as it
+          covers a job, and a structured pair forces those into a box built for
+          something else. */}
+      {isAlumni && (
+        <Field
+          label="What you're doing now"
+          variant={variant}
+          name="doing_now"
+          error={fieldError('doing_now')}
+        >
+          <Input
+            name="doing_now"
+            placeholder="e.g. SWE at Google, or Law school at Emory"
+            maxLength={PROFILE_LIMITS.DOING_NOW}
+            defaultValue={defaultValues.doing_now}
+            className={inputClass}
+          />
+        </Field>
+      )}
+
+      <LinksField
+        links={linkRows.links}
+        variant={variant}
+        inputClass={inputClass}
+        error={fieldError('links')}
+        onAdd={linkRows.add}
+        onRemove={linkRows.remove}
+        onEdit={linkRows.edit}
+      />
+      <LinksHiddenInput submittable={linkRows.submittable} />
 
       {/* Two addresses on purpose, and the split is now asymmetric: the UGA
           one is REQUIRED for everyone except alumni, the personal one never is.

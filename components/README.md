@@ -85,6 +85,28 @@ Missing one side doesn't error — it just never badges.
 
 Use a plain `<img>` with an `onError` handler falling back to initials. Prefer this over `ui/avatar.jsx`'s Radix-based `Avatar` — Radix's `AvatarFallback` can stay visible even after the image successfully loads, which has caused initials-only-avatar bugs here more than once.
 
+**Build the `src` with `profilePictureSrc(id, avatarAssetId(member))` from `lib/avatar.js`, never as a template literal.** The media proxy sends no `Cache-Control`, so a URL keyed on the member id alone is identical before and after they change their photo and the browser keeps serving the old one — that is trap #9 in `TODO.md`, and it was live on seven surfaces at once because each built its own URL. The cache-buster is the Immich asset id, which changes exactly when the picture does; a timestamp or a render counter would change on every paint and re-download every avatar in the directory on every load.
+
+Two things that follow from it:
+
+- **Guard on the built `src`, not only on your `err` flag.** `profilePictureSrc` returns `null` when there is no user id, and React drops a `null` src attribute rather than failing to load it — so `onError` never fires and you get a permanently empty circle instead of initials.
+- **Key the error state on the asset id, not a boolean**, anywhere the photo can change while the component stays mounted. A sticky `err` flag means a member who had no photo when the page loaded stays on their initials after uploading one. `SidebarAvatar` in `PortalShell` and `GroupChatAvatar` in `MessagesPage` both do this; the shell especially, since it is a layout and never remounts on client-side navigation.
+
+### Profile links: `profile/LinksField.jsx` is shared, and that is a data guard
+
+`ProfileForm` (a member editing themselves) and `AdminEditProfileModal` (eboard editing anyone) both build their request body with `buildProfilePayload`, and the profile write is a **whole-row upsert**. So a form that renders no links input still sends `links: []`, and eboard fixing a typo in someone's major would erase all their links. Same shape as the `preserveEmail` trap in the API.
+
+Both forms therefore use `useProfileLinks` + `LinksField` + `LinksHiddenInput` from one file. **If you add a third profile-editing surface, wire all three or that surface will quietly delete links.**
+
+Two details inside it that are not obvious:
+
+- **Row keys are not indexes.** Deleting a middle row renumbers every index below it, so React reuses the wrong input for the wrong row and the text visibly jumps to a different link. Each row carries a generated key instead.
+- **The URL input has no `type="url"`.** The browser would refuse `example.com/you` before the form ever submits, and accepting a scheme-less host is precisely what `normalizeWebUrl` exists to do — that is what people paste.
+
+Rendering side: link chips go through `safeExternalHref` even though the API already canonicalised them on write. An `href` is a different trust context from a text node, and this is the second of the two checks that trap #6 in `TODO.md` describes.
+
+That last point is also why `lib/avatar.js` exports `PROFILE_PICTURE_CHANGED_EVENT`. `PortalShell` fetches the member's profile once per full page load, so without the event the sidebar would still show the old photo after an upload on the profile page. `ProfileForm` fires it via `announceProfilePictureChange(newAssetId)` and the shell re-reads the profile.
+
 `ui/card.jsx`'s `ProfileCard` is shared by the roster, sponsorship page, alumni section, and homepage. It takes `avatarShape="square"` to opt into a rounded square instead of the default circle — only the roster uses that today.
 
 ## Embed real components, don't reinvent them

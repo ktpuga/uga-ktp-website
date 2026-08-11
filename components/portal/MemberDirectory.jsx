@@ -8,6 +8,9 @@ import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import {
   Users, X, MessageSquare, Mail, ChevronUp, ChevronDown, AlertCircle, Loader2, GraduationCap, BookOpen, CalendarClock, Linkedin,
+  // Aliased because `Link` in this file is next/link, imported above. Without
+  // the alias the two silently collide and the chip renders a router link.
+  Link as LinkIcon,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { getMemberDirectory } from '@/lib/portal-api';
@@ -18,9 +21,11 @@ import {
   formatGraduationDate,
   formatPledgeClass,
   linkedinHref,
+  safeExternalHref,
   MEMBER_GROUP_ORDER,
   LEADERSHIP_GROUPS,
 } from '@/lib/portal-format';
+import { profilePictureSrc, avatarAssetId } from '@/lib/avatar';
 import { isRedirectError } from '@/lib/is-redirect-error';
 import ReportButton from './ReportButton';
 import BlockButton from './BlockButton';
@@ -118,7 +123,7 @@ function DirectoryAvatar({ member, size, accent }) {
   return (
     <Avatar style={{ width: px, height: px }} className="shrink-0">
       {member.id && (
-        <AvatarImage src={`/api/users/${member.id}/profile-picture/media`} alt="" />
+        <AvatarImage src={profilePictureSrc(member.id, avatarAssetId(member))} alt="" />
       )}
       <AvatarFallback
         className="font-semibold text-white"
@@ -138,6 +143,52 @@ function GroupBadge({ group }) {
     >
       {formatMemberGroup(group)}
     </span>
+  );
+}
+
+// A member's own links, as chips.
+//
+// **Every URL goes through safeExternalHref even though the API already
+// canonicalised it on write.** That is not belt-and-braces for its own sake:
+// this is an `href`, which is a different trust context from a text node —
+// React escapes a hostile string rendered as text and does nothing at all about
+// `javascript:` in an attribute. The write-side check is the real defence and
+// the render-side one covers rows written before it existed, or by a path that
+// bypasses `services/urls.js`. Exactly this pair was already got wrong once, in
+// documentsController.createLink.
+//
+// A link that fails renders as no chip rather than a dead or hostile one.
+//
+// The row wraps: chips are laid out with flex-wrap and each label is capped at
+// 40 characters by the API, so a member adding their fifth link re-spaces the
+// row rather than overflowing the card.
+function MemberLinks({ links, accent }) {
+  const safe = (links ?? [])
+    .map((link) => ({ label: link?.label, href: safeExternalHref(link?.url) }))
+    .filter((link) => link.href && link.label);
+
+  if (safe.length === 0) return null;
+
+  return (
+    <div className="mt-3 flex w-full flex-wrap justify-center gap-1.5">
+      {safe.map((link) => (
+        <a
+          key={`${link.label}-${link.href}`}
+          href={link.href}
+          target="_blank"
+          rel="noopener noreferrer"
+          // Same reason as LinkedinLink below: the row behind this is itself a
+          // click target that opens the modal.
+          onClick={(e) => e.stopPropagation()}
+          className="inline-flex max-w-full items-center gap-1 rounded-full border border-border px-2.5 py-1 text-[11px] font-medium text-foreground transition-colors hover:bg-muted"
+          style={{ background: tint(accent.base, 0.03) }}
+          aria-label={`${link.label} (opens in a new tab)`}
+        >
+          <LinkIcon size={10} className="shrink-0 text-muted-foreground" />
+          <span className="truncate">{link.label}</span>
+        </a>
+      ))}
+    </div>
   );
 }
 
@@ -256,6 +307,22 @@ function ProfileModal({ member, accent, onClose }) {
             )}
           </div>
 
+          {/* Directly under the badges rather than down in the info rows,
+              because for an alumnus this is the single most useful line on the
+              card — it is what somebody opened the profile to find out. Wrapped
+              in a centred, balanced block so a two-line value doesn't leave one
+              orphaned word.
+
+              Not gated on `memberGroup === 'alumni'`. The column is on every
+              user and only the FORM asks alumni for it, so anything already
+              stored on a non-alumnus is real data somebody entered, and hiding
+              it here would make it unexplainably invisible. */}
+          {member.doingNow && (
+            <p className="mt-2 max-w-[85%] text-balance text-center text-xs font-medium text-muted-foreground">
+              {member.doingNow}
+            </p>
+          )}
+
           {/* A rushee has no pledge class, graduation date or exec title, and
               the API withholds their email, so About Me is often the only thing
               this panel would otherwise have for them. */}
@@ -282,6 +349,8 @@ function ProfileModal({ member, accent, onClose }) {
               )}
             </div>
           )}
+
+          <MemberLinks links={member.links} accent={accent} />
 
           <div className="mt-4 flex w-full flex-col gap-2">
             {/* Prefers the UGA address, falls back to the personal one — an

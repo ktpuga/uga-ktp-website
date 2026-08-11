@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { getAdminUsers, updateUserGroup, updateExecTitle } from '@/lib/portal-api';
 import { formatMemberGroup, memberDisplayName, memberInitials, formatPledgeClass } from '@/lib/portal-format';
+import { profilePictureSrc, avatarAssetId } from '@/lib/avatar';
 import { isRedirectError } from '@/lib/is-redirect-error';
 import AdminEditProfileModal from '@/components/admin/AdminEditProfileModal';
 
@@ -83,7 +84,7 @@ function Avatar({ user, size = 40 }) {
     <div className="shrink-0 overflow-hidden rounded-full ring-2 ring-border" style={{ width: size, height: size }} aria-hidden="true">
       {!err && user.authentik_id ? (
         <img
-          src={`/api/users/${user.authentik_id}/profile-picture/media`}
+          src={profilePictureSrc(user.authentik_id, avatarAssetId(user))}
           alt=""
           width={size}
           height={size}

@@ -19,6 +19,7 @@ import {
   renameGroupChat,
 } from '@/lib/portal-api';
 import { memberDisplayName, memberInitials, formatMemberGroup, formatMessageTime, groupMatches, MEMBER_GROUP_ORDER } from '@/lib/portal-format';
+import { profilePictureSrc, avatarAssetId } from '@/lib/avatar';
 import { isRedirectError } from '@/lib/is-redirect-error';
 import { useConfirm } from '@/components/ui/confirm-dialog';
 import { useUnreadCounts } from '@/lib/use-unread-counts';
@@ -106,7 +107,7 @@ function MemberAvatar({ member, size = 36, accent }) {
     <div className="shrink-0 overflow-hidden rounded-full" style={{ width: size, height: size }}>
       {userId && !err ? (
         <img
-          src={`/api/users/${userId}/profile-picture/media`}
+          src={profilePictureSrc(userId, avatarAssetId(member))}
           alt=""
           width={size}
           height={size}

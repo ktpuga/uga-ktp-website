@@ -20,6 +20,7 @@ import {
   createEvent,
 } from '@/lib/portal-api';
 import { memberDisplayName, memberInitials } from '@/lib/portal-format';
+import { profilePictureSrc, avatarAssetId } from '@/lib/avatar';
 import { isRedirectError } from '@/lib/is-redirect-error';
 import { TEXT_LIMITS } from '@/lib/text-limits';
 import { NewMeetingModal } from './MeetingsPage';
@@ -42,11 +43,16 @@ function tint(hex, alpha) {
 function Avatar({ member, size = 36, accent }) {
   const [err, setErr] = useState(false);
   const userId = member?.authentik_id ?? member?.id;
+  // Guarding on the built src, not just on `err`. profilePictureSrc returns null
+  // when there is no user id, and React drops a null src attribute entirely —
+  // so onError never fires and the row would hold an empty circle forever
+  // instead of falling through to the initials below.
+  const src = profilePictureSrc(userId, avatarAssetId(member));
   return (
     <div className="relative shrink-0 overflow-hidden rounded-full" style={{ width: size, height: size }} aria-hidden="true">
-      {!err ? (
+      {src && !err ? (
         <img
-          src={`/api/users/${userId}/profile-picture/media`}
+          src={src}
           alt=""
           width={size}
           height={size}

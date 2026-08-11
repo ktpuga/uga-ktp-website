@@ -1,11 +1,12 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { User, ShieldOff, AlertTriangle, X, UserX, ExternalLink, Info, Calendar, Mail } from 'lucide-react';
+import { User, ShieldOff, AlertTriangle, X, UserX, ExternalLink, Info, Calendar, Mail, Globe } from 'lucide-react';
 import { getProfile, deleteAccount } from '@/lib/portal-api';
 import { useBlockedMembers, unblockMember } from '@/lib/blocked-members';
 import { normalizeUserProfile } from '@/lib/profile';
 import { formatMemberGroup, memberDisplayName, memberInitials } from '@/lib/portal-format';
+import { profilePictureSrc, avatarAssetId } from '@/lib/avatar';
 import { isRedirectError } from '@/lib/is-redirect-error';
 import { logoutEverywhere } from '@/lib/auth-actions';
 import { cn } from '@/lib/utils';
@@ -13,6 +14,7 @@ import ProfileForm from './ProfileForm';
 import CalendarSubscription from './CalendarSubscription';
 import UsernameEditor from './UsernameEditor';
 import EmailNotifications from './EmailNotifications';
+import RosterVisibility from './RosterVisibility';
 import { PALETTES } from '@/components/portal/PortalAccentContext';
 
 // Palette comes from PortalAccentContext, the single source of truth. Each of
@@ -69,11 +71,15 @@ function MemberGroupBadge({ group, accent }) {
 
 function Avatar({ member, size = 32, accent }) {
   const [err, setErr] = useState(false);
+  // See the same guard in CommitteesPage: a null src is dropped by React rather
+  // than failing to load, so without this an idless member gets a blank circle
+  // and never reaches the initials fallback.
+  const src = profilePictureSrc(member.id, avatarAssetId(member));
   return (
     <div className="shrink-0 overflow-hidden rounded-full" style={{ width: size, height: size }} aria-hidden="true">
-      {!err ? (
+      {src && !err ? (
         <img
-          src={`/api/users/${member.id}/profile-picture/media`}
+          src={src}
           alt=""
           width={size}
           height={size}
@@ -376,6 +382,24 @@ function RevampedEditProfilePage({ accentKey, portalLabel }) {
             description="Choose whether chapter announcements and events also reach your inbox."
           >
             <EmailNotifications accent={accent} />
+          </SectionCard>
+
+          {/* Above the blocked-members card and below the chapter-facing ones,
+              because this is the only setting here about what people OUTSIDE
+              the chapter can see. Takes its value from the profile already
+              loaded for the form rather than fetching its own: a visibility
+              switch that renders in the wrong position and then corrects
+              itself reads as the setting having failed to save. */}
+          <SectionCard
+            accent={accent}
+            icon={<Globe size={14} strokeWidth={1.75} />}
+            title="Public Roster"
+            description="Control whether you appear on the chapter page that anyone on the internet can see."
+          >
+            <RosterVisibility
+              accent={accent}
+              initialVisible={profile?.show_on_public_roster}
+            />
           </SectionCard>
 
           {/* Only surfaces once there's actually someone blocked — see

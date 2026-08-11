@@ -12,6 +12,8 @@ import {
   adminUploadProfilePicture,
 } from '@/lib/portal-api';
 import { memberDisplayName } from '@/lib/portal-format';
+import { PROFILE_LIMITS } from '@/lib/text-limits';
+import { LinksField, LinksHiddenInput, useProfileLinks } from '@/components/profile/LinksField';
 import { useConfirm } from '@/components/ui/confirm-dialog';
 import { isRedirectError } from '@/lib/is-redirect-error';
 
@@ -71,6 +73,9 @@ export default function AdminEditProfileModal({ user, onClose, onSaved }) {
   // replacement lands at the same URL — without a version bump the browser
   // serves the cached old picture and the upload looks like it did nothing.
   const [hasPicture, setHasPicture] = useState(Boolean(user.profile_picture_asset_id));
+  // Same hook the member's own form uses. See LinksField.jsx: sharing it is
+  // what stops this modal from silently clearing links it never rendered.
+  const linkRows = useProfileLinks(user.links);
   const [uploading, setUploading] = useState(false);
   const fileRef = useRef(null);
 
@@ -347,6 +352,39 @@ export default function AdminEditProfileModal({ user, onClose, onSaved }) {
               className="flex w-full resize-y rounded-md border border-input bg-background px-3 py-2 text-sm"
             />
           </Field>
+
+          {/* Alumni-only on the member's own form; shown to eboard for everyone,
+              because this modal exists to correct what somebody typed into the
+              wrong box and hiding a populated field would make a bad value
+              uncorrectable from here. */}
+          <Field
+            label="What they're doing now"
+            hint="Alumni fill this in themselves. Free text: a job, grad school, anything."
+            name="doing_now"
+            error={fieldError('doing_now')}
+          >
+            <Input
+              name="doing_now"
+              maxLength={PROFILE_LIMITS.DOING_NOW}
+              defaultValue={user.doing_now ?? ''}
+            />
+          </Field>
+
+          {/* Not optional to render, and not merely a courtesy. This modal
+              builds its payload with buildProfilePayload, exactly like the
+              member's form, and the profile write is a whole-row upsert — so a
+              modal WITHOUT this field sends `links: []` and wipes the member's
+              links every time eboard fixes a typo in their major. Same shape as
+              the preserveEmail trap. The shared component is the guard. */}
+          <LinksField
+            links={linkRows.links}
+            inputClass=""
+            error={fieldError('links')}
+            onAdd={linkRows.add}
+            onRemove={linkRows.remove}
+            onEdit={linkRows.edit}
+          />
+          <LinksHiddenInput submittable={linkRows.submittable} />
 
           {/* Upload replaces immediately on select, like the member's own
               picture field. Same 25MB limit and same server-side re-encode to

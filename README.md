@@ -184,6 +184,8 @@ Anything stored in Immich is served through a Next.js route under `app/api/`, wh
 
 Point `<img src>` at these, never at ktp-api or Immich directly.
 
+None of them forward a `Cache-Control` header, so the browser caches heuristically and the URL is the only signal that the underlying file changed. For anything a member can replace, that means the URL has to carry a version. Profile pictures do this through `lib/avatar.js` — `profilePictureSrc(id, assetId)` and `rosterPictureSrc(id, assetId)`, both keyed on the Immich asset id, which is reissued on every upload. **Build avatar URLs there rather than by hand**, and read the asset id with `avatarAssetId(member)` because the API returns it as `profile_picture_asset_id` on raw rows and `profilePictureAssetId` on the directory and roster projections.
+
 ---
 
 ## Project layout

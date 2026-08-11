@@ -99,6 +99,17 @@ This has now shipped wrong **twice**: first on the username feature, then on int
 
 Profile pictures and group chat photos are served from a fixed URL, so when someone changes their photo the browser keeps showing the old one. This is why photo changes "don't work" — they did work, you're looking at cache. Append `?v=<something that changes>`.
 
+**For profile pictures this is now solved centrally — use it rather than rebuilding it.** `lib/avatar.js` owns every avatar URL: `profilePictureSrc(id, assetId)`, `rosterPictureSrc(id, assetId)`, and `avatarAssetId(member)` to read the id off whatever projection you were handed. Grep will tell you there are no hand-built `profile-picture/media` template literals left, and it should stay that way.
+
+The version is the **Immich asset id**, never a timestamp or a counter. Immich issues a new asset per upload, so the id changes exactly when the picture does and is stable in between; a timestamp changes on every render and re-downloads every avatar in the directory on every page load, which is a worse bug than the one it fixes.
+
+Two follow-on traps, both of which produce a blank or frozen avatar with no error anywhere:
+
+- **A `null` src is not a failed load.** React omits the attribute entirely, so `onError` never fires. Guard on the src itself (`{src && !err ? …}`), not just on the error flag, or a member with no id gets an empty circle forever instead of their initials.
+- **A boolean `err` flag is sticky for the life of the mount.** `PortalShell` is a layout and never remounts on client-side navigation, so a member whose photo 404'd once at sign-in would keep their initials for the whole session even after uploading one. Key the error state on the asset id, the way `GroupChatAvatar` does.
+
+And the sidebar has one more wrinkle: it reads the profile exactly once per full page load, so an upload elsewhere in the portal can't reach it. That's what `PROFILE_PICTURE_CHANGED_EVENT` / `announceProfilePictureChange()` are for. If you add another surface that changes a member's own photo, fire it.
+
 ### 10. A session in the cookie is not proof of who is at the keyboard
 
 There are **two** sessions in a browser: ours (the NextAuth cookie) and Authentik's own SSO cookie. Nothing keeps them in step, and a `refresh_token` isn't tied to the browser session, so ours renews itself happily while Authentik's belongs to somebody else.
@@ -140,22 +151,22 @@ Two smaller ones in the same area:
 
 Roughly in the order I'd take them. Each says what "done" looks like.
 
-### A. Profile-picture cache-busting — *small, well-defined, good first one*
+### ~~A. Profile-picture cache-busting~~ — DONE 2026-08-11
 
-Only `components/profile/ProfileForm.jsx` appends `?v=`. **Six other call sites don't**, so a member who changes their photo keeps seeing the old one everywhere else until a hard refresh:
+Every avatar URL in the app is now built by `lib/avatar.js` and versioned on the Immich asset id. Trap #9 above carries the rules; this entry records what actually changed and the two things the work turned up.
 
-```
-components/admin/UserManagementPage.jsx
-components/portal/CommitteesPage.jsx
-components/portal/MemberDirectory.jsx
-components/portal/MessagesPage.jsx
-components/portal/PortalShell.jsx
-components/profile/EditProfilePage.jsx
-```
+**Eight surfaces, not the six listed here.** The six were right, but `ProfileForm` itself was only half-fixed and the public roster was missed entirely:
 
-The tricky part isn't adding `?v=` — it's picking a value that changes **when the photo changes** and not on every render (which would defeat the browser cache entirely and re-download every avatar on every paint). Group chat photos solved it with `?v=<asset_id>`, since Immich issues a new asset id per upload. Prefer that over a timestamp.
+- `ProfileForm.jsx` had a **render counter starting at 0**, which changed the URL only after an upload in that session. The member saw their own new photo immediately and concluded it worked; everyone else, and every other tab in their own portal, kept the old one. It now seeds from the saved asset id and takes the new one from the upload response.
+- **`/members-list`, the public roster**, had no buster at all. It is the most visible place a stale photo can sit, and it needed an API change: `rosterController` reshapes rows into camelCase and was dropping `profile_picture_asset_id` on the way out. The id is an opaque Immich uuid and `/roster/:id/media` ignores it, so publishing it grants nothing that route didn't already give away.
 
-**Done when:** changing your photo updates it in the directory, the sidebar, messages and user management without a hard refresh, and avatars still come from cache on an ordinary page load.
+**`GET /users/blocked` was missing the column too** — `userBlockModel.findBlockedByUser` never selected it, so Settings' blocked list had nothing to key on. Both projections are now pinned by `ktp-api/test/avatarAssetIds.test.js`, which was checked against the unfixed code first: all three assertions fail without the change. That test exists because this failure is silent — a missing column renders as an empty value, which is exactly how `linkedin_url` sat unselected by all three of `memberModel`'s projections for months.
+
+**The sidebar needed more than a URL.** `PortalShell` is a layout: it mounts once per full page load and survives every client-side navigation, so its one `getProfile()` call was the only one all session. Cache-busting alone would have left the sidebar showing the old photo after an upload — the same complaint, relocated. It now listens for `PROFILE_PICTURE_CHANGED_EVENT` and re-reads the profile.
+
+**Done when:** ~~changing your photo updates it in the directory, the sidebar, messages and user management without a hard refresh, and avatars still come from cache on an ordinary page load.~~ **Met.** Nothing re-downloads on an ordinary page load: the URL is stable until the asset id changes.
+
+**Not clicked through in a browser yet** — worth a pass on: uploading a new photo and watching the sidebar change without a refresh, then checking the directory, messages and user management in the same session.
 
 ### ~~B. Form-level input validation~~ — DONE 2026-08-11
 
@@ -252,25 +263,30 @@ Also built, and each one mirrors a specific refusal in the API: a leave route (w
 
 ### E. Alumni "what I'm doing now", custom profile links, and roster visibility
 
-Three related profile additions, raised 2026-08-09 and backlogged the same day. **Yash's scope call: keep it private and member-side only for now** — none of the new fields go on the public `/members-list` roster.
+**ALL THREE PARTS BUILT 2026-08-11.**
 
-1. **What an alumnus is doing after graduation** — one free-text column (`current_role`), e.g. *"SWE at Google"*, *"Law school at Emory"*. Free text on purpose: it has to cover grad school and everything else, not just a job title.
-2. **Custom links** — a member types a label, pastes a URL, and it appears as a chip at the bottom of their directory card. The row **wraps and re-spaces itself** as links are added.
-3. **Public roster opt-in/out** — let people decide whether they appear on `/members-list` at all.
+1. ~~**What an alumnus is doing after graduation**~~ — DONE. Column `doing_now`, free text, ≤150.
+2. ~~**Custom links**~~ — DONE. `links jsonb`, up to 5 `{ label, url }` pairs, rendered as wrapping chips on the directory card.
+3. ~~**Public roster opt-in/out**~~ — DONE. Yash resolved the open question: **build it.** Column `show_on_public_roster`, its own endpoint, a switch in Settings → Public Roster.
 
-Put the columns on **all users**, not just alumni, and gate the *form* instead. `about_me` set that precedent deliberately: a column gated to one group has to be migrated the day someone changes group. Only the form needs to know that the role field is an alumni thing.
+Migrations `1787800000000` (parts 1–2) and `1787900000000` (part 3). The first two columns are on **all users** with the *form* gated to alumni, per `about_me`'s precedent: a column gated to one group has to be migrated the day someone changes group.
 
-**Open question when this is picked up:** item 3 is inherently about the public page, so "member-side only" either doesn't apply to it or shelves it entirely. Ask before building it.
+**On part 3, the thing that would have made it worthless:** `findPublicRosterMember` needed the same filter as `findPublicRoster`. It backs `/roster/:id/media` and re-checks eligibility precisely so a guessed id can't pull a photo that was never listed — so filtering only the list would hide the member while still serving their picture to anyone who knew their id. Both queries carry it, and `test/rosterVisibility.test.js` asserts the media path specifically.
 
-Traps already identified, so nobody rediscovers them:
+It is **not** part of the profile upsert, which would have been the easy mistake: that route NULLs every absent key and this column is `NOT NULL`, so iOS's five-key save would flip people's answers. Its own endpoint, like username and profile picture.
 
-- **Links become `<a href>`, so they are a stored-XSS surface.** They must go through `services/urls.js` → `normalizeWebUrl`, exactly like trap #6 above. `new URL()` is *not* a check — it parses `javascript:alert(1)` happily, which is the bug that was already found and fixed in `documentsController.createLink`. Reject rather than truncate, and store the canonical form.
-- **`memberModel` has three projections** (`findAll`, `findById`, `findPublicRoster`) and a new column shows up in none of them by default. `linkedin_url` sat in the database for months, selected by all three of nothing. Suggest a cap of 5 links, label ≤ 40 chars, URL ≤ 300 (`MAX_URL_LENGTH`).
-- **If the roster toggle is built, `findPublicRosterMember` needs the same filter as `findPublicRoster`** — it re-checks eligibility precisely so a guessed id can't pull a photo that was never listed. Filtering only the list leaves opted-out photos fetchable one by one.
-- **`userModel.updateProfile` is a whole-row upsert and NULLs every absent key.** A field the form doesn't render gets wiped on save — that's the `preserveEmail` trap, and a links/role field hidden from non-alumni would hit it the same way.
-- **`links` as `jsonb`: pass `JSON.stringify(value)`, not the array.** node-postgres serialises a JS array into Postgres *array* literal syntax, which is not valid JSON — the insert either errors or stores something unusable.
+#### What the build turned up
 
-**Done when:** an alumnus can say what they're doing and add a few links, both show on their directory card with the link row wrapping cleanly as it grows, and a `javascript:` URL is rejected with a message beside the field.
+- **`current_role`, the name in the original sketch, is a Postgres reserved word.** `ADD COLUMN current_role` is a flat syntax error. Quoting it would have worked and been a trap: an unquoted `SELECT current_role FROM users` is legal SQL that silently returns the *session role* for every row. The column is **`doing_now`**.
+- **`normalizeWebUrl` returns a `URL` object, not a string.** Storing it looks fine — `JSON.stringify` calls URL's own `toJSON`, so the `jsonb` column is correct — while every consumer upstream of the database holds an object where a string is expected. `.href` on write.
+- **The eboard modal had to get both fields, not as a courtesy.** It builds its payload with the same `buildProfilePayload`, and the write is a whole-row upsert, so a modal without a links input sends `[]` and wipes a member's links whenever eboard corrects their major. That is why `components/profile/LinksField.jsx` is shared by both forms rather than duplicated — see `components/README.md`.
+- **Two test fixtures created their own `users` table** and went red the moment a projection selected a new column. The fixture was wrong, not the code; same lesson as the uuid fixtures under item B.
+
+The traps identified in advance all held up and are now enforced in code: links go through `normalizeWebUrl` (trap #6), `memberModel`'s three projections each needed the columns added by hand, and the `jsonb` param is `JSON.stringify`'d because node-postgres turns a JS array into Postgres *array* literal syntax.
+
+**Done when:** ~~an alumnus can say what they're doing and add a few links, both show on their directory card with the link row wrapping cleanly as it grows, and a `javascript:` URL is rejected with a message beside the field.~~ **Met for parts 1 and 2.**
+
+**Not clicked through in a browser yet, and NEITHER migration has been run.** Until `npm run migrate up`, every profile read and write 500s — these are not optional or deferrable like a feature migration, because `userModel.findById` selects all three new columns.
 
 ### F. Granular permissions — *parked until after rush, and genuinely large*
 

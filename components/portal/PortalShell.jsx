@@ -15,6 +15,7 @@ import { useUnreadCounts } from '@/lib/use-unread-counts';
 import { useTabNotifications, tabFromHref } from '@/lib/use-tab-notifications';
 import { cn } from '@/lib/utils';
 import { memberDisplayName, memberInitials, formatMemberGroup } from '@/lib/portal-format';
+import { profilePictureSrc, PROFILE_PICTURE_CHANGED_EVENT } from '@/lib/avatar';
 import { PortalThemeProvider, usePortalTheme } from './PortalThemeProvider';
 import { PortalAccentProvider } from './PortalAccentContext';
 import ThemeToggle from './ThemeToggle';
@@ -162,21 +163,28 @@ function RevampedThemeButton({ accentColor, accentMuted, collapsed }) {
   );
 }
 
-function SidebarAvatar({ authentikId, initials, gradient, glow }) {
-  const [err, setErr] = useState(false);
+function SidebarAvatar({ authentikId, assetId, initials, gradient, glow }) {
+  // Keyed on the asset id rather than a boolean, the same way GroupChatAvatar
+  // is. A plain `err` flag is sticky for the life of the mount, and this mount
+  // is the whole session: a member with no photo yet 404s here once, and would
+  // then be stuck on their initials even after uploading one, because the shell
+  // never remounts on a client-side navigation.
+  const [erroredAssetId, setErroredAssetId] = useState(null);
+  const src = profilePictureSrc(authentikId, assetId);
+  const failed = erroredAssetId !== null && erroredAssetId === (assetId ?? null);
   return (
     <div
       className="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full text-[11px] font-semibold text-white"
       style={{ background: gradient, boxShadow: `0 2px 10px -3px ${glow}` }}
     >
-      {authentikId && !err ? (
+      {src && !failed ? (
         <img
-          src={`/api/users/${authentikId}/profile-picture/media`}
+          src={src}
           alt=""
           width={32}
           height={32}
           className="h-full w-full object-cover"
-          onError={() => setErr(true)}
+          onError={() => setErroredAssetId(assetId ?? null)}
         />
       ) : (
         initials
@@ -308,9 +316,20 @@ export default function PortalShell({
   // in all five portals including /rushee.
   const [profile, setProfile] = useState(null);
   useEffect(() => {
-    getProfile()
+    const load = () => getProfile()
       .then(setProfile)
       .catch((err) => { if (isRedirectError(err)) throw err; });
+
+    load();
+
+    // This shell is a layout: it mounts once per full page load and survives
+    // every client-side navigation, so the fetch above would otherwise be the
+    // only one all session. Changing your photo on the profile page would then
+    // leave the sidebar showing the old one until a hard refresh, which is the
+    // exact complaint the cache-busting is meant to end. Re-reading the profile
+    // rather than patching a single field keeps a rename covered too.
+    window.addEventListener(PROFILE_PICTURE_CHANGED_EVENT, load);
+    return () => window.removeEventListener(PROFILE_PICTURE_CHANGED_EVENT, load);
   }, []);
 
   useEffect(() => {
@@ -437,6 +456,7 @@ export default function PortalShell({
               <div className={cn('mb-1.5 flex items-center transition-all duration-300', collapsed ? 'justify-center' : 'gap-2.5 rounded-lg border border-border/70 bg-background/50 p-2.5')}>
                 <SidebarAvatar
                   authentikId={user.authentik_id}
+                  assetId={profile?.profile_picture_asset_id}
                   initials={initials}
                   gradient={revamped.gradient}
                   glow={tint(revamped.light, 0.8)}
