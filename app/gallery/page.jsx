@@ -31,7 +31,7 @@ export default function GalleryPage() {
   const withPhotos = collections.filter((c) => (c.photos?.length ?? 0) > 0);
 
   return (
-    <main className="min-h-screen bg-slate-50">
+    <main className="flex min-h-screen flex-col bg-slate-50">
       <section className="border-b border-slate-200 bg-white">
         <div className="container mx-auto max-w-6xl px-4 py-12 md:px-6 md:py-16">
           <Link href="/" className="text-sm font-medium text-indigo-600 hover:underline">
@@ -40,13 +40,10 @@ export default function GalleryPage() {
           <h1 className="mt-4 text-3xl font-bold tracking-tight text-slate-900 md:text-4xl">
             Chapter Gallery
           </h1>
-          <p className="mt-2 max-w-2xl text-slate-600">
-            Formals, tailgates, hackathons and everything in between. Newest first.
-          </p>
         </div>
       </section>
 
-      <section className="container mx-auto max-w-6xl px-4 py-12 md:px-6 md:py-16">
+      <section className="container mx-auto w-full max-w-6xl flex-1 px-4 py-12 md:px-6 md:py-16">
         {loading ? (
           // A skeleton rather than a spinner, so the page does not jump height
           // when the collections land.
@@ -66,7 +63,7 @@ export default function GalleryPage() {
           <p className="text-slate-600">No photos have been published yet. Check back soon.</p>
         ) : (
           withPhotos.map((collection) => (
-            <GalleryCollection key={collection.id} collection={collection} />
+            <GalleryCollection key={collection.id} collection={collection} layout="grid" />
           ))
         )}
       </section>

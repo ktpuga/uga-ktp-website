@@ -61,7 +61,7 @@ export function formatEventDate(value) {
   return `${MONTHS[index]} ${year}`;
 }
 
-export default function GalleryCollection({ collection, headingLevel = "h2" }) {
+export default function GalleryCollection({ collection, headingLevel = "h2", layout = "carousel" }) {
   const Heading = headingLevel;
   const photos = Array.isArray(collection.photos) ? collection.photos : [];
 
@@ -96,11 +96,17 @@ export default function GalleryCollection({ collection, headingLevel = "h2" }) {
       </div>
 
       <div className="group relative">
-        <div className="no-scrollbar flex snap-x snap-mandatory gap-4 overflow-x-auto rounded-2xl border border-slate-200 bg-white p-4">
+        <div
+          className={layout === "grid"
+            ? "grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4"
+            : "no-scrollbar flex snap-x snap-mandatory gap-4 overflow-x-auto rounded-2xl border border-slate-200 bg-white p-4"}
+        >
           {photos.map((photo) => (
             <figure
               key={photo.id}
-              className="relative h-56 w-[300px] shrink-0 snap-start overflow-hidden rounded-xl bg-slate-50 ring-1 ring-slate-100"
+              className={layout === "grid"
+                ? "relative aspect-[4/3] overflow-hidden rounded-xl bg-slate-100 ring-1 ring-slate-200"
+                : "relative h-56 w-[300px] shrink-0 snap-start overflow-hidden rounded-xl bg-slate-50 ring-1 ring-slate-100"}
             >
               <GalleryMedia photo={photo} />
 

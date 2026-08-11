@@ -1,6 +1,7 @@
 "use client";
 import { Button } from "@/components/ui/button";
-import Card from "@/components/ui/card";
+// Used only by the commented-out static executive board section below.
+// import Card from "@/components/ui/card";
 import { Menu, X } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -14,7 +15,9 @@ import mtdspexec from "../public/mytie_x_dsp_exec.jpeg";
 import pcAlpha from "../public/PCalpha.jpg";
 import retreat1 from "../public/retreat_1_whiteshirts.jpeg";
 import tg from "../public/tailgate.jpeg";
-import AlumniSection from "./AlumniSection";
+// Homepage alumni cards are intentionally disabled: /members-list renders the
+// current API-backed alumni roster.
+// import AlumniSection from "./AlumniSection";
 import GallerySection from "./GallerySection";
 import { AOSInit } from "./ui/timeline";
 
@@ -596,7 +599,15 @@ export default function TemplatePage() {
         ========================================================= */}
 
 
+        {/* =========  ALUMNI  =========  KEPT, COMMENTED OUT
+
+            The static alumni card grid is hidden because /members-list is the
+            single source of truth for the API-backed chapter roster. Restore
+            this component and its import together only if a separate static
+            homepage alumni section is wanted again.
+
         <AlumniSection />
+        ================================================ */}
 
         {/* =========  CONTACT  ========= */}
         <section id="contact" className="bg-slate-100 py-16 md:py-24">
