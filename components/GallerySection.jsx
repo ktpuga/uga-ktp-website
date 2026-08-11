@@ -1,76 +1,51 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { getHomepagePhotos } from "@/lib/portal-api";
+import Link from "next/link";
+import { getGalleryCollections } from "@/lib/portal-api";
+import GalleryCollection from "@/components/GalleryCollection";
 
-function GalleryMedia({ photo }) {
-  const src = `/api/homepage-photos/${photo.id}/media`;
-  if (photo.media_type === "video") {
-    return (
-      <video
-        src={src}
-        muted
-        loop
-        autoPlay
-        playsInline
-        className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.02]"
-      />
-    );
-  }
-  return (
-    // eslint-disable-next-line @next/next/no-img-element
-    // The media endpoint serves the original file — there's no thumbnail
-    // variant — so defer anything the visitor hasn't scrolled to.
-    <img
-      src={src}
-      alt={photo.title || "Chapter photo"}
-      loading="lazy"
-      decoding="async"
-      className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.02]"
-    />
-  );
-}
-
+// The homepage's slice of the gallery: only the collections eboard marked as
+// featured, and the API caps how many come back.
+//
+// The cap is not cosmetic. `/api/homepage-photos/:id/media` serves the ORIGINAL
+// asset with no thumbnail variant, so every collection added to this page makes
+// the landing page slower forever. The full archive is /gallery, which someone
+// chooses to open.
 export default function GallerySection() {
-  const [photos, setPhotos] = useState([]);
+  const [collections, setCollections] = useState([]);
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
-    getHomepagePhotos()
-      .then(setPhotos)
-      .catch(() => setPhotos([]))
+    getGalleryCollections({ featured: true })
+      .then((data) => setCollections(Array.isArray(data) ? data : []))
+      .catch(() => setCollections([]))
       .finally(() => setLoaded(true));
   }, []);
 
-  // Nothing configured yet — quietly render nothing rather than an empty section.
-  if (loaded && photos.length === 0) return null;
+  // Nothing configured yet — render nothing rather than an empty band. Also
+  // covers the API being unreachable, which must not leave a broken section on
+  // the public homepage.
+  const withPhotos = collections.filter((c) => (c.photos?.length ?? 0) > 0);
+  if (loaded && withPhotos.length === 0) return null;
 
   return (
-    // Mirrors the Hackathon Highlights section directly below it — same
-    // background, header row and carousel treatment, so the two read as a pair.
     <section className="relative py-12 md:py-16 bg-white/70">
       <div className="container mx-auto max-w-6xl px-4 md:px-6">
-        <div className="mb-6 flex items-end justify-between">
-          <div>
-            <h2 className="text-2xl md:text-3xl font-bold tracking-tight text-slate-900">
-              Chapter Gallery
-            </h2>
-            <p className="text-slate-600">A look at life in Phi Chapter</p>
-          </div>
-        </div>
+        {withPhotos.map((collection) => (
+          <GalleryCollection key={collection.id} collection={collection} />
+        ))}
 
-        <div className="group relative">
-          <div className="no-scrollbar flex snap-x snap-mandatory gap-4 overflow-x-auto rounded-2xl border border-slate-200 bg-white p-4">
-            {photos.map((photo) => (
-              <figure
-                key={photo.id}
-                className="relative h-56 w-[300px] shrink-0 snap-start overflow-hidden rounded-xl bg-slate-50 ring-1 ring-slate-100"
-              >
-                <GalleryMedia photo={photo} />
-              </figure>
-            ))}
+        {withPhotos.length > 0 && (
+          <div className="mt-2 flex justify-center">
+            <Link
+              href="/gallery"
+              className="rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:bg-slate-50"
+            >
+              Browse the full gallery →
+            </Link>
           </div>
-        </div>
+        )}
       </div>
     </section>
   );

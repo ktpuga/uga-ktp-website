@@ -302,6 +302,23 @@ The UI is mostly already built: `AudienceSelect.jsx` for group pills, and the "O
 
 ---
 
+### ~~G. Gallery collections~~ — BUILT 2026-08-11, not yet clicked through in a browser
+
+Eboard can run several homepage galleries instead of one flat list. `homepage_photo_collections` groups `homepage_photos` by a nullable `collection_id`; the migration backfilled every existing photo into one "Chapter Gallery" so the live homepage rendered identically the moment it ran.
+
+**Two surfaces, one model.** The homepage shows only the collections marked featured, capped server-side; the new public `/gallery` page shows all of them, newest first. The cap is a performance rule, not a preference: the media endpoint serves **original** files with no thumbnail variant, so every collection added to the landing page makes it permanently slower.
+
+**Ordering is `display_order`, then `event_date` newest-first, then `id`.** `event_date` exists because `created_at` is wrong for this — eboard uploads last autumn's photos in spring. An undated collection sorts last, being unplaced rather than ancient.
+
+**The hardcoded "Hackathon Highlights" section is now a collection**, so it is editable without a deploy. The original JSX and its `hackPics` array are **commented out in `template-page.jsx`, not deleted** (Yash's call). They must be restored together — one without the other is an unused or an undefined variable.
+
+Two things worth knowing before touching it:
+
+1. **Route order in `routes/homepagePhotos.js` is load-bearing.** `PUT /:id` matches a single segment, so it also matches `/collections` and would silently answer `PUT /collections` with the photo handler. Every `/collections` route sits above the `/:id` routes and a test asserts it.
+2. **Deleting a collection deletes its photos** (`ON DELETE CASCADE`). The API refuses with a 409 and the real count until `?force=true`, so the confirmation quotes a number rather than guessing. Immich assets survive.
+
+**Not clicked through in a browser yet** — worth a pass on: creating a collection, uploading into it, reordering inside one collection without disturbing another, and the delete-with-photos warning.
+
 ## Part 3 — Working here
 
 - **Branch, PR, don't push to `main`.** `main` deploys to production the moment it's pushed, for both this repo and the API. There is no staging environment.

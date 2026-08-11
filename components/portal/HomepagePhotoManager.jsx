@@ -15,8 +15,13 @@ import {
   reorderHomepagePhotos,
   updateHomepagePhoto,
   uploadHomepagePhoto,
+  getGalleryCollectionsForManagement,
+  createGalleryCollection,
+  updateGalleryCollection,
+  deleteGalleryCollection,
 } from '@/lib/portal-api';
 import { isRedirectError } from '@/lib/is-redirect-error';
+import { TEXT_LIMITS } from '@/lib/text-limits';
 
 // Palette now comes from the portal accent context so the Admin red/blue
 // toggle reaches this page, not just the sidebar. Each component asks for it
@@ -564,6 +569,186 @@ function GalleryCard({
   );
 }
 
+// Create/edit a collection. One modal for both, because the fields are
+// identical and two of these is how the create and edit forms drift.
+function CollectionModal({ collection, onClose, onSave }) {
+  const MAROON = useAccentPalette();
+  const editing = Boolean(collection);
+  const [form, setForm] = useState({
+    title: collection?.title ?? '',
+    subtitle: collection?.subtitle ?? '',
+    event_date: collection?.event_date ?? '',
+    link_url: collection?.link_url ?? '',
+    link_label: collection?.link_label ?? '',
+    is_featured: collection?.is_featured ?? false,
+  });
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+  const [fieldError, setFieldError] = useState(null);
+
+  const set = (key, value) => setForm((f) => ({ ...f, [key]: value }));
+
+  async function submit() {
+    setBusy(true);
+    setError('');
+    setFieldError(null);
+    // Empty strings become null so a cleared field actually clears. The API
+    // reads an absent key as "leave alone" and null as "remove", and sending
+    // "" for a date would be a 400 rather than a clear.
+    const payload = {
+      title: form.title,
+      subtitle: form.subtitle || null,
+      event_date: form.event_date || null,
+      link_url: form.link_url || null,
+      link_label: form.link_label || null,
+      is_featured: form.is_featured,
+    };
+    const result = await onSave(payload);
+    setBusy(false);
+    if (result?.error) {
+      // The API names the offending field on these, same as the profile
+      // routes, so it lands next to the input rather than in a banner.
+      if (result.field) setFieldError({ field: result.field, message: result.error });
+      else setError(result.error);
+      return;
+    }
+    onClose();
+  }
+
+  const inputCls =
+    'w-full rounded-lg border border-border bg-card px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2';
+  const ringStyle = { '--tw-ring-color': tint(MAROON.base, 0.3) };
+  const errFor = (name) => (fieldError?.field === name ? fieldError.message : null);
+
+  function LabelledField({ label, name, hint, children }) {
+    return (
+      <div>
+        <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+          {label}
+        </label>
+        {children}
+        {errFor(name) ? (
+          <p role="alert" className="mt-1 text-xs text-red-600 dark:text-red-400">{errFor(name)}</p>
+        ) : hint ? (
+          <p className="mt-1 text-[11px] text-muted-foreground">{hint}</p>
+        ) : null}
+      </div>
+    );
+  }
+
+  return (
+    <ModalWrapper onClose={onClose} label={editing ? 'Edit collection' : 'New collection'}>
+      <ModalHeader
+        title={editing ? 'Edit Collection' : 'New Collection'}
+        icon={<Layers size={14} strokeWidth={1.75} />}
+        onClose={onClose}
+      />
+      <div className="max-h-[70vh] space-y-4 overflow-y-auto p-5">
+        {error && (
+          <div className="flex items-center gap-2 rounded-xl border border-destructive/30 bg-destructive/10 px-3 py-2 text-xs text-destructive">
+            <AlertTriangle size={13} /> {error}
+          </div>
+        )}
+
+        <LabelledField label="Title" name="title">
+          <input
+            autoFocus
+            type="text"
+            maxLength={TEXT_LIMITS.TITLE}
+            value={form.title}
+            onChange={(e) => set('title', e.target.value)}
+            placeholder="e.g. Spring Formal 2026"
+            className={inputCls}
+            style={ringStyle}
+          />
+        </LabelledField>
+
+        <LabelledField label="Subtitle" name="subtitle" hint="The line under the heading. Optional.">
+          <input
+            type="text"
+            maxLength={220}
+            value={form.subtitle}
+            onChange={(e) => set('subtitle', e.target.value)}
+            placeholder="e.g. Second Edition, Fall 2025, 8 projects"
+            className={inputCls}
+            style={ringStyle}
+          />
+        </LabelledField>
+
+        <LabelledField
+          label="Event date"
+          name="event_date"
+          hint="What orders the gallery page. Use when the event happened, not when you uploaded it."
+        >
+          <input
+            type="date"
+            value={form.event_date}
+            onChange={(e) => set('event_date', e.target.value)}
+            className={inputCls}
+            style={ringStyle}
+          />
+        </LabelledField>
+
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <LabelledField label="Link" name="link_url" hint="Must start with https://">
+            <input
+              type="url"
+              value={form.link_url}
+              onChange={(e) => set('link_url', e.target.value)}
+              placeholder="https://example.devpost.com"
+              className={inputCls}
+              style={ringStyle}
+            />
+          </LabelledField>
+          <LabelledField label="Link label" name="link_label" hint="Defaults to “See more”.">
+            <input
+              type="text"
+              maxLength={80}
+              value={form.link_label}
+              onChange={(e) => set('link_label', e.target.value)}
+              placeholder="View Devpost"
+              className={inputCls}
+              style={ringStyle}
+            />
+          </LabelledField>
+        </div>
+
+        <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-border bg-muted/40 p-3 transition-colors hover:bg-muted/60">
+          <input
+            type="checkbox"
+            checked={form.is_featured}
+            onChange={(e) => set('is_featured', e.target.checked)}
+            className="mt-0.5 h-4 w-4 shrink-0 rounded border-border"
+            style={{ accentColor: MAROON.base }}
+          />
+          <span>
+            <span className="block text-sm font-medium text-foreground">Show on the homepage</span>
+            <span className="mt-0.5 block text-xs text-muted-foreground">
+              Only a few collections fit on the homepage, so the newest featured ones win. Every
+              collection appears on the gallery page either way.
+            </span>
+          </span>
+        </label>
+      </div>
+
+      <div className="flex items-center justify-end gap-2 border-t border-border px-5 py-3">
+        <button type="button" onClick={onClose} className="rounded-lg px-3 py-2 text-sm text-muted-foreground hover:text-foreground">
+          Cancel
+        </button>
+        <button
+          type="button"
+          onClick={submit}
+          disabled={busy || !form.title.trim()}
+          className="rounded-lg px-4 py-2 text-sm font-semibold text-white shadow-sm hover:opacity-85 disabled:opacity-40"
+          style={{ background: MAROON.gradient }}
+        >
+          {busy ? 'Saving…' : editing ? 'Save changes' : 'Create collection'}
+        </button>
+      </div>
+    </ModalWrapper>
+  );
+}
+
 function HomepagePreviewStrip({ photos }) {
   const MAROON = useAccentPalette();
   const [collapsed, setCollapsed] = useState(false);
@@ -666,6 +851,16 @@ export default function HomepagePhotoManager() {
   const [dragIndex, setDragIndex] = useState(null);
   const [overIndex, setOverIndex] = useState(null);
 
+  const [collections, setCollections] = useState([]);
+  // Which collection the grid below is showing. `null` is the "Unfiled" bucket,
+  // which exists because collection_id is nullable — pre-collections photos live
+  // there, and a photo whose collection was deleted cannot (ON DELETE CASCADE
+  // takes it), so this is only ever the historical rows plus anything added
+  // before a gallery was picked.
+  const [activeCollectionId, setActiveCollectionId] = useState(null);
+  const [collectionModal, setCollectionModal] = useState(null); // { collection } | { collection: null }
+  const [deleteCollectionTarget, setDeleteCollectionTarget] = useState(null);
+
   useEffect(() => {
     load({ initial: true });
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -675,8 +870,24 @@ export default function HomepagePhotoManager() {
     if (!initial) setRefreshing(true);
     setError('');
     try {
-      const data = await getHomepagePhotos();
+      // Both in one round trip. Sequential would show a grid with no collection
+      // bar for a beat, and every photo would look unfiled until the second
+      // response landed.
+      const [data, cols] = await Promise.all([
+        getHomepagePhotos(),
+        getGalleryCollectionsForManagement(),
+      ]);
       setPhotos(Array.isArray(data) ? data : []);
+      const list = Array.isArray(cols) ? cols : [];
+      setCollections(list);
+
+      // Land on a real collection rather than the Unfiled bucket, which is
+      // empty for anyone who set this up after the migration and would read as
+      // "my photos are gone".
+      setActiveCollectionId((current) => {
+        if (current !== null && list.some((c) => c.id === current)) return current;
+        return list[0]?.id ?? null;
+      });
     } catch (err) {
       if (isRedirectError(err)) throw err;
       setError(err.message ?? 'Could not load homepage photos');
@@ -684,6 +895,61 @@ export default function HomepagePhotoManager() {
       setLoading(false);
       setRefreshing(false);
     }
+  }
+
+  // The grid, the reorder and the bulk actions all operate on this rather than
+  // on every photo in the gallery — otherwise reordering inside one collection
+  // would renumber the others.
+  const visiblePhotos = useMemo(
+    () => photos.filter((p) => (p.collection_id ?? null) === activeCollectionId),
+    [photos, activeCollectionId],
+  );
+
+  const unfiledCount = useMemo(
+    () => photos.filter((p) => (p.collection_id ?? null) === null).length,
+    [photos],
+  );
+
+  const activeCollection = collections.find((c) => c.id === activeCollectionId) ?? null;
+
+  async function saveCollection(payload) {
+    try {
+      const saved = collectionModal?.collection
+        ? await updateGalleryCollection(collectionModal.collection.id, payload)
+        : await createGalleryCollection(payload);
+      await load();
+      // Jump to whatever was just made, so the next action (adding photos to it)
+      // is one click away instead of a hunt through the bar.
+      if (saved?.id) setActiveCollectionId(saved.id);
+      return saved;
+    } catch (err) {
+      if (isRedirectError(err)) throw err;
+      return { error: err.message ?? 'Failed to save the collection' };
+    }
+  }
+
+  async function confirmDeleteCollection(force) {
+    const target = deleteCollectionTarget;
+    if (!target) return;
+    setBusy(true);
+    const result = await deleteGalleryCollection(target.collection.id, { force });
+    setBusy(false);
+
+    if (result?.ok) {
+      setDeleteCollectionTarget(null);
+      setActiveCollectionId(null);
+      load();
+      return;
+    }
+    // A 409 is not a failure to report and dismiss — it carries the photo count
+    // the person needs in order to decide. Re-opening the dialog with the count
+    // is the whole point of the API returning it.
+    if (result?.code === 'has_photos') {
+      setDeleteCollectionTarget({ ...target, photoCount: result.photo_count });
+      return;
+    }
+    setDeleteCollectionTarget(null);
+    setError(result?.error ?? 'Failed to delete the collection');
   }
 
   const stats = useMemo(() => {
@@ -718,10 +984,14 @@ export default function HomepagePhotoManager() {
     }
   }
 
+  // Both reorder helpers work over `visiblePhotos`, not `photos`. The indexes
+  // the grid hands back are positions within the collection being shown, so
+  // applying them to the full list would swap the wrong two rows as soon as a
+  // second collection exists.
   function moveItem(index, direction) {
     const target = index + direction;
-    if (target < 0 || target >= photos.length) return;
-    const next = [...photos];
+    if (target < 0 || target >= visiblePhotos.length) return;
+    const next = [...visiblePhotos];
     [next[index], next[target]] = [next[target], next[index]];
     persistOrder(next);
   }
@@ -731,7 +1001,7 @@ export default function HomepagePhotoManager() {
     setDragIndex(null);
     setOverIndex(null);
     if (from === null || from === index) return;
-    const next = [...photos];
+    const next = [...visiblePhotos];
     const [moved] = next.splice(from, 1);
     next.splice(index, 0, moved);
     persistOrder(next);
@@ -746,6 +1016,9 @@ export default function HomepagePhotoManager() {
       formData.append('file', entry.file);
       if (entry.title.trim()) formData.append('title', entry.title.trim());
       if (entry.caption.trim()) formData.append('caption', entry.caption.trim());
+      // Files land in the collection you are looking at. Omitted for the
+      // Unfiled bucket, where there is nothing to file them under.
+      if (activeCollectionId) formData.append('collection_id', activeCollectionId);
       await uploadHomepagePhoto(formData);
     }
     await load();
@@ -814,7 +1087,7 @@ export default function HomepagePhotoManager() {
     });
   }
 
-  const allSelected = photos.length > 0 && selected.size === photos.length;
+  const allSelected = visiblePhotos.length > 0 && selected.size === visiblePhotos.length;
 
   return (
     <div className="mx-auto max-w-6xl px-4 pb-16 pt-8 sm:px-6 lg:px-8">
@@ -874,8 +1147,102 @@ export default function HomepagePhotoManager() {
         ))}
       </div>
 
+      {/* Collections bar. Every photo belongs to at most one, and the grid
+          below shows only the active one — including reorder and bulk remove,
+          which would otherwise renumber or delete across galleries. */}
+      <div className="mb-6 rounded-2xl border border-border bg-card p-3 shadow-sm">
+        <div className="mb-2 flex items-center justify-between gap-2">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+            Collections
+          </p>
+          <button
+            type="button"
+            onClick={() => setCollectionModal({ collection: null })}
+            className="flex items-center gap-1 rounded-lg border border-border px-2.5 py-1 text-xs font-medium text-muted-foreground hover:bg-muted hover:text-foreground"
+          >
+            <Plus size={12} /> New collection
+          </button>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2">
+          {collections.map((c) => {
+            const active = c.id === activeCollectionId;
+            return (
+              <button
+                key={c.id}
+                type="button"
+                onClick={() => { setActiveCollectionId(c.id); setSelected(new Set()); }}
+                className={cn(
+                  'flex items-center gap-1.5 rounded-xl border px-3 py-1.5 text-xs font-medium transition-colors',
+                  active ? 'text-white shadow-sm' : 'border-border text-muted-foreground hover:bg-muted hover:text-foreground',
+                )}
+                style={active ? { background: MAROON.gradient, borderColor: 'transparent' } : undefined}
+              >
+                {c.title}
+                <span className={cn('rounded-md px-1.5 py-0.5 text-[10px]', active ? 'bg-white/20' : 'bg-muted')}>
+                  {c.photo_count ?? 0}
+                </span>
+                {/* The homepage is the bounded surface, so which collections
+                    reach it is worth showing at a glance rather than only
+                    inside the edit modal. */}
+                {c.is_featured && <LayoutTemplate size={11} className={active ? 'opacity-80' : 'opacity-60'} />}
+              </button>
+            );
+          })}
+
+          {/* Only rendered when it holds something. An always-present empty
+              bucket reads as a place photos are going missing to. */}
+          {unfiledCount > 0 && (
+            <button
+              type="button"
+              onClick={() => { setActiveCollectionId(null); setSelected(new Set()); }}
+              className={cn(
+                'flex items-center gap-1.5 rounded-xl border border-dashed px-3 py-1.5 text-xs font-medium transition-colors',
+                activeCollectionId === null
+                  ? 'border-foreground/40 text-foreground'
+                  : 'border-border text-muted-foreground hover:bg-muted hover:text-foreground',
+              )}
+            >
+              Unfiled
+              <span className="rounded-md bg-muted px-1.5 py-0.5 text-[10px]">{unfiledCount}</span>
+            </button>
+          )}
+        </div>
+
+        {activeCollection && (
+          <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-border pt-3">
+            <div className="min-w-0">
+              <p className="truncate text-sm font-medium text-foreground">{activeCollection.title}</p>
+              <p className="truncate text-xs text-muted-foreground">
+                {[
+                  activeCollection.subtitle,
+                  activeCollection.event_date,
+                  activeCollection.is_featured ? 'On the homepage' : 'Gallery page only',
+                ].filter(Boolean).join(' · ')}
+              </p>
+            </div>
+            <div className="flex shrink-0 items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setCollectionModal({ collection: activeCollection })}
+                className="flex items-center gap-1 rounded-lg border border-border px-2.5 py-1 text-xs text-muted-foreground hover:bg-muted hover:text-foreground"
+              >
+                <Pencil size={11} /> Edit
+              </button>
+              <button
+                type="button"
+                onClick={() => setDeleteCollectionTarget({ collection: activeCollection })}
+                className="flex items-center gap-1 rounded-lg border border-destructive/30 bg-destructive/10 px-2.5 py-1 text-xs text-destructive hover:bg-destructive/20"
+              >
+                <Trash2 size={11} /> Delete
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+
       <div className="mb-6">
-        <HomepagePreviewStrip photos={photos} />
+        <HomepagePreviewStrip photos={visiblePhotos} />
       </div>
 
       {selected.size > 0 && (
@@ -905,14 +1272,14 @@ export default function HomepagePhotoManager() {
       <div className="mb-4 flex items-center justify-between gap-2">
         <div className="flex items-center gap-2">
           <p className="text-sm font-medium text-foreground">
-            {photos.length} item{photos.length !== 1 ? 's' : ''}
+            {visiblePhotos.length} item{visiblePhotos.length !== 1 ? 's' : ''}
           </p>
-          {photos.length > 0 && (
+          {visiblePhotos.length > 0 && (
             <>
               <span className="text-muted-foreground/40">·</span>
               <button
                 type="button"
-                onClick={() => setSelected(allSelected ? new Set() : new Set(photos.map((p) => p.id)))}
+                onClick={() => setSelected(allSelected ? new Set() : new Set(visiblePhotos.map((p) => p.id)))}
                 className="text-xs text-muted-foreground hover:text-foreground"
               >
                 {allSelected ? 'Deselect all' : 'Select all'}
@@ -927,14 +1294,14 @@ export default function HomepagePhotoManager() {
         <div className="flex h-48 items-center justify-center gap-2 rounded-2xl border border-border bg-card text-sm text-muted-foreground">
           <Loader2 size={15} className="animate-spin" /> Loading gallery…
         </div>
-      ) : photos.length === 0 ? (
+      ) : visiblePhotos.length === 0 ? (
         <div className="flex h-48 flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-border bg-card">
           <ImageIcon size={26} className="text-muted-foreground" />
           <p className="text-sm text-muted-foreground">No homepage photos yet. Add one with the button above.</p>
         </div>
       ) : (
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
-          {photos.map((photo, index) => (
+          {visiblePhotos.map((photo, index) => (
             <GalleryCard
               key={photo.id}
               photo={photo}
@@ -954,6 +1321,46 @@ export default function HomepagePhotoManager() {
             />
           ))}
         </div>
+      )}
+
+      {collectionModal && (
+        <CollectionModal
+          collection={collectionModal.collection}
+          onClose={() => setCollectionModal(null)}
+          onSave={saveCollection}
+        />
+      )}
+
+      {deleteCollectionTarget && (
+        <ConfirmModal
+          title={
+            deleteCollectionTarget.photoCount
+              ? 'Delete the photos too?'
+              : `Delete “${deleteCollectionTarget.collection.title}”?`
+          }
+          body={
+            deleteCollectionTarget.photoCount ? (
+              <>
+                <strong className="text-foreground">
+                  {deleteCollectionTarget.photoCount} photo
+                  {deleteCollectionTarget.photoCount === 1 ? '' : 's'}
+                </strong>{' '}
+                are in this collection. Deleting it removes them from the site as well. This cannot
+                be undone here, though the originals stay in Immich.
+              </>
+            ) : (
+              'This collection is empty, so nothing else is removed.'
+            )
+          }
+          confirmLabel={deleteCollectionTarget.photoCount ? 'Delete anyway' : 'Delete'}
+          busy={busy}
+          onClose={() => setDeleteCollectionTarget(null)}
+          // The first click asks without force and gets the count back from the
+          // API; only once the count has been shown does the second click force
+          // it. That ordering is the whole point — the warning is generated
+          // from the real number, not guessed at on the client.
+          onConfirm={() => confirmDeleteCollection(Boolean(deleteCollectionTarget.photoCount))}
+        />
       )}
 
       {showAddModal && (

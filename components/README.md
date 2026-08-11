@@ -162,3 +162,16 @@ They're deleted, along with the accent check. An unrecognised accent now renders
 All six are gone, including `LegacyCommitteesPage.jsx`, which was held back briefly only because `CommitteesPage.jsx` was being edited elsewhere at the time.
 
 Git history has them if anything is ever needed back.
+
+## Public gallery collections
+
+Three files, one API. `GalleryCollection.jsx` renders one collection's heading, subtitle, optional link and snap carousel. `GallerySection.jsx` puts the **featured** ones on the homepage; `app/gallery/page.jsx` puts **all** of them on a public archive page. Both hand the same component the same shape, so the two surfaces cannot drift into looking like different features.
+
+- **The homepage only ever shows a few, on purpose.** `/api/homepage-photos/:id/media` streams the **original** file and there is no thumbnail variant, so every collection added to the landing page makes it permanently slower. The API applies the cap; the client just asks with `featured: true`. Don't "fix" the homepage by dropping the filter.
+- **Neither page re-sorts.** Order comes from the API (`display_order`, then `event_date` newest-first, then `id`). Sorting client-side is how the homepage and `/gallery` would start disagreeing about what chronological means.
+- **`formatEventDate` parses the string, never `new Date()`.** The API sends a date-only value, and `new Date("2026-03-15")` is UTC midnight rendered in the viewer's zone — which shows *February* for anyone west of UTC. Same class of bug as the `dob` one in the API.
+- **A collection with no photos renders nothing**, rather than a heading over an empty box.
+
+`HomepagePhotoManager.jsx` is the eboard side. The collection pills scope the grid, the reordering, the bulk actions and new uploads — `visiblePhotos`, not `photos`. Reordering off the unscoped list would renumber other collections, because the indexes the grid returns are positions *within* the collection on screen.
+
+**The old hardcoded "Hackathon Highlights" section in `template-page.jsx` is commented out, not deleted** (Yash's call, so it can be put back). Its `hackPics` array is commented out with it — restoring one without the other is either an unused variable or an undefined one. The `ktpHacks*` image imports at the top of that file are still live because `/hackathon` uses them.

@@ -71,7 +71,20 @@ export default function TemplatePage() {
     tg.src,
   ].filter(Boolean);
 
-  /* ------------------- Hackathon images for highlights -------------- */
+  /* ------------------- Hackathon images for highlights --------------
+     KEPT, COMMENTED OUT. Superseded by the eboard-managed gallery
+     collections that <GallerySection /> renders below — "Hackathon
+     Highlights" is now a collection eboard can edit without a deploy,
+     instead of this array plus the hardcoded section further down.
+
+     Commented rather than deleted at Yash's request, so the original is
+     here if the data-driven version needs to be backed out. The array and
+     the JSX section go together: uncommenting one without the other is
+     either an unused variable or an undefined one.
+
+     Note if you do restore it: the image imports at the top of this file
+     (ktpHacks1…13) are still live, because /hackathon uses them too.
+
   const hackPics = [
     ktpHacks1,
     ktpHacks2,
@@ -87,6 +100,7 @@ export default function TemplatePage() {
     ktpHacks12,
     ktpHacks13,
   ];
+  ------------------------------------------------------------------- */
 
   /* --------------------------- Mobile breakpoint --------------------------- */
   const [mobile, setMobile] = useState(false);
@@ -298,7 +312,18 @@ export default function TemplatePage() {
             when no photos are configured, so it can't leave an empty band. */}
         <GallerySection />
 
-        {/* ========================== HACKATHON HIGHLIGHTS ===================== */}
+        {/* ===== HACKATHON HIGHLIGHTS — KEPT, COMMENTED OUT =====
+            Replaced by an eboard-managed gallery collection, rendered by
+            <GallerySection /> above. This is the original hardcoded version,
+            kept at Yash's request so it can be put back if needed.
+
+            To restore: uncomment this AND the hackPics array near the top of
+            this file. One without the other does not compile.
+
+            The JSX below sits inside a block comment, so the inline JSX
+            comments it used to carry were stripped: a nested comment closer
+            would end this one early and leave the rest as broken markup.
+
         <section className="relative py-12 md:py-16 bg-white/70">
           <div className="container mx-auto max-w-6xl px-4 md:px-6">
             <div className="mb-6 flex items-end justify-between">
@@ -318,7 +343,6 @@ export default function TemplatePage() {
               </Link>
             </div>
 
-            {/* Horizontal scroll / snap carousel (no extra deps) */}
             <div className="group relative">
               <div className="no-scrollbar flex snap-x snap-mandatory gap-4 overflow-x-auto rounded-2xl border border-slate-200 bg-white p-4">
                 {hackPics.map((img, i) => (
@@ -337,7 +361,6 @@ export default function TemplatePage() {
               </div>
             </div>
 
-            {/* Devpost CTA */}
             <div className="mt-6 flex flex-wrap items-center gap-3">
               <Link
                 href="https://uga-ktp-hackathon-fall-25.devpost.com/"
@@ -357,6 +380,8 @@ export default function TemplatePage() {
             </div>
           </div>
         </section>
+        ===================================================== */}
+
 
         {/* ===============================  ABOUT  ============================= */}
         <section id="about" className="bg-card py-16 md:py-24">
