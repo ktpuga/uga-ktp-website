@@ -141,6 +141,7 @@ export default function TemplatePage() {
     { href: "/rush", label: "Rush" },
     { href: "#about", label: "About", hideOnMobile: true },
     { href: "/members-list", label: "Members" },
+    { href: "/gallery", label: "Gallery" },
     // Removed with the Exec Board section below: an anchor link to a section
     // that isn't rendered does nothing at all when clicked, which reads as a
     // broken nav rather than as a hidden section.
@@ -165,11 +166,6 @@ export default function TemplatePage() {
             height={40}
             className="h-8 w-auto"
           />
-          {!mobile && (
-            <span className="text-lg font-semibold text-slate-800/80">
-              Phi Chapter at UGA
-            </span>
-          )}
         </Link>
         {/* Inline links from md up; below that they live in the dropdown. */}
         <nav className="ml-auto hidden gap-4 md:flex md:gap-6">

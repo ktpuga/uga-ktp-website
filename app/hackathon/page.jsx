@@ -22,7 +22,6 @@ import Link from 'next/link'
 import React, { useEffect, useState } from 'react'
 
 export default function HackathonPage() {
-  const [mobile, setMobile] = useState(false)
   const [scrolled, setScrolled] = useState(false)
   const phrases = [
     'WELCOME_TO_KTP_HACKS',
@@ -52,10 +51,6 @@ export default function HackathonPage() {
     let phraseIdx = 0 // which phrase is active?
     let scrambleTimer // shuffles letters
     let switchTimer // swaps phrases
-    const updateMobile = () => setMobile(window.innerWidth < 599)
-    updateMobile()
-    window.addEventListener('resize', updateMobile)
-
     /** start/stop the letter-scramble interval */
     const startScramble = () => {
       scrambleTimer = setInterval(() => {
@@ -84,7 +79,6 @@ export default function HackathonPage() {
     window.addEventListener('scroll', onScroll)
 
     return () => {
-      window.removeEventListener('resize', updateMobile)
       window.removeEventListener('scroll', onScroll)
       clearInterval(scrambleTimer)
       clearInterval(switchTimer)
@@ -97,7 +91,6 @@ export default function HackathonPage() {
       <header className={`sticky top-0 z-50 flex h-16 items-center px-4 lg:px-6 transition-all duration-300 border-b ${scrolled ? 'bg-black/80 border-indigo-800 shadow-lg backdrop-blur-md' : 'bg-transparent border-transparent'}`}>
         <Link href="/" className="flex items-center gap-2">
           <Image src="/KTP PHI CHAPTER.svg" alt="KTP Phi Chapter" width={100} height={40} className="h-8 w-auto" style={{filter: 'brightness(0) invert(1)'}} />
-          {!mobile && <span className="ml-2 text-sm font-semibold text-fuchsia-300">Phi Chapter at UGA</span>}
         </Link>
         <nav className="ml-auto flex gap-4 sm:gap-6">
           {[
