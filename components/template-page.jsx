@@ -47,10 +47,17 @@ function importAll(r) {
 export default function TemplatePage() {
   const { data: session } = useSession();
 
-  /* ---------------------- Collect leadership head‑shots --------------------- */
+  /* ---------------------- Collect leadership head‑shots ---------------------
+     KEPT, COMMENTED OUT with the Exec Board section further down, which was
+     the only thing that read it. Restore both together.
+
+     Commenting this out also drops every file under public/leadership/ from
+     the bundle, since require.context is what pulled them in.
+
   const images = importAll(
     require.context("../public/leadership/", false, /\.(png|jpe?g|svg)$/),
   );
+  ------------------------------------------------------------------------- */
 
   const rotation = [
     "rotate-[3deg]",
@@ -131,7 +138,10 @@ export default function TemplatePage() {
     { href: "/rush", label: "Rush" },
     { href: "#about", label: "About", hideOnMobile: true },
     { href: "/members-list", label: "Members" },
-    { href: "#leadership", label: "Leadership" },
+    // Removed with the Exec Board section below: an anchor link to a section
+    // that isn't rendered does nothing at all when clicked, which reads as a
+    // broken nav rather than as a hidden section.
+    // { href: "#leadership", label: "Leadership" },
     { href: "/hackathon", label: "Hackathon" },
     { href: "#contact", label: "Contact" },
   ];
@@ -481,7 +491,27 @@ export default function TemplatePage() {
           </div>
         </section>
 
-        {/* =========  EXEC BOARD  ========= */}
+        {/* =========  EXEC BOARD  =========  KEPT, COMMENTED OUT
+
+            Hidden at Yash's request. Commented rather than deleted so the
+            card list and every bio survive for whoever puts it back.
+
+            THREE THINGS RESTORE TOGETHER:
+              1. this section,
+              2. the `images` const near the top of this file, which only
+                 this section reads, and
+              3. the "Leadership" entry in NAV_LINKS, removed because a nav
+                 item scrolling to a section that is not rendered does
+                 nothing at all when clicked.
+
+            Still pointing at #leadership from OTHER pages, and therefore
+            now dead until this comes back: app/hackathon/page.jsx and
+            app/code-of-conduct/page.jsx both link to /#leadership.
+
+            The JSX below had its own inline comments stripped: a nested
+            comment closer would end this block early and leave the rest as
+            broken markup.
+
         <section id="leadership" className="bg-card py-16 md:py-24">
           <div
             className="container mx-auto max-w-6xl px-4 md:px-6"
@@ -497,8 +527,6 @@ export default function TemplatePage() {
               </p>
             </div>
             <div className="mt-6 grid grid-cols-2 gap-6 text-sm p-0 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4">
-              {/* === Cards (unchanged) === */}
-              {/* prettier-ignore */}
               <Card name="Daniel Rifai" title="President" bio="Daniel Rifai is a third year Computer Science and Finance major. He enjoys the outdoors, sports, film, and card games." avatarSrc={images["danny.jpeg"].default.src} fallbackInitials="DR" instagramUrl="https://www.instagram.com/drifai2" linkedinUrl="https://www.linkedin.com/in/daniel-rifai-19226a292/" />
               <Card
                 name="William Tomaszewski"
@@ -565,6 +593,8 @@ export default function TemplatePage() {
             </div>
           </div>
         </section>
+        ========================================================= */}
+
 
         <AlumniSection />
 

@@ -103,9 +103,28 @@ export default function GalleryCollection({ collection, headingLevel = "h2" }) {
               className="relative h-56 w-[300px] shrink-0 snap-start overflow-hidden rounded-xl bg-slate-50 ring-1 ring-slate-100"
             >
               <GalleryMedia photo={photo} />
-              {photo.caption && (
-                <figcaption className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent px-3 pb-2 pt-6 text-xs text-white">
-                  {photo.caption}
+
+              {/* Title as the caption line, with the photo's own caption under
+                  it when there is one. Both `truncate` with a `title`
+                  attribute for the full text on hover: the tiles are a fixed
+                  300px, so a long name would otherwise wrap upward and cover
+                  the picture it is labelling.
+
+                  The whole block is skipped when a photo has neither, rather
+                  than rendering an empty gradient band across every untitled
+                  tile. */}
+              {(photo.title || photo.caption) && (
+                <figcaption className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/75 via-black/40 to-transparent px-3 pb-2 pt-8 text-white">
+                  {photo.title && (
+                    <p className="truncate text-xs font-medium leading-snug" title={photo.title}>
+                      {photo.title}
+                    </p>
+                  )}
+                  {photo.caption && (
+                    <p className="truncate text-[11px] leading-snug text-white/75" title={photo.caption}>
+                      {photo.caption}
+                    </p>
+                  )}
                 </figcaption>
               )}
             </figure>
