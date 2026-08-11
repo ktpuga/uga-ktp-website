@@ -10,10 +10,12 @@ import {
   adminUpdateUsername,
   adminRemoveProfilePicture,
   adminUploadProfilePicture,
+  adminUpdateTraits,
 } from '@/lib/portal-api';
 import { memberDisplayName } from '@/lib/portal-format';
 import { PROFILE_LIMITS } from '@/lib/text-limits';
 import { LinksField, LinksHiddenInput, useProfileLinks } from '@/components/profile/LinksField';
+import TraitsField, { useTraitRows } from '@/components/profile/TraitsField';
 import { useConfirm } from '@/components/ui/confirm-dialog';
 import { isRedirectError } from '@/lib/is-redirect-error';
 
@@ -76,6 +78,8 @@ export default function AdminEditProfileModal({ user, onClose, onSaved }) {
   // Same hook the member's own form uses. See LinksField.jsx: sharing it is
   // what stops this modal from silently clearing links it never rendered.
   const linkRows = useProfileLinks(user.links);
+  const traitRows = useTraitRows(user.traits);
+  const [traitsError, setTraitsError] = useState(null);
   const [uploading, setUploading] = useState(false);
   const fileRef = useRef(null);
 
@@ -94,11 +98,28 @@ export default function AdminEditProfileModal({ user, onClose, onSaved }) {
     setSaving(true);
     setError(null);
     setServerFieldError(null);
+    setTraitsError(null);
 
     // Same builder the member's own form uses, so the two payloads can't drift.
     const payload = buildProfilePayload(new FormData(formRef.current));
 
     try {
+      // Traits FIRST, deliberately. They are a separate endpoint, so this is
+      // two writes behind one button and one of them can fail alone. Doing the
+      // riskier, smaller one first means a rejected trait leaves the profile
+      // untouched and the modal open on the offending row — whereas saving the
+      // profile first would report an error on a form whose other changes had
+      // already been committed, which reads as "nothing saved" and invites a
+      // second submit.
+      const traitResult = await adminUpdateTraits(user.authentik_id, traitRows.submittable);
+      if (traitResult?.error) {
+        setTraitsError(traitResult.error);
+        formRef.current
+          ?.querySelector('[data-field="traits"]')
+          ?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        return;
+      }
+
       const result = await adminUpdateUserProfile(user.authentik_id, payload);
       if (result?.error) {
         // Beside the field when the API named one, in the banner otherwise —
@@ -113,7 +134,10 @@ export default function AdminEditProfileModal({ user, onClose, onSaved }) {
         }
         return;
       }
-      onSaved(result);
+      // The profile response comes from adminUpdateProfile, which does not
+      // touch traits — so fold the saved traits back in, or the row behind this
+      // modal re-renders with the old ones and the save looks half-applied.
+      onSaved({ ...result, traits: traitResult.traits });
       onClose();
     } catch (err) {
       if (isRedirectError(err)) throw err;
@@ -385,6 +409,22 @@ export default function AdminEditProfileModal({ user, onClose, onSaved }) {
             onEdit={linkRows.edit}
           />
           <LinksHiddenInput submittable={linkRows.submittable} />
+
+          {/* Traits save through their own endpoint, NOT the profile payload —
+              that is what makes "eboard-only" true of the API rather than just
+              of this form. They are submitted alongside the profile save below
+              so it still feels like one Save button. */}
+          <div className="rounded-xl border border-border bg-muted/30 px-4 py-3">
+            <p className="mb-1 text-sm font-medium text-foreground">Traits</p>
+            <TraitsField
+              rows={traitRows.rows}
+              error={traitsError}
+              onAdd={traitRows.add}
+              onRemove={traitRows.remove}
+              onEdit={traitRows.edit}
+              disabled={saving}
+            />
+          </div>
 
           {/* Upload replaces immediately on select, like the member's own
               picture field. Same 25MB limit and same server-side re-encode to

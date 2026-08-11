@@ -350,6 +350,21 @@ function ProfileModal({ member, accent, onClose }) {
             </div>
           )}
 
+          {/* Eboard-typed, so these sit with the factual info rows rather than
+              with About Me: they are the chapter describing the member, not the
+              member describing themselves. Above the links for the same reason
+              the info panel is: chips are navigation, this is content. */}
+          {member.traits?.length > 0 && (
+            <dl className={cn('w-full rounded-xl border border-border p-4 text-xs', member.aboutMe ? 'mt-3' : 'mt-5')} style={{ background: tint(accent.base, 0.03) }}>
+              {member.traits.map((t) => (
+                <div key={`${t.label}-${t.value}`} className="flex gap-2 py-0.5 text-left">
+                  <dt className="shrink-0 font-medium text-muted-foreground">{t.label}</dt>
+                  <dd className="min-w-0 flex-1 text-right text-foreground">{t.value}</dd>
+                </div>
+              ))}
+            </dl>
+          )}
+
           <MemberLinks links={member.links} accent={accent} />
 
           <div className="mt-4 flex w-full flex-col gap-2">

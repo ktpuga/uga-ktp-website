@@ -53,6 +53,13 @@ function RosterCard({ person, title }) {
     <Card
       name={name}
       title={personTitle(person, title)}
+      // What they're doing now, in their own words. Only alumni are asked for
+      // it, so in practice this is blank on every other section's cards — but
+      // it is rendered for anyone who has one rather than gated on the section,
+      // because the form is what decides who is asked.
+      note={person.doingNow}
+      // Eboard-typed, unlike `note` above which the member writes themselves.
+      traits={person.traits}
       avatarSrc={rosterPictureSrc(person.id, person.profilePictureAssetId)}
       fallbackInitials={initials}
       // Card already renders a LinkedIn icon under the name when given one;

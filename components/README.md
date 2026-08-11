@@ -105,6 +105,12 @@ Two details inside it that are not obvious:
 
 Rendering side: link chips go through `safeExternalHref` even though the API already canonicalised them on write. An `href` is a different trust context from a text node, and this is the second of the two checks that trap #6 in `TODO.md` describes.
 
+### Traits vs links: same widget, different owner
+
+`usePairRows` in `profile/LinksField.jsx` is the shared state behind both row editors. `useProfileLinks` (member-owned URLs, on their own settings form) and `useTraitRows` (eboard-owned label/value pairs, only in the admin modal) are thin wrappers over it, so the two rules that matter live in one place: **row keys are not indexes**, and **an untouched empty row is dropped rather than submitted**.
+
+They are separate components because they are owned by different people and saved by different endpoints. Traits do **not** ride in the profile payload — they go through `PUT /admin/users/:id/traits`, which is what makes eboard-only true of the API rather than only of this form. The modal therefore does two writes behind one Save button, and does **traits first**: a rejected trait then leaves the profile untouched, instead of reporting an error on a form whose other changes already landed.
+
 That last point is also why `lib/avatar.js` exports `PROFILE_PICTURE_CHANGED_EVENT`. `PortalShell` fetches the member's profile once per full page load, so without the event the sidebar would still show the old photo after an upload on the profile page. `ProfileForm` fires it via `announceProfilePictureChange(newAssetId)` and the shell re-reads the profile.
 
 `ui/card.jsx`'s `ProfileCard` is shared by the roster, sponsorship page, alumni section, and homepage. It takes `avatarShape="square"` to opt into a rounded square instead of the default circle — only the roster uses that today.

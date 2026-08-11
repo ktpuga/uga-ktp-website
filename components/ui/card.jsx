@@ -91,7 +91,15 @@ export function MailIcon(props) {
 // photo to be the point, sponsorship does not.
 const AVATAR_SIZES = { default: "w-20 h-20", lg: "w-32 h-32 sm:w-36 sm:h-36" };
 
-const ProfileCard = ({ name, title, bio, avatarSrc, fallbackInitials, instagramUrl, linkedinUrl, otherUrl, email, className, avatarShape = "circle", avatarSize = "default" }) => {
+// `note` is one line of the member's own free text, rendered between their role
+// and the icon row. It exists for the public roster's alumni cards ("SWE at
+// Google", "Law school at Emory"), but it is deliberately generic rather than
+// called `currentRole`: this card is shared by the roster, the sponsorship page,
+// the alumni section and the homepage, and a prop named after one caller's use
+// invites the next caller to add a second, near-identical one.
+//
+// Optional, so every existing caller renders exactly as before.
+const ProfileCard = ({ name, title, note, traits, bio, avatarSrc, fallbackInitials, instagramUrl, linkedinUrl, otherUrl, email, className, avatarShape = "circle", avatarSize = "default" }) => {
   const squareAvatar = avatarShape === "square";
   return (
     // cn() rather than plain interpolation so a caller's layout class (e.g.
@@ -104,6 +112,28 @@ const ProfileCard = ({ name, title, bio, avatarSrc, fallbackInitials, instagramU
       </Avatar>
       <h3 className="text-lg font-bold text-primary mb-1">{name}</h3>
       <p className="text-sm text-foreground mb-2">{title}</p>
+      {/* Muted and a step smaller than the role above it, so a card with one
+          reads as name → role → what they're up to rather than as two competing
+          titles. text-balance keeps a two-line value from leaving one orphaned
+          word, which is common at these widths: the grid goes to five columns
+          on a large screen and this is free text up to 150 characters. */}
+      {note && (
+        <p className="text-xs text-muted-foreground mb-1 text-balance px-2">{note}</p>
+      )}
+      {/* Eboard-typed label/value pairs. A definition list rather than styled
+          paragraphs because that is what this is — the label names the value,
+          and a screen reader should say so instead of reading six unlabelled
+          fragments. `dl` with inline `dt`/`dd` keeps each pair on one line. */}
+      {traits?.length > 0 && (
+        <dl className="mt-1 mb-1 space-y-0.5 px-2 text-xs">
+          {traits.map((t) => (
+            <div key={`${t.label}-${t.value}`} className="text-balance">
+              <dt className="inline font-medium text-foreground">{t.label}: </dt>
+              <dd className="inline text-muted-foreground">{t.value}</dd>
+            </div>
+          ))}
+        </dl>
+      )}
       <div className="flex gap-2 mt-2 justify-center">
         {otherUrl && (
           <a href={otherUrl} className="text-foreground hover:text-indigo-500 transition-colors" target="_blank" rel="noopener noreferrer">

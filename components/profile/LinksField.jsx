@@ -15,42 +15,53 @@ import { PROFILE_LIMITS } from '@/lib/text-limits';
 // trap. A shared component is what makes "the admin form forgot this field"
 // impossible rather than merely unlikely.
 //
-// The state hook is here too, so neither caller has to reimplement the add /
-// remove / edit trio or rediscover the key rule below.
-export function useProfileLinks(saved) {
+// The state behind any list of label/second-value rows. Used by the links
+// editor below and by the eboard traits editor (`TraitsField.jsx`), which is the
+// same widget with a plain text value instead of a URL.
+//
+// Generic rather than copied because the two rules below are the whole value of
+// this hook, and both are the kind that look like nothing and cost an afternoon.
+export function usePairRows(saved, valueKey, max) {
   // Each row carries a `key` that is NOT its index. Deleting a middle row
   // renumbers every index below it, so React reuses the wrong input for the
-  // wrong row and the text visibly jumps to a different link.
-  const [links, setLinks] = useState(() =>
-    (saved ?? []).map((link, i) => ({
+  // wrong row and the text visibly jumps to a different row.
+  const [rows, setRows] = useState(() =>
+    (saved ?? []).map((row, i) => ({
       key: `saved-${i}`,
-      label: link?.label ?? '',
-      url: link?.url ?? '',
+      label: row?.label ?? '',
+      [valueKey]: row?.[valueKey] ?? '',
     })),
   );
   const nextKey = useRef(0);
 
   const add = () =>
-    setLinks((rows) => (
-      rows.length >= PROFILE_LIMITS.LINKS
-        ? rows
-        : [...rows, { key: `new-${nextKey.current++}`, label: '', url: '' }]
+    setRows((current) => (
+      current.length >= max
+        ? current
+        : [...current, { key: `new-${nextKey.current++}`, label: '', [valueKey]: '' }]
     ));
-  const remove = (key) => setLinks((rows) => rows.filter((row) => row.key !== key));
+  const remove = (key) => setRows((current) => current.filter((row) => row.key !== key));
   const edit = (key, field, value) =>
-    setLinks((rows) => rows.map((row) => (row.key === key ? { ...row, [field]: value } : row)));
+    setRows((current) => current.map((row) => (row.key === key ? { ...row, [field]: value } : row)));
 
-  // What actually gets submitted. Rows the member added and never filled in are
-  // dropped rather than sent: an empty row is someone who clicked Add and
-  // changed their mind, and the API rejects a link with no label or no URL, so
-  // sending it would turn "I didn't use that row" into a failed save of the
-  // whole profile. A row with only ONE half filled IS still sent, because that
-  // is a real mistake and deserves the API's message.
-  const submittable = links
-    .filter((row) => row.label.trim() !== '' || row.url.trim() !== '')
-    .map((row) => ({ label: row.label.trim(), url: row.url.trim() }));
+  // What actually gets submitted. Rows added and never filled in are dropped
+  // rather than sent: an empty row is someone who clicked Add and changed their
+  // mind, and the API rejects a row with a missing half, so sending it would
+  // turn "I didn't use that row" into a failed save of the whole form. A row
+  // with only ONE half filled IS still sent, because that is a real mistake and
+  // deserves the API's message.
+  const submittable = rows
+    .filter((row) => row.label.trim() !== '' || String(row[valueKey]).trim() !== '')
+    .map((row) => ({ label: row.label.trim(), [valueKey]: String(row[valueKey]).trim() }));
 
-  return { links, add, remove, edit, submittable };
+  return { rows, add, remove, edit, submittable };
+}
+
+export function useProfileLinks(saved) {
+  // `links` rather than `rows` in the returned shape, because that is what both
+  // profile forms already destructure.
+  const { rows, ...rest } = usePairRows(saved, 'url', PROFILE_LIMITS.LINKS);
+  return { links: rows, ...rest };
 }
 
 // The hidden input the payload builder actually reads. Rendered by the same
