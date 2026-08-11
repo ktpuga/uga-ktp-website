@@ -13,7 +13,12 @@ export default function Page() {
         <nav className="ml-auto flex gap-4 sm:gap-6">
           <Link className="text-sm font-medium hover:text-cyan-400 hover:underline transition-colors" href="/rush">Rush</Link>
           <Link className="text-sm font-medium hover:text-cyan-400 hover:underline transition-colors" href="/#about">About</Link>
+          {/* Commented out with the Exec Board section in template-page.jsx,
+              which owns the #leadership anchor. With that section hidden this
+              link scrolls nowhere, which reads as a broken nav rather than as
+              a hidden section. Restore it when the section comes back.
           <Link className="text-sm font-medium hover:text-cyan-400 hover:underline transition-colors" href="/#leadership">Leadership</Link>
+          */}
           <Link className="text-sm font-medium hover:text-cyan-400 hover:underline transition-colors" href="/hackathon">Hackathon</Link>
           <Link className="text-sm font-medium hover:text-cyan-400 hover:underline transition-colors" href="/#contact">Contact</Link>
         </nav>

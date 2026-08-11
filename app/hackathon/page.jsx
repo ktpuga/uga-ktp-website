@@ -96,7 +96,11 @@ export default function HackathonPage() {
           {[
             ['Rush', '/rush'],
             ['About', '/#about'],
-            ['Leadership', '/#leadership'],
+            // Commented out with the Exec Board section in template-page.jsx,
+            // which owns the #leadership anchor. With that section hidden this
+            // link scrolls nowhere, which reads as a broken nav rather than as
+            // a hidden section. Restore it when the section comes back.
+            // ['Leadership', '/#leadership'],
             ['Hackathon', '/hackathon'],
             ['Contact', '/#contact']
           ].map(([label, href]) => (

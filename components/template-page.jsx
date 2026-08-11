@@ -495,17 +495,19 @@ export default function TemplatePage() {
             Hidden at Yash's request. Commented rather than deleted so the
             card list and every bio survive for whoever puts it back.
 
-            THREE THINGS RESTORE TOGETHER:
+            FOUR THINGS RESTORE TOGETHER:
               1. this section,
               2. the `images` const near the top of this file, which only
-                 this section reads, and
+                 this section reads,
               3. the "Leadership" entry in NAV_LINKS, removed because a nav
                  item scrolling to a section that is not rendered does
-                 nothing at all when clicked.
-
-            Still pointing at #leadership from OTHER pages, and therefore
-            now dead until this comes back: app/hackathon/page.jsx and
-            app/code-of-conduct/page.jsx both link to /#leadership.
+                 nothing at all when clicked, and
+              4. the "Leadership" nav entries on the two OTHER public pages
+                 that link to /#leadership: app/hackathon/page.jsx and
+                 app/code-of-conduct/page.jsx. Both are commented out in
+                 place for the same reason as 3. This section owns the
+                 anchor, so nothing outside this file can link to it while
+                 the section is hidden.
 
             The JSX below had its own inline comments stripped: a nested
             comment closer would end this block early and leave the rest as

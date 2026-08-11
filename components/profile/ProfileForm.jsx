@@ -264,7 +264,7 @@ export default function ProfileForm({
         return;
       }
       if (!isUga) {
-        setEmailError('That isn’t a UGA address — it must end in @uga.edu.');
+        setEmailError('That isn’t a UGA address. It must end in @uga.edu.');
         setLoading(false);
         return;
       }
