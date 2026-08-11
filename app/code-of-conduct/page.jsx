@@ -1,25 +1,14 @@
 'use client'
 import Link from "next/link";
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import Footer from '../../components/ui/footer';
 
 export default function Page() {
-  const [mobile, setMobile] = useState(false);
-  useEffect(() => {
-    const updateMobile = () => setMobile(window.innerWidth < 599);
-    updateMobile();
-    window.addEventListener('resize', updateMobile);
-    return () => window.removeEventListener('resize', updateMobile);
-  }, []);
-
   return (
     <div className="min-h-screen flex flex-col font-sans bg-gradient-to-br from-gray-950 via-slate-900 to-black text-gray-100 scroll-smooth overflow-hidden">
       <header className="sticky top-0 px-4 lg:px-6 h-16 flex items-center border-b border-indigo-900 bg-black/70 backdrop-blur-md z-50 shadow-lg">
         <Link className="flex items-center justify-center" href="/">
           <span className="font-bold text-2xl bg-gradient-to-tr from-indigo-400 via-fuchsia-500 to-cyan-400 bg-clip-text text-transparent drop-shadow-lg">ΚΘΠ</span>
-          {!mobile && (
-            <span className="ml-2 font-semibold text-lg text-indigo-200">Phi Chapter at UGA</span>
-          )}
         </Link>
         <nav className="ml-auto flex gap-4 sm:gap-6">
           <Link className="text-sm font-medium hover:text-cyan-400 hover:underline transition-colors" href="/rush">Rush</Link>

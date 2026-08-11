@@ -104,9 +104,6 @@ export default function HowRushWorksPage () {
             className="h-7 w-auto shrink-0 sm:h-8"
             style={{ filter: 'brightness(0) invert(1)' }}
           />
-          <span className="hidden truncate text-base font-semibold text-[#d4af37] sm:text-lg md:inline">
-            Phi Chapter at UGA
-          </span>
         </Link>
         <nav className="ml-auto flex shrink-0 gap-4 sm:gap-6">
           <Link href="/rush" className="text-sm font-medium text-white transition-colors hover:text-[#d4af37]">Rush</Link>

@@ -40,6 +40,10 @@ function personTitle(person, fallbackTitle) {
   return fallbackTitle;
 }
 
+function isPresident(person) {
+  return /^president\b/i.test(person.execTitle?.trim() ?? '');
+}
+
 function RosterCard({ person, title }) {
   const name = formalName(person);
   const initials = formalInitials(person);
@@ -70,15 +74,7 @@ export default function MembersListPage() {
   const { data: session } = useSession();
   const [roster, setRoster] = useState(null);
   const [error, setError] = useState(null);
-  const [mobile, setMobile] = useState(false);
   const [scrolled, setScrolled] = useState(false);
-
-  useEffect(() => {
-    const updateMobile = () => setMobile(window.innerWidth < 599);
-    updateMobile();
-    window.addEventListener('resize', updateMobile);
-    return () => window.removeEventListener('resize', updateMobile);
-  }, []);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 10);
@@ -106,11 +102,6 @@ export default function MembersListPage() {
             height={40}
             className="h-8 w-auto"
           />
-          {!mobile && (
-            <span className="text-lg font-semibold text-slate-800/80">
-              Phi Chapter at UGA
-            </span>
-          )}
         </Link>
         <nav className="ml-auto flex gap-4 sm:gap-6">
           <Link href="/" className="text-sm font-medium transition-colors duration-300 hover:text-indigo-600">
@@ -159,6 +150,11 @@ export default function MembersListPage() {
 
         {roster && SECTIONS.map(({ key, heading, title, bg, cols }) => {
           const people = roster[key] ?? [];
+          // Keep the API's order for every group, while making the chapter's
+          // President the first card in the public executive-board roster.
+          const orderedPeople = key === 'eboard'
+            ? [...people].sort((a, b) => Number(isPresident(b)) - Number(isPresident(a)))
+            : people;
           if (people.length === 0) return null;
 
           return (
@@ -168,7 +164,7 @@ export default function MembersListPage() {
                   <h2 className="text-3xl font-bold tracking-tight md:text-4xl text-primary">{heading}</h2>
                 </div>
                 <div className={`mt-12 grid grid-cols-2 gap-8 text-sm ${cols}`}>
-                  {people.map((person) => (
+                  {orderedPeople.map((person) => (
                     <RosterCard key={person.id} person={person} title={title} />
                   ))}
                 </div>

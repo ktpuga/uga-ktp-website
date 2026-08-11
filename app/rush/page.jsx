@@ -67,7 +67,6 @@ export default function Page () {
       <header className={`sticky top-0 z-50 flex h-14 shrink-0 items-center px-4 sm:h-16 lg:px-6 transition-all duration-300 border-b-2 bg-[#0a0a0a] border-[#6b1c2a] ${scrolled ? 'shadow-md' : ''}`}>
         <Link href='/' className='flex min-w-0 items-center gap-2'>
           <Image src="/KTP PHI CHAPTER.svg" alt="KTP Phi Chapter" width={100} height={40} className="h-7 w-auto shrink-0 sm:h-8" style={{filter: 'brightness(0) invert(1)'}} />
-          <span className='hidden truncate text-base font-semibold sm:text-lg md:inline text-[#d4af37]'>Phi Chapter at UGA</span>
         </Link>
         <nav className='ml-auto flex shrink-0 gap-4 sm:gap-6'>
           <Link href='/rush/how-it-works' className='text-sm font-medium text-white transition-colors hover:text-[#d4af37]'>How it works</Link>

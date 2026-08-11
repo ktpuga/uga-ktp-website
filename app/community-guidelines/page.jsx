@@ -18,7 +18,6 @@ export default function CommunityGuidelinesPage() {
       <header className="sticky top-0 z-50 flex h-16 items-center border-b border-indigo-900 bg-black/70 px-4 backdrop-blur-md lg:px-6">
         <Link className="flex items-center justify-center" href="/">
           <span className="bg-gradient-to-tr from-indigo-400 via-fuchsia-500 to-cyan-400 bg-clip-text text-2xl font-bold text-transparent">ΚΘΠ</span>
-          <span className="ml-2 hidden text-lg font-semibold text-indigo-200 sm:inline">Phi Chapter at UGA</span>
         </Link>
       </header>
 
