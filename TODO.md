@@ -335,6 +335,47 @@ Two things worth knowing before touching it:
 
 **Not clicked through in a browser yet** — worth a pass on: creating a collection, uploading into it, reordering inside one collection without disturbing another, and the delete-with-photos warning.
 
+### ~~H. Committee membership has no gatekeeping~~ — FIXED 2026-08-11
+
+Raised 2026-08-11 while scoping Authentik committee groups for third-party SSO. The SSO idea is sound and is written up at the bottom of this item, but **it is blocked on this**, and this is worth fixing on its own merits regardless.
+
+**Any member can join any committee, and nobody can remove them.** `POST /committees/:id/join` carries no check beyond the router's `requireGroup(...SHARED_ALBUM_GROUPS)`, so any member group except rush can add themselves to any committee. There is a self-service `DELETE /:id/leave` and an eboard `PUT /:id/members/:userId/role`, and that is the complete set: **eboard can promote you to chair but cannot remove you.**
+
+That is not only a tidiness problem, because committee membership is already load-bearing in three places:
+
+| Joining a committee immediately grants | Where |
+|---|---|
+| Membership of that committee's **group chat**, including its history | `committeeModel.join` → `syncGroupChatMembership` |
+| Read access to every **album, folder, document, event, meeting, announcement and poll** restricted to that committee | `visibility.js` — `committee_ids && (SELECT ARRAY_AGG(committee_id) FROM committee_members WHERE user_id = …)` |
+| Eligibility to **run interviews** for rounds that designate the committee | `interviewer_committee_ids` |
+
+So today, restricting an album to the Exec committee is a request, not a boundary: anyone who wants in clicks Join. The API README already hedges this ("a designated committee is a softer boundary than its roster implies") but the consequence had not been written down.
+
+**Done when:** ~~joining requires approval, and eboard can remove a member.~~ **Met**, except the activity log — the global middleware captures these routes automatically, but nobody has confirmed the new paths appear at /admin/logs. Worth one look.
+
+**Shipped:** migration `1788100000000`, `committee_join_requests`, five routes, 15 tests, and the UI (Request to Join / Requested-withdraw, the chair approval queue, per-row remove). Verified by a 9-assertion render probe — the two that matter assert the queue does NOT render for a plain member or for someone who merely requested.
+
+Traps for whoever picks this up:
+
+- **`setMemberRole` auto-adds people, and that is fine.** An earlier draft of this item called it a second hole. It isn't: the route already carries `requireGroup("eboard")`, so it is a deliberate admin path and it is the **bootstrap** — a brand new committee has no chair, so something has to be able to seat the first one without an approver. Leave it alone.
+- **Don't break the chair bootstrap.** Committees are created by eboard and then need a first chair; an approval flow with no seeding path means a new committee nobody can join.
+- **Leaving must stay self-service.** The fix is about who can get *in*, not about trapping people. `DELETE /:id/leave` should keep working with no approval.
+- **There is no `committee_id` on `users`** — membership is the `committee_members` join table, and a person can be on several committees. Any "pending request" state belongs beside it, not as a column on the user.
+
+#### The SSO follow-on — deliberately NOT part of this item
+
+The motivating idea: give each committee an Authentik group so **other applications** (Proxmox, and anything else behind the IdP) can scope access per committee. It is a real use case and it does not contradict the "grants live in Postgres" decision recorded under item F — that decision is about *in-app* permissions, and this is about consumers that cannot query our database at all. Both can be true.
+
+Three conclusions already reached, so nobody re-derives them:
+
+1. **Mirror, don't replace.** Postgres stays authoritative and Authentik groups are a projection for outside consumers. Reading committee membership from the JWT in-app would re-inherit trap #10's staleness (a removal would not take effect until the member next signed in) and would make `interviewer_committee_ids`, which is a SQL join, into an API call per row.
+2. **Most of the plumbing exists.** `services/authentikAdmin.js` already has `listGroups`, `addUserToGroup`, `removeUserFromGroup` and `findUserPk`, and `adminController.updateUserGroup` already establishes the write-Authentik-first-then-mirror pattern. Missing: a group-create call, and a name convention (`ktp-committee-<slug>`) so committee groups can never be confused with the role groups `roleGroups.js` resolves against.
+3. **Check the GitHub plan before promising GitHub SSO.** SAML SSO and SCIM are GitHub **Enterprise Cloud** features; a free or Team org cannot enforce them. Proxmox is fine, it speaks OIDC and maps groups.
+
+**Why the ordering is not negotiable:** wiring committee groups to Proxmox while join is self-service and removal does not exist means any member can grant themselves infrastructure access and nobody can revoke it.
+
+---
+
 ## Part 3 — Working here
 
 - **Branch, PR, don't push to `main`.** `main` deploys to production the moment it's pushed, for both this repo and the API. There is no staging environment.

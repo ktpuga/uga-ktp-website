@@ -1,12 +1,12 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { cn } from '@/lib/utils';
 import {
-  ChevronLeft, Plus, Trash2, Search, X, Star, Users, MessageSquare, Calendar, CalendarPlus, QrCode, LogIn, LogOut, UserPlus, AlertTriangle, MapPin,
+  ChevronLeft, Plus, Trash2, Search, X, Star, Users, MessageSquare, Calendar, CalendarPlus, QrCode, LogIn, LogOut, UserPlus, UserMinus, Clock, AlertTriangle, MapPin,
 } from 'lucide-react';
 import {
   getCommittees,
@@ -14,12 +14,16 @@ import {
   deleteCommittee,
   joinCommittee,
   leaveCommittee,
+  getCommitteeJoinRequests,
+  approveCommitteeJoinRequest,
+  denyCommitteeJoinRequest,
+  removeCommitteeMember,
   getCommitteeMembers,
   setCommitteeMemberRole,
   getMemberDirectory,
   createEvent,
 } from '@/lib/portal-api';
-import { memberDisplayName, memberInitials } from '@/lib/portal-format';
+import { memberDisplayName, memberInitials, formatMemberGroup } from '@/lib/portal-format';
 import { profilePictureSrc, avatarAssetId } from '@/lib/avatar';
 import { isRedirectError } from '@/lib/is-redirect-error';
 import { TEXT_LIMITS } from '@/lib/text-limits';
@@ -518,7 +522,10 @@ function CommitteeCard({ committee, isEboard, accent, onOpen, onDelete }) {
 
 // ─── Committee detail view ───
 
-function CommitteeDetail({ committee, currentUserId, isEboard, accent, onBack, onChanged, groupChatHref }) {
+// Exported for the render probe. A green next build says nothing about a
+// client component: it never renders one. This is the only surface where the
+// approval queue's visibility rules can actually be checked.
+export function CommitteeDetail({ committee, currentUserId, isEboard, accent, onBack, onChanged, groupChatHref }) {
   const [members, setMembers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -530,6 +537,82 @@ function CommitteeDetail({ committee, currentUserId, isEboard, accent, onBack, o
   // Matches checkEventPermission in ktp-api's eventsController: eboard may
   // schedule for any committee, a chair only for one they chair.
   const canSchedule = committee.is_chair || isEboard;
+
+  // Mirrors committeesController.loadAdministrable: eboard, or the chair of
+  // THIS committee. Not "is a chair" generally — the Marketing chair has no
+  // business in the Pledge queue, and the API enforces that independently.
+  const canAdminister = isEboard || committee.is_chair;
+
+  const [requests, setRequests] = useState([]);
+  const [requestsError, setRequestsError] = useState(null);
+  const [requestBusyId, setRequestBusyId] = useState(null);
+
+  const loadRequests = useCallback(async () => {
+    if (!canAdminister) return;
+    const result = await getCommitteeJoinRequests(committee.id);
+    if (result?.error) {
+      setRequestsError(result.error);
+      return;
+    }
+    setRequestsError(null);
+    setRequests(result.requests ?? []);
+  }, [canAdminister, committee.id]);
+
+  useEffect(() => { loadRequests(); }, [loadRequests]);
+
+  async function handleApprove(userId) {
+    setRequestBusyId(userId);
+    try {
+      const result = await approveCommitteeJoinRequest(committee.id, userId);
+      if (result?.error) {
+        setRequestsError(result.error);
+        // Reload anyway: the usual cause is another chair having just handled
+        // it, so the stale row should disappear rather than sit there inviting
+        // a second click.
+        loadRequests();
+        return;
+      }
+      setRequestsError(null);
+      loadRequests();
+      loadMembers();
+      onChanged();
+    } finally {
+      setRequestBusyId(null);
+    }
+  }
+
+  async function handleDeny(userId) {
+    setRequestBusyId(userId);
+    try {
+      const result = await denyCommitteeJoinRequest(committee.id, userId);
+      if (result?.error) setRequestsError(result.error);
+      else setRequestsError(null);
+      loadRequests();
+    } finally {
+      setRequestBusyId(null);
+    }
+  }
+
+  async function handleRemoveMember(userId) {
+    const person = members.find((m) => m.authentik_id === userId);
+    const name = person ? memberDisplayName(person) : 'this member';
+    // Removal also drops them from the committee group chat, which is not
+    // guessable from a button labelled "remove" — so the confirm says it.
+    if (!window.confirm(`Remove ${name} from ${committee.name}? They will also lose access to the committee group chat and anything restricted to this committee.`)) return;
+
+    setRequestBusyId(userId);
+    try {
+      const result = await removeCommitteeMember(committee.id, userId);
+      if (result?.error) {
+        window.alert(result.error);
+        return;
+      }
+      loadMembers();
+      onChanged();
+    } finally {
+      setRequestBusyId(null);
+    }
+  }
 
   function loadMembers() {
     setLoading(true);
@@ -552,15 +635,32 @@ function CommitteeDetail({ committee, currentUserId, isEboard, accent, onBack, o
     });
   }, [members]);
 
+  // Asks to join. The API returns 202 and grants nothing until a chair or
+  // eboard approves, so this deliberately does NOT say "joined" on success —
+  // telling someone they are in a committee they cannot yet see anything in is
+  // worse than telling them nothing.
   async function handleJoin() {
     setBusy(true);
     try {
       await joinCommittee(committee.id);
-      loadMembers();
       onChanged();
     } catch (err) {
       if (isRedirectError(err)) throw err;
-      window.alert(err.message ?? 'Failed to join committee');
+      window.alert(err.message ?? 'Failed to request to join committee');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function handleWithdraw() {
+    setBusy(true);
+    try {
+      const result = await denyCommitteeJoinRequest(committee.id, myId);
+      if (result?.error) {
+        window.alert(result.error);
+        return;
+      }
+      onChanged();
     } finally {
       setBusy(false);
     }
@@ -661,6 +761,20 @@ function CommitteeDetail({ committee, currentUserId, isEboard, accent, onBack, o
             <LogOut size={15} />
             Leave Committee
           </button>
+        ) : committee.has_requested ? (
+          // Pending. The button becomes the way to take the request back, so
+          // there is no separate "cancel" control to find, and the label states
+          // the actual state rather than re-offering an action already taken.
+          <button
+            type="button"
+            onClick={handleWithdraw}
+            disabled={busy}
+            className="flex items-center gap-2 rounded-xl border border-border bg-muted/50 px-4 py-2.5 text-sm font-medium text-muted-foreground shadow-sm transition-colors hover:border-destructive/30 hover:bg-destructive/10 hover:text-destructive disabled:opacity-50"
+            title="Withdraw your request"
+          >
+            <Clock size={15} />
+            Requested, withdraw
+          </button>
         ) : (
           <button
             type="button"
@@ -670,7 +784,7 @@ function CommitteeDetail({ committee, currentUserId, isEboard, accent, onBack, o
             style={{ background: accent.gradient }}
           >
             <LogIn size={15} />
-            Join Committee
+            Request to Join
           </button>
         )}
 
@@ -705,6 +819,62 @@ function CommitteeDetail({ committee, currentUserId, isEboard, accent, onBack, o
       )}
 
       {error && <p className="mb-4 text-sm text-red-600">{error}</p>}
+
+      {/* The approval queue. Rendered only for people the API would actually
+          let through — eboard, or the chair of THIS committee — so nobody is
+          shown a panel that 403s. `canAdminister` mirrors the API's
+          loadAdministrable exactly; if one changes, change both. */}
+      {canAdminister && (
+        <div className="mb-5 overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
+          <div className="flex items-center justify-between border-b border-border px-5 py-3" style={{ background: tint(accent.base, 0.03) }}>
+            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              Join requests{requests.length > 0 ? ` (${requests.length})` : ''}
+            </p>
+          </div>
+
+          {requestsError && <p className="px-5 py-3 text-sm text-red-600">{requestsError}</p>}
+
+          {requests.length === 0 && !requestsError ? (
+            <p className="px-5 py-4 text-sm text-muted-foreground">
+              Nobody is waiting to join. Members who ask will appear here for you to approve.
+            </p>
+          ) : (
+            <ul role="list">
+              {requests.map((person) => (
+                <li key={person.authentik_id} className="flex items-center gap-3 border-b border-border px-5 py-3 last:border-b-0">
+                  <Avatar member={person} size={34} accent={accent} />
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-medium text-foreground">{memberDisplayName(person)}</p>
+                    <p className="truncate text-[11px] text-muted-foreground">
+                      {formatMemberGroup(person.member_group)}
+                      {person.username ? ` · @${person.username}` : ''}
+                    </p>
+                  </div>
+                  <div className="flex shrink-0 items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => handleApprove(person.authentik_id)}
+                      disabled={requestBusyId === person.authentik_id}
+                      className="rounded-lg px-3 py-1.5 text-xs font-semibold text-white transition-opacity hover:opacity-85 disabled:opacity-50"
+                      style={{ background: accent.gradient }}
+                    >
+                      {requestBusyId === person.authentik_id ? 'Working...' : 'Approve'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleDeny(person.authentik_id)}
+                      disabled={requestBusyId === person.authentik_id}
+                      className="rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:border-destructive/30 hover:bg-destructive/10 hover:text-destructive disabled:opacity-50"
+                    >
+                      Deny
+                    </button>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
 
       <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
         <div className="flex items-center justify-between border-b border-border px-5 py-3" style={{ background: tint(accent.base, 0.03) }}>
@@ -752,6 +922,23 @@ function CommitteeDetail({ committee, currentUserId, isEboard, accent, onBack, o
                       style={!isChairRow ? { background: accent.gradient } : undefined}
                     >
                       {isChairRow ? 'Demote' : 'Promote to Chair'}
+                    </button>
+                  )}
+
+                  {/* Removal, which simply did not exist before: the only way
+                      out of a committee was to leave it yourself. Never shown
+                      against your own row — leaving is the Leave Committee
+                      button above, and it needs no permission. */}
+                  {canAdminister && member.authentik_id !== currentUserId && (
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveMember(member.authentik_id)}
+                      disabled={requestBusyId === member.authentik_id}
+                      aria-label={`Remove ${memberDisplayName(member)} from ${committee.name}`}
+                      title="Remove from committee"
+                      className="shrink-0 rounded-lg border border-border p-1.5 text-muted-foreground transition-colors hover:border-destructive/30 hover:bg-destructive/10 hover:text-destructive disabled:opacity-50"
+                    >
+                      <UserMinus size={14} />
                     </button>
                   )}
                 </li>
