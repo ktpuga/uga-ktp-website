@@ -1,24 +1,58 @@
 'use client';
 
+import { useRef, useState } from 'react';
 import { Plus, X } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { PROFILE_LIMITS } from '@/lib/text-limits';
-import { usePairRows } from './LinksField';
 
-// Eboard-typed traits: "Concentration: Fintech", "Hometown: Atlanta, GA".
+// Eboard-typed traits: "Pledge Chair", "Fintech", "Atlanta, GA".
 //
-// The same widget as the links editor, sharing its row-state hook, with a plain
-// text value instead of a URL. Two things make it a different component rather
-// than a prop on that one:
+// One plain string each, not a label/value pair. They render as pills on the
+// badge row of the directory card and the public roster, beside the member
+// group badge and a chair's committee caption — and "Pledge Chair" is one
+// string. The pair shape made eboard invent a label for things that don't have
+// one, and rendered as a definition list instead of a caption.
 //
-//   - It appears in a different place. Links are on the member's OWN settings
-//     form; traits are eboard-only and exist solely in the admin edit modal,
-//     because they land on the public roster.
-//   - It saves through its own endpoint (`PUT /admin/users/:id/traits`) rather
-//     than riding along in the profile payload, which is what makes
-//     "eboard-only" true of the API and not just of the UI.
+// It saves through its own endpoint (`PUT /admin/users/:id/traits`) rather than
+// riding along in the profile payload, which is what makes "eboard-only" true
+// of the API and not just of the UI. That is also why this is a component of
+// its own rather than a mode of the links editor.
 export function useTraitRows(saved) {
-  return usePairRows(saved, 'value', PROFILE_LIMITS.TRAITS);
+  // Each row carries a `key` that is NOT its index, for the same reason the
+  // links editor does: deleting a middle row renumbers every index below it, so
+  // React reuses the wrong input for the wrong row and text visibly jumps.
+  const [rows, setRows] = useState(() =>
+    (saved ?? []).map((value, i) => ({
+      key: `saved-${i}`,
+      // Tolerates a pre-migration {label, value} row rather than rendering
+      // "[object Object]" into the input. Eboard sees the joined string and can
+      // edit it, which is exactly what the migration produces anyway.
+      value: typeof value === 'string'
+        ? value
+        : [value?.label, value?.value].filter(Boolean).join(': '),
+    })),
+  );
+  const nextKey = useRef(0);
+
+  const add = () =>
+    setRows((current) => (
+      current.length >= PROFILE_LIMITS.TRAITS
+        ? current
+        : [...current, { key: `new-${nextKey.current++}`, value: '' }]
+    ));
+  const remove = (key) => setRows((current) => current.filter((row) => row.key !== key));
+  const edit = (key, value) =>
+    setRows((current) => current.map((row) => (row.key === key ? { ...row, value } : row)));
+
+  // Rows added and never filled in are dropped rather than sent: an empty row is
+  // someone who clicked Add and changed their mind, and the API rejects an empty
+  // trait, so sending it would turn "I didn't use that row" into a failed save
+  // of the whole form.
+  const submittable = rows
+    .map((row) => row.value.trim())
+    .filter((value) => value !== '');
+
+  return { rows, add, remove, edit, submittable };
 }
 
 export default function TraitsField({ rows, error, onAdd, onRemove, onEdit, disabled = false }) {
@@ -27,31 +61,20 @@ export default function TraitsField({ rows, error, onAdd, onRemove, onEdit, disa
   return (
     <div data-field="traits">
       <p className="mb-2 text-xs text-muted-foreground">
-        Shown on this member&apos;s directory card and on the public roster page. Up to{' '}
-        {PROFILE_LIMITS.TRAITS}. Members cannot edit these themselves.
+        Short captions shown next to this member&apos;s group badge, on their directory card
+        and on the public roster. Up to {PROFILE_LIMITS.TRAITS}. Members cannot edit these
+        themselves.
       </p>
 
       <div className="space-y-2">
         {rows.map((row) => (
           <div key={row.key} className="flex items-start gap-2">
-            {/* Label narrow, value wide: the label is a word ("Hometown") and
-                the value is the content ("Atlanta, GA"), which is why the API
-                gives it twice the budget. */}
-            <Input
-              value={row.label}
-              onChange={(e) => onEdit(row.key, 'label', e.target.value)}
-              placeholder="Concentration"
-              maxLength={PROFILE_LIMITS.TRAIT_LABEL}
-              aria-label="Trait label"
-              disabled={disabled}
-              className="sm:w-44"
-            />
             <Input
               value={row.value}
-              onChange={(e) => onEdit(row.key, 'value', e.target.value)}
-              placeholder="Fintech"
-              maxLength={PROFILE_LIMITS.TRAIT_VALUE}
-              aria-label="Trait value"
+              onChange={(e) => onEdit(row.key, e.target.value)}
+              placeholder="Pledge Chair"
+              maxLength={PROFILE_LIMITS.TRAIT}
+              aria-label="Trait"
               disabled={disabled}
               className="flex-1"
             />
@@ -61,7 +84,7 @@ export default function TraitsField({ rows, error, onAdd, onRemove, onEdit, disa
               disabled={disabled}
               // Named, so a screen reader hears which trait is going rather than
               // six identical "Remove" buttons.
-              aria-label={`Remove ${row.label.trim() || 'trait'}`}
+              aria-label={`Remove ${row.value.trim() || 'trait'}`}
               className="mt-1 shrink-0 rounded-lg p-2 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:opacity-50"
             >
               <X className="h-4 w-4" />

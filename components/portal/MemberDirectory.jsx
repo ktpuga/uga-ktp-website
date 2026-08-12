@@ -22,6 +22,7 @@ import {
   formatPledgeClass,
   linkedinHref,
   safeExternalHref,
+  traitText,
   MEMBER_GROUP_ORDER,
   LEADERSHIP_GROUPS,
 } from '@/lib/portal-format';
@@ -173,6 +174,18 @@ function DirectoryAvatar({ member, size }) {
         {memberInitials(member)}
       </AvatarFallback>
     </Avatar>
+  );
+}
+
+// The small caption beside a group badge: a chair's committee, or one of
+// eboard's traits. One component so the two can't drift apart — they are meant
+// to be indistinguishable, since a trait reading "Pledge Chair" is doing
+// exactly the job the chair caption does.
+function CaptionPill({ children }) {
+  return (
+    <span className="max-w-full truncate rounded-full border border-border px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
+      {children}
+    </span>
   );
 }
 
@@ -348,13 +361,21 @@ function ProfileModal({ member, accent, onClose }) {
           {member.username && <p className="text-xs text-muted-foreground">@{member.username}</p>}
           <LinkedinLink url={linkedinHref(member.linkedinUrl)} className="mt-1.5" />
 
+          {/* Group badge, then the chair's committee caption, then eboard's
+              traits — all one row of pills, because they answer the same
+              question at a glance. Traits deliberately share the caption's
+              exact treatment rather than getting one of their own: "Pledge
+              Chair" typed as a trait should be indistinguishable from the
+              caption a real chair gets, which is the whole point of them. */}
           <div className="mt-2 flex flex-wrap items-center justify-center gap-1.5">
             <GroupBadge group={member.memberGroup} />
-            {role && (
-              <span className="rounded-full border border-border px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
-                {role}
-              </span>
-            )}
+            {role && <CaptionPill>{role}</CaptionPill>}
+            {/* traitText, not the raw value: React throws on an object child,
+                so a pre-migration {label, value} row would blank this modal
+                rather than look wrong. */}
+            {(member.traits ?? []).map(traitText).filter(Boolean).map((trait) => (
+              <CaptionPill key={trait}>{trait}</CaptionPill>
+            ))}
           </div>
 
           {/* Directly under the badges rather than down in the info rows,
@@ -398,21 +419,6 @@ function ProfileModal({ member, accent, onClose }) {
                 <InfoRow icon={<Mail size={12} />} label="Personal Email" value={member.personalEmail} isLast />
               )}
             </div>
-          )}
-
-          {/* Eboard-typed, so these sit with the factual info rows rather than
-              with About Me: they are the chapter describing the member, not the
-              member describing themselves. Above the links for the same reason
-              the info panel is: chips are navigation, this is content. */}
-          {member.traits?.length > 0 && (
-            <dl className={cn('w-full rounded-xl border border-border p-4 text-xs', member.aboutMe ? 'mt-3' : 'mt-5')} style={{ background: tint(accent.base, 0.03) }}>
-              {member.traits.map((t) => (
-                <div key={`${t.label}-${t.value}`} className="flex gap-2 py-0.5 text-left">
-                  <dt className="shrink-0 font-medium text-muted-foreground">{t.label}</dt>
-                  <dd className="min-w-0 flex-1 text-right text-foreground">{t.value}</dd>
-                </div>
-              ))}
-            </dl>
           )}
 
           <MemberLinks links={member.links} accent={accent} />
@@ -483,6 +489,7 @@ function MemberCard({ member, accent, onClick }) {
   const name = directoryDisplayName(member);
   const role = specificRole(member);
   const pledgeClass = formatPledgeClass(member.pledgeClass);
+  const traitLabels = (member.traits ?? []).map(traitText).filter(Boolean);
 
   return (
     <div
@@ -530,14 +537,32 @@ function MemberCard({ member, accent, onClick }) {
 
       {/* The portal accent, not the member group's colour. Only 14 of ~94
           people have a role at all, so colouring it by group would put a second
-          group marker on exactly the cards that least need one. */}
-      {role && (
-        <span
-          className="mt-0.5 max-w-full truncate rounded-full px-2.5 py-0.5 text-[10px] font-semibold"
-          style={{ background: tint(accent.base, 0.12), color: accent.light }}
-        >
-          {role}
-        </span>
+          group marker on exactly the cards that least need one.
+
+          Traits sit in the same row and take the accent too, so the grid card
+          says the same thing the modal does. They wrap rather than truncate as
+          a group: six of them is eboard's choice, and silently hiding the sixth
+          would make the card disagree with the profile it opens. */}
+      {(role || traitLabels.length > 0) && (
+        <div className="mt-0.5 flex max-w-full flex-wrap items-center justify-center gap-1">
+          {role && (
+            <span
+              className="max-w-full truncate rounded-full px-2.5 py-0.5 text-[10px] font-semibold"
+              style={{ background: tint(accent.base, 0.12), color: accent.light }}
+            >
+              {role}
+            </span>
+          )}
+          {traitLabels.map((trait) => (
+            <span
+              key={trait}
+              className="max-w-full truncate rounded-full px-2.5 py-0.5 text-[10px] font-semibold"
+              style={{ background: tint(accent.base, 0.12), color: accent.light }}
+            >
+              {trait}
+            </span>
+          ))}
+        </div>
       )}
     </div>
   );

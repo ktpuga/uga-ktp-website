@@ -3,6 +3,9 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import * as React from "react";
 import { cn } from "@/lib/utils";
+// Plain function, no server imports — portal-format is deliberately separate
+// from portal-api ('use server') so client components can use it.
+import { safeExternalHref, traitText } from "@/lib/portal-format";
 
 /* ── Shadcn-style layout card components (named exports) ── */
 
@@ -72,6 +75,19 @@ function HomeIcon(props) {
   );
 }
 
+// Hand-rolled like the three above rather than pulled from lucide: this file
+// carries its own icons so the public marketing pages don't load the icon
+// library for four glyphs.
+function LinkIcon(props) {
+  return (
+    <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+      fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+      <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+    </svg>
+  );
+}
+
 export function MailIcon(props) {
   return (
     <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
@@ -99,8 +115,21 @@ const AVATAR_SIZES = { default: "w-20 h-20", lg: "w-32 h-32 sm:w-36 sm:h-36" };
 // invites the next caller to add a second, near-identical one.
 //
 // Optional, so every existing caller renders exactly as before.
-const ProfileCard = ({ name, title, note, traits, bio, avatarSrc, fallbackInitials, instagramUrl, linkedinUrl, otherUrl, email, className, avatarShape = "circle", avatarSize = "default" }) => {
+const ProfileCard = ({ name, title, note, traits, links, bio, avatarSrc, fallbackInitials, instagramUrl, linkedinUrl, otherUrl, email, className, avatarShape = "circle", avatarSize = "default" }) => {
   const squareAvatar = avatarShape === "square";
+  // Every href is re-checked here rather than trusted from the API. Write-time
+  // validation (services/urls.js) only ever covered rows written after it
+  // existed, and this card renders on a page with no authentication, so a
+  // `javascript:` URL stored before then would be a stored-XSS on the most
+  // public page the site has. safeExternalHref returns null for anything that
+  // isn't plain http(s), which drops the chip rather than rendering it dead.
+  const safeLinks = (links ?? [])
+    .map((link) => ({ label: link?.label, href: safeExternalHref(link?.url) }))
+    .filter((link) => link.href && link.label);
+  // Coerced rather than rendered directly: React throws on an object child, so
+  // a pre-migration {label, value} row would take this PUBLIC page down rather
+  // than look wrong. See traitText.
+  const traitLabels = (traits ?? []).map(traitText).filter(Boolean);
   return (
     // cn() rather than plain interpolation so a caller's layout class (e.g.
     // justify-start) actually overrides the default instead of losing to it on
@@ -120,20 +149,46 @@ const ProfileCard = ({ name, title, note, traits, bio, avatarSrc, fallbackInitia
       {note && (
         <p className="text-xs text-muted-foreground mb-1 text-balance px-2">{note}</p>
       )}
-      {/* Eboard-typed label/value pairs. A definition list rather than styled
-          paragraphs because that is what this is — the label names the value,
-          and a screen reader should say so instead of reading six unlabelled
-          fragments. `dl` with inline `dt`/`dd` keeps each pair on one line. */}
-      {traits?.length > 0 && (
-        <dl className="mt-1 mb-1 space-y-0.5 px-2 text-xs">
-          {traits.map((t) => (
-            <div key={`${t.label}-${t.value}`} className="text-balance">
-              <dt className="inline font-medium text-foreground">{t.label}: </dt>
-              <dd className="inline text-muted-foreground">{t.value}</dd>
-            </div>
+      {/* Eboard-typed captions, rendered as pills rather than a definition
+          list. `title` above is already this card's "Infrastructure Chair" line,
+          and a trait is the same kind of thing, so it reads as more of those
+          instead of as a table bolted under the name. Wraps and centres so a
+          card with three still looks composed. */}
+      {traitLabels.length > 0 && (
+        <ul className="mt-1 mb-1 flex flex-wrap justify-center gap-1 px-2">
+          {traitLabels.map((trait) => (
+            <li
+              key={trait}
+              className="max-w-full truncate rounded-full border border-border px-2 py-0.5 text-[11px] font-medium text-muted-foreground"
+            >
+              {trait}
+            </li>
           ))}
-        </dl>
+        </ul>
       )}
+      {/* The member's own links, below the eboard captions and above the icon
+          row. Chips rather than icons because these are arbitrary destinations
+          that need naming — the icon row underneath is for the fixed set
+          (LinkedIn, Instagram) where the glyph IS the label. */}
+      {safeLinks.length > 0 && (
+        <ul className="mt-1 mb-1 flex flex-wrap justify-center gap-1.5 px-2">
+          {safeLinks.map((link) => (
+            <li key={`${link.label}-${link.href}`} className="max-w-full">
+              <a
+                href={link.href}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex max-w-full items-center gap-1 rounded-full border border-border px-2.5 py-1 text-[11px] font-medium text-foreground transition-colors hover:bg-muted"
+                aria-label={`${link.label} (opens in a new tab)`}
+              >
+                <LinkIcon className="h-2.5 w-2.5 shrink-0 text-muted-foreground" />
+                <span className="truncate">{link.label}</span>
+              </a>
+            </li>
+          ))}
+        </ul>
+      )}
+
       <div className="flex gap-2 mt-2 justify-center">
         {otherUrl && (
           <a href={otherUrl} className="text-foreground hover:text-indigo-500 transition-colors" target="_blank" rel="noopener noreferrer">

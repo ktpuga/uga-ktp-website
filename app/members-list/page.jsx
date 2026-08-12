@@ -60,6 +60,11 @@ function RosterCard({ person, title }) {
       note={person.doingNow}
       // Eboard-typed, unlike `note` above which the member writes themselves.
       traits={person.traits}
+      // The member's own links. Card re-checks every href with
+      // safeExternalHref before rendering, because this page has no
+      // authentication and write-time validation only covers rows written
+      // since services/urls.js existed.
+      links={person.links}
       avatarSrc={rosterPictureSrc(person.id, person.profilePictureAssetId)}
       fallbackInitials={initials}
       // Card already renders a LinkedIn icon under the name when given one;
