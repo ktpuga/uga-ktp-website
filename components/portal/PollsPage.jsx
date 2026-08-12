@@ -68,7 +68,7 @@ function formatDatetime(iso) {
 
 function audienceLabel(audience) {
   if (!audience || audience.length === 0) return 'All Members';
-  const labels = { active: 'Active', alumni: 'Alumni', pledge: 'Pledges', eboard: 'Eboard' };
+  const labels = { active: 'Active', alumni: 'Alumni', pledge: 'Pledges', eboard: 'Eboard', rush: 'Rushees' };
   return audience.map((a) => labels[a] ?? a).join(', ');
 }
 
@@ -240,11 +240,20 @@ function CreatePollModal({ accent, committees, onClose, onCreated }) {
   }
 
   const fb = bindFocus(accent);
+  // Rushees are targetable but are NOT in DEFAULT_AUDIENCE, and that asymmetry
+  // is deliberate. The API's untargeted branch requires a member group, so a
+  // poll only reaches rushees when somebody ticks this pill on purpose —
+  // defaulting it on would publish every chapter poll to prospects. Same
+  // explicit-opt-in rule as events and announcements.
+  //
+  // Rushees can genuinely vote once targeted: routes/polls.js gates the whole
+  // router on RUSH_ACCESSIBLE_GROUPS and puts no extra check on /:id/vote.
   const ROLES = [
     { value: 'active', label: 'Active Members' },
     { value: 'alumni', label: 'Alumni' },
     { value: 'pledge', label: 'Pledges' },
     { value: 'eboard', label: 'Eboard' },
+    { value: 'rush', label: 'Rushees' },
   ];
 
   return (

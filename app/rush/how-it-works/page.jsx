@@ -206,6 +206,24 @@ export default function HowRushWorksPage () {
             )}
           </div>
 
+          {/* Outside the CTA card on purpose, so it shows in all three of its
+              states — including "signup isn't open yet", which is exactly when
+              somebody browsing has nothing else to look at. /members-list is
+              public and needs no account. */}
+          <div className="mt-10 rounded-2xl border border-[#3a3a3a] bg-[#141414] p-6 text-center">
+            <h2 className="text-lg font-extrabold text-white sm:text-xl">See who you&apos;d be joining</h2>
+            <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-[#c9b896]">
+              The whole chapter is public: current members, the exec board, and the alumni who
+              came before us with what they&apos;re doing now.
+            </p>
+            <Link
+              href="/members-list"
+              className="mt-5 inline-block rounded-full border-2 border-[#d4af37] bg-[#1a1a1a] px-8 py-3 text-sm font-semibold text-white transition-colors hover:border-[#f0d060] hover:bg-[#6b1c2a]"
+            >
+              Meet the chapter →
+            </Link>
+          </div>
+
           <p className="mt-10 text-center text-sm text-[#c9b896]">
             Still have questions?{' '}
             <Link href="/rush#faq" className="font-semibold text-[#d4af37] underline underline-offset-4 hover:text-[#f0d060]">
