@@ -401,10 +401,48 @@ Four more things the build settled:
 
 ---
 
+### J. Member-customised profile cards — *raised 2026-08-12, not started*
+
+Let members style their own card themselves — an accent colour, an icon or two, some say over how the card is laid out — edited in the **member portal**, and open to **every member group**, not only alumni. The trigger was alumni wanting to decorate their entry on `/members-list`, but the decision was to build it for anyone with a card.
+
+**Read item I before designing this, because this item pushes against it.** Traits are eboard-only *by routing* specifically because the public roster is unauthenticated, chapter-authored text — that was the point, not a side effect. This feature hands the same page's *visual* layer to members. That reversal is defensible (a colour is not a claim about a person the way a typed trait is) but it has to be a deliberate call, and it sets the boundary for the whole item: **members author presentation, eboard still authors assertions.** If a customisation option can be used to state something — a free-text badge, a custom label — it belongs under traits, not here.
+
+#### Where it goes
+
+`components/ui/card` is the single component behind **both** the public roster (`app/members-list/page.jsx` → `RosterCard`) and the portal directory, so this is one render change, not two. Note that it is also the component the section grid already fights: `className="h-full justify-start"` on the roster card exists because grid stretches every card to the tallest in its row, and centred content pushes a photo out of line with its neighbours' the moment a name wraps.
+
+Storage should follow `links` and `traits`: one `card_style jsonb NOT NULL DEFAULT '{}'` on `users`, read and written whole, nothing joining into it.
+
+**Give it its own endpoint rather than adding it to `PROFILE_FIELDS`.** The profile route is a whole-row upsert that NULLs every absent key, which is the trap that ate links under item E and the reason `show_on_public_roster` and `traits` each got their own route. iOS's five-key save would otherwise reset everyone's styling.
+
+#### The traps this one carries
+
+- **A colour must be a token from a fixed list, never free-form hex.** The roster alternates section backgrounds (`bg-card` / `bg-background`) and the site is theme-aware, so a hex a member picks against one background is unreadable on the other. A fixed palette is also the only version that survives a redesign.
+- **Icons must be a closed allowlist, not a URL and not an upload.** An icon source is the same trust context as an `href` (trap #6). And note the local gotcha: **`lucide-react` is pinned at 0.344 here and its icon names do not match the ones on lucide.dev** — pick names against the installed package or the icon renders as nothing.
+- **"Layout" is the part that can actually break the page**, and is worth scoping down hard on the first pass. Anything that changes a card's vertical rhythm per member reintroduces the row-misalignment the comment above describes, on a public page, with no way for the member to see it happening on someone else's screen size.
+- **Eboard needs a reset.** Same reasoning as the report escape hatch under item D — self-service styling on a public page needs one control that puts a card back to default without editing the database.
+- **Someone opted out of the public roster still has a directory card.** `show_on_public_roster` hides them from `/members-list` only; their styling still has to render in the portal.
+- **iOS ignores unknown keys** (`JSONDecoder`, established under item B), so an additive column is safe there — but the iOS card will show none of this until it is built, and the roster is one of the screens it renders.
+
+#### Still undecided — needs Yash
+
+1. Does customisation show on the **public roster**, the **portal directory**, or both? Public is what was asked for and is also the higher-risk half.
+2. How far does "layout" go — a couple of named presets, or genuinely free arrangement?
+3. Fixed palette (recommended) or a wider colour space with a contrast check?
+
+**Done when:** a member picks a colour and an icon in `/member`, their card shows it on `/members-list` and in the directory, eboard can reset any card to default, and nothing a member can choose produces unreadable text or a card that breaks row alignment.
+
+---
+
 ## Part 3 — Working here
 
 - **Branch, PR, don't push to `main`.** `main` deploys to production the moment it's pushed, for both this repo and the API. There is no staging environment.
 - **`npm run build` before you open a PR.** It's the only thing that catches a broken import, and it's fast.
+- **`npm run lint` too.** CI runs it on every PR (`.github/workflows/lint.yml`). Next 16 removed `next lint` and `next build` no longer lints, so this is the only thing that runs ESLint.
+
+  The baseline is **0 errors and 78 warnings** — the warnings are pre-existing React Compiler findings, catalogued with a reason each in `eslint.config.mjs`. Only errors fail the build, so **if you see an error, it's yours.** Don't fix the warning count as a drive-by; those are behavioural refactors and they belong in their own PR.
+
+  **`npm run format` is not part of this and you should not run it repo-wide.** Prettier has never been run here, so it would rewrite ~200 files and bury your diff. Format the files you touched, or nothing.
 - **`npm run build` rewrites** `public/robots.txt` and `public/sitemap*.xml`. Those are git-ignored now, so you don't need to revert them.
 - **There's no mock or offline mode** — you need a real Authentik account in a real group to see past the login screen.
 - **Don't edit the database directly.** Ask Yash or Infrastructure.
