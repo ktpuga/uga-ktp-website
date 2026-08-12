@@ -72,8 +72,18 @@ function canAdministerChat(chat, { isEboard, currentUserId }) {
 // test would lock real pledges and actives out for as long as that stale group
 // lingers. Matching on ANY of these is what makes ['rush','pledge'] a pledge.
 const CHAT_CREATOR_GROUPS = ['eboard', 'chair', 'active', 'alumni', 'pledge'];
+
+// ⇢ TEMPORARILY DISABLED for everyone except eboard. Flip to true to re-enable.
+// Must be flipped together with MEMBER_CHAT_CREATION_ENABLED in ktp-api's
+// routes/groupChats.js — this only hides the button, that one closes the route.
+// Eboard keeps the button because theirs creates OFFICIAL chapter chats, which
+// is a different endpoint (POST /group-chats) and is not being turned off.
+const MEMBER_CHAT_CREATION_ENABLED = false;
+
 function canCreateChats(groups) {
-  return (groups ?? []).some((g) => CHAT_CREATOR_GROUPS.includes(g));
+  const list = groups ?? [];
+  if (!MEMBER_CHAT_CREATION_ENABLED) return list.includes('eboard');
+  return list.some((g) => CHAT_CREATOR_GROUPS.includes(g));
 }
 
 function tint(hex, alpha) {
@@ -1074,7 +1084,10 @@ function NewGroupChatModal({ accent, isEboard, onClose, onCreate }) {
         </div>
 
         <div className="flex-1 space-y-5 overflow-y-auto p-5">
-          {isEboard && (
+          {/* Hidden while creation is off, or eboard would still be offered
+              "Personal chat" and get a 403 from the now-closed route. With it
+              hidden, `official` stays at its eboard default of true. */}
+          {isEboard && MEMBER_CHAT_CREATION_ENABLED && (
             <div>
               <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Kind of chat</p>
               <div className="flex gap-2">
