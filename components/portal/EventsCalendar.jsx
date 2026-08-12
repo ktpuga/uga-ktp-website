@@ -117,6 +117,17 @@ async function loadCalendarItems() {
 
 // ─── Calendar (all portals) ───
 
+// Roles and committees ADD, matching the API: an event with both reaches
+// everyone in those roles AND everyone on those committees. "All Members" is
+// only honest when neither is set.
+function eventAudienceLabel(audience, committeeIds) {
+  const roles = audience?.length ? formatAudience(audience) : null;
+  const count = Array.isArray(committeeIds) ? committeeIds.length : 0;
+  if (!roles && count === 0) return 'All Members';
+  const committees = count === 0 ? null : `${count} committee${count === 1 ? '' : 's'}`;
+  return [roles, committees].filter(Boolean).join(' + ');
+}
+
 function AudienceBadge({ audience, accent }) {
   const isCommittee = audience.toLowerCase().includes('committee');
   return (
@@ -346,7 +357,21 @@ function RevampedEventsCalendar({ title, description, accentKey }) {
         location: event.location,
         // Only real events have an audience. formatAudience(null) returns "All
         // Members", which badged every private 1-on-1 as visible to everyone.
-        audience: (event.isMeeting || event.isInterview) ? null : formatAudience(event.audience),
+        //
+        // Committees have to be folded in here, not just the roles. This read
+        // `formatAudience(event.audience)` alone, so an event targeted ONLY at a
+        // committee has a null audience and was badged **"All Members"** — the
+        // exact opposite of who could actually see it. Restricting an event to
+        // one committee and having the card announce it to the whole chapter is
+        // the kind of wrong that gets believed.
+        //
+        // Counted rather than named: this component never fetches the committee
+        // list, and adding a request on every portal to label a badge is a worse
+        // trade than saying "1 committee". The word also trips AudienceBadge's
+        // existing icon check, so it picks up the committee glyph for free.
+        audience: (event.isMeeting || event.isInterview)
+          ? null
+          : eventAudienceLabel(event.audience, event.committeeIds),
         participants: Array.isArray(event.participants) ? event.participants : [],
         requiresAttendance: event.requiresAttendance,
         creatorId: event.createdBy,

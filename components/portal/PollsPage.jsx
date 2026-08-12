@@ -424,8 +424,14 @@ function StatusBadge({ poll, accent }) {
 // the API forced them to be mutually exclusive and became a lie the moment they
 // could add together: "Pledges + Marketing" would have read as Marketing only.
 function AudienceBadge({ poll, committees }) {
+  // Compared as strings, and falling back to a plain label rather than
+  // "Unknown". Two things go wrong otherwise: the API sends ids as numbers in
+  // some projections and strings in others, so === misses; and outside /admin
+  // the committee LIST may be empty or unfetched, which is not the same as the
+  // committee being unknown. "Unknown" told members their poll was broken when
+  // only the lookup was missing.
   const committeeName = poll.committee_id
-    ? committees.find((c) => c.id === poll.committee_id)?.name ?? 'Unknown'
+    ? committees.find((c) => String(c.id) === String(poll.committee_id))?.name ?? 'Committee'
     : null;
   const hasRoles = Array.isArray(poll.audience) && poll.audience.length > 0;
 
