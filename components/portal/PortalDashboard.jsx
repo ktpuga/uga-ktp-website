@@ -12,6 +12,7 @@ import { getEvents, getMembers, getPhotos, getAnnouncements } from '@/lib/portal
 import { formatEventTimeRange, upcomingEvents, countUpcomingEvents, getEventStartDate, getEventEndDate, formatAudience, formatMessageTime } from '@/lib/portal-format';
 import { isRedirectError } from '@/lib/is-redirect-error';
 import PhotoMedia from './PhotoMedia';
+import { AutoSkeleton } from 'auto-skeleton-react';
 
 function cleanName(value) {
   return typeof value === 'string' && value.trim() ? value.trim() : null;
@@ -108,7 +109,7 @@ const THEMES = {
   },
 };
 
-function RevampedHero({ accent, welcomeName, welcomeSubtitle }) {
+function RevampedHero({ accent, welcomeName, welcomeSubtitle, nameLoading }) {
   const now = new Date();
   const hour = now.getHours();
   const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
@@ -140,7 +141,13 @@ function RevampedHero({ accent, welcomeName, welcomeSubtitle }) {
         <div className="pt-5">
           <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.22em]" style={{ color: accent.labelColor }}>{greeting}</p>
           <h1 className="font-serif text-[2rem] leading-[1.1] tracking-tight text-white text-balance sm:text-[2.6rem]">
-            {welcomeName ? `Welcome back, ${welcomeName}.` : 'Welcome back.'}
+            Welcome back
+            {nameLoading ? (
+              <>, <span aria-hidden="true" className="inline-block h-[0.75em] w-[5ch] translate-y-[-0.05em] rounded-md bg-white/35 align-baseline animate-pulse" /></>
+            ) : <>{welcomeName}.</> ? (
+              <>, {welcomeName}.</>
+            ) : null}
+            
           </h1>
           <div aria-hidden="true" className="mt-4 h-[2px] w-14 rounded-full bg-white/45" />
           <p className="mt-4 text-sm leading-relaxed" style={{ color: accent.subtitleColor }}>{welcomeSubtitle}</p>
@@ -150,33 +157,38 @@ function RevampedHero({ accent, welcomeName, welcomeSubtitle }) {
   );
 }
 
-function RevampedStatCards({ accent, stats }) {
+function RevampedStatCards({ accent, stats, loading }) {
   return (
     <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
       {stats.map(({ label, value, sub, icon: Icon }) => (
-        <div key={label} className="group relative overflow-hidden rounded-xl border border-border bg-card p-5 transition-shadow hover:shadow-md">
-          <div
-            aria-hidden="true"
-            className="absolute inset-x-0 top-0 h-0.5 opacity-0 transition-opacity duration-300 group-hover:opacity-100"
-            style={{ background: accent.gradientBar }}
-          />
-          <div className="flex items-start justify-between gap-3">
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-xs font-medium uppercase tracking-wider text-muted-foreground">{label}</p>
-              <p className="mt-2 text-4xl font-bold leading-none tracking-tight" style={{ color: accent.base }}>{value}</p>
-              <p className="mt-1.5 text-xs text-muted-foreground">{sub}</p>
-            </div>
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-white" style={{ background: accent.base }}>
-              <Icon className="h-[18px] w-[18px]" strokeWidth={1.75} />
+        <AutoSkeleton key={label} loading={loading}>
+          <div className="group relative overflow-hidden rounded-xl border border-border bg-card p-5 transition-shadow hover:shadow-md">
+            <div
+              data-no-skeleton
+              aria-hidden="true"
+              className="absolute inset-x-0 top-0 h-0.5 opacity-0 transition-opacity duration-300 group-hover:opacity-100"
+              style={{ background: accent.gradientBar }}
+            />
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0 flex-1">
+                <p data-no-skeleton className="truncate text-xs font-medium uppercase tracking-wider text-muted-foreground">{label}</p>
+                <p className="mt-2 text-4xl font-bold leading-none tracking-tight" style={{ color: accent.base }}>{value}</p>
+                <p className="mt-1.5 text-xs text-muted-foreground">{sub}</p>
+              </div>
+              <div data-no-skeleton className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-white" style={{ background: accent.base }}>
+                <Icon className="h-[18px] w-[18px]" strokeWidth={1.75} />
+              </div>
             </div>
           </div>
-        </div>
+        </AutoSkeleton>
       ))}
     </div>
   );
 }
 
 function RevampedEventsCard({ accent, loading, nextEvents, upcomingCount, calendarHref }) {
+  const rows = loading ? [{ id: 'skeleton-event', placeholder: true }] : nextEvents;
+
   return (
     <div className="flex h-full flex-col overflow-hidden rounded-xl border border-border bg-card">
       <div className="flex items-center justify-between border-b border-border px-6 py-4">
@@ -189,47 +201,58 @@ function RevampedEventsCard({ accent, loading, nextEvents, upcomingCount, calend
         </Link>
       </div>
 
-      {loading ? (
-        <p className="px-6 py-4 text-sm text-muted-foreground">Loading events...</p>
-      ) : nextEvents.length === 0 ? (
+      {!loading && nextEvents.length === 0 ? (
         <p className="px-6 py-4 text-sm text-muted-foreground">No upcoming events scheduled.</p>
       ) : (
-        <ul className="flex-1 divide-y divide-border">
-          {nextEvents.map((event, idx) => (
-            <li key={event.id} className="flex gap-4 px-6 py-4">
-              <div
-                className="flex h-14 w-12 shrink-0 flex-col items-center justify-center rounded-md"
-                style={idx === 0
-                  ? { background: accent.dateBadgeBg, color: 'white', border: 'none' }
-                  : { background: 'transparent', border: `1px solid ${accent.dateBadgeBorder}` }}
-              >
-                <span className="text-[9px] font-bold uppercase tracking-widest" style={{ color: idx === 0 ? 'rgba(255,255,255,0.7)' : 'var(--color-muted-foreground)' }}>
-                  {new Date(getEventStartDate(event)).toLocaleDateString('en-US', { month: 'short' })}
-                </span>
-                <span className="mt-0.5 text-xl font-bold leading-none">{new Date(getEventStartDate(event)).getDate()}</span>
-              </div>
+        <AutoSkeleton loading={loading}>
+          <ul className="flex-1 divide-y divide-border">
+            {rows.map((event, idx) => (
+              <li key={event.id} className="flex gap-4 px-6 py-4">
+                <div
+                  className="flex h-14 w-12 shrink-0 flex-col items-center justify-center rounded-md"
+                  style={idx === 0
+                    ? { background: accent.dateBadgeBg, color: 'white', border: 'none' }
+                    : { background: 'transparent', border: `1px solid ${accent.dateBadgeBorder}` }}
+                >
+                  <span className="text-[9px] font-bold uppercase tracking-widest" style={{ color: idx === 0 ? 'rgba(255,255,255,0.7)' : 'var(--color-muted-foreground)' }}>
+                    {event.placeholder ? 'Mon' : new Date(getEventStartDate(event)).toLocaleDateString('en-US', { month: 'short' })}
+                  </span>
+                  <span className="mt-0.5 text-xl font-bold leading-none">
+                    {event.placeholder ? '00' : new Date(getEventStartDate(event)).getDate()}
+                  </span>
+                </div>
 
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-semibold leading-snug text-foreground">{event.title}</p>
-                <p className="mt-0.5 text-xs text-muted-foreground">{formatEventTimeRange(getEventStartDate(event), getEventEndDate(event))}</p>
-                {event.location && (
-                  <p className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
-                    <MapPin className="h-2.5 w-2.5 shrink-0" /> <span className="truncate">{event.location}</span>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-semibold leading-snug text-foreground">
+                    {event.placeholder ? 'Upcoming chapter event' : event.title}
                   </p>
-                )}
-                {event.description && (
-                  <p className="mt-1.5 line-clamp-2 text-xs leading-relaxed text-muted-foreground">{event.description}</p>
-                )}
-              </div>
-            </li>
-          ))}
-        </ul>
+                  <p className="mt-0.5 text-xs text-muted-foreground">
+                    {event.placeholder ? '6:00 PM – 7:00 PM' : formatEventTimeRange(getEventStartDate(event), getEventEndDate(event))}
+                  </p>
+                  {(event.placeholder || event.location) && (
+                    <p className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
+                      <MapPin data-no-skeleton className="h-2.5 w-2.5 shrink-0" />{' '}
+                      <span className="truncate">{event.placeholder ? 'Campus location' : event.location}</span>
+                    </p>
+                  )}
+                  {!event.placeholder && event.description && (
+                    <p className="mt-1.5 line-clamp-2 text-xs leading-relaxed text-muted-foreground">{event.description}</p>
+                  )}
+                </div>
+              </li>
+            ))}
+          </ul>
+        </AutoSkeleton>
       )}
     </div>
   );
 }
 
 function RevampedAnnouncementsCard({ accent, loading, announcements, announcementsHref }) {
+  const rows = loading
+    ? [{ id: 'skeleton-announcement', placeholder: true }]
+    : announcements.slice(0, 4);
+
   return (
     <div className="flex h-full flex-col overflow-hidden rounded-xl border border-border bg-card">
       <div className="flex items-center justify-between border-b border-border px-6 py-4">
@@ -246,31 +269,41 @@ function RevampedAnnouncementsCard({ accent, loading, announcements, announcemen
         )}
       </div>
 
-      {loading ? (
-        <p className="px-6 py-4 text-sm text-muted-foreground">Loading announcements...</p>
-      ) : announcements.length === 0 ? (
+      {!loading && announcements.length === 0 ? (
         <p className="px-6 py-4 text-sm text-muted-foreground">No announcements yet.</p>
       ) : (
-        <ul className="flex-1 divide-y divide-border">
-          {announcements.slice(0, 4).map((a) => {
-            const isCommittee = Boolean(a.committee_id);
-            return (
-              <li key={a.id} className="flex flex-col gap-1.5 px-6 py-4">
-                <div className="flex items-start justify-between gap-2">
-                  <p className="text-sm font-semibold leading-snug text-foreground text-balance">{a.title}</p>
-                  <time className="mt-0.5 shrink-0 text-[11px] text-muted-foreground">{formatMessageTime(a.created_at)}</time>
-                </div>
-                <span
-                  className="inline-flex w-fit items-center rounded-sm px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider"
-                  style={isCommittee ? { background: accent.tagBg, color: accent.tagText } : { background: 'var(--color-muted)', color: 'var(--color-muted-foreground)' }}
-                >
-                  {isCommittee ? 'Committee' : formatAudience(a.audience)}
-                </span>
-                <p className="line-clamp-4 break-words text-xs leading-relaxed text-muted-foreground">{a.body}</p>
-              </li>
-            );
-          })}
-        </ul>
+        <AutoSkeleton loading={loading}>
+          <ul className="flex-1 divide-y divide-border">
+            {rows.map((a) => {
+              const isCommittee = Boolean(a.committee_id);
+              return (
+                <li key={a.id} className="flex flex-col gap-1.5 px-6 py-4">
+                  <div className="flex items-start justify-between gap-2">
+                    <p className="text-sm font-semibold leading-snug text-foreground text-balance">
+                      {a.placeholder ? 'Chapter announcement title' : a.title}
+                    </p>
+                    <time className="mt-0.5 shrink-0 text-[11px] text-muted-foreground">
+                      {a.placeholder ? '2d ago' : formatMessageTime(a.created_at)}
+                    </time>
+                  </div>
+                  <span
+                    className="inline-flex w-fit items-center rounded-sm px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider"
+                    style={a.placeholder || !isCommittee
+                      ? { background: 'var(--color-muted)', color: 'var(--color-muted-foreground)' }
+                      : { background: accent.tagBg, color: accent.tagText }}
+                  >
+                    {a.placeholder ? 'Everyone' : isCommittee ? 'Committee' : formatAudience(a.audience)}
+                  </span>
+                  <p className="line-clamp-4 break-words text-xs leading-relaxed text-muted-foreground">
+                    {a.placeholder
+                      ? 'Announcement body preview text that fills a few lines so the skeleton matches the real card layout while content is loading.'
+                      : a.body}
+                  </p>
+                </li>
+              );
+            })}
+          </ul>
+        </AutoSkeleton>
       )}
     </div>
   );
@@ -289,19 +322,29 @@ function RevampedPhotosCard({ accent, loading, photos, filesHref }) {
         </Link>
       </div>
 
-      {loading ? (
-        <p className="px-6 py-4 text-sm text-muted-foreground">Loading photos...</p>
-      ) : photos.length === 0 ? (
+      {!loading && photos.length === 0 ? (
         <p className="px-6 py-4 text-sm text-muted-foreground">No photos uploaded yet.</p>
       ) : (
-        <div className="grid grid-cols-2 gap-3 p-5 sm:grid-cols-4">
-          {photos.slice(0, 4).map((photo) => (
-            <div key={photo.id} className="group relative aspect-square overflow-hidden rounded-lg bg-muted">
-              <PhotoMedia photo={photo} />
-              <div aria-hidden="true" className="pointer-events-none absolute inset-0 bg-black/0 transition-colors duration-200 group-hover:bg-black/20" />
-            </div>
-          ))}
-        </div>
+        <AutoSkeleton loading={loading}>
+          <div className="grid grid-cols-2 gap-3 p-5 sm:grid-cols-4">
+            {(loading
+              ? Array.from({ length: 4 }, (_, i) => ({ id: `skeleton-${i}` }))
+              : photos.slice(0, 4)
+            ).map((photo) => (
+              <div key={photo.id} className="group relative aspect-square overflow-hidden rounded-lg bg-muted">
+                {loading ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img data-skeleton-role="image" alt="" className="h-full w-full object-cover" />
+                ) : (
+                  <>
+                    <PhotoMedia photo={photo} />
+                    <div aria-hidden="true" className="pointer-events-none absolute inset-0 bg-black/0 transition-colors duration-200 group-hover:bg-black/20" />
+                  </>
+                )}
+              </div>
+            ))}
+          </div>
+        </AutoSkeleton>
       )}
     </div>
   );
@@ -320,7 +363,7 @@ export default function PortalDashboard({
   const [announcements, setAnnouncements] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const { data: session } = useSession();
+  const { data: session, status: sessionStatus } = useSession();
 
   // Revamped now covers every real portal theme — this only stays false for
   // some genuinely unexpected value, in which case the plain fallback below
@@ -368,13 +411,16 @@ export default function PortalDashboard({
   const totalEvents = events.length;
   const memberCount = members.length;
   const welcomeName = resolveWelcomeName(session, members);
+  const nameLoading = sessionStatus === 'loading' || (loading && !welcomeName);
   const welcomeTitle = welcomeName ? `Welcome, ${welcomeName}!` : 'Welcome!';
 
+  // Values stay populated while loading so AutoSkeleton can measure them;
+  // the "-" placeholders are unnecessary because the skeleton overlays the real layout.
   const stats = [
-    { label: 'Upcoming Events', value: loading ? '-' : String(upcomingCount), sub: loading ? 'On the chapter calendar' : `${totalEvents} on the calendar`, icon: Calendar },
-    { label: memberGroupLabel, value: loading ? '-' : String(memberCount), sub: loading ? 'From chapter directory' : `${memberCount} listed`, icon: Users },
-    { label: 'Announcements', value: loading ? '-' : String(announcements.length), sub: loading ? 'Posted by eboard' : `${announcements.length} posted`, icon: Megaphone },
-    { label: 'Photos', value: loading ? '-' : String(photos.length), sub: 'In the gallery', icon: ImageIcon },
+    { label: 'Upcoming Events', value: String(upcomingCount), sub: `${totalEvents} on the calendar`, icon: Calendar },
+    { label: memberGroupLabel, value: String(memberCount), sub: `${memberCount} listed`, icon: Users },
+    { label: 'Announcements', value: String(announcements.length), sub: `${announcements.length} posted`, icon: Megaphone },
+    { label: 'Photos', value: String(photos.length), sub: 'In the gallery', icon: ImageIcon },
   ];
 
   if (revamped) {
@@ -386,9 +432,9 @@ export default function PortalDashboard({
           </Card>
         )}
 
-        <RevampedHero accent={accentTheme} welcomeName={welcomeName} welcomeSubtitle={welcomeSubtitle} />
+        <RevampedHero accent={accentTheme} welcomeName={welcomeName} welcomeSubtitle={welcomeSubtitle} nameLoading={nameLoading} />
 
-        <RevampedStatCards accent={accentTheme} stats={stats} />
+        <RevampedStatCards accent={accentTheme} stats={stats} loading={loading} />
 
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-5">
           <div className="lg:col-span-3">
