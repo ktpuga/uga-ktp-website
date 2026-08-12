@@ -41,6 +41,25 @@ import { PALETTES } from '@/components/portal/PortalAccentContext';
 
 const DEFAULT_AUDIENCE = ['active', 'alumni', 'pledge', 'eboard'];
 
+// Module scope, not inside the component. It is static, and declaring it in the
+// component body put it in a temporal dead zone for anything computed above it
+// — which is exactly how the create modal came to throw
+// "Cannot access 'ROLES' before initialization" on render.
+//
+// Rushees are targetable but are NOT in DEFAULT_AUDIENCE, and that asymmetry is
+// deliberate: the API's untargeted branch requires a member group, so a poll
+// only reaches rushees when somebody ticks the pill on purpose. Rushees can
+// genuinely vote once targeted, since routes/polls.js gates the router on
+// RUSH_ACCESSIBLE_GROUPS and puts no extra check on /:id/vote.
+const ROLES = [
+  { value: 'active', label: 'Active Members' },
+  { value: 'chair', label: 'Chairs' },
+  { value: 'alumni', label: 'Alumni' },
+  { value: 'pledge', label: 'Pledges' },
+  { value: 'eboard', label: 'Eboard' },
+  { value: 'rush', label: 'Rushees' },
+];
+
 function tint(hex, alpha) {
   const h = hex.replace('#', '');
   const full = h.length === 3 ? h.split('').map((c) => c + c).join('') : h;
@@ -254,22 +273,6 @@ function CreatePollModal({ accent, committees, onClose, onCreated }) {
   }
 
   const fb = bindFocus(accent);
-  // Rushees are targetable but are NOT in DEFAULT_AUDIENCE, and that asymmetry
-  // is deliberate. The API's untargeted branch requires a member group, so a
-  // poll only reaches rushees when somebody ticks this pill on purpose —
-  // defaulting it on would publish every chapter poll to prospects. Same
-  // explicit-opt-in rule as events and announcements.
-  //
-  // Rushees can genuinely vote once targeted: routes/polls.js gates the whole
-  // router on RUSH_ACCESSIBLE_GROUPS and puts no extra check on /:id/vote.
-  const ROLES = [
-    { value: 'active', label: 'Active Members' },
-    { value: 'chair', label: 'Chairs' },
-    { value: 'alumni', label: 'Alumni' },
-    { value: 'pledge', label: 'Pledges' },
-    { value: 'eboard', label: 'Eboard' },
-    { value: 'rush', label: 'Rushees' },
-  ];
 
   return (
     <ModalWrapper onClose={onClose} label="Create poll" maxWidth="max-w-lg">
