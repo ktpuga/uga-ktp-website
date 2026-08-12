@@ -1000,7 +1000,6 @@ export default function IosHomepageSlideshowManager() {
 
   useEffect(() => {
     load({ initial: true });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {

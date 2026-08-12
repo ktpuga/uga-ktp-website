@@ -1834,7 +1834,6 @@ function MessagesTab({ currentUserId, isEboard, accent, initialWithId }) {
     getMember(initialWithId)
       .then((member) => setSelected({ authentik_id: initialWithId, ...member }))
       .catch((err) => { if (isRedirectError(err)) throw err; });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialWithId]);
 
   function handleNewDM(member) {
@@ -1911,7 +1910,6 @@ function GroupChatsTab({ currentUserId, isEboard, canCreate, accent, initialGrou
     if (!initialGroupChatId) return;
     const match = chats.find((c) => c.id === initialGroupChatId);
     if (match) setSelected(match);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialGroupChatId, chats]);
 
   function handleDeleted(chatId) {

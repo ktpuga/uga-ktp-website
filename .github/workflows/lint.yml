@@ -1,0 +1,38 @@
+name: Lint
+
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+
+concurrency:
+  group: lint-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  eslint:
+    name: ESLint
+    # Deliberately NOT self-hosted. deploy.yml uses the production box, and a
+    # pull request from a fork runs code we have not reviewed — installing and
+    # linting that on the prod host would hand an outside contributor a shell
+    # on the server. GitHub-hosted runners are disposable.
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      # Same flag the Dockerfile uses. next-auth 5 beta and React 19 make a
+      # plain `npm ci` fail on peer resolution.
+      - name: Install dependencies
+        run: npm install --legacy-peer-deps
+
+      - name: Run ESLint
+        run: npm run lint

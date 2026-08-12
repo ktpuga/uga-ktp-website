@@ -330,7 +330,6 @@ function RevampedEventsCalendar({ title, description, accentKey }) {
       }
       return closing ? null : iso;
     });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [panelOpen]);
 
   useEffect(() => {

@@ -863,7 +863,6 @@ export default function HomepagePhotoManager() {
 
   useEffect(() => {
     load({ initial: true });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   async function load({ initial = false } = {}) {

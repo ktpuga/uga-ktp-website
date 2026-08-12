@@ -29,11 +29,11 @@ function GalleryMedia({ photo }) {
   }
 
   return (
-    // eslint-disable-next-line @next/next/no-img-element
     // The media endpoint serves the ORIGINAL file — there is no thumbnail
     // variant — so anything the visitor hasn't scrolled to must not be fetched.
     // This is also why the homepage shows only a few collections and the full
     // archive lives on its own page.
+    // eslint-disable-next-line @next/next/no-img-element
     <img
       src={src}
       alt={photo.title || photo.caption || "Chapter photo"}
