@@ -173,7 +173,11 @@ const ProfileCard = ({ name, title, note, traits, links, bio, avatarSrc, fallbac
       {safeLinks.length > 0 && (
         <ul className="mt-1 mb-1 flex flex-wrap justify-center gap-1.5 px-2">
           {safeLinks.map((link) => (
-            <li key={`${link.label}-${link.href}`} className="max-w-full">
+            // Capped rather than max-w-full so ONE long label can't take the
+            // whole row and push every other chip onto its own line, which is
+            // what made these look stacked rather than listed. Short labels
+            // still size to their content and pack side by side.
+            <li key={`${link.label}-${link.href}`} className="max-w-[12rem]">
               <a
                 href={link.href}
                 target="_blank"

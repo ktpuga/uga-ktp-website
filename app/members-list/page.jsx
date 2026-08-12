@@ -12,10 +12,14 @@ import { linkedinHref } from '@/lib/portal-format';
 import { rosterPictureSrc } from '@/lib/avatar';
 
 const SECTIONS = [
-  { key: 'eboard', heading: 'Executive Board', title: 'E-Board', bg: 'bg-card', cols: 'sm:grid-cols-3 md:grid-cols-4' },
-  { key: 'chair', heading: 'Cabinet', title: 'Chair', bg: 'bg-background', cols: 'sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5' },
-  { key: 'active', heading: 'Members', title: 'Member', bg: 'bg-card', cols: 'sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5' },
-  { key: 'alumni', heading: 'Alumni', title: 'Alumni', bg: 'bg-background', cols: 'sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5' },
+  // One fewer column at every breakpoint than this used to carry. A card now
+  // has room for a name, a role, eboard's caption pills and a row of the
+  // member's own link chips, which is a lot more than the five-up layout was
+  // designed around.
+  { key: 'eboard', heading: 'Executive Board', title: 'E-Board', bg: 'bg-card', cols: 'md:grid-cols-3 xl:grid-cols-4' },
+  { key: 'chair', heading: 'Cabinet', title: 'Chair', bg: 'bg-background', cols: 'md:grid-cols-3 xl:grid-cols-4' },
+  { key: 'active', heading: 'Members', title: 'Member', bg: 'bg-card', cols: 'md:grid-cols-3 xl:grid-cols-4' },
+  { key: 'alumni', heading: 'Alumni', title: 'Alumni', bg: 'bg-background', cols: 'md:grid-cols-3 xl:grid-cols-4' },
 ];
 
 // Deliberately First + Last name here, not the shared memberDisplayName()
@@ -172,11 +176,16 @@ export default function MembersListPage() {
 
           return (
             <section key={key} id={key} className={`${bg} py-16 md:py-24`}>
-              <div className="container mx-auto max-w-6xl px-4 md:px-6">
+              {/* max-w-6xl at five columns gave ~205px cards, which is
+                  narrower than a single link chip — so a member's links stacked
+                  one per line instead of sitting in a row. Wider container plus
+                  one fewer column at each breakpoint roughly doubles the card
+                  width, which is what lets the chips lay out horizontally. */}
+              <div className="container mx-auto max-w-[88rem] px-4 md:px-6">
                 <div className="text-center">
                   <h2 className="text-3xl font-bold tracking-tight md:text-4xl text-primary">{heading}</h2>
                 </div>
-                <div className={`mt-12 grid grid-cols-2 gap-8 text-sm ${cols}`}>
+                <div className={`mt-12 grid grid-cols-1 gap-8 text-sm sm:grid-cols-2 lg:gap-10 ${cols}`}>
                   {orderedPeople.map((person) => (
                     <RosterCard key={person.id} person={person} title={title} />
                   ))}
