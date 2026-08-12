@@ -68,7 +68,7 @@ function formatDatetime(iso) {
 
 function audienceLabel(audience) {
   if (!audience || audience.length === 0) return 'All Members';
-  const labels = { active: 'Active', alumni: 'Alumni', pledge: 'Pledges', eboard: 'Eboard', rush: 'Rushees' };
+  const labels = { active: 'Active', chair: 'Chairs', alumni: 'Alumni', pledge: 'Pledges', eboard: 'Eboard', rush: 'Rushees' };
   return audience.map((a) => labels[a] ?? a).join(', ');
 }
 
@@ -184,15 +184,29 @@ function CreatePollModal({ accent, committees, onClose, onCreated }) {
   const [options, setOptions] = useState(['', '']);
   const [multiSelect, setMulti] = useState(false);
   const [expiresAt, setExpires] = useState('');
-  const [targeting, setTargeting] = useState('chapter');
   const [selectedAudience, setAud] = useState(DEFAULT_AUDIENCE);
   const [selectedCommittee, setCom] = useState(null);
   const [error, setError] = useState(null);
   const [saving, setSaving] = useState(false);
 
+  // At least one of the two, since neither means nobody. The API's untargeted
+  // branch would fall back to "all member groups", which is not something you
+  // should be able to reach by leaving the whole section blank.
   const canSubmit = question.trim().length > 0
     && options.filter((o) => o.trim()).length >= 2
-    && (targeting === 'chapter' ? selectedAudience.length > 0 : selectedCommittee !== null);
+    && (selectedAudience.length > 0 || selectedCommittee !== null);
+
+  // Says in words who ends up seeing this, because "Pledges" and a committee
+  // selected at once reads as a narrowing unless something states otherwise.
+  const targetSummary = (() => {
+    const roleNames = selectedAudience.map((v) => ROLES.find((r) => r.value === v)?.label ?? v);
+    const committeeName = committees.find((c) => c.id === selectedCommittee)?.name;
+    if (roleNames.length === 0 && !committeeName) return 'Pick at least one group or a committee.';
+    if (roleNames.length > 0 && committeeName) {
+      return `Goes to ${roleNames.join(', ')}, plus everyone on ${committeeName}. The two add together.`;
+    }
+    return committeeName ? `Goes to everyone on ${committeeName}.` : `Goes to ${roleNames.join(', ')}.`;
+  })();
 
   // Capped to match the API, which rejects past this. Without the cap the
   // button keeps adding rows that the save is then refused for.
@@ -227,8 +241,8 @@ function CreatePollModal({ accent, committees, onClose, onCreated }) {
         description: description.trim(),
         options: options.map((o) => o.trim()).filter(Boolean),
         multiSelect,
-        audience: targeting === 'chapter' ? selectedAudience : [],
-        committeeId: targeting === 'committee' ? selectedCommittee : null,
+        audience: selectedAudience,
+        committeeId: selectedCommittee,
         expiresAt: expiresAtIso,
       });
       onCreated(poll);
@@ -250,6 +264,7 @@ function CreatePollModal({ accent, committees, onClose, onCreated }) {
   // router on RUSH_ACCESSIBLE_GROUPS and puts no extra check on /:id/vote.
   const ROLES = [
     { value: 'active', label: 'Active Members' },
+    { value: 'chair', label: 'Chairs' },
     { value: 'alumni', label: 'Alumni' },
     { value: 'pledge', label: 'Pledges' },
     { value: 'eboard', label: 'Eboard' },
@@ -317,46 +332,45 @@ function CreatePollModal({ accent, committees, onClose, onCreated }) {
         </FormField>
 
         <FormField label="Audience">
-          <div className="mb-3 inline-flex rounded-xl border border-border bg-muted/40 p-0.5 text-xs font-medium">
-            {['chapter', 'committee'].map((mode) => (
-              <button key={mode} type="button"
-                onClick={() => setTargeting(mode)}
-                className={cn('rounded-lg px-4 py-1.5 transition-all', targeting === mode ? 'text-white shadow-sm' : 'text-muted-foreground hover:text-foreground')}
-                style={targeting === mode ? { background: accent.gradient } : undefined}
-              >
-                {mode === 'chapter' ? 'Chapter-wide' : 'Committee Only'}
-              </button>
-            ))}
+          {/* Roles and a committee are picked TOGETHER, not either/or. They add
+              rather than narrow: the API ORs the two, so "Pledges + Marketing"
+              reaches every pledge AND everyone on Marketing. This was a
+              Chapter-wide/Committee-Only toggle, which couldn't express that at
+              all and made the two look mutually exclusive. Announcements and
+              events already worked this way; polls were the odd one out. */}
+          <div className="flex flex-wrap gap-2">
+            {ROLES.map((r) => {
+              const on = selectedAudience.includes(r.value);
+              return (
+                <button key={r.value} type="button" onClick={() => toggleAudience(r.value)}
+                  className={cn('rounded-full border px-3 py-1 text-xs font-medium transition-colors', on ? 'border-transparent text-white' : 'border-border text-muted-foreground hover:border-current')}
+                  style={on ? { background: accent.gradient } : undefined}
+                >
+                  {r.label}
+                </button>
+              );
+            })}
           </div>
 
-          {targeting === 'chapter' ? (
-            <div className="flex flex-wrap gap-2">
-              {ROLES.map((r) => {
-                const on = selectedAudience.includes(r.value);
-                return (
-                  <button key={r.value} type="button" onClick={() => toggleAudience(r.value)}
-                    className={cn('rounded-full border px-3 py-1 text-xs font-medium transition-colors', on ? 'border-transparent text-white' : 'border-border text-muted-foreground hover:border-current')}
-                    style={on ? { background: accent.gradient } : undefined}
-                  >
-                    {r.label}
-                  </button>
-                );
-              })}
-            </div>
-          ) : (
-            <div className="relative">
+          {committees.length > 0 && (
+            <div className="relative mt-3">
               <select
                 value={selectedCommittee ?? ''}
                 onChange={(e) => setCom(e.target.value ? Number(e.target.value) : null)}
+                aria-label="Also send to a committee"
                 className={cn(inputCls(), 'appearance-none pr-8')}
                 style={{ ['--tw-ring-color']: tint(accent.base, 0.3) }}
               >
-                <option value="">Select a committee…</option>
+                <option value="">No committee</option>
                 {committees.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
               </select>
               <ChevronDown size={13} className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
             </div>
           )}
+
+          <p className="mt-2 text-[11px] leading-relaxed text-muted-foreground">
+            {targetSummary}
+          </p>
         </FormField>
 
         {error && <p className="text-sm text-red-600">{error}</p>}
@@ -402,16 +416,35 @@ function StatusBadge({ poll, accent }) {
 
 // ─── Audience badge ───
 
+// Two badges when a poll carries both, not one. This used to show the committee
+// INSTEAD of the roles whenever a committee was set, which was harmless while
+// the API forced them to be mutually exclusive and became a lie the moment they
+// could add together: "Pledges + Marketing" would have read as Marketing only.
 function AudienceBadge({ poll, committees }) {
-  const label = poll.committee_id
-    ? `Committee: ${committees.find((c) => c.id === poll.committee_id)?.name ?? 'Unknown'}`
-    : audienceLabel(poll.audience);
+  const committeeName = poll.committee_id
+    ? committees.find((c) => c.id === poll.committee_id)?.name ?? 'Unknown'
+    : null;
+  const hasRoles = Array.isArray(poll.audience) && poll.audience.length > 0;
+
+  const pill = 'inline-flex items-center gap-1 rounded-full border border-border bg-muted/40 px-2 py-0.5 text-[11px] text-muted-foreground';
 
   return (
-    <span className="inline-flex items-center gap-1 rounded-full border border-border bg-muted/40 px-2 py-0.5 text-[11px] text-muted-foreground">
-      {poll.committee_id ? <Building2 size={9} /> : <Tag size={9} />}
-      {label}
-    </span>
+    <>
+      {/* audienceLabel renders "All Members" for an empty audience, which is
+          only true when there is no committee either. */}
+      {(hasRoles || !committeeName) && (
+        <span className={pill}>
+          <Tag size={9} />
+          {audienceLabel(poll.audience)}
+        </span>
+      )}
+      {committeeName && (
+        <span className={pill}>
+          <Building2 size={9} />
+          {committeeName}
+        </span>
+      )}
+    </>
   );
 }
 
