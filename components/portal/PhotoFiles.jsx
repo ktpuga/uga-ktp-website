@@ -6,13 +6,13 @@ import { cn } from '@/lib/utils';
 import {
   ChevronLeft, Plus, Trash2, Download, X, Search, ImageIcon, FileText, FileIcon,
   Link2, ExternalLink, FolderIcon, FolderOpen, Upload, Film, ChevronRight, AlertCircle, Lock,
-  AlertTriangle, Loader2, FolderInput,
+  AlertTriangle, Loader2, FolderInput, PencilLine,
 } from 'lucide-react';
 import {
   getPhotos, getAlbums, getGeneralAlbumStats, createAlbum, deleteAlbum, uploadPhoto, deletePhoto,
   getDocumentFolders, getDocuments, createDocumentFolder, deleteDocumentFolder,
   uploadDocument, createDocumentLink, deleteDocument,
-  moveDocument, moveDocumentFolder,
+  moveDocument, moveDocumentFolder, renameDocument, renameDocumentFolder,
   setAlbumVisibility, setFolderVisibility, setDocumentVisibility,
 } from '@/lib/portal-api';
 import { formatPhotoDate, safeExternalHref } from '@/lib/portal-format';
@@ -424,6 +424,31 @@ function AlbumCard({ album, accent, isEboard, onOpen, onDelete, onEditVisibility
 function isRestricted(item) {
   if (item.overrides_folder !== undefined && !item.overrides_folder) return false;
   return (item.audience?.length ?? 0) > 0 || (item.committee_ids?.length ?? 0) > 0;
+}
+
+// Folders and documents are separate tables that the table view merges, so an
+// id alone is ambiguous. Every drag/drop comparison keys on this instead.
+function rowKey(doc) {
+  return `${doc.kind === 'folder' ? 'folder' : 'doc'}:${doc.id}`;
+}
+
+function rowNoun(doc) {
+  return doc.kind === 'folder' ? 'folder' : doc.kind === 'link' ? 'link' : 'file';
+}
+
+function rowLabel(doc) {
+  return doc.name ?? doc.filename;
+}
+
+// Shared by the Move picker and the drag confirm so the two paths cannot drift
+// into describing the same consequence differently. Effective audience is the
+// intersection all the way down: an item with its own override gets narrowed
+// twice, an inheriting one simply takes the destination's.
+function narrowingWarning(item) {
+  const noun = rowNoun(item);
+  return isRestricted(item)
+    ? `The destination folder is restricted. Once moved, only members who can see both it and the ${noun} itself will find this.`
+    : `The destination folder is restricted. Members outside its audience will no longer see this ${noun}.`;
 }
 
 // One modal for all three kinds. `kind` picks both the save call and the
@@ -1087,8 +1112,7 @@ function MoveToModal({ item, isFolder, accent, currentFolderId, onClose, onMove 
   const { busy, error, submit } = useModalSubmit(onMove);
 
   const destinationId = browsePath.length ? browsePath[browsePath.length - 1].id : null;
-  const label = isFolder ? item.name : item.filename;
-  const noun = isFolder ? 'folder' : item.kind === 'link' ? 'link' : 'file';
+  const label = rowLabel(item);
   // The row is already here, so this would be a no-op that still costs a
   // request and makes the row vanish and reappear.
   const alreadyHere = destinationId === currentFolderId;
@@ -1173,11 +1197,7 @@ function MoveToModal({ item, isFolder, accent, currentFolderId, onClose, onMove 
         {destinationRestricted && (
           <div className="flex gap-2 rounded-xl border border-amber-500/30 bg-amber-500/5 p-3">
             <AlertTriangle size={14} className="mt-0.5 shrink-0 text-amber-500" />
-            <p className="text-xs text-muted-foreground">
-              {isRestricted(item)
-                ? `This destination is restricted. Once moved, only members who can see both the destination and the ${noun} itself will find it.`
-                : `This destination is restricted. Members outside its audience will no longer see this ${noun}.`}
-            </p>
+            <p className="text-xs text-muted-foreground">{narrowingWarning(item)}</p>
           </div>
         )}
 
@@ -1195,7 +1215,66 @@ function MoveToModal({ item, isFolder, accent, currentFolderId, onClose, onMove 
   );
 }
 
-function DocRow({ doc, isFolder, accent, isEboard, canManage, onOpenFolder, onPreview, onDelete, onEditVisibility, onMove }) {
+// One modal for both tables: a folder's label lives in `name` and a document's
+// in `filename`, so the caller decides which field the typed value lands in.
+function RenameModal({ item, accent, onClose, onRename }) {
+  const isFolder = item.kind === 'folder';
+  const original = rowLabel(item);
+  const [name, setName] = useState(original);
+  const { busy, error, submit } = useModalSubmit(onRename);
+  const inputRef = useRef(null);
+
+  // Preselect the basename the way a file manager does. Renaming
+  // "minutes-3-4.pdf" should not mean retyping ".pdf" or silently dropping it:
+  // mime_type still drives the in-portal preview, but a downloaded file with no
+  // extension is one the member's own OS cannot open. Folders and links have no
+  // extension to protect, so they select whole.
+  // FieldInput defines its own onFocus and would override a passed one, so this
+  // reaches the element by ref rather than from the focus event.
+  useEffect(() => {
+    const input = inputRef.current;
+    if (!input) return;
+    const dot = isFolder || item.kind === 'link' ? -1 : original.lastIndexOf('.');
+    input.focus();
+    input.setSelectionRange(0, dot > 0 ? dot : original.length);
+  }, [isFolder, item.kind, original]);
+
+  const trimmed = name.trim();
+  const ready = trimmed.length > 0 && trimmed !== original;
+
+  return (
+    <ModalWrapper onClose={onClose} label={`Rename ${original}`}>
+      <ModalHeader accent={accent} title={isFolder ? 'Rename Folder' : 'Rename'} icon={<PencilLine size={14} strokeWidth={1.75} />} onClose={onClose} />
+      <div className="space-y-4 p-5">
+        <FormField label={isFolder ? 'Folder Name' : 'Display Name'}>
+          <FieldInput
+            ref={inputRef}
+            accent={accent}
+            type="text"
+            maxLength={isFolder ? TEXT_LIMITS.NAME : TEXT_LIMITS.FILENAME}
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            onKeyDown={(e) => { if (e.key === 'Enter' && ready && !busy) submit(trimmed); }}
+          />
+        </FormField>
+        {!isFolder && item.kind !== 'link' && (
+          <p className="text-xs text-muted-foreground">This is the name members see and the name the file downloads as. The stored file is not touched.</p>
+        )}
+        <ModalError message={error} />
+      </div>
+      <ModalFooter
+        accent={accent}
+        onClose={onClose}
+        onConfirm={() => submit(trimmed)}
+        confirmLabel="Rename"
+        disabled={!ready}
+        busy={busy}
+      />
+    </ModalWrapper>
+  );
+}
+
+function DocRow({ doc, isFolder, accent, isEboard, canManage, drag, onOpenFolder, onPreview, onDelete, onEditVisibility, onMove, onRename }) {
   const isLink = doc.kind === 'link';
   const isFile = doc.kind !== 'link' && !isFolder;
 
@@ -1205,7 +1284,33 @@ function DocRow({ doc, isFolder, accent, isEboard, canManage, onOpenFolder, onPr
   }
 
   return (
-    <tr className="group border-b border-border transition-colors last:border-b-0 hover:bg-muted/30">
+    <tr
+      draggable={drag.enabled}
+      onDragStart={(e) => {
+        // Firefox refuses to start a drag unless the transfer carries
+        // something. The payload is never read back: dragover is forbidden
+        // from calling getData(), so the dragged row is tracked in React
+        // state instead of on the event.
+        e.dataTransfer.setData('text/plain', rowLabel(doc));
+        e.dataTransfer.effectAllowed = 'move';
+        drag.onStart();
+      }}
+      onDragEnd={drag.onEnd}
+      // Leaving these off entirely when the row cannot accept the drop is what
+      // makes the browser show a "no drop" cursor: the default action is only
+      // suppressed on targets that are genuinely droppable.
+      onDragOver={drag.canAccept ? (e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; drag.onOver(); } : undefined}
+      // dragleave also fires when the pointer crosses onto a CHILD of the row,
+      // which would flicker the highlight off over every button in it.
+      onDragLeave={drag.canAccept ? (e) => { if (!e.currentTarget.contains(e.relatedTarget)) drag.onLeave(); } : undefined}
+      onDrop={drag.canAccept ? (e) => { e.preventDefault(); drag.onDrop(); } : undefined}
+      className={cn(
+        'group border-b border-border transition-colors last:border-b-0',
+        drag.isDragging ? 'opacity-40' : 'hover:bg-muted/30',
+        drag.enabled && 'cursor-grab',
+      )}
+      style={drag.isTarget ? { background: tint(accent.base, 0.10), boxShadow: `inset 0 0 0 2px ${accent.light}` } : undefined}
+    >
       <td className="px-5 py-3">
         <div className="flex items-center gap-3">
           <div className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-lg" style={{ background: tint(accent.base, 0.07) }}>
@@ -1214,8 +1319,11 @@ function DocRow({ doc, isFolder, accent, isEboard, canManage, onOpenFolder, onPr
             ) : isLink ? (
               <Link2 size={16} style={{ color: accent.light }} />
             ) : doc.mime_type?.startsWith('image/') ? (
+              // draggable={false}, like every anchor below: images and links
+              // are draggable by default, so grabbing one starts an image or
+              // URL drag and the row move never begins.
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={`/api/documents/${doc.id}/preview`} alt="" className="h-full w-full object-cover" />
+              <img src={`/api/documents/${doc.id}/preview`} alt="" draggable={false} className="h-full w-full object-cover" />
             ) : (
               <FileTypeIcon mimeType={doc.mime_type} size={16} style={{ color: accent.light }} />
             )}
@@ -1223,11 +1331,11 @@ function DocRow({ doc, isFolder, accent, isEboard, canManage, onOpenFolder, onPr
 
           <div className="min-w-0">
             {isFolder || isFile ? (
-              <button type="button" onClick={handleNameClick} className="truncate text-sm font-medium text-foreground transition-colors hover:underline" style={{ maxWidth: '28ch' }}>
+              <button type="button" onClick={handleNameClick} className="cursor-pointer truncate text-sm font-medium text-foreground transition-colors hover:underline" style={{ maxWidth: '28ch' }}>
                 {doc.name ?? doc.filename}
               </button>
             ) : safeExternalHref(doc.url) ? (
-              <a href={safeExternalHref(doc.url)} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 truncate text-sm font-medium transition-colors hover:underline" style={{ color: accent.light, maxWidth: '28ch' }}>
+              <a href={safeExternalHref(doc.url)} target="_blank" rel="noopener noreferrer" draggable={false} className="flex cursor-pointer items-center gap-1 truncate text-sm font-medium transition-colors hover:underline" style={{ color: accent.light, maxWidth: '28ch' }}>
                 {doc.filename}
                 <ExternalLink size={11} className="shrink-0" />
               </a>
@@ -1253,7 +1361,9 @@ function DocRow({ doc, isFolder, accent, isEboard, canManage, onOpenFolder, onPr
       </td>
 
       <td className="px-4 py-3">
-        <div className="flex items-center justify-end gap-1.5">
+        {/* cursor-pointer here so the row's cursor-grab does not inherit down
+            onto every button in the actions cell. */}
+        <div className="flex cursor-pointer items-center justify-end gap-1.5">
           {/* A restricted row is otherwise indistinguishable from an open one.
               For a DOCUMENT this reflects its own override only — an
               inheriting document inside a restricted folder is restricted in
@@ -1273,11 +1383,22 @@ function DocRow({ doc, isFolder, accent, isEboard, canManage, onOpenFolder, onPr
               <Lock size={13} />
             </button>
           )}
-          {/* Cabinet can move as well as eboard, so this is the one action in
-              the row on canManage rather than isEboard. Kept always visible
-              instead of hover-revealed like the folder delete: reorganising is
-              the reason someone opens this page on a phone, where there is no
-              hover to reveal it with. */}
+          {canManage && (
+            <button
+              type="button"
+              onClick={onRename}
+              className="flex h-7 w-7 items-center justify-center rounded-lg border border-border bg-card text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+              aria-label={`Rename ${doc.name ?? doc.filename}`}
+            >
+              <PencilLine size={13} />
+            </button>
+          )}
+          {/* Cabinet can move and rename as well as eboard, so these two are
+              the row actions on canManage rather than isEboard. Both stay
+              always visible instead of hover-revealed like the folder delete:
+              tidying is the reason someone opens this page on a phone, where
+              there is no hover to reveal them with, and where the drag path
+              does not work at all. */}
           {canManage && (
             <button
               type="button"
@@ -1289,12 +1410,12 @@ function DocRow({ doc, isFolder, accent, isEboard, canManage, onOpenFolder, onPr
             </button>
           )}
           {isFile && (
-            <a href={`/api/documents/${doc.id}/download`} download={doc.filename} className="flex h-7 w-7 items-center justify-center rounded-lg border border-border bg-card text-muted-foreground transition-colors hover:bg-muted hover:text-foreground" aria-label="Download">
+            <a href={`/api/documents/${doc.id}/download`} download={doc.filename} draggable={false} className="flex h-7 w-7 items-center justify-center rounded-lg border border-border bg-card text-muted-foreground transition-colors hover:bg-muted hover:text-foreground" aria-label="Download">
               <Download size={13} />
             </a>
           )}
           {isLink && safeExternalHref(doc.url) && (
-            <a href={safeExternalHref(doc.url)} target="_blank" rel="noopener noreferrer" className="flex h-7 items-center justify-center gap-1 rounded-lg border border-border bg-card px-2.5 text-[11px] font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground" aria-label="Open link">
+            <a href={safeExternalHref(doc.url)} target="_blank" rel="noopener noreferrer" draggable={false} className="flex h-7 items-center justify-center gap-1 rounded-lg border border-border bg-card px-2.5 text-[11px] font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground" aria-label="Open link">
               <ExternalLink size={11} /> Open
             </a>
           )}
@@ -1326,6 +1447,12 @@ function DocumentsTab({ accent, isEboard, canManage }) {
   const [visibilityFor, setVisibilityFor] = useState(null);
   const [previewDoc, setPreviewDoc] = useState(null);
   const [moveTarget, setMoveTarget] = useState(null);
+  const [renameTarget, setRenameTarget] = useState(null);
+  // The row being dragged, and the rowKey/crumb key currently under it. The
+  // dragged row cannot live on the dataTransfer instead: dragover is forbidden
+  // from reading getData(), so the highlight would have nothing to test.
+  const [dragItem, setDragItem] = useState(null);
+  const [dropTarget, setDropTarget] = useState(null);
   const fileUploadRef = useRef(null);
 
   const currentFolderId = path.length ? path[path.length - 1].id : null;
@@ -1349,8 +1476,11 @@ function DocumentsTab({ accent, isEboard, canManage }) {
     return [...folderRows, ...rest];
   }, [folders, documents]);
 
+  // `restricted` rides along so a breadcrumb drop can warn the same way the
+  // Move picker does. It is the state of that folder as listed, which is
+  // exactly what will sit above anything dropped onto it.
   function openFolder(folder) {
-    setPath((prev) => [...prev, { id: folder.id, name: folder.name }]);
+    setPath((prev) => [...prev, { id: folder.id, name: folder.name, restricted: isRestricted(folder) }]);
   }
 
   function navigateTo(index) {
@@ -1389,21 +1519,87 @@ function DocumentsTab({ accent, isEboard, canManage }) {
     }
   }
 
+  // Shared by the picker and by drag. Dropping the row from local state is
+  // always right, because both callers refuse the one destination that would
+  // have left it where it is.
+  async function moveItem(item, destinationFolderId) {
+    if (item.kind === 'folder') {
+      await moveDocumentFolder(item.id, destinationFolderId);
+      setFolders((prev) => prev.filter((f) => f.id !== item.id));
+    } else {
+      await moveDocument(item.id, destinationFolderId);
+      setDocuments((prev) => prev.filter((d) => d.id !== item.id));
+    }
+  }
+
   // Errors are deliberately left to throw: useModalSubmit inside the picker
   // catches them and shows the API's own message, which for a cycle is a
   // sentence written to be read. A window.alert here would pre-empt it.
   async function handleMove(destinationFolderId) {
-    const target = moveTarget;
-    if (target.kind === 'folder') {
-      await moveDocumentFolder(target.id, destinationFolderId);
-      setFolders((prev) => prev.filter((f) => f.id !== target.id));
-    } else {
-      await moveDocument(target.id, destinationFolderId);
-      setDocuments((prev) => prev.filter((d) => d.id !== target.id));
-    }
-    // Dropping the row is always right: the picker disables the destination
-    // that would have left it where it is.
+    await moveItem(moveTarget, destinationFolderId);
     setMoveTarget(null);
+  }
+
+  async function handleRename(value) {
+    const target = renameTarget;
+    if (target.kind === 'folder') {
+      const updated = await renameDocumentFolder(target.id, value);
+      setFolders((prev) => prev.map((f) => (f.id === updated.id ? { ...f, ...updated } : f)));
+    } else {
+      const updated = await renameDocument(target.id, value);
+      setDocuments((prev) => prev.map((d) => (d.id === updated.id ? { ...d, ...updated } : d)));
+    }
+    setRenameTarget(null);
+  }
+
+  // The table lists ONE level, so a sibling can never be a descendant of the
+  // row being dragged and a breadcrumb is always an ancestor. That leaves
+  // dropping a folder on itself as the only cycle this UI can express. The
+  // API's isDescendant check still runs, because that argument covers this
+  // component and not the endpoint.
+  function canDropOn(item, destinationId) {
+    if (!item) return false;
+    // Every row's parent is the folder currently open, so this is a no-op.
+    if (destinationId === currentFolderId) return false;
+    if (item.kind === 'folder' && item.id === destinationId) return false;
+    return true;
+  }
+
+  // Drag has no room for the picker's inline warning, so a narrowing move asks
+  // instead. Same sentence either way, from narrowingWarning.
+  async function handleDropOn(destinationId, destinationRestricted) {
+    const item = dragItem;
+    setDragItem(null);
+    setDropTarget(null);
+    if (!canDropOn(item, destinationId)) return;
+    if (destinationRestricted && !(await confirm(`${narrowingWarning(item)} Move it anyway?`))) return;
+    try {
+      await moveItem(item, destinationId);
+    } catch (err) {
+      if (isRedirectError(err)) throw err;
+      window.alert(err.message ?? 'Failed to move');
+    }
+  }
+
+  // A breadcrumb is a valid destination for anything except the level already
+  // open. Every crumb passes restricted=false and that is not an oversight: the
+  // breadcrumbs ARE the current folder's ancestors, so dropping onto one moves
+  // the item UP to a prefix of the chain it already sits under. The new
+  // ancestor set is a subset of the old, so a crumb drop can only ever widen
+  // the audience or leave it alone. Only the table's folder rows can narrow it.
+  function crumbDropProps(destinationId, key, restricted) {
+    if (!canDropOn(dragItem, destinationId)) return {};
+    return {
+      onDragOver: (e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; setDropTarget(key); },
+      onDragLeave: (e) => { if (!e.currentTarget.contains(e.relatedTarget)) setDropTarget((prev) => (prev === key ? null : prev)); },
+      onDrop: (e) => { e.preventDefault(); handleDropOn(destinationId, restricted); },
+    };
+  }
+
+  function crumbDropStyle(key) {
+    return dropTarget === key
+      ? { background: tint(accent.base, 0.14), boxShadow: `inset 0 0 0 1.5px ${accent.light}` }
+      : undefined;
   }
 
   async function handleDeleteDocument(id) {
@@ -1421,22 +1617,41 @@ function DocumentsTab({ accent, isEboard, canManage }) {
     <>
       <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <nav className="flex flex-wrap items-center gap-1 text-sm" aria-label="Folder breadcrumb">
+          {/* Every crumb is also a drop target. Without it drag could only ever
+              move things DOWN the tree, since the table shows one level. */}
           <span className="flex items-center gap-1">
             {path.length === 0 ? (
               <span className="font-semibold text-foreground">Documents</span>
             ) : (
-              <button type="button" onClick={() => setPath([])} className="font-medium text-muted-foreground transition-colors hover:text-foreground">Documents</button>
+              <button
+                type="button"
+                onClick={() => setPath([])}
+                {...crumbDropProps(null, 'crumb:root', false)}
+                className="rounded-md px-1.5 py-0.5 font-medium text-muted-foreground transition-colors hover:text-foreground"
+                style={crumbDropStyle('crumb:root')}
+              >
+                Documents
+              </button>
             )}
           </span>
           {path.map((entry, i) => {
             const isLast = i === path.length - 1;
+            const key = `crumb:${entry.id}`;
             return (
               <span key={entry.id} className="flex items-center gap-1">
                 <ChevronRight size={13} className="text-muted-foreground/60" />
                 {isLast ? (
                   <span className="font-semibold text-foreground">{entry.name}</span>
                 ) : (
-                  <button type="button" onClick={() => navigateTo(i)} className="font-medium text-muted-foreground transition-colors hover:text-foreground">{entry.name}</button>
+                  <button
+                    type="button"
+                    onClick={() => navigateTo(i)}
+                    {...crumbDropProps(entry.id, key, false)}
+                    className="rounded-md px-1.5 py-0.5 font-medium text-muted-foreground transition-colors hover:text-foreground"
+                    style={crumbDropStyle(key)}
+                  >
+                    {entry.name}
+                  </button>
                 )}
               </span>
             );
@@ -1487,11 +1702,23 @@ function DocumentsTab({ accent, isEboard, canManage }) {
                   accent={accent}
                   isEboard={isEboard}
                   canManage={canManage}
+                  drag={{
+                    enabled: canManage,
+                    isDragging: dragItem != null && rowKey(dragItem) === rowKey(doc),
+                    isTarget: dropTarget === rowKey(doc),
+                    canAccept: doc.kind === 'folder' && canDropOn(dragItem, doc.id),
+                    onStart: () => setDragItem(doc),
+                    onEnd: () => { setDragItem(null); setDropTarget(null); },
+                    onOver: () => setDropTarget(rowKey(doc)),
+                    onLeave: () => setDropTarget((prev) => (prev === rowKey(doc) ? null : prev)),
+                    onDrop: () => handleDropOn(doc.id, isRestricted(doc)),
+                  }}
                   onOpenFolder={openFolder}
                   onPreview={setPreviewDoc}
                   onDelete={() => (doc.kind === 'folder' ? handleDeleteFolder(doc.id) : handleDeleteDocument(doc.id))}
                   onEditVisibility={() => setVisibilityFor(doc)}
                   onMove={() => setMoveTarget(doc)}
+                  onRename={() => setRenameTarget(doc)}
                 />
               ))}
             </tbody>
@@ -1501,12 +1728,27 @@ function DocumentsTab({ accent, isEboard, canManage }) {
 
       <div className="mt-4 flex items-center gap-2 px-1">
         <div className="h-1.5 w-1.5 rounded-full" style={{ background: accent.light }} aria-hidden="true" />
-        <p className="text-xs text-muted-foreground">{sorted.length} item{sorted.length !== 1 ? 's' : ''}</p>
+        {/* Breadcrumb-as-drop-target is not discoverable, so it is spelled out
+            the moment a drag starts. Deliberately below the table: swapping
+            text in above it would shift the rows under the cursor mid-drag. */}
+        <p className="text-xs text-muted-foreground">
+          {dragItem
+            ? 'Drop on a folder to move it in, or on a breadcrumb to move it up'
+            : `${sorted.length} item${sorted.length !== 1 ? 's' : ''}`}
+        </p>
       </div>
 
       {showNewFolder && <NewFolderModal accent={accent} isEboard={isEboard} onClose={() => setShowNewFolder(false)} onCreate={handleCreateFolder} />}
       {showAddLink && <AddLinkModal accent={accent} onClose={() => setShowAddLink(false)} onAdd={handleAddLink} />}
       {previewDoc && <FilePreviewModal doc={previewDoc} accent={accent} onClose={() => setPreviewDoc(null)} />}
+      {renameTarget && (
+        <RenameModal
+          item={renameTarget}
+          accent={accent}
+          onClose={() => setRenameTarget(null)}
+          onRename={handleRename}
+        />
+      )}
       {moveTarget && (
         <MoveToModal
           item={moveTarget}
