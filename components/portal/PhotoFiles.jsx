@@ -6,12 +6,13 @@ import { cn } from '@/lib/utils';
 import {
   ChevronLeft, Plus, Trash2, Download, X, Search, ImageIcon, FileText, FileIcon,
   Link2, ExternalLink, FolderIcon, FolderOpen, Upload, Film, ChevronRight, AlertCircle, Lock,
-  AlertTriangle, Loader2,
+  AlertTriangle, Loader2, FolderInput,
 } from 'lucide-react';
 import {
   getPhotos, getAlbums, getGeneralAlbumStats, createAlbum, deleteAlbum, uploadPhoto, deletePhoto,
   getDocumentFolders, getDocuments, createDocumentFolder, deleteDocumentFolder,
   uploadDocument, createDocumentLink, deleteDocument,
+  moveDocument, moveDocumentFolder,
   setAlbumVisibility, setFolderVisibility, setDocumentVisibility,
 } from '@/lib/portal-api';
 import { formatPhotoDate, safeExternalHref } from '@/lib/portal-format';
@@ -955,7 +956,7 @@ function AlbumsTab({ accent, isEboard, currentUserId }) {
 
 // ─── Documents tab ───
 
-function NewFolderModal({ accent, onClose, onCreate }) {
+function NewFolderModal({ accent, isEboard, onClose, onCreate }) {
   const [name, setName] = useState('');
   const [visibility, setVisibility] = useState({ inherit: false, audience: [], committeeIds: [] });
   const { busy, error, submit } = useModalSubmit(onCreate);
@@ -975,11 +976,16 @@ function NewFolderModal({ accent, onClose, onCreate }) {
             onKeyDown={(e) => { if (e.key === 'Enter' && name.trim() && !busy) submit(name.trim(), visibility); }}
           />
         </FormField>
-        <FormField label="Who can see this">
-          {/* A folder is hidden ENTIRELY when restricted, name included — a
-              locked-but-listed folder called "Exec Only" leaks by itself. */}
-          <VisibilityControl value={visibility} onChange={setVisibility} />
-        </FormField>
+        {/* Cabinet can create folders but not decide who sees them, so they
+            get no control here and the folder is created unrestricted. The API
+            rejects an audience from a non-eboard caller either way. */}
+        {isEboard && (
+          <FormField label="Who can see this">
+            {/* A folder is hidden ENTIRELY when restricted, name included — a
+                locked-but-listed folder called "Exec Only" leaks by itself. */}
+            <VisibilityControl value={visibility} onChange={setVisibility} />
+          </FormField>
+        )}
         <ModalError message={error} />
       </div>
       <ModalFooter
@@ -1067,7 +1073,129 @@ function FilePreviewModal({ doc, accent, onClose }) {
   );
 }
 
-function DocRow({ doc, isFolder, accent, isEboard, onOpenFolder, onPreview, onDelete, onEditVisibility }) {
+// Picking a destination by BROWSING, not by rendering a tree: the folders
+// endpoint lists one level at a time, so this walks down exactly the way the
+// library itself does and needs no new API. It also makes the cycle guard
+// nearly free — a folder's subtree is only reachable THROUGH that folder, so
+// refusing to open the one being moved shuts out all of its descendants too.
+// The API still guards it, since that reasoning holds for this UI only.
+function MoveToModal({ item, isFolder, accent, currentFolderId, onClose, onMove }) {
+  const [browsePath, setBrowsePath] = useState([]);
+  const [folders, setFolders] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(null);
+  const { busy, error, submit } = useModalSubmit(onMove);
+
+  const destinationId = browsePath.length ? browsePath[browsePath.length - 1].id : null;
+  const label = isFolder ? item.name : item.filename;
+  const noun = isFolder ? 'folder' : item.kind === 'link' ? 'link' : 'file';
+  // The row is already here, so this would be a no-op that still costs a
+  // request and makes the row vanish and reappear.
+  const alreadyHere = destinationId === currentFolderId;
+  // Only the chain actually walked is known, and that is exactly the chain
+  // that will sit above the item once it lands. Effective audience is the
+  // intersection all the way down, so one restricted ancestor is enough.
+  const destinationRestricted = browsePath.some((entry) => entry.restricted);
+
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    setLoadError(null);
+    getDocumentFolders(destinationId)
+      .then((list) => { if (!cancelled) setFolders(list); })
+      .catch((err) => { if (isRedirectError(err)) throw err; if (!cancelled) setLoadError('Could not load folders'); })
+      .finally(() => { if (!cancelled) setLoading(false); });
+    // Drilling in quickly can land two responses out of order, and the loser
+    // would paint the wrong level under the right breadcrumb.
+    return () => { cancelled = true; };
+  }, [destinationId]);
+
+  return (
+    <ModalWrapper onClose={onClose} label={`Move ${label}`}>
+      <ModalHeader accent={accent} title="Move to..." icon={<FolderInput size={14} strokeWidth={1.75} />} onClose={onClose} />
+      <div className="max-h-[70vh] space-y-4 overflow-y-auto p-5">
+        <p className="text-xs text-muted-foreground">
+          Moving <span className="font-medium text-foreground">{label}</span>. Open a folder to look inside it, then choose where it lands.
+        </p>
+
+        <nav className="flex flex-wrap items-center gap-1 text-xs" aria-label="Destination breadcrumb">
+          {browsePath.length === 0 ? (
+            <span className="font-semibold text-foreground">Documents</span>
+          ) : (
+            <button type="button" onClick={() => setBrowsePath([])} className="font-medium text-muted-foreground transition-colors hover:text-foreground">Documents</button>
+          )}
+          {browsePath.map((entry, i) => (
+            <span key={entry.id} className="flex items-center gap-1">
+              <ChevronRight size={12} className="text-muted-foreground/60" />
+              {i === browsePath.length - 1 ? (
+                <span className="font-semibold text-foreground">{entry.name}</span>
+              ) : (
+                <button type="button" onClick={() => setBrowsePath((prev) => prev.slice(0, i + 1))} className="font-medium text-muted-foreground transition-colors hover:text-foreground">{entry.name}</button>
+              )}
+            </span>
+          ))}
+        </nav>
+
+        <div className="overflow-hidden rounded-xl border border-border">
+          {loading ? (
+            <p className="py-8 text-center text-xs text-muted-foreground">Loading…</p>
+          ) : loadError ? (
+            <p className="py-8 text-center text-xs text-destructive">{loadError}</p>
+          ) : folders.length === 0 ? (
+            <p className="py-8 text-center text-xs text-muted-foreground">No folders in here</p>
+          ) : (
+            <ul>
+              {folders.map((folder) => {
+                const isSelf = isFolder && folder.id === item.id;
+                return (
+                  <li key={folder.id} className="border-b border-border last:border-b-0">
+                    <button
+                      type="button"
+                      disabled={isSelf}
+                      onClick={() => setBrowsePath((prev) => [...prev, { id: folder.id, name: folder.name, restricted: isRestricted(folder) }])}
+                      className="flex w-full items-center gap-2.5 px-3 py-2.5 text-left transition-colors hover:bg-muted/40 disabled:cursor-not-allowed disabled:opacity-45 disabled:hover:bg-transparent"
+                      title={isSelf ? 'A folder cannot be moved into itself' : undefined}
+                    >
+                      <FolderIcon size={15} className="shrink-0" style={{ color: accent.light }} />
+                      <span className="min-w-0 flex-1 truncate text-sm text-foreground">{folder.name}</span>
+                      {isRestricted(folder) && <Lock size={11} className="shrink-0 text-muted-foreground" aria-label="Restricted" />}
+                      {!isSelf && <ChevronRight size={13} className="shrink-0 text-muted-foreground/60" />}
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </div>
+
+        {/* The whole reason this warning exists: a move can quietly shrink who
+            can see something, and nothing else in the UI would say so. */}
+        {destinationRestricted && (
+          <div className="flex gap-2 rounded-xl border border-amber-500/30 bg-amber-500/5 p-3">
+            <AlertTriangle size={14} className="mt-0.5 shrink-0 text-amber-500" />
+            <p className="text-xs text-muted-foreground">
+              {isRestricted(item)
+                ? `This destination is restricted. Once moved, only members who can see both the destination and the ${noun} itself will find it.`
+                : `This destination is restricted. Members outside its audience will no longer see this ${noun}.`}
+            </p>
+          </div>
+        )}
+
+        <ModalError message={error} />
+      </div>
+      <ModalFooter
+        accent={accent}
+        onClose={onClose}
+        onConfirm={() => submit(destinationId)}
+        confirmLabel={browsePath.length ? 'Move Here' : 'Move to Documents'}
+        disabled={alreadyHere}
+        busy={busy}
+      />
+    </ModalWrapper>
+  );
+}
+
+function DocRow({ doc, isFolder, accent, isEboard, canManage, onOpenFolder, onPreview, onDelete, onEditVisibility, onMove }) {
   const isLink = doc.kind === 'link';
   const isFile = doc.kind !== 'link' && !isFolder;
 
@@ -1145,6 +1273,21 @@ function DocRow({ doc, isFolder, accent, isEboard, onOpenFolder, onPreview, onDe
               <Lock size={13} />
             </button>
           )}
+          {/* Cabinet can move as well as eboard, so this is the one action in
+              the row on canManage rather than isEboard. Kept always visible
+              instead of hover-revealed like the folder delete: reorganising is
+              the reason someone opens this page on a phone, where there is no
+              hover to reveal it with. */}
+          {canManage && (
+            <button
+              type="button"
+              onClick={onMove}
+              className="flex h-7 w-7 items-center justify-center rounded-lg border border-border bg-card text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+              aria-label={`Move ${doc.name ?? doc.filename}`}
+            >
+              <FolderInput size={13} />
+            </button>
+          )}
           {isFile && (
             <a href={`/api/documents/${doc.id}/download`} download={doc.filename} className="flex h-7 w-7 items-center justify-center rounded-lg border border-border bg-card text-muted-foreground transition-colors hover:bg-muted hover:text-foreground" aria-label="Download">
               <Download size={13} />
@@ -1171,7 +1314,7 @@ function DocRow({ doc, isFolder, accent, isEboard, onOpenFolder, onPreview, onDe
   );
 }
 
-function DocumentsTab({ accent, isEboard }) {
+function DocumentsTab({ accent, isEboard, canManage }) {
   const confirm = useConfirm();
   const [path, setPath] = useState([]);
   const [folders, setFolders] = useState([]);
@@ -1182,6 +1325,7 @@ function DocumentsTab({ accent, isEboard }) {
   const [showAddLink, setShowAddLink] = useState(false);
   const [visibilityFor, setVisibilityFor] = useState(null);
   const [previewDoc, setPreviewDoc] = useState(null);
+  const [moveTarget, setMoveTarget] = useState(null);
   const fileUploadRef = useRef(null);
 
   const currentFolderId = path.length ? path[path.length - 1].id : null;
@@ -1245,6 +1389,23 @@ function DocumentsTab({ accent, isEboard }) {
     }
   }
 
+  // Errors are deliberately left to throw: useModalSubmit inside the picker
+  // catches them and shows the API's own message, which for a cycle is a
+  // sentence written to be read. A window.alert here would pre-empt it.
+  async function handleMove(destinationFolderId) {
+    const target = moveTarget;
+    if (target.kind === 'folder') {
+      await moveDocumentFolder(target.id, destinationFolderId);
+      setFolders((prev) => prev.filter((f) => f.id !== target.id));
+    } else {
+      await moveDocument(target.id, destinationFolderId);
+      setDocuments((prev) => prev.filter((d) => d.id !== target.id));
+    }
+    // Dropping the row is always right: the picker disables the destination
+    // that would have left it where it is.
+    setMoveTarget(null);
+  }
+
   async function handleDeleteDocument(id) {
     if (!(await confirm('Delete this document? This cannot be undone.'))) return;
     try {
@@ -1282,7 +1443,7 @@ function DocumentsTab({ accent, isEboard }) {
           })}
         </nav>
 
-        {isEboard && (
+        {canManage && (
           <div className="flex flex-wrap items-center gap-2">
             <button type="button" onClick={() => setShowNewFolder(true)} className="flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground">
               <FolderIcon size={12} /> New Folder
@@ -1325,10 +1486,12 @@ function DocumentsTab({ accent, isEboard }) {
                   isFolder={doc.kind === 'folder'}
                   accent={accent}
                   isEboard={isEboard}
+                  canManage={canManage}
                   onOpenFolder={openFolder}
                   onPreview={setPreviewDoc}
                   onDelete={() => (doc.kind === 'folder' ? handleDeleteFolder(doc.id) : handleDeleteDocument(doc.id))}
                   onEditVisibility={() => setVisibilityFor(doc)}
+                  onMove={() => setMoveTarget(doc)}
                 />
               ))}
             </tbody>
@@ -1341,9 +1504,19 @@ function DocumentsTab({ accent, isEboard }) {
         <p className="text-xs text-muted-foreground">{sorted.length} item{sorted.length !== 1 ? 's' : ''}</p>
       </div>
 
-      {showNewFolder && <NewFolderModal accent={accent} onClose={() => setShowNewFolder(false)} onCreate={handleCreateFolder} />}
+      {showNewFolder && <NewFolderModal accent={accent} isEboard={isEboard} onClose={() => setShowNewFolder(false)} onCreate={handleCreateFolder} />}
       {showAddLink && <AddLinkModal accent={accent} onClose={() => setShowAddLink(false)} onAdd={handleAddLink} />}
       {previewDoc && <FilePreviewModal doc={previewDoc} accent={accent} onClose={() => setPreviewDoc(null)} />}
+      {moveTarget && (
+        <MoveToModal
+          item={moveTarget}
+          isFolder={moveTarget.kind === 'folder'}
+          accent={accent}
+          currentFolderId={currentFolderId}
+          onClose={() => setMoveTarget(null)}
+          onMove={handleMove}
+        />
+      )}
       {visibilityFor && (
         <EditVisibilityModal
           kind={visibilityFor.kind === 'folder' ? 'folder' : 'document'}
@@ -1372,6 +1545,10 @@ function RevampedPhotoFiles({ title, description, accentKey }) {
   const { data: session } = useSession();
   const currentUserId = session?.user?.authentik_id;
   const isEboard = session?.user?.groups?.includes('eboard') ?? false;
+  // Two tiers, not one flag: cabinet (the `chair` group) may ADD to and MOVE
+  // things around the document library, but deleting and visibility stay with
+  // eboard. The API draws the same line in routes/documents.js.
+  const canManageDocs = isEboard || (session?.user?.groups?.includes('chair') ?? false);
   const [activeTab, setActiveTab] = useState('albums');
 
   return (
@@ -1379,7 +1556,7 @@ function RevampedPhotoFiles({ title, description, accentKey }) {
       <PageHeader title={title} description={description} accent={accent} />
       <TabBar active={activeTab} onChange={setActiveTab} accent={accent} />
       {activeTab === 'albums' && <AlbumsTab accent={accent} isEboard={isEboard} currentUserId={currentUserId} />}
-      {activeTab === 'documents' && <DocumentsTab accent={accent} isEboard={isEboard} />}
+      {activeTab === 'documents' && <DocumentsTab accent={accent} isEboard={isEboard} canManage={canManageDocs} />}
     </div>
   );
 }
