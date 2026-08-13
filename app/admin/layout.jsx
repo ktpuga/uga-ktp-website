@@ -1,6 +1,6 @@
 'use client';
 
-import { BarChart2, Megaphone, Calendar, MessageSquare, Users, UsersRound, Vote, FolderOpen, Image as ImageIcon, ShieldAlert, Settings, Images, QrCode, CalendarClock, CalendarCheck, BookUser, ScrollText } from 'lucide-react';
+import { LayoutDashboard, BarChart2, Megaphone, Calendar, MessageSquare, Users, UsersRound, Vote, FolderOpen, Image as ImageIcon, ShieldAlert, Settings, Images, QrCode, CalendarClock, CalendarCheck, BookUser, ScrollText } from 'lucide-react';
 import PortalShell from '@/components/portal/PortalShell';
 
 // The sidebar renders exactly this, in this order.
@@ -15,12 +15,20 @@ import PortalShell from '@/components/portal/PortalShell';
 //     is moderation. Reports is the only genuine moderation surface, and it
 //     sits with the other people-management tools.
 //
-// Nothing was added or removed — all 16 items are still here.
+// Nothing was added or removed by that reorganisation — all 16 items survived
+// it. The 17th, Dashboard, was added later when Analytics stopped being the
+// landing page (see Overview below).
 function buildNav() {
   return [
   {
     heading: 'Overview',
-    items: [{ href: '/admin', label: 'Analytics', icon: BarChart2 }],
+    items: [
+      // The portal root is the same dashboard member/pledge/rushee land on.
+      // Analytics used to live here; it moved to its own route so eboard sees
+      // the chapter at a glance first, the way every other portal opens.
+      { href: '/admin', label: 'Dashboard', icon: LayoutDashboard },
+      { href: '/admin/analytics', label: 'Analytics', icon: BarChart2 },
+    ],
   },
   {
     // What's happening and who turned up.

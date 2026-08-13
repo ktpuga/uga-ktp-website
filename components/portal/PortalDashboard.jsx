@@ -68,8 +68,9 @@ function resolveWelcomeName(session, members) {
 }
 
 // Revamped visual treatment — designed for theme="blue" (Member), and now
-// extended to "amber" (Alumni) and "teal" (Pledge). Any other/unknown theme
-// value falls back to blue via the `?? THEMES.blue` lookups below.
+// extended to "amber" (Alumni), "teal" (Pledge) and "red" (Admin). Any
+// other/unknown theme value falls back to blue via the `?? THEMES.blue`
+// lookups below.
 const THEMES = {
   blue: {
     base: '#1e3a8a',
@@ -94,6 +95,20 @@ const THEMES = {
     dateBadgeBorder: 'rgba(180,83,9,0.35)',
     tagBg: 'rgba(180,83,9,0.10)',
     tagText: '#b45309',
+  },
+  // Admin. Matches PortalAccentContext's `red` palette (#7f1d1d / #991b1b) so
+  // the dashboard follows the sidebar when eboard toggles red/blue.
+  red: {
+    base: '#7f1d1d',
+    gradient: 'linear-gradient(135deg, #7f1d1d 0%, #991b1b 50%, #450a0a 100%)',
+    subtitleColor: 'rgba(254,202,202,0.85)',
+    labelColor: 'rgba(252,165,165,0.7)',
+    gradientBar: 'linear-gradient(90deg, #7f1d1d, #ef4444)',
+    rsvpColor: '#991b1b',
+    dateBadgeBg: '#7f1d1d',
+    dateBadgeBorder: 'rgba(127,29,29,0.35)',
+    tagBg: 'rgba(127,29,29,0.10)',
+    tagText: '#7f1d1d',
   },
   teal: {
     base: '#134e4a',
@@ -367,8 +382,9 @@ export default function PortalDashboard({
 
   // Revamped now covers every real portal theme — this only stays false for
   // some genuinely unexpected value, in which case the plain fallback below
-  // (dead code in practice) renders instead.
-  const revamped = theme === 'blue' || theme === 'amber' || theme === 'teal';
+  // (dead code in practice) renders instead. Derived from THEMES rather than
+  // listed by hand so adding a theme can't leave the two out of step.
+  const revamped = Boolean(THEMES[theme]);
   const accentTheme = THEMES[theme] ?? THEMES.blue;
 
   const isAmber = theme === 'amber';

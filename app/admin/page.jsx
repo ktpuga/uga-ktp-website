@@ -1,20 +1,24 @@
 'use client';
 
-import AnalyticsContent from '@/components/analytics/AnalyticsContent';
-import { useAccentPalette } from '@/components/portal/PortalAccentContext';
+import PortalDashboard from '@/components/portal/PortalDashboard';
+import { usePortalAccent } from '@/components/portal/PortalAccentContext';
 
-export default function AdminAnalyticsPage() {
-  // Follows the Admin red/blue toggle rather than a hardcoded maroon — the
-  // provider is PortalShell, so this resolves to whichever colour the sidebar
-  // is currently showing.
-  const accent = useAccentPalette();
+export default function AdminDashboard() {
+  // The same dashboard the member, pledge and rush portals land on. Analytics
+  // used to be the landing page; it kept its own tab at /admin/analytics.
+  //
+  // Accent comes from the context rather than a hardcoded 'red' so the hero and
+  // stat cards follow the Admin red/blue toggle, like every other admin surface.
+  const accent = usePortalAccent();
 
   return (
-    <AnalyticsContent
-      accentBase={accent.base}
-      accentGradient={accent.gradient}
-      accentMuted={accent.muted}
-      accentLight={accent.light}
+    <PortalDashboard
+      welcomeSubtitle="Here's what's happening in KTP Phi Chapter"
+      memberGroupLabel="Chapter Members"
+      calendarHref="/admin/calendar"
+      filesHref="/admin/files"
+      announcementsHref="/admin/announcements"
+      theme={accent}
     />
   );
 }
