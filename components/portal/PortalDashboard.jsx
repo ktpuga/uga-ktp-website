@@ -159,9 +159,10 @@ function RevampedHero({ accent, welcomeName, welcomeSubtitle, nameLoading }) {
             Welcome back
             {nameLoading ? (
               <>, <span aria-hidden="true" className="inline-block h-[0.75em] w-[5ch] translate-y-[-0.05em] rounded-md bg-white/35 align-baseline animate-pulse" /></>
-            ) : welcomeName ? (
+            ) : <>{welcomeName}.</> ? (
               <>, {welcomeName}.</>
-            ) : '.'}
+            ) : null}
+            
           </h1>
           <div aria-hidden="true" className="mt-4 h-[2px] w-14 rounded-full bg-white/45" />
           <p className="mt-4 text-sm leading-relaxed" style={{ color: accent.subtitleColor }}>{welcomeSubtitle}</p>
