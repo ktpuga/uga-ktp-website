@@ -83,7 +83,6 @@ export default function TemplatePage() {
     tg.src,
   ].filter(Boolean);
 
-  /* Current redesigned hero positioning — restore with the JSX below.
   const heroPhotoPositions = [
     "left-[3%] top-[7%] z-10 w-[42%] -rotate-[8deg]",
     "right-[2%] top-[3%] z-20 w-[42%] rotate-[7deg]",
@@ -92,7 +91,6 @@ export default function TemplatePage() {
     "bottom-[2%] right-[1%] z-10 w-[40%] -rotate-[7deg]",
     "bottom-[4%] right-[35%] z-40 w-[29%] rotate-[4deg]",
   ];
-  */
 
   /* ------------------- Hackathon images for highlights --------------
      KEPT, COMMENTED OUT. Superseded by the eboard-managed gallery
@@ -220,6 +218,7 @@ export default function TemplatePage() {
 
       <main className="flex-1">
         {/* ===============================  HERO  ============================== */}
+        {false && <>
         <section className="relative overflow-hidden py-20 md:py-28 flex items-center min-h-[70vh]">
           {/* Animated gradient blobs */}
           <div
@@ -308,9 +307,9 @@ export default function TemplatePage() {
             </div>
           </div>
         </section>
+        </>}
 
-        {/* ===== CURRENT REDESIGNED HERO — KEPT, COMMENTED OUT =====
-            Restore this section together with `heroPhotoPositions` above.
+        {/* ===== CURRENT REDESIGNED HERO ===== */}
 
         <section className="relative flex min-h-[74vh] items-center overflow-hidden py-20 md:py-28">
           <div aria-hidden className="pointer-events-none absolute inset-0 -z-10">
@@ -324,7 +323,7 @@ export default function TemplatePage() {
               <p className="inline-flex items-center gap-2 rounded-full border border-indigo-200 bg-white/70 px-3 py-1 text-xs font-semibold tracking-wider text-blue-900 shadow-sm backdrop-blur-sm">
                 UGA's Professional Technology Fraternity
               </p>
-              <h1 className="max-w-2xl text-5xl font-extrabold leading-[0.95] tracking-tight text-blue-900 drop-shadow-xl md:text-7xl xl:text-8xl">
+              <h1 className="max-w-2xl whitespace-nowrap text-[clamp(2.25rem,5vw,4rem)] font-extrabold leading-[0.95] tracking-tight text-blue-900 drop-shadow-xl">
                 Kappa Theta Pi
               </h1>
               <p className="max-w-xl text-lg leading-relaxed text-slate-700 md:text-xl">
@@ -358,7 +357,6 @@ export default function TemplatePage() {
             </div>
           </div>
         </section>
-        ================================================================ */}
 
         {/* ==============================  RUSH  ============================== */}
         <section className="relative overflow-hidden bg-white py-16 text-slate-900 md:py-20">
