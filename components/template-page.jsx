@@ -140,7 +140,9 @@ export default function TemplatePage({ spotlightLinks = [] }) {
    * -------------------------------------------------------------------- */
   const [menuOpen, setMenuOpen] = useState(false);
 
-  const NAV_LINKS = [...PUBLIC_NAV_LINKS.filter((link) => link.label !== 'Home'), { href: '#contact', label: 'Contact' }];
+  const NAV_LINKS = PUBLIC_NAV_LINKS.map((link) =>
+    link.label === 'Contact' ? { ...link, href: '#contact' } : link
+  );
 
   return (
     <div className="flex min-h-screen flex-col scroll-smooth font-sans bg-gradient-to-br from-slate-50 via-white to-slate-100 text-slate-900">
