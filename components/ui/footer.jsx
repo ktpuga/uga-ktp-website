@@ -1,9 +1,7 @@
 import Link from "next/link";
-import React, { Component } from "react";
-export class footer extends Component {
-  render() {
-    return (
-      <footer className="w-full shrink-0 bg-[#052039] py-8 text-white">
+export function Footer() {
+  return (
+    <footer className="w-full shrink-0 bg-[#052039] py-8 text-white">
         <div className="container mx-auto grid gap-8 px-4 md:px-6 lg:grid-cols-[minmax(14rem,0.85fr)_minmax(0,2.15fr)] lg:items-end">
           <div>
             <p className="text-sm font-semibold">Kappa Theta Pi · Phi Chapter</p>
@@ -45,9 +43,8 @@ export class footer extends Component {
             </div>
           </nav>
         </div>
-      </footer>
-    );
-  }
+    </footer>
+  );
 }
 
 function FooterLink({ href, children, external = false }) {
@@ -64,4 +61,4 @@ function FooterLink({ href, children, external = false }) {
   );
 }
 
-export default footer;
+export default Footer;

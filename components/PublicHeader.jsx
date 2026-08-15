@@ -10,6 +10,7 @@ export const PUBLIC_NAV_LINKS = [
   { href: '/', label: 'Home' },
   { href: '/rush', label: 'Rush' },
   { href: '/about', label: 'About' },
+  { href: '/spotlight', label: 'Spotlight' },
   { href: '/members-list', label: 'Members' },
   { href: '/gallery', label: 'Gallery' },
   { href: '/hackathon', label: 'Hackathon' },

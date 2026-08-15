@@ -39,14 +39,14 @@ function isPresident(person) {
 }
 
 const SLOT_REELS = [
-  { letter: 'K', sequence: ['K', 'T', 'P', 'T', 'P', 'K'] },
-  { letter: 'T', sequence: ['T', 'P', 'K', 'P', 'K', 'T'] },
-  { letter: 'P', sequence: ['P', 'K', 'T', 'K', 'T', 'P'] },
+  { letter: 'K', sequence: ['K', 'Θ', 'Π', 'Θ', 'Π', 'K'] },
+  { letter: 'Θ', sequence: ['Θ', 'Π', 'K', 'Π', 'K', 'Θ'] },
+  { letter: 'Π', sequence: ['Π', 'K', 'Θ', 'K', 'Θ', 'Π'] },
 ];
 
 function KtpSlotMachine() {
   return (
-    <figure className="ktp-slot" aria-label="Kappa Theta Pi slot machine showing K T P">
+    <figure className="ktp-slot" aria-label="Kappa Theta Pi slot machine showing Kappa, Theta, and Pi symbols">
       <div className="ktp-slot__marquee" aria-hidden>
         {Array.from({ length: 11 }, (_, index) => <span key={index} />)}
       </div>
