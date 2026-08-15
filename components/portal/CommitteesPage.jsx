@@ -543,6 +543,10 @@ export function CommitteeDetail({ committee, currentUserId, isEboard, accent, on
   // Matches checkEventPermission in ktp-api's eventsController: eboard may
   // schedule for any committee, a chair only for one they chair.
   const canSchedule = committee.is_chair || isEboard;
+  // Regular members can browse the roster before joining, but committee-only
+  // content must not be rendered or fetched until they belong to that
+  // committee. Eboard retains its existing oversight access.
+  const canViewCommitteeWorkspace = committee.is_member || isEboard;
 
   // Mirrors committeesController.loadAdministrable: eboard, or the chair of
   // THIS committee. Not "is a chair" generally — the Marketing chair has no
@@ -638,6 +642,10 @@ export function CommitteeDetail({ committee, currentUserId, isEboard, accent, on
   // folder may be renamed or moved without breaking its committee's Shared
   // Files link. The document library is nested, so search its visible tree.
   useEffect(() => {
+    if (!canViewCommitteeWorkspace) {
+      return undefined;
+    }
+
     let cancelled = false;
 
     async function findCommitteeFolder(parentId = null) {
@@ -665,9 +673,15 @@ export function CommitteeDetail({ committee, currentUserId, isEboard, accent, on
       });
 
     return () => { cancelled = true; };
-  }, [committee.id]);
+  }, [canViewCommitteeWorkspace, committee.id]);
 
   const loadUpcomingEvents = useCallback(async () => {
+    if (!canViewCommitteeWorkspace) {
+      setUpcomingEvents([]);
+      setEventsError(null);
+      setEventsLoading(false);
+      return;
+    }
     setEventsLoading(true);
     setEventsError(null);
     try {
@@ -686,7 +700,7 @@ export function CommitteeDetail({ committee, currentUserId, isEboard, accent, on
     } finally {
       setEventsLoading(false);
     }
-  }, [committee.id]);
+  }, [canViewCommitteeWorkspace, committee.id]);
 
   useEffect(() => { loadUpcomingEvents(); }, [loadUpcomingEvents]);
 
@@ -882,7 +896,11 @@ export function CommitteeDetail({ committee, currentUserId, isEboard, accent, on
         </div>
       )}
 
-      <div className="grid gap-5 lg:grid-cols-[minmax(0,1.15fr)_minmax(19rem,0.85fr)]">
+      <div className={cn(
+        'grid gap-5',
+        canViewCommitteeWorkspace ? 'lg:grid-cols-[minmax(0,1.15fr)_minmax(19rem,0.85fr)]' : 'grid-cols-1'
+      )}>
+      {canViewCommitteeWorkspace && <>
       <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm lg:col-start-2 lg:row-start-1">
         <div className="flex items-center justify-between border-b border-border px-5 py-3" style={{ background: tint(accent.base, 0.03) }}>
           <div className="flex items-center gap-2">
@@ -954,6 +972,7 @@ export function CommitteeDetail({ committee, currentUserId, isEboard, accent, on
       </div>
 
       {error && <p className="text-sm text-red-600 lg:col-start-2 lg:row-start-3">{error}</p>}
+      </>}
 
       {/* The approval queue. Rendered only for people the API would actually
           let through — eboard, or the chair of THIS committee — so nobody is

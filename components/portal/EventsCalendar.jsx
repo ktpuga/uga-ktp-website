@@ -239,6 +239,72 @@ function EventCard({ event, accent, canDelete, onDelete, isFirst }) {
   );
 }
 
+function UpcomingEventsList({ events, accent, onSelect }) {
+  return (
+    <aside className="flex min-h-0 flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-sm xl:h-[36.25rem]" aria-label="Upcoming events">
+      <div className="flex items-center justify-between border-b border-border px-5 py-4" style={{ background: tint(accent.base, 0.03) }}>
+        <div className="flex items-center gap-2">
+          <CalendarDays size={15} style={{ color: accent.light }} />
+          <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Upcoming events</p>
+        </div>
+        <span className="text-xs font-medium text-muted-foreground">{events.length}</span>
+      </div>
+
+      {events.length === 0 ? (
+        <div className="flex flex-1 items-center justify-center px-5 text-center">
+          <p className="text-sm text-muted-foreground">No upcoming events.</p>
+        </div>
+      ) : (
+        <ul className="min-h-0 flex-1 space-y-3 overflow-y-auto p-3" role="list">
+          {events.map((event) => {
+            const startsAt = new Date(getEventStartDate(event));
+            const audience = (event.isMeeting || event.isInterview)
+              ? null
+              : eventAudienceLabel(event.audience, event.committeeIds);
+            const type = event.isInterview ? 'Interview' : event.isMeeting ? 'Meeting' : 'Event';
+            return (
+              <li key={event.id}>
+                <button
+                  type="button"
+                  onClick={() => onSelect(startsAt)}
+                  className="flex w-full items-start gap-3 rounded-xl border border-border bg-card p-3 text-left transition-colors hover:bg-muted/60 hover:shadow-sm"
+                >
+                  <div className="w-11 shrink-0 rounded-lg bg-muted/60 py-1.5 text-center">
+                    <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                      {startsAt.toLocaleDateString(undefined, { month: 'short' })}
+                    </p>
+                    <p className="text-lg font-semibold leading-none text-foreground">{startsAt.getDate()}</p>
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-medium text-foreground">{event.title}</p>
+                    <p className="mt-0.5 flex items-center gap-1.5 text-xs text-muted-foreground">
+                      <Clock size={11} className="shrink-0" />
+                      <span className="truncate">{startsAt.toLocaleDateString(undefined, { weekday: 'short' })} · {formatEventTimeRange(getEventStartDate(event), getEventEndDate(event))}</span>
+                    </p>
+                    <p className="mt-0.5 flex items-center gap-1.5 text-xs text-muted-foreground">
+                      <MapPin size={11} className="shrink-0" />
+                      <span className="truncate">{event.location || 'Location TBD'}</span>
+                    </p>
+                    <div className="mt-2 flex flex-wrap gap-1.5">
+                      {audience && <AudienceBadge audience={audience} accent={accent} />}
+                      {(event.isMeeting || event.isInterview) && (
+                        <ParticipantBadge names={event.participants ?? []} isInterview={event.isInterview} accent={accent} />
+                      )}
+                      {event.requiresAttendance && <AttendanceBadge accent={accent} />}
+                      <span className="inline-flex items-center rounded-sm bg-muted px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">{type}</span>
+                    </div>
+                    {event.description && <p className="mt-2 line-clamp-2 text-xs leading-relaxed text-muted-foreground">{event.description}</p>}
+                  </div>
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </aside>
+  );
+}
+
 function CalendarHeader({ title, description, accent }) {
   return (
     <div className="flex items-end justify-between gap-4">
@@ -403,6 +469,28 @@ function RevampedEventsCalendar({ title, description, accentKey }) {
     }, 0);
   }, [eventsByDate, viewYear, viewMonth]);
 
+  // Six compact rows fill the month card without turning the companion panel
+  // into a second, independently scrolling calendar. Meetings and interviews
+  // are included because `rawEvents` is the merged calendar source.
+  const upcomingEvents = useMemo(() => {
+    const now = new Date();
+    return rawEvents
+      .filter((event) => {
+        const start = getEventStartDate(event);
+        const end = getEventEndDate(event) ?? getEventStartDate(event);
+        return start && end && new Date(end) >= now;
+      })
+      .sort((a, b) => new Date(getEventStartDate(a)) - new Date(getEventStartDate(b)))
+      .slice(0, 6);
+  }, [rawEvents]);
+
+  function selectUpcomingEvent(date) {
+    setViewYear(date.getFullYear());
+    setViewMonth(date.getMonth());
+    setSelectedDate(localDateKey(date));
+    setPanelOpen(true);
+  }
+
   if (loading) {
     return (
       <div className="space-y-6">
@@ -436,6 +524,7 @@ function RevampedEventsCalendar({ title, description, accentKey }) {
     <div className="space-y-4">
       <CalendarHeader title={title} description={description} accent={accent} />
 
+      <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_21rem] xl:items-stretch">
       <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
         <div className="flex items-center justify-between border-b border-border px-6 py-4">
           <div className="flex items-center gap-3">
@@ -552,6 +641,9 @@ function RevampedEventsCalendar({ title, description, accentKey }) {
             );
           })}
         </div>
+      </div>
+
+      <UpcomingEventsList events={upcomingEvents} accent={accent} onSelect={selectUpcomingEvent} />
       </div>
 
       <div
