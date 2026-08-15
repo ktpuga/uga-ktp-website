@@ -6,7 +6,7 @@ import { usePathname } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { cn } from '@/lib/utils';
 import {
-  ChevronLeft, Plus, Trash2, Search, X, Star, Users, MessageSquare, Calendar, CalendarPlus, QrCode, LogIn, LogOut, UserPlus, UserMinus, Clock, AlertTriangle, MapPin, CalendarDays,
+  ChevronLeft, Plus, Trash2, Search, X, Star, Users, MessageSquare, Calendar, CalendarPlus, QrCode, LogIn, LogOut, UserPlus, UserMinus, Clock, AlertTriangle, MapPin, CalendarDays, FolderOpen,
 } from 'lucide-react';
 import {
   getCommittees,
@@ -22,6 +22,7 @@ import {
   setCommitteeMemberRole,
   getMemberDirectory,
   createEvent,
+  getDocumentFolders,
   getEvents,
 } from '@/lib/portal-api';
 import { memberDisplayName, memberInitials, formatMemberGroup } from '@/lib/portal-format';
@@ -526,7 +527,7 @@ function CommitteeCard({ committee, isEboard, accent, onOpen, onDelete }) {
 // Exported for the render probe. A green next build says nothing about a
 // client component: it never renders one. This is the only surface where the
 // approval queue's visibility rules can actually be checked.
-export function CommitteeDetail({ committee, currentUserId, isEboard, accent, onBack, onChanged, groupChatHref }) {
+export function CommitteeDetail({ committee, currentUserId, isEboard, accent, onBack, onChanged, groupChatHref, filesHref }) {
   const [members, setMembers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -534,6 +535,7 @@ export function CommitteeDetail({ committee, currentUserId, isEboard, accent, on
   const [showSchedule, setShowSchedule] = useState(false);
   const [showMeeting, setShowMeeting] = useState(false);
   const [showPromotePicker, setShowPromotePicker] = useState(false);
+  const [sharedFolder, setSharedFolder] = useState(null);
   const [upcomingEvents, setUpcomingEvents] = useState([]);
   const [eventsLoading, setEventsLoading] = useState(true);
   const [eventsError, setEventsError] = useState(null);
@@ -630,6 +632,28 @@ export function CommitteeDetail({ committee, currentUserId, isEboard, accent, on
   }
 
   useEffect(loadMembers, [committee.id]);
+
+  // Committee folders are already visibility-restricted server-side. Looking
+  // them up from the member's own visible root list means this button can never
+  // reveal a folder name or id to someone outside the committee.
+  useEffect(() => {
+    let cancelled = false;
+    const expectedName = `${committee.name} Committee`.trim().toLocaleLowerCase();
+
+    getDocumentFolders(null)
+      .then((folders) => {
+        if (cancelled) return;
+        setSharedFolder((Array.isArray(folders) ? folders : []).find(
+          (folder) => folder.name?.trim().toLocaleLowerCase() === expectedName
+        ) ?? null);
+      })
+      .catch((err) => {
+        if (isRedirectError(err)) throw err;
+        if (!cancelled) setSharedFolder(null);
+      });
+
+    return () => { cancelled = true; };
+  }, [committee.name]);
 
   const loadUpcomingEvents = useCallback(async () => {
     setEventsLoading(true);
@@ -751,6 +775,16 @@ export function CommitteeDetail({ committee, currentUserId, isEboard, accent, on
           >
             <MessageSquare size={15} style={{ color: accent.light }} />
             Group Chat
+          </Link>
+        )}
+
+        {sharedFolder && filesHref && (
+          <Link
+            href={`${filesHref}?tab=documents&folder=${encodeURIComponent(sharedFolder.id)}&folderName=${encodeURIComponent(sharedFolder.name)}`}
+            className="flex items-center gap-2 rounded-xl border border-border bg-card px-4 py-2.5 text-sm font-medium text-muted-foreground shadow-sm transition-colors hover:bg-muted hover:text-foreground"
+          >
+            <FolderOpen size={15} style={{ color: accent.light }} />
+            Shared Files
           </Link>
         )}
 
@@ -1096,6 +1130,7 @@ function RevampedCommitteesPage({ accentKey }) {
           onBack={() => setSelectedId(null)}
           onChanged={loadCommittees}
           groupChatHref={`${portalRoot}/messages?groupChat=${selected.group_chat_id}`}
+          filesHref={`${portalRoot}/files`}
         />
       ) : (
         <>

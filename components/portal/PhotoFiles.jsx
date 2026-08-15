@@ -2,6 +2,7 @@
 
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { useSession } from 'next-auth/react';
+import { useSearchParams } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import {
   ChevronLeft, Plus, Trash2, Download, X, Search, ImageIcon, FileText, FileIcon,
@@ -1435,9 +1436,9 @@ function DocRow({ doc, isFolder, accent, isEboard, canManage, drag, onOpenFolder
   );
 }
 
-function DocumentsTab({ accent, isEboard, canManage }) {
+function DocumentsTab({ accent, isEboard, canManage, initialFolder }) {
   const confirm = useConfirm();
-  const [path, setPath] = useState([]);
+  const [path, setPath] = useState(initialFolder ? [initialFolder] : []);
   const [folders, setFolders] = useState([]);
   const [documents, setDocuments] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -1791,14 +1792,18 @@ function RevampedPhotoFiles({ title, description, accentKey }) {
   // things around the document library, but deleting and visibility stay with
   // eboard. The API draws the same line in routes/documents.js.
   const canManageDocs = isEboard || (session?.user?.groups?.includes('chair') ?? false);
-  const [activeTab, setActiveTab] = useState('albums');
+  const searchParams = useSearchParams();
+  const requestedFolderID = searchParams.get('folder');
+  const requestedFolderName = searchParams.get('folderName') ?? 'Shared Files';
+  const [activeTab, setActiveTab] = useState(searchParams.get('tab') === 'documents' ? 'documents' : 'albums');
+  const initialFolder = requestedFolderID ? { id: requestedFolderID, name: requestedFolderName, restricted: true } : null;
 
   return (
     <div className="space-y-4">
       <PageHeader title={title} description={description} accent={accent} />
       <TabBar active={activeTab} onChange={setActiveTab} accent={accent} />
       {activeTab === 'albums' && <AlbumsTab accent={accent} isEboard={isEboard} currentUserId={currentUserId} />}
-      {activeTab === 'documents' && <DocumentsTab accent={accent} isEboard={isEboard} canManage={canManageDocs} />}
+      {activeTab === 'documents' && <DocumentsTab key={requestedFolderID ?? 'root'} accent={accent} isEboard={isEboard} canManage={canManageDocs} initialFolder={initialFolder} />}
     </div>
   );
 }
