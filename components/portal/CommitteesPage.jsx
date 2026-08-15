@@ -6,7 +6,7 @@ import { usePathname } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { cn } from '@/lib/utils';
 import {
-  ChevronLeft, Plus, Trash2, Search, X, Star, Users, MessageSquare, Calendar, CalendarPlus, QrCode, LogIn, LogOut, UserPlus, UserMinus, Clock, AlertTriangle, MapPin, CalendarDays, FolderOpen,
+  ChevronLeft, ChevronRight, Plus, Trash2, Search, X, Star, Users, MessageSquare, Calendar, CalendarPlus, QrCode, LogIn, LogOut, UserPlus, UserMinus, Clock, AlertTriangle, MapPin, CalendarDays, FolderOpen,
 } from 'lucide-react';
 import {
   getCommittees,
@@ -638,13 +638,22 @@ export function CommitteeDetail({ committee, currentUserId, isEboard, accent, on
   // reveal a folder name or id to someone outside the committee.
   useEffect(() => {
     let cancelled = false;
-    const expectedName = `${committee.name} Committee`.trim().toLocaleLowerCase();
+    // Seeded folders are named either "Pledge Committee" (when the
+    // committee itself is Pledge) or "Pledge" (when the word Committee is
+    // already part of the committee name). Compare the meaningful name so
+    // both existing conventions land on the same workspace.
+    const folderKey = (value) => value
+      ?.toLocaleLowerCase()
+      .replace(/\bcommittee\b/g, '')
+      .replace(/[^a-z0-9]+/g, ' ')
+      .trim();
+    const expectedName = folderKey(committee.name);
 
     getDocumentFolders(null)
       .then((folders) => {
         if (cancelled) return;
         setSharedFolder((Array.isArray(folders) ? folders : []).find(
-          (folder) => folder.name?.trim().toLocaleLowerCase() === expectedName
+          (folder) => folderKey(folder.name) === expectedName
         ) ?? null);
       })
       .catch((err) => {
@@ -778,16 +787,6 @@ export function CommitteeDetail({ committee, currentUserId, isEboard, accent, on
           </Link>
         )}
 
-        {sharedFolder && filesHref && (
-          <Link
-            href={`${filesHref}?tab=documents&folder=${encodeURIComponent(sharedFolder.id)}&folderName=${encodeURIComponent(sharedFolder.name)}`}
-            className="flex items-center gap-2 rounded-xl border border-border bg-card px-4 py-2.5 text-sm font-medium text-muted-foreground shadow-sm transition-colors hover:bg-muted hover:text-foreground"
-          >
-            <FolderOpen size={15} style={{ color: accent.light }} />
-            Shared Files
-          </Link>
-        )}
-
         {/* Two deliberately separate paths. A meeting asks people to RSVP and
             never touches the calendar; an event is a calendar entry that can
             take attendance. One combined button made the choice invisible. */}
@@ -880,7 +879,8 @@ export function CommitteeDetail({ committee, currentUserId, isEboard, accent, on
         </div>
       )}
 
-      <div className="mb-5 overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
+      <div className="grid gap-5 lg:grid-cols-[minmax(0,1.15fr)_minmax(19rem,0.85fr)]">
+      <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm lg:col-start-2 lg:row-start-1">
         <div className="flex items-center justify-between border-b border-border px-5 py-3" style={{ background: tint(accent.base, 0.03) }}>
           <div className="flex items-center gap-2">
             <CalendarDays size={15} style={{ color: accent.light }} />
@@ -930,14 +930,34 @@ export function CommitteeDetail({ committee, currentUserId, isEboard, accent, on
         )}
       </div>
 
-      {error && <p className="mb-4 text-sm text-red-600">{error}</p>}
+      <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm lg:col-start-2 lg:row-start-2">
+        <div className="flex items-center gap-2 border-b border-border px-5 py-3" style={{ background: tint(accent.base, 0.03) }}>
+          <FolderOpen size={15} style={{ color: accent.light }} />
+          <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Shared Files</p>
+        </div>
+        {sharedFolder && filesHref ? (
+          <Link
+            href={`${filesHref}?tab=documents&folder=${encodeURIComponent(sharedFolder.id)}&folderName=${encodeURIComponent(sharedFolder.name)}`}
+            className="flex items-center justify-between gap-3 px-5 py-4 text-sm font-medium text-foreground transition-colors hover:bg-muted/60"
+          >
+            <span className="min-w-0 truncate">{sharedFolder.name}</span>
+            <ChevronRight size={16} className="shrink-0 text-muted-foreground" />
+          </Link>
+        ) : committee.is_member ? (
+          <p className="px-5 py-4 text-sm text-muted-foreground">No shared folder is available for this committee yet.</p>
+        ) : (
+          <p className="px-5 py-4 text-sm text-muted-foreground">Join this committee to access its shared files.</p>
+        )}
+      </div>
+
+      {error && <p className="text-sm text-red-600 lg:col-start-2 lg:row-start-3">{error}</p>}
 
       {/* The approval queue. Rendered only for people the API would actually
           let through — eboard, or the chair of THIS committee — so nobody is
           shown a panel that 403s. `canAdminister` mirrors the API's
           loadAdministrable exactly; if one changes, change both. */}
       {canAdminister && (
-        <div className="mb-5 overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
+        <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm lg:col-start-2 lg:row-start-4">
           <div className="flex items-center justify-between border-b border-border px-5 py-3" style={{ background: tint(accent.base, 0.03) }}>
             <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
               Join requests{requests.length > 0 ? ` (${requests.length})` : ''}
@@ -988,7 +1008,7 @@ export function CommitteeDetail({ committee, currentUserId, isEboard, accent, on
         </div>
       )}
 
-      <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
+      <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm lg:col-start-1 lg:row-span-4 lg:row-start-1">
         <div className="flex items-center justify-between border-b border-border px-5 py-3" style={{ background: tint(accent.base, 0.03) }}>
           <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Members ({members.length})</p>
         </div>
@@ -1058,6 +1078,7 @@ export function CommitteeDetail({ committee, currentUserId, isEboard, accent, on
             })}
           </ul>
         )}
+      </div>
       </div>
 
       {showSchedule && (
