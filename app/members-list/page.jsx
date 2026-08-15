@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Image from 'next/image';
 import Link from 'next/link';
 import Card from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -52,6 +53,33 @@ const PLEDGE_CLASS_ORDER = [
   'founder', 'founding', 'founding class', 'alpha', 'beta', 'gamma', 'delta', 'epsilon', 'zeta', 'eta',
   'theta', 'iota', 'kappa', 'lambda', 'mu', 'nu', 'xi', 'omicron', 'pi',
   'rho', 'sigma', 'tau', 'upsilon', 'phi', 'chi', 'psi', 'omega',
+];
+
+const HERO_PHOTOS = [
+  {
+    src: '/members-hero/chapter-outdoors.jpg',
+    alt: 'KTP members gathered outdoors at a chapter event',
+    className: 'xl:col-start-1 xl:row-start-1 xl:-translate-x-5 xl:-translate-y-6 xl:-rotate-3',
+    position: 'center 62%',
+  },
+  {
+    src: '/members-hero/chapter-meeting.jpg',
+    alt: 'KTP members gathered for a chapter meeting',
+    className: 'xl:col-start-2 xl:row-start-1 xl:-translate-x-2 xl:translate-y-8 xl:rotate-2',
+    position: 'center 62%',
+  },
+  {
+    src: '/members-hero/chapter-mountain.jpg',
+    alt: 'KTP members together during a mountain trip',
+    className: 'xl:col-start-4 xl:row-start-1 xl:translate-x-2 xl:-translate-y-8 xl:rotate-3',
+    position: 'center 48%',
+  },
+  {
+    src: '/members-hero/chapter-group.jpg',
+    alt: 'KTP members posing together after a chapter gathering',
+    className: 'xl:col-start-5 xl:row-start-1 xl:translate-x-5 xl:translate-y-6 xl:-rotate-2',
+    position: 'center 48%',
+  },
 ];
 
 function alumniByPledgeClass(people) {
@@ -189,22 +217,41 @@ export default function MembersListPage() {
 
       <main className="flex-1">
         {/* ===============================  HERO  ============================== */}
-        <section className="relative overflow-hidden py-16 md:py-24 flex items-center">
+        <section className="relative overflow-hidden py-12 md:py-20">
           <div aria-hidden className="pointer-events-none absolute inset-0 -z-10">
             <div className="absolute -left-20 top-0 h-[28rem] w-[28rem] rounded-full bg-gradient-to-br from-indigo-500 via-fuchsia-500 to-cyan-400 opacity-25 blur-[120px]" />
             <div className="absolute -bottom-24 right-0 h-[26rem] w-[26rem] rounded-full bg-gradient-to-tr from-cyan-400 via-indigo-500 to-fuchsia-500 opacity-20 blur-[110px]" />
           </div>
 
-          <div className="container mx-auto max-w-4xl px-4 text-center md:px-6">
-            <p className="mx-auto mb-6 inline-flex items-center gap-2 rounded-full border border-indigo-200 bg-white/60 px-3 py-1 text-xs font-semibold tracking-wider text-blue-900 shadow-sm">
-              Kappa Theta Pi &middot; Phi Chapter
-            </p>
-            <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight leading-tight text-blue-900 drop-shadow-xl">
-              Meet the Chapter
-            </h1>
-            <p className="mx-auto mt-4 max-w-prose text-lg md:text-xl text-slate-700">
-              The people behind Phi Chapter: leadership, chairs, members, and the alumni who came before us.
-            </p>
+          <div className="mx-auto grid w-full max-w-[120rem] grid-cols-2 items-center gap-4 px-4 sm:gap-6 sm:px-6 xl:grid-cols-[minmax(0,1.15fr)_minmax(0,1.15fr)_minmax(34rem,1.7fr)_minmax(0,1.15fr)_minmax(0,1.15fr)] xl:gap-3">
+            <div className="col-span-2 py-4 text-center xl:col-span-1 xl:col-start-3 xl:row-start-1 xl:px-2">
+              <p className="mx-auto mb-6 inline-flex items-center gap-2 rounded-full border border-indigo-200 bg-white/75 px-3 py-1 text-xs font-semibold tracking-wider text-blue-900 shadow-sm backdrop-blur-sm">
+                Kappa Theta Pi &middot; Phi Chapter
+              </p>
+              <h1 className="text-4xl font-extrabold leading-tight tracking-tight text-blue-900 drop-shadow-xl md:whitespace-nowrap md:text-6xl">
+                Meet the Chapter
+              </h1>
+              <p className="mx-auto mt-4 max-w-2xl text-lg text-slate-700 md:text-xl">
+                The people behind Phi Chapter: leadership, chairs, members, and the alumni who came before us.
+              </p>
+            </div>
+
+            {HERO_PHOTOS.map((photo, index) => (
+              <figure
+                key={photo.src}
+                className={`relative aspect-[4/3] w-full overflow-hidden rounded-2xl border-4 border-white bg-slate-200 shadow-xl transition-transform duration-300 hover:rotate-0 hover:scale-[1.04] ${photo.className}`}
+              >
+                <Image
+                  src={photo.src}
+                  alt={photo.alt}
+                  fill
+                  priority={index < 2}
+                  sizes="(max-width: 1279px) 50vw, 18vw"
+                  className="object-cover"
+                  style={{ objectPosition: photo.position }}
+                />
+              </figure>
+            ))}
           </div>
         </section>
 
