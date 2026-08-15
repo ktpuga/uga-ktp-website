@@ -317,7 +317,6 @@ export default function TemplatePage({ spotlightLinks = [] }) {
           <div aria-hidden className="pointer-events-none absolute inset-0">
             <div className="absolute -left-20 top-0 h-[30rem] w-[30rem] rounded-full bg-gradient-to-br from-indigo-500 via-fuchsia-500 to-cyan-400 opacity-25 blur-[120px]" />
             <div className="absolute -bottom-24 right-0 h-[32rem] w-[32rem] rounded-full bg-gradient-to-tr from-cyan-400 via-indigo-500 to-fuchsia-500 opacity-20 blur-[110px]" />
-            <div className="absolute left-1/2 top-1/2 h-[34rem] w-[34rem] -translate-x-1/2 -translate-y-1/2 rounded-full border border-white/15" />
           </div>
 
           <div className="relative container mx-auto grid max-w-[112rem] grid-cols-1 items-center gap-14 px-4 md:grid-cols-[0.92fr_1.08fr] md:px-8 xl:gap-24">
