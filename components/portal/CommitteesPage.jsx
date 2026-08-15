@@ -6,7 +6,7 @@ import { usePathname } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { cn } from '@/lib/utils';
 import {
-  ChevronLeft, Plus, Trash2, Search, X, Star, Users, MessageSquare, Calendar, CalendarPlus, QrCode, LogIn, LogOut, UserPlus, UserMinus, Clock, AlertTriangle, MapPin,
+  ChevronLeft, Plus, Trash2, Search, X, Star, Users, MessageSquare, Calendar, CalendarPlus, QrCode, LogIn, LogOut, UserPlus, UserMinus, Clock, AlertTriangle, MapPin, CalendarDays,
 } from 'lucide-react';
 import {
   getCommittees,
@@ -22,6 +22,7 @@ import {
   setCommitteeMemberRole,
   getMemberDirectory,
   createEvent,
+  getEvents,
 } from '@/lib/portal-api';
 import { memberDisplayName, memberInitials, formatMemberGroup } from '@/lib/portal-format';
 import { profilePictureSrc, avatarAssetId } from '@/lib/avatar';
@@ -533,6 +534,9 @@ export function CommitteeDetail({ committee, currentUserId, isEboard, accent, on
   const [showSchedule, setShowSchedule] = useState(false);
   const [showMeeting, setShowMeeting] = useState(false);
   const [showPromotePicker, setShowPromotePicker] = useState(false);
+  const [upcomingEvents, setUpcomingEvents] = useState([]);
+  const [eventsLoading, setEventsLoading] = useState(true);
+  const [eventsError, setEventsError] = useState(null);
 
   // Matches checkEventPermission in ktp-api's eventsController: eboard may
   // schedule for any committee, a chair only for one they chair.
@@ -627,6 +631,29 @@ export function CommitteeDetail({ committee, currentUserId, isEboard, accent, on
 
   useEffect(loadMembers, [committee.id]);
 
+  const loadUpcomingEvents = useCallback(async () => {
+    setEventsLoading(true);
+    setEventsError(null);
+    try {
+      const events = await getEvents();
+      const now = new Date();
+      setUpcomingEvents(
+        (Array.isArray(events) ? events : [])
+          .filter((event) => (event.committeeIds ?? []).map(String).includes(String(committee.id)))
+          .filter((event) => new Date(event.endDate) >= now)
+          .sort((a, b) => new Date(a.startDate) - new Date(b.startDate))
+          .slice(0, 3)
+      );
+    } catch (err) {
+      if (isRedirectError(err)) throw err;
+      setEventsError(err.message ?? 'Could not load committee events');
+    } finally {
+      setEventsLoading(false);
+    }
+  }, [committee.id]);
+
+  useEffect(() => { loadUpcomingEvents(); }, [loadUpcomingEvents]);
+
   const sortedMembers = useMemo(() => {
     return [...members].sort((a, b) => {
       if (a.role === 'chair' && b.role !== 'chair') return -1;
@@ -693,6 +720,7 @@ export function CommitteeDetail({ committee, currentUserId, isEboard, accent, on
 
   async function handleSchedule() {
     setShowSchedule(false);
+    await loadUpcomingEvents();
     onChanged();
   }
 
@@ -817,6 +845,56 @@ export function CommitteeDetail({ committee, currentUserId, isEboard, accent, on
           </p>
         </div>
       )}
+
+      <div className="mb-5 overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
+        <div className="flex items-center justify-between border-b border-border px-5 py-3" style={{ background: tint(accent.base, 0.03) }}>
+          <div className="flex items-center gap-2">
+            <CalendarDays size={15} style={{ color: accent.light }} />
+            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Upcoming events</p>
+          </div>
+          {canSchedule && (
+            <button
+              type="button"
+              onClick={() => setShowSchedule(true)}
+              className="text-xs font-semibold transition-opacity hover:opacity-75"
+              style={{ color: accent.light }}
+            >
+              Schedule
+            </button>
+          )}
+        </div>
+
+        {eventsLoading ? (
+          <p className="px-5 py-4 text-sm text-muted-foreground">Loading upcoming events...</p>
+        ) : eventsError ? (
+          <p className="px-5 py-4 text-sm text-red-600">{eventsError}</p>
+        ) : upcomingEvents.length === 0 ? (
+          <p className="px-5 py-4 text-sm text-muted-foreground">No upcoming events for this committee.</p>
+        ) : (
+          <ul role="list">
+            {upcomingEvents.map((event) => {
+              const startsAt = new Date(event.startDate);
+              return (
+                <li key={event.id} className="flex items-start gap-3 border-b border-border px-5 py-3 last:border-b-0">
+                  <div className="w-11 shrink-0 rounded-lg bg-muted/60 py-1.5 text-center">
+                    <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                      {startsAt.toLocaleDateString(undefined, { month: 'short' })}
+                    </p>
+                    <p className="text-lg font-semibold leading-none text-foreground">{startsAt.getDate()}</p>
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-medium text-foreground">{event.title}</p>
+                    <p className="mt-0.5 text-xs text-muted-foreground">
+                      {startsAt.toLocaleDateString(undefined, { weekday: 'short' })} {startsAt.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}
+                      {event.location ? ` · ${event.location}` : ''}
+                    </p>
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </div>
 
       {error && <p className="mb-4 text-sm text-red-600">{error}</p>}
 
