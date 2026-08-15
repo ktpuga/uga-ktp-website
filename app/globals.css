@@ -170,7 +170,7 @@
     scroll-behavior: smooth;
   }
 
-  @font-face {
+@font-face {
     font-family: 'Game Of Squids'; /* Name for CSS usage */
     src: url('../public/Game\ Of\ Squids.ttf') format('truetype');
     font-weight: normal;
@@ -266,5 +266,172 @@
   }
   .portal-scroll::-webkit-scrollbar-thumb:hover {
     background-color: var(--color-muted-foreground);
+  }
+}
+
+/* About-page KTP slot machine. Its black, maroon, and gold cabinet mirrors the
+   rush pages while remaining a self-contained illustration rather than an
+   image asset. Each reel begins and ends on the same letter, making the loop
+   seamless after the machine pauses on KTP. */
+.ktp-slot {
+  position: relative;
+  isolation: isolate;
+  margin-inline: auto;
+  width: 100%;
+  overflow: hidden;
+  border: 3px solid #6b1c2a;
+  border-radius: 1.75rem;
+  background: #111111;
+  padding: 1.25rem;
+  color: #ffffff;
+  box-shadow: 0 28px 60px rgb(42 18 25 / 38%), inset 0 0 0 2px #d4af37;
+}
+
+.ktp-slot::before,
+.ktp-slot::after {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  width: 10rem;
+  height: 10rem;
+  border-radius: 9999px;
+  background: #6b1c2a;
+  filter: blur(56px);
+  opacity: 0.55;
+}
+
+.ktp-slot::before {
+  left: -4rem;
+  top: -4rem;
+}
+
+.ktp-slot::after {
+  bottom: -5rem;
+  right: -4rem;
+}
+
+.ktp-slot__marquee {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.4rem;
+  padding-inline: 0.35rem;
+}
+
+.ktp-slot__marquee span {
+  width: 0.55rem;
+  height: 0.55rem;
+  border-radius: 9999px;
+  background: #f0d060;
+  box-shadow: 0 0 0.65rem rgb(240 208 96 / 85%);
+  animation: ktp-slot-lights 900ms ease-in-out infinite alternate;
+}
+
+.ktp-slot__marquee span:nth-child(even) {
+  animation-delay: 450ms;
+}
+
+.ktp-slot__marquee--bottom {
+  margin-top: 1rem;
+}
+
+.ktp-slot__title {
+  margin-block: 1.1rem 0.9rem;
+  color: #d4af37;
+  font-size: clamp(0.75rem, 2.8vw, 0.95rem);
+  font-weight: 800;
+  letter-spacing: 0.28em;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.ktp-slot__window {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.65rem;
+  overflow: hidden;
+  border: 2px solid #6b1c2a;
+  border-radius: 1.1rem;
+  background: #0a0a0a;
+  padding: 0.7rem;
+  box-shadow: inset 0 0 1.25rem rgb(107 28 42 / 55%);
+}
+
+.ktp-slot__reel {
+  height: clamp(6rem, 21vw, 8rem);
+  overflow: hidden;
+  border: 2px solid #d4af37;
+  border-radius: 0.8rem;
+  background: #2a1219;
+  box-shadow: inset 0 0.7rem 1rem rgb(10 10 10 / 55%), inset 0 -0.7rem 1rem rgb(10 10 10 / 55%);
+}
+
+.ktp-slot__track {
+  height: 600%;
+  animation: ktp-slot-spin 4.6s cubic-bezier(0.22, 0.7, 0.2, 1) var(--reel-delay) infinite;
+}
+
+.ktp-slot__track span {
+  display: flex;
+  height: calc(100% / 6);
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: clamp(3.5rem, 14vw, 5.5rem);
+  font-weight: 900;
+  line-height: 1;
+  text-shadow: 0.12rem 0.12rem 0 #6b1c2a, 0 0 1rem rgb(212 175 55 / 45%);
+}
+
+.ktp-slot__payline {
+  position: absolute;
+  inset-inline: 0;
+  top: 50%;
+  height: 2px;
+  transform: translateY(-50%);
+  background: rgb(212 175 55 / 65%);
+  box-shadow: 0 0 0.5rem rgb(240 208 96 / 55%);
+  pointer-events: none;
+}
+
+.ktp-slot__footer {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 0.9rem;
+  border: 1px solid #6b1c2a;
+  border-radius: 9999px;
+  background: #2a1219;
+  padding: 0.5rem 0.85rem;
+  color: #d4af37;
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+@keyframes ktp-slot-spin {
+  0%, 4% { transform: translateY(0); }
+  14% { transform: translateY(-16.6667%); }
+  24% { transform: translateY(-33.3333%); }
+  34% { transform: translateY(-50%); }
+  44% { transform: translateY(-66.6667%); }
+  58%, 100% { transform: translateY(-83.3333%); }
+}
+
+@keyframes ktp-slot-lights {
+  from { opacity: 0.45; transform: scale(0.82); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ktp-slot__track {
+    animation: none;
+    transform: translateY(0);
+  }
+
+  .ktp-slot__marquee span {
+    animation: none;
   }
 }

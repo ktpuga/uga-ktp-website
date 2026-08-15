@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import Image from 'next/image';
 import Link from 'next/link';
 import Footer from '@/components/ui/footer';
 import PublicHeader from '@/components/PublicHeader';
@@ -39,6 +38,42 @@ function isPresident(person) {
   return /^president\b/i.test(person?.execTitle?.trim() ?? '');
 }
 
+const SLOT_REELS = [
+  { letter: 'K', sequence: ['K', 'T', 'P', 'T', 'P', 'K'] },
+  { letter: 'T', sequence: ['T', 'P', 'K', 'P', 'K', 'T'] },
+  { letter: 'P', sequence: ['P', 'K', 'T', 'K', 'T', 'P'] },
+];
+
+function KtpSlotMachine() {
+  return (
+    <figure className="ktp-slot" aria-label="Kappa Theta Pi slot machine showing K T P">
+      <div className="ktp-slot__marquee" aria-hidden>
+        {Array.from({ length: 11 }, (_, index) => <span key={index} />)}
+      </div>
+      <div className="ktp-slot__title" aria-hidden>Kappa Theta Pi</div>
+      <div className="ktp-slot__window" aria-hidden>
+        {SLOT_REELS.map((reel, reelIndex) => (
+          <div key={reel.letter} className="ktp-slot__reel">
+            <div className="ktp-slot__track" style={{ '--reel-delay': `${reelIndex * 120}ms` }}>
+              {reel.sequence.map((symbol, symbolIndex) => (
+                <span key={`${symbol}-${symbolIndex}`}>{symbol}</span>
+              ))}
+            </div>
+          </div>
+        ))}
+        <div className="ktp-slot__payline" />
+      </div>
+      <div className="ktp-slot__footer" aria-hidden>
+        <span>Phi Chapter</span>
+        <span>UGA</span>
+      </div>
+      <div className="ktp-slot__marquee ktp-slot__marquee--bottom" aria-hidden>
+        {Array.from({ length: 11 }, (_, index) => <span key={index} />)}
+      </div>
+    </figure>
+  );
+}
+
 export default function AboutPage() {
   const [roster, setRoster] = useState(null);
   const [error, setError] = useState(null);
@@ -73,11 +108,17 @@ export default function AboutPage() {
             </div>
 
             <div className="relative mx-auto w-full max-w-[29rem] md:mx-0 md:justify-self-end md:translate-x-4">
-              <div aria-hidden className="absolute -inset-8 rounded-[2.5rem] bg-gradient-to-br from-blue-300/55 via-indigo-200/35 to-cyan-200/55 blur-2xl" />
-              <div aria-hidden className="absolute -inset-3 rounded-[2rem] border border-blue-200/80 bg-white/60 shadow-xl" />
-              <div className="relative overflow-hidden rounded-[1.75rem] border-2 border-blue-200 bg-indigo-50 shadow-2xl ring-8 ring-white/80">
-                <Image unoptimized src="/glitchKTP.gif" width={420} height={420} alt="KTP Phi Chapter members" className="block h-auto w-full object-contain" />
-              </div>
+              <div aria-hidden className="absolute -inset-8 rounded-[2.5rem] bg-[#d4af37]/20 blur-2xl" />
+              <KtpSlotMachine />
+              <Link
+                href="/rush"
+                className="relative mt-4 flex items-center justify-between gap-4 rounded-full border-2 border-[#6b1c2a] bg-[#111111] px-5 py-3 text-sm font-bold uppercase tracking-[0.12em] text-white shadow-lg transition-colors hover:border-[#d4af37] hover:bg-[#2a1219] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d4af37] focus-visible:ring-offset-2"
+              >
+                <span>Fall 2026 Rush</span>
+                <span className="rounded-full border border-[#d4af37] bg-[#2a1219] px-3 py-1 text-xs text-[#d4af37]">
+                  Open Now
+                </span>
+              </Link>
             </div>
           </div>
         </section>
