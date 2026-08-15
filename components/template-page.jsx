@@ -148,7 +148,7 @@ export default function TemplatePage({ spotlightLinks = [] }) {
 
       {/* ===============================  NAVBAR  ============================== */}
       <header
-        className={`sticky top-0 z-50 flex h-16 items-center px-4 lg:px-6 transition-all duration-300 border-b ${scrolled ? "bg-white/90 border-slate-200 shadow-sm backdrop-blur-md" : "bg-transparent border-transparent"}`}
+        className={`sticky top-0 z-50 flex h-16 items-center border-b border-[#0f2758] bg-[#14326E]/95 px-4 backdrop-blur-md transition-all duration-300 lg:px-6 ${scrolled ? "shadow-md" : "shadow-sm"}`}
       >
         <Link href="#" className="flex items-center gap-2">
           <Image
@@ -157,6 +157,7 @@ export default function TemplatePage({ spotlightLinks = [] }) {
             width={100}
             height={40}
             className="h-8 w-auto"
+            style={{ filter: "brightness(0) invert(1)" }}
           />
         </Link>
         {/* Inline links from md up; below that they live in the dropdown. */}
@@ -165,7 +166,7 @@ export default function TemplatePage({ spotlightLinks = [] }) {
             <Link
               key={l.label}
               href={l.href}
-              className="relative text-sm font-medium transition-colors duration-300 before:absolute before:-bottom-0.5 before:left-0 before:h-0.5 before:w-full before:origin-left before:scale-x-0 before:bg-indigo-500 before:transition-transform before:duration-300 hover:text-indigo-600 hover:before:scale-x-100"
+              className="relative text-sm font-medium text-white transition-colors duration-300 before:absolute before:-bottom-0.5 before:left-0 before:h-0.5 before:w-full before:origin-left before:scale-x-0 before:bg-blue-200 before:transition-transform before:duration-300 hover:text-blue-200 hover:before:scale-x-100"
             >
               {l.label}
             </Link>
@@ -177,9 +178,9 @@ export default function TemplatePage({ spotlightLinks = [] }) {
             shrink-0 so it can never be the thing that overflows again. */}
         <Link
           href={session ? "/auth/redirect" : "/login"}
-          className="ml-auto shrink-0 whitespace-nowrap rounded-md border border-blue-900 bg-blue-900 px-3 py-1.5 text-sm font-medium text-white transition-colors duration-300 hover:border-blue-800 hover:bg-blue-800 md:ml-6"
+          className="ml-auto shrink-0 whitespace-nowrap rounded-md border border-white bg-white px-3 py-1.5 text-sm font-medium text-[#14326E] transition-colors duration-300 hover:border-blue-100 hover:bg-blue-100 md:ml-6"
         >
-          <span className="relative before:absolute before:-bottom-0.5 before:left-0 before:h-0.5 before:w-full before:origin-left before:scale-x-0 before:bg-white before:transition-transform before:duration-300 [a:hover_&]:before:scale-x-100">
+          <span className="relative before:absolute before:-bottom-0.5 before:left-0 before:h-0.5 before:w-full before:origin-left before:scale-x-0 before:bg-[#14326E] before:transition-transform before:duration-300 [a:hover_&]:before:scale-x-100">
             {session ? "My Portal" : "Portal Login"}
           </span>
         </Link>
@@ -187,7 +188,7 @@ export default function TemplatePage({ spotlightLinks = [] }) {
         <button
           type="button"
           onClick={() => setMenuOpen((o) => !o)}
-          className="ml-2 shrink-0 rounded-md p-2 text-slate-700 transition-colors hover:bg-slate-100 md:hidden"
+          className="ml-2 shrink-0 rounded-md p-2 text-white transition-colors hover:bg-white/15 md:hidden"
           aria-label={menuOpen ? "Close menu" : "Open menu"}
           aria-expanded={menuOpen}
           aria-controls="mobile-nav"
@@ -201,7 +202,7 @@ export default function TemplatePage({ spotlightLinks = [] }) {
       {menuOpen && (
         <nav
           id="mobile-nav"
-          className="sticky top-16 z-40 flex flex-col border-b border-slate-200 bg-white/95 px-4 py-2 shadow-sm backdrop-blur-md md:hidden"
+          className="sticky top-16 z-40 flex flex-col border-b border-[#0f2758] bg-[#14326E]/95 px-4 py-2 shadow-sm backdrop-blur-md md:hidden"
           aria-label="Main navigation"
         >
           {NAV_LINKS.map((l) => (
@@ -209,7 +210,7 @@ export default function TemplatePage({ spotlightLinks = [] }) {
               key={l.label}
               href={l.href}
               onClick={() => setMenuOpen(false)}
-              className="rounded-md px-2 py-2.5 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-100 hover:text-indigo-600"
+              className="rounded-md px-2 py-2.5 text-sm font-medium text-white transition-colors hover:bg-white/10 hover:text-blue-200"
             >
               {l.label}
             </Link>
@@ -312,22 +313,22 @@ export default function TemplatePage({ spotlightLinks = [] }) {
 
         {/* ===== CURRENT REDESIGNED HERO ===== */}
 
-        <section className="relative flex min-h-[74vh] items-center overflow-hidden py-20 md:py-28">
-          <div aria-hidden className="pointer-events-none absolute inset-0 -z-10">
+        <section className="relative isolate flex min-h-[74vh] items-center overflow-hidden bg-[#14326E] py-20 text-white md:py-28">
+          <div aria-hidden className="pointer-events-none absolute inset-0">
             <div className="absolute -left-20 top-0 h-[30rem] w-[30rem] rounded-full bg-gradient-to-br from-indigo-500 via-fuchsia-500 to-cyan-400 opacity-25 blur-[120px]" />
             <div className="absolute -bottom-24 right-0 h-[32rem] w-[32rem] rounded-full bg-gradient-to-tr from-cyan-400 via-indigo-500 to-fuchsia-500 opacity-20 blur-[110px]" />
-            <div className="absolute left-1/2 top-1/2 h-[34rem] w-[34rem] -translate-x-1/2 -translate-y-1/2 rounded-full border border-indigo-200/50" />
+            <div className="absolute left-1/2 top-1/2 h-[34rem] w-[34rem] -translate-x-1/2 -translate-y-1/2 rounded-full border border-white/15" />
           </div>
 
-          <div className="container mx-auto grid max-w-[112rem] grid-cols-1 items-center gap-14 px-4 md:grid-cols-[0.92fr_1.08fr] md:px-8 xl:gap-24">
+          <div className="relative container mx-auto grid max-w-[112rem] grid-cols-1 items-center gap-14 px-4 md:grid-cols-[0.92fr_1.08fr] md:px-8 xl:gap-24">
             <div className="space-y-8" data-aos="fade-up" data-aos-duration="600">
-              <p className="inline-flex items-center gap-2 rounded-full border border-indigo-200 bg-white/70 px-3 py-1 text-xs font-semibold tracking-wider text-blue-900 shadow-sm backdrop-blur-sm">
+              <p className="inline-flex items-center gap-2 rounded-full border border-white/35 bg-white/10 px-3 py-1 text-xs font-semibold tracking-wider text-white shadow-sm backdrop-blur-sm">
                 UGA's Professional Technology Fraternity
               </p>
-              <h1 className="max-w-2xl whitespace-nowrap text-[clamp(2.25rem,5vw,4rem)] font-extrabold leading-[0.95] tracking-tight text-blue-900 drop-shadow-xl">
+              <h1 className="max-w-2xl whitespace-nowrap text-[clamp(2.25rem,5vw,4rem)] font-extrabold leading-[0.95] tracking-tight text-white drop-shadow-xl">
                 Kappa Theta Pi
               </h1>
-              <p className="max-w-xl text-lg leading-relaxed text-slate-700 md:text-xl">
+              <p className="max-w-xl text-lg leading-relaxed text-blue-100 md:text-xl">
                 Empowering technologists through leadership, mentorship, and community. On a mission to build what matters.
               </p>
               <div className="flex flex-wrap items-center gap-4">
@@ -336,11 +337,11 @@ export default function TemplatePage({ spotlightLinks = [] }) {
                 <CopyEmailButton />
                 <SocialLink href="https://linktr.ee/uga.ktp" label="Kappa Theta Pi on Linktree" text="Linktree"><Link2 className="h-5 w-5" /></SocialLink>
               </div>
-              <dl className="grid max-w-xl grid-cols-3 gap-3 border-t border-indigo-100 pt-6 sm:gap-6">
+              <dl className="grid max-w-xl grid-cols-3 gap-3 border-t border-white/25 pt-6 sm:gap-6">
                 {[["Founded", "2024"], ["Based at", "UGA"], ["Built in", "Athens, GA"]].map(([label, value]) => (
                   <div key={label}>
-                    <dt className="text-[0.65rem] font-bold uppercase tracking-[0.18em] text-slate-500">{label}</dt>
-                    <dd className="mt-1 text-sm font-bold text-blue-900 sm:text-base">{value}</dd>
+                    <dt className="text-[0.65rem] font-bold uppercase tracking-[0.18em] text-blue-200">{label}</dt>
+                    <dd className="mt-1 text-sm font-bold text-white sm:text-base">{value}</dd>
                   </div>
                 ))}
               </dl>
@@ -362,22 +363,22 @@ export default function TemplatePage({ spotlightLinks = [] }) {
         </section>
 
         {/* ==============================  RUSH  ============================== */}
-        <section className="relative overflow-hidden bg-[#14326E] py-16 text-white md:py-20">
+        <section className="relative overflow-hidden bg-white py-16 text-slate-900 md:py-20">
           <div aria-hidden className="pointer-events-none absolute inset-0">
-            <div className="absolute -left-24 top-1/2 h-80 w-80 -translate-y-1/2 rounded-full bg-blue-400/20 blur-[110px]" />
-            <div className="absolute -right-20 -top-20 h-80 w-80 rounded-full bg-indigo-300/15 blur-[110px]" />
-            <div className="absolute bottom-0 left-1/3 h-56 w-56 rounded-full bg-cyan-300/15 blur-[90px]" />
+            <div className="absolute -left-24 top-1/2 h-80 w-80 -translate-y-1/2 rounded-full bg-indigo-500/20 blur-[110px]" />
+            <div className="absolute -right-20 -top-20 h-80 w-80 rounded-full bg-fuchsia-500/15 blur-[110px]" />
+            <div className="absolute bottom-0 left-1/3 h-56 w-56 rounded-full bg-cyan-400/15 blur-[90px]" />
           </div>
 
           <div className="relative container mx-auto grid max-w-[112rem] items-center gap-10 px-4 md:grid-cols-[1.15fr_0.85fr] md:gap-16 md:px-8">
             <div data-aos="fade-up" data-aos-duration="500">
-              <p className="inline-flex rounded-full border border-white/35 bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-white shadow-sm">
+              <p className="inline-flex rounded-full border border-indigo-200 bg-white/80 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-blue-900 shadow-sm">
                 Fall Rush 2026
               </p>
-              <h2 className="mt-5 text-4xl font-extrabold tracking-tight text-white sm:text-5xl md:text-6xl">
+              <h2 className="mt-5 text-4xl font-extrabold tracking-tight text-blue-900 sm:text-5xl md:text-6xl">
                 Find your people in tech.
               </h2>
-              <p className="mt-5 max-w-2xl text-lg leading-relaxed text-blue-100 md:text-xl">
+              <p className="mt-5 max-w-2xl text-lg leading-relaxed text-slate-700 md:text-xl">
                 Explore Kappa Theta Pi through info sessions, conversations with members, and experiences built around technology, growth, and community.
               </p>
               <Link href="/rush" className="mt-8 inline-block">
@@ -404,18 +405,18 @@ export default function TemplatePage({ spotlightLinks = [] }) {
         </section>
 
         {/* ========================== MEMBER SPOTLIGHT ======================== */}
-        <section className="relative overflow-hidden bg-[#f7f9fc] py-16 text-slate-900 md:py-20">
+        <section className="relative overflow-hidden bg-[#14326E] py-16 text-white md:py-20">
           <div aria-hidden className="pointer-events-none absolute -right-28 top-0 h-80 w-80 rounded-full bg-blue-300/20 blur-[110px]" />
           <div className="relative mx-auto max-w-[100rem] px-4 sm:px-6">
             <div className="mb-10 flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
               <div>
-                <p className="text-xs font-bold uppercase tracking-[0.2em] text-indigo-600">Phi Chapter Spotlight</p>
-                <h2 className="mt-3 text-4xl font-extrabold tracking-tight text-blue-900 sm:text-5xl">Our Members&apos; Work</h2>
-                <p className="mt-4 max-w-2xl text-lg leading-7 text-slate-600">
+                <p className="text-xs font-bold uppercase tracking-[0.2em] text-blue-200">Phi Chapter Spotlight</p>
+                <h2 className="mt-3 text-4xl font-extrabold tracking-tight text-white sm:text-5xl">Our Members&apos; Work</h2>
+                <p className="mt-4 max-w-2xl text-lg leading-7 text-blue-100">
                   Internships, projects, research, and milestones from members building beyond the classroom.
                 </p>
               </div>
-              <Link href="/spotlight" className="inline-flex w-fit rounded-full border border-blue-200 bg-white px-5 py-2.5 text-sm font-bold text-blue-900 transition-colors hover:bg-blue-900 hover:text-white">
+              <Link href="/spotlight" className="inline-flex w-fit rounded-full border border-white bg-white px-5 py-2.5 text-sm font-bold text-[#14326E] transition-colors hover:bg-blue-100">
                 View All Spotlights
               </Link>
             </div>
@@ -715,7 +716,7 @@ export default function TemplatePage({ spotlightLinks = [] }) {
         ================================================ */}
 
         {/* =========  CONTACT  ========= */}
-        <section id="contact" className="bg-slate-100 py-16 md:py-24">
+        <section id="contact" className="bg-[#14326E] py-16 text-white md:py-24">
           {/* fade-up, not flip-up. flip-up was the only one on the page and it
               applies `perspective(2500px) rotateX(-100deg)` in its
               pre-animation state — a perspective projection is WIDER than the
@@ -730,7 +731,7 @@ export default function TemplatePage({ spotlightLinks = [] }) {
             <h2 className="text-3xl font-bold tracking-tight md:text-4xl">
               Contact
             </h2>
-            <p className="mx-auto mt-3 max-w-2xl text-lg text-slate-700">
+            <p className="mx-auto mt-3 max-w-2xl text-lg text-blue-100">
               Join us for Rush and become part of the KTPhamily.
             </p>
 
@@ -762,7 +763,7 @@ function SocialLink({ href, children, label, text }) {
       target="_blank"
       prefetch={false}
       aria-label={label}
-      className="inline-flex h-12 items-center justify-center gap-2 rounded-full bg-blue-900 px-5 text-sm font-semibold text-white shadow-md transition-transform duration-300 hover:-translate-y-1 hover:bg-blue-800 hover:shadow-indigo-200/70"
+      className="inline-flex h-12 items-center justify-center gap-2 rounded-full border border-white bg-white px-5 text-sm font-semibold text-[#14326E] shadow-md transition-transform duration-300 hover:-translate-y-1 hover:bg-blue-100"
     >
       {children}
       <span>{text}</span>
@@ -788,7 +789,7 @@ function CopyEmailButton() {
     <button
       type="button"
       onClick={copyEmail}
-      className="inline-flex h-12 items-center justify-center gap-2 rounded-full bg-blue-900 px-5 text-sm font-semibold text-white shadow-md transition-transform duration-300 hover:-translate-y-1 hover:bg-blue-800 hover:shadow-indigo-200/70"
+      className="inline-flex h-12 items-center justify-center gap-2 rounded-full border border-white bg-white px-5 text-sm font-semibold text-[#14326E] shadow-md transition-transform duration-300 hover:-translate-y-1 hover:bg-blue-100"
       aria-label="Copy Kappa Theta Pi email address"
       title={copied ? 'Email copied' : 'Copy email address'}
     >

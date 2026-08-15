@@ -87,7 +87,7 @@ export default function GalleryCollection({ collection, headingLevel = "h2", lay
       : "columns-1 gap-4 sm:columns-2 lg:columns-3 xl:columns-4";
 
   return (
-    <div className={isShowcase ? 'w-[90vw] max-w-[58rem] shrink-0 snap-start rounded-[2rem] border border-white/90 bg-white/75 p-5 shadow-xl shadow-slate-300/20 backdrop-blur-sm sm:p-7' : `mb-14 last:mb-0 ${isArchive ? 'rounded-[2rem] border border-white/90 bg-white/70 p-5 shadow-xl shadow-slate-300/20 backdrop-blur-sm sm:p-7 md:p-9' : isEditorial ? 'border-t border-slate-200/80 pt-10 md:pt-12' : ''}`}>
+    <div className={isShowcase ? 'w-[85vw] shrink-0 snap-start rounded-[2rem] border border-white/90 bg-white/75 p-5 shadow-xl shadow-slate-300/20 backdrop-blur-sm sm:p-6 md:w-[calc((100%_-_1.25rem)/2)] lg:w-[calc((100%_-_2.5rem)/3)]' : `mb-14 last:mb-0 ${isArchive ? 'rounded-[2rem] border border-white/90 bg-white/70 p-5 shadow-xl shadow-slate-300/20 backdrop-blur-sm sm:p-7 md:p-9' : isEditorial ? 'border-t border-slate-200/80 pt-10 md:pt-12' : ''}`}>
       <div className={`mb-6 flex items-end justify-between gap-4 ${isMosaic ? 'md:mb-8' : ''}`}>
         <div className="min-w-0">
           <Heading className={`font-bold tracking-tight text-slate-900 ${isEditorial ? 'text-2xl md:text-3xl' : 'text-2xl md:text-3xl'}`}>

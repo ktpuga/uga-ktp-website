@@ -85,7 +85,7 @@ export default function AboutPage() {
   const president = roster?.eboard?.find(isPresident);
 
   return (
-    <div className="flex min-h-screen flex-col bg-gradient-to-br from-slate-50 via-white to-slate-100 font-sans text-slate-900">
+    <div className="flex min-h-screen flex-col bg-gradient-to-br from-slate-50 via-white to-slate-100 font-sans text-slate-900 sm:border-x-[6px] sm:border-[#14326E]">
       <PublicHeader />
 
       <main className="flex-1">
