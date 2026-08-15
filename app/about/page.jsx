@@ -98,7 +98,7 @@ export default function AboutPage() {
           <div className="relative mx-auto grid max-w-[96rem] items-center gap-14 px-4 sm:px-6 md:grid-cols-[minmax(0,1.15fr)_minmax(24rem,0.85fr)] md:gap-20">
             <div className="max-w-4xl text-center md:-translate-x-3 md:text-left">
               <p className="text-sm font-semibold uppercase tracking-[0.18em] text-indigo-600">About Kappa Theta Pi</p>
-              <h2 className="mt-2 text-4xl font-bold leading-tight tracking-tight text-blue-900 md:text-5xl">A home for ambitious technologists.</h2>
+              <h2 className="mt-2 text-4xl font-bold leading-tight tracking-tight text-blue-900 md:text-5xl">A Home for Ambitious Technologists</h2>
               <div className="mt-7 space-y-5 text-base leading-relaxed text-slate-700 md:text-[1.05rem]">
                 <p>KTP develops technical skills and professionalism while fostering strong friendships and an international network. Established at UGA in 2024, Phi Chapter is committed to leaving a lasting legacy on campus and beyond.</p>
                 <p>Our purpose is to build an active technology community; promote intellectual, technical, professional, and social development; offer career guidance; and foster mutually beneficial relationships with alumni, faculty, local organizations, and industry.</p>
