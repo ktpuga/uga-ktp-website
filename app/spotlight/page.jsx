@@ -2,7 +2,9 @@ import PublicHeader from '@/components/PublicHeader';
 import SpotlightGallery from '@/components/SpotlightGallery';
 import Footer from '@/components/ui/footer';
 import { pageMetadata } from '@/lib/seo';
-import { SPOTLIGHT_LINKS } from './links';
+import { getHourlySpotlightLinks } from './links';
+
+export const dynamic = 'force-dynamic';
 
 export const metadata = pageMetadata({
   title: 'Spotlight',
@@ -11,6 +13,8 @@ export const metadata = pageMetadata({
 });
 
 export default function SpotlightPage() {
+  const spotlightLinks = getHourlySpotlightLinks(6);
+
   return (
     <div className="flex min-h-screen flex-col bg-[#f7f9fc] font-sans text-slate-900">
       <PublicHeader />
@@ -29,7 +33,7 @@ export default function SpotlightPage() {
         </section>
 
         <section className="mx-auto max-w-[110rem] px-4 py-14 sm:px-6 md:py-20">
-          <SpotlightGallery links={SPOTLIGHT_LINKS} />
+          <SpotlightGallery links={spotlightLinks} />
         </section>
       </main>
 

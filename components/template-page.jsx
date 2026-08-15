@@ -20,6 +20,7 @@ import tg from "../public/tailgate.jpeg";
 // current API-backed alumni roster.
 // import AlumniSection from "./AlumniSection";
 import GallerySection from "./GallerySection";
+import SpotlightGallery from "./SpotlightGallery";
 import { AOSInit } from "./ui/timeline";
 
 // NEW: Hackathon photos (same set used on /hackathon)
@@ -48,7 +49,7 @@ function importAll(r) {
   return images;
 }
 
-export default function TemplatePage() {
+export default function TemplatePage({ spotlightLinks = [] }) {
   const { data: session } = useSession();
 
   /* ---------------------- Collect leadership head‑shots ---------------------
@@ -399,6 +400,26 @@ export default function TemplatePage() {
                 </article>
               ))}
             </div>
+          </div>
+        </section>
+
+        {/* ========================== MEMBER SPOTLIGHT ======================== */}
+        <section className="relative overflow-hidden bg-[#f7f9fc] py-16 text-slate-900 md:py-20">
+          <div aria-hidden className="pointer-events-none absolute -right-28 top-0 h-80 w-80 rounded-full bg-blue-300/20 blur-[110px]" />
+          <div className="relative mx-auto max-w-[100rem] px-4 sm:px-6">
+            <div className="mb-10 flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-[0.2em] text-indigo-600">Phi Chapter Spotlight</p>
+                <h2 className="mt-3 text-4xl font-extrabold tracking-tight text-blue-900 sm:text-5xl">Our Members&apos; Work</h2>
+                <p className="mt-4 max-w-2xl text-lg leading-7 text-slate-600">
+                  Internships, projects, research, and milestones from members building beyond the classroom.
+                </p>
+              </div>
+              <Link href="/spotlight" className="inline-flex w-fit rounded-full border border-blue-200 bg-white px-5 py-2.5 text-sm font-bold text-blue-900 transition-colors hover:bg-blue-900 hover:text-white">
+                View All Spotlights
+              </Link>
+            </div>
+            <SpotlightGallery links={spotlightLinks} />
           </div>
         </section>
 
