@@ -229,7 +229,7 @@ export default function TemplatePage() {
               <p className="inline-flex items-center gap-2 rounded-full border border-indigo-200 bg-white/70 px-3 py-1 text-xs font-semibold tracking-wider text-blue-900 shadow-sm backdrop-blur-sm">
                 UGA's Professional Technology Fraternity
               </p>
-              <h1 className="max-w-2xl text-5xl font-extrabold leading-[0.95] tracking-tight text-blue-900 drop-shadow-xl md:text-7xl xl:text-8xl">
+              <h1 className="max-w-2xl whitespace-nowrap text-[clamp(2.25rem,5vw,4rem)] font-extrabold leading-[0.95] tracking-tight text-blue-900 drop-shadow-xl">
                 Kappa Theta Pi
               </h1>
               <p className="max-w-xl text-lg leading-relaxed text-slate-700 md:text-xl">
