@@ -635,16 +635,29 @@ export function CommitteeDetail({ committee, currentUserId, isEboard, accent, on
 
   // Folder responses already include the committee_ids used for their
   // visibility rule. Use that relationship rather than a name convention: a
-  // folder may be renamed without breaking its committee's Shared Files link.
+  // folder may be renamed or moved without breaking its committee's Shared
+  // Files link. The document library is nested, so search its visible tree.
   useEffect(() => {
     let cancelled = false;
 
-    getDocumentFolders(null)
-      .then((folders) => {
+    async function findCommitteeFolder(parentId = null) {
+      const folders = await getDocumentFolders(parentId);
+      const visibleFolders = Array.isArray(folders) ? folders : [];
+      const matchingFolder = visibleFolders.find(
+        (folder) => (folder.committee_ids ?? []).map(String).includes(String(committee.id))
+      );
+      if (matchingFolder) return matchingFolder;
+
+      const childMatches = await Promise.all(
+        visibleFolders.map((folder) => findCommitteeFolder(folder.id))
+      );
+      return childMatches.find(Boolean) ?? null;
+    }
+
+    findCommitteeFolder()
+      .then((folder) => {
         if (cancelled) return;
-        setSharedFolder((Array.isArray(folders) ? folders : []).find(
-          (folder) => (folder.committee_ids ?? []).map(String).includes(String(committee.id))
-        ) ?? null);
+        setSharedFolder(folder);
       })
       .catch((err) => {
         if (isRedirectError(err)) throw err;
