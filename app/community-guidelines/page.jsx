@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import Footer from '@/components/ui/footer';
+import PublicHeader from '@/components/PublicHeader';
 
 function Section({ title, children }) {
   return (
@@ -15,11 +16,7 @@ function Section({ title, children }) {
 export default function CommunityGuidelinesPage() {
   return (
     <div className="flex min-h-screen flex-col bg-gradient-to-br from-gray-950 via-slate-900 to-black font-sans text-gray-100">
-      <header className="sticky top-0 z-50 flex h-16 items-center border-b border-indigo-900 bg-black/70 px-4 backdrop-blur-md lg:px-6">
-        <Link className="flex items-center justify-center" href="/">
-          <span className="bg-gradient-to-tr from-indigo-400 via-fuchsia-500 to-cyan-400 bg-clip-text text-2xl font-bold text-transparent">ΚΘΠ</span>
-        </Link>
-      </header>
+      <PublicHeader tone="dark" />
 
       <main className="mx-auto w-full max-w-3xl flex-1 px-6 py-16">
         <p className="mb-1 text-xs font-medium uppercase tracking-wide text-fuchsia-400">Draft — pending leadership review</p>

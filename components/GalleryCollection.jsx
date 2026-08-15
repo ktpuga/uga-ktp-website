@@ -12,8 +12,9 @@ import Link from "next/link";
 // is what this generalises, so matching it means the page looks unchanged while
 // becoming eboard-editable.
 
-function GalleryMedia({ photo }) {
+function GalleryMedia({ photo, naturalSize = false }) {
   const src = `/api/homepage-photos/${photo.id}/media`;
+  const mediaClass = naturalSize ? "block h-auto w-full" : "h-full w-full object-contain";
 
   if (photo.media_type === "video") {
     return (
@@ -23,7 +24,7 @@ function GalleryMedia({ photo }) {
         loop
         autoPlay
         playsInline
-        className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.02]"
+        className={mediaClass}
       />
     );
   }
@@ -39,7 +40,7 @@ function GalleryMedia({ photo }) {
       alt={photo.title || photo.caption || "Chapter photo"}
       loading="lazy"
       decoding="async"
-      className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.02]"
+      className={mediaClass}
     />
   );
 }
@@ -64,6 +65,11 @@ export function formatEventDate(value) {
 export default function GalleryCollection({ collection, headingLevel = "h2", layout = "carousel" }) {
   const Heading = headingLevel;
   const photos = Array.isArray(collection.photos) ? collection.photos : [];
+  const isEditorial = layout === "editorial";
+  const isArchive = layout === "archive";
+  const isShowcase = layout === "showcase";
+  const isMosaic = isEditorial;
+  const isPacked = isArchive || isShowcase;
 
   // A collection with no photos yet would render a heading above an empty
   // bordered box, which reads as broken rather than as empty.
@@ -72,12 +78,19 @@ export default function GalleryCollection({ collection, headingLevel = "h2", lay
   const meta = [collection.subtitle, formatEventDate(collection.event_date)]
     .filter(Boolean)
     .join(" • ");
+  const packedLayoutClass = isShowcase
+    ? "columns-2 gap-3"
+    : photos.length === 1
+    ? "mx-auto max-w-2xl columns-1 gap-4"
+    : photos.length === 2
+      ? "mx-auto max-w-5xl columns-1 gap-4 sm:columns-2"
+      : "columns-1 gap-4 sm:columns-2 lg:columns-3 xl:columns-4";
 
   return (
-    <div className="mb-10 last:mb-0">
-      <div className="mb-6 flex items-end justify-between gap-4">
+    <div className={isShowcase ? 'w-[90vw] max-w-[58rem] shrink-0 snap-start rounded-[2rem] border border-white/90 bg-white/75 p-5 shadow-xl shadow-slate-300/20 backdrop-blur-sm sm:p-7' : `mb-14 last:mb-0 ${isArchive ? 'rounded-[2rem] border border-white/90 bg-white/70 p-5 shadow-xl shadow-slate-300/20 backdrop-blur-sm sm:p-7 md:p-9' : isEditorial ? 'border-t border-slate-200/80 pt-10 md:pt-12' : ''}`}>
+      <div className={`mb-6 flex items-end justify-between gap-4 ${isMosaic ? 'md:mb-8' : ''}`}>
         <div className="min-w-0">
-          <Heading className="text-2xl md:text-3xl font-bold tracking-tight text-slate-900">
+          <Heading className={`font-bold tracking-tight text-slate-900 ${isEditorial ? 'text-2xl md:text-3xl' : 'text-2xl md:text-3xl'}`}>
             {collection.title}
           </Heading>
           {meta && <p className="text-slate-600">{meta}</p>}
@@ -95,20 +108,28 @@ export default function GalleryCollection({ collection, headingLevel = "h2", lay
         )}
       </div>
 
-      <div className="group relative">
+      <div className="relative">
         <div
-          className={layout === "grid"
+          className={isPacked
+            ? packedLayoutClass
+            : isMosaic
+            ? "grid grid-cols-2 auto-rows-[9rem] gap-3 sm:auto-rows-[12rem] md:auto-rows-[14rem] lg:grid-cols-4"
+            : layout === "grid"
             ? "grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4"
             : "no-scrollbar flex snap-x snap-mandatory gap-4 overflow-x-auto rounded-2xl border border-slate-200 bg-white p-4"}
         >
-          {photos.map((photo) => (
+          {photos.map((photo, index) => (
             <figure
               key={photo.id}
-              className={layout === "grid"
+              className={isPacked
+                ? "group relative mb-3 break-inside-avoid overflow-hidden rounded-2xl bg-slate-100 shadow-sm ring-1 ring-slate-200"
+                : isMosaic
+                ? `group relative overflow-hidden rounded-2xl bg-slate-100 shadow-sm ring-1 ring-slate-200 ${index === 0 ? 'col-span-2 row-span-2' : ''}`
+                : layout === "grid"
                 ? "relative aspect-[4/3] overflow-hidden rounded-xl bg-slate-100 ring-1 ring-slate-200"
-                : "relative h-56 w-[300px] shrink-0 snap-start overflow-hidden rounded-xl bg-slate-50 ring-1 ring-slate-100"}
+                : "group relative h-56 w-[300px] shrink-0 snap-start overflow-hidden rounded-xl bg-slate-50 ring-1 ring-slate-100"}
             >
-              <GalleryMedia photo={photo} />
+              <GalleryMedia photo={photo} naturalSize={isPacked} />
 
               {/* Title as the caption line, with the photo's own caption under
                   it when there is one. Both `truncate` with a `title`
@@ -120,9 +141,9 @@ export default function GalleryCollection({ collection, headingLevel = "h2", lay
                   than rendering an empty gradient band across every untitled
                   tile. */}
               {(photo.title || photo.caption) && (
-                <figcaption className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/75 via-black/40 to-transparent px-3 pb-2 pt-8 text-white">
+                <figcaption className={`absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/75 via-black/40 to-transparent text-white ${isMosaic && index === 0 ? 'px-5 pb-4 pt-16' : 'px-3 pb-2 pt-8'}`}>
                   {photo.title && (
-                    <p className="truncate text-xs font-medium leading-snug" title={photo.title}>
+                    <p className={`truncate font-medium leading-snug ${isMosaic && index === 0 ? 'text-sm md:text-base' : 'text-xs'}`} title={photo.title}>
                       {photo.title}
                     </p>
                   )}

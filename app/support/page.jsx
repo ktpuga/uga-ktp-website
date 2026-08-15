@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { AlertTriangle, ArrowUpRight, CheckCircle2, ChevronRight, Clock3, ExternalLink, Mail, ShieldCheck } from 'lucide-react';
 import SupportRequestForm from '@/components/support/SupportRequestForm';
+import PublicHeader from '@/components/PublicHeader';
 
 const SUPPORT_EMAIL = 'ugaktp@gmail.com';
 const RESPONSE_TIME = '2-3 days';
@@ -64,17 +65,7 @@ export default function SupportPage() {
 
   return (
     <div className="min-h-screen bg-[#f7f8fa] font-sans text-slate-900">
-      <header className="border-b border-[#173a5a] bg-[#052039] text-white">
-        <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-5 py-4 sm:px-8">
-          <Link href="/support" className="flex min-w-0 items-center gap-3 rounded-md focus:outline-none focus:ring-2 focus:ring-[#f2c14e] focus:ring-offset-2 focus:ring-offset-[#052039]">
-            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-[#f2c14e] text-sm font-black tracking-tight text-[#052039]">KTP</span>
-            <span className="truncate text-sm font-semibold tracking-wide sm:text-base">KTP App Support</span>
-          </Link>
-          <a href="#contact-support" className="inline-flex shrink-0 items-center gap-1.5 rounded-md border border-white/25 px-3 py-2 text-xs font-semibold text-white transition hover:border-white/60 hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-[#f2c14e] sm:text-sm">
-            Contact support <ArrowUpRight size={14} aria-hidden="true" />
-          </a>
-        </div>
-      </header>
+      <PublicHeader tone="dark" />
 
       <main>
         <section className="border-b border-[#173a5a] bg-[#052039] text-white">

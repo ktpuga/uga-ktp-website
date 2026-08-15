@@ -31,10 +31,10 @@ export default function Error({ error, reset }) {
             Try again
           </button>
           <Link
-            href="/login"
+            href="/"
             className="px-4 py-2 rounded-md bg-blue-900 text-white text-sm font-medium hover:bg-blue-800 transition-colors"
           >
-            Sign in again
+            Back to home
           </Link>
         </div>
         {error?.digest && (

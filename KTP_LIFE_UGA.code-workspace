@@ -11,6 +11,9 @@
 		},
 		{
 			"path": "../ktp-docs"
+		},
+		{
+			"path": "../../../Downloads/kappa-theta-pi-roster"
 		}
 	],
 	"settings": {}

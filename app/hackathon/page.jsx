@@ -4,6 +4,7 @@
 'use client'
 import { Button } from '@/components/ui/button'
 import Footer from '@/components/ui/footer'
+import PublicHeader from '@/components/PublicHeader'
 import ktpHacks1 from '@/public/ktpHacks1.jpeg'
 import ktpHacks2 from '@/public/ktpHacks2.jpeg'
 import ktpHacks3 from '@/public/ktpHacks3.jpeg'
@@ -22,7 +23,6 @@ import Link from 'next/link'
 import React, { useEffect, useState } from 'react'
 
 export default function HackathonPage() {
-  const [scrolled, setScrolled] = useState(false)
   const phrases = [
     'WELCOME_TO_KTP_HACKS',
     'SECOND_EVER • FALL_2025',
@@ -75,11 +75,7 @@ export default function HackathonPage() {
     startScramble()
     switchTimer = setInterval(switchPhrase, 2000) // change every 2 s
 
-    const onScroll = () => setScrolled(window.scrollY > 10)
-    window.addEventListener('scroll', onScroll)
-
     return () => {
-      window.removeEventListener('scroll', onScroll)
       clearInterval(scrambleTimer)
       clearInterval(switchTimer)
     }
@@ -87,33 +83,7 @@ export default function HackathonPage() {
 
   return (
     <div className="flex min-h-screen flex-col font-sans bg-gradient-to-br from-gray-950 via-indigo-950 to-black text-gray-100 relative overflow-hidden">
-      {/* ---------- NAV ---------- */}
-      <header className={`sticky top-0 z-50 flex h-16 items-center px-4 lg:px-6 transition-all duration-300 border-b ${scrolled ? 'bg-black/80 border-indigo-800 shadow-lg backdrop-blur-md' : 'bg-transparent border-transparent'}`}>
-        <Link href="/" className="flex items-center gap-2">
-          <Image src="/KTP PHI CHAPTER.svg" alt="KTP Phi Chapter" width={100} height={40} className="h-8 w-auto" style={{filter: 'brightness(0) invert(1)'}} />
-        </Link>
-        <nav className="ml-auto flex gap-4 sm:gap-6">
-          {[
-            ['Rush', '/rush'],
-            ['About', '/#about'],
-            // Commented out with the Exec Board section in template-page.jsx,
-            // which owns the #leadership anchor. With that section hidden this
-            // link scrolls nowhere, which reads as a broken nav rather than as
-            // a hidden section. Restore it when the section comes back.
-            // ['Leadership', '/#leadership'],
-            ['Hackathon', '/hackathon'],
-            ['Contact', '/#contact']
-          ].map(([label, href]) => (
-            <Link
-              key={label}
-              href={href}
-              className="text-sm font-medium transition-colors hover:text-fuchsia-400"
-            >
-              {label}
-            </Link>
-          ))}
-        </nav>
-      </header>
+      <PublicHeader tone="dark" />
 
       {/* ---------- MAIN ---------- */}
       <main className="relative flex-1 overflow-hidden">

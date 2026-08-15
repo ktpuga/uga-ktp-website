@@ -5,6 +5,7 @@ import { ArrowRight } from 'lucide-react';
 import { groq, type SanityDocument } from 'next-sanity';
 import Image from 'next/image';
 import Link from 'next/link';
+import PublicHeader from '@/components/PublicHeader';
 
 import { client } from '../../sanity/client';
 import { pageMetadata } from '@/lib/seo';
@@ -44,37 +45,20 @@ export default async function BlogIndex() {
   /* -------------- unchanged “empty” fallback -------------------- */
   if (!posts.length) {
     return (
-      <main className="mx-auto flex min-h-screen max-w-2xl flex-col items-center justify-center p-8 text-center">
-        <h1 className="mb-4 text-3xl font-semibold">Blog</h1>
-        <p className="text-gray-500">Seems like something broke! Check back soon!</p>
-      </main>
+      <div className="flex min-h-screen flex-col bg-gradient-to-br from-gray-950 via-indigo-950 to-black text-gray-100">
+        <PublicHeader tone="dark" />
+        <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col items-center justify-center p-8 text-center">
+          <h1 className="mb-4 text-3xl font-semibold">Blog</h1>
+          <p className="text-gray-300">Seems like something broke! Check back soon!</p>
+        </main>
+      </div>
     );
   }
 
   /* -------------- RETURN (dark theme, now with image & author) -- */
   return (
     <div className="flex min-h-screen flex-col font-sans bg-gradient-to-br from-gray-950 via-indigo-950 to-black text-gray-100 overflow-hidden">
-      {/* ---------- NAV ---------- */}
-      <header className="sticky top-0 z-50 flex h-16 items-center border-b border-indigo-900 bg-black/70 backdrop-blur-md px-4 lg:px-6 shadow-lg">
-        <Link href="/" className="flex items-center font-bold text-cyan-400 drop-shadow-neon">
-          <Image src="/KTP PHI CHAPTER.svg" alt="KTP Phi Chapter" width={100} height={40} className="h-8 w-auto" style={{filter: 'brightness(0) invert(1)'}} />
-          <span className="ml-2 hidden text-sm font-semibold text-fuchsia-300 sm:inline">| Blog</span>
-        </Link>
-        <nav className="ml-auto flex gap-4 sm:gap-6">
-          {[
-            ['About', '/#about'],
-            ['Contact', '/#contact'],
-          ].map(([label, href]) => (
-            <Link
-              key={label}
-              href={href}
-              className="text-sm font-medium transition-colors hover:text-fuchsia-400"
-            >
-              {label}
-            </Link>
-          ))}
-        </nav>
-      </header>
+      <PublicHeader tone="dark" />
 
       {/* ---------- MAIN (starfield + blobs) ---------- */}
       <main className="relative flex-1 overflow-hidden">

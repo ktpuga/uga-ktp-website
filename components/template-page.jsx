@@ -8,6 +8,7 @@ import Link from "next/link";
 import { useSession } from "next-auth/react";
 import React, { useEffect, useState } from "react";
 import Footer from "../components/ui/footer";
+import { PUBLIC_NAV_LINKS } from "./PublicHeader";
 import dnTTb from "../public/datenight_x_TT_beta.jpeg";
 import main from "../public/glitchKTP.gif";
 import mtdspa from "../public/mytie_x_dsp_alpha.jpeg";
@@ -112,15 +113,6 @@ export default function TemplatePage() {
   ];
   ------------------------------------------------------------------- */
 
-  /* --------------------------- Mobile breakpoint --------------------------- */
-  const [mobile, setMobile] = useState(false);
-  useEffect(() => {
-    const updateMobile = () => setMobile(window.innerWidth < 599);
-    updateMobile();
-    window.addEventListener("resize", updateMobile);
-    return () => window.removeEventListener("resize", updateMobile);
-  }, []);
-
   const [scrolled, setScrolled] = useState(false);
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 10);
@@ -137,18 +129,7 @@ export default function TemplatePage() {
    * -------------------------------------------------------------------- */
   const [menuOpen, setMenuOpen] = useState(false);
 
-  const NAV_LINKS = [
-    { href: "/rush", label: "Rush" },
-    { href: "#about", label: "About", hideOnMobile: true },
-    { href: "/members-list", label: "Members" },
-    { href: "/gallery", label: "Gallery" },
-    // Removed with the Exec Board section below: an anchor link to a section
-    // that isn't rendered does nothing at all when clicked, which reads as a
-    // broken nav rather than as a hidden section.
-    // { href: "#leadership", label: "Leadership" },
-    { href: "/hackathon", label: "Hackathon" },
-    { href: "#contact", label: "Contact" },
-  ];
+  const NAV_LINKS = [...PUBLIC_NAV_LINKS.filter((link) => link.label !== 'Home'), { href: '#contact', label: 'Contact' }];
 
   return (
     <div className="flex min-h-screen flex-col scroll-smooth font-sans bg-gradient-to-br from-slate-50 via-white to-slate-100 text-slate-900">
@@ -169,7 +150,7 @@ export default function TemplatePage() {
         </Link>
         {/* Inline links from md up; below that they live in the dropdown. */}
         <nav className="ml-auto hidden gap-4 md:flex md:gap-6">
-          {NAV_LINKS.filter((l) => !(mobile && l.hideOnMobile)).map((l) => (
+          {NAV_LINKS.map((l) => (
             <Link
               key={l.label}
               href={l.href}
@@ -255,17 +236,17 @@ export default function TemplatePage() {
                 community. On a mission to build what matters.
               </p>
               <div className="flex flex-col gap-4 sm:flex-row">
-                <Link href="/rush">
-                  <Button className="rounded-full border-2 border-[#d4af37] bg-[#1a1a1a] px-8 py-4 text-lg font-semibold text-white shadow-none transition-colors hover:border-[#f0d060] hover:bg-[#6b1c2a] hover:text-white">
-                    Fall Rush 2026
+                <Link href="/about">
+                  <Button className="rounded-full bg-blue-900 px-8 py-4 text-lg font-semibold text-white shadow-md transition-colors hover:bg-blue-800">
+                    About
                   </Button>
                 </Link>
-                <Link href="/hackathon">
+                <Link href="/members-list">
                   <Button
                     variant="outline"
-                    className="px-8 py-4 text-lg rounded-2xl border-slate-300 hover:border-indigo-400 hover:text-indigo-700"
+                    className="rounded-full border-blue-900 bg-blue-900 px-8 py-4 text-lg text-white shadow-md hover:border-blue-800 hover:bg-blue-800 hover:text-white"
                   >
-                    See KTP Hacks
+                    Members
                   </Button>
                 </Link>
               </div>
@@ -312,6 +293,48 @@ export default function TemplatePage() {
                   ))}
                 </div>
               </div>
+            </div>
+          </div>
+        </section>
+
+        {/* ==============================  RUSH  ============================== */}
+        <section className="relative overflow-hidden bg-white py-16 text-slate-900 md:py-20">
+          <div aria-hidden className="pointer-events-none absolute inset-0">
+            <div className="absolute -left-24 top-1/2 h-80 w-80 -translate-y-1/2 rounded-full bg-indigo-500/20 blur-[110px]" />
+            <div className="absolute -right-20 -top-20 h-80 w-80 rounded-full bg-fuchsia-500/15 blur-[110px]" />
+            <div className="absolute bottom-0 left-1/3 h-56 w-56 rounded-full bg-cyan-400/15 blur-[90px]" />
+          </div>
+
+          <div className="relative container mx-auto grid max-w-6xl items-center gap-10 px-4 md:grid-cols-[1.15fr_0.85fr] md:gap-16 md:px-6">
+            <div data-aos="fade-up" data-aos-duration="500">
+              <p className="inline-flex rounded-full border border-indigo-200 bg-white/80 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-blue-900 shadow-sm">
+                Fall Rush 2026
+              </p>
+              <h2 className="mt-5 text-4xl font-extrabold tracking-tight text-blue-900 sm:text-5xl md:text-6xl">
+                Find your people in tech.
+              </h2>
+              <p className="mt-5 max-w-2xl text-lg leading-relaxed text-slate-700 md:text-xl">
+                Explore Kappa Theta Pi through info sessions, conversations with members, and experiences built around technology, growth, and community.
+              </p>
+              <Link href="/rush" className="mt-8 inline-block">
+                <Button className="rounded-full border-2 border-[#d4af37] bg-[#1a1a1a] px-8 py-4 text-lg font-semibold text-white shadow-none transition-transform hover:scale-105 hover:border-[#f0d060] hover:bg-[#6b1c2a]">
+                  Explore Rush
+                </Button>
+              </Link>
+            </div>
+
+            <div className="grid gap-3 sm:grid-cols-3 md:grid-cols-1" data-aos="fade-up" data-aos-delay="120" data-aos-duration="500">
+              {[
+                ['Meet the chapter', 'Get to know the people and community behind Phi Chapter.'],
+                ['Build your network', 'Connect with students, alumni, and professionals in technology.'],
+                ['Grow with purpose', 'Discover opportunities to learn, lead, and make an impact.'],
+              ].map(([title, description], index) => (
+                <article key={title} className="rounded-2xl border border-slate-100 bg-white/80 p-5 shadow-lg ring-1 ring-slate-100 backdrop-blur-sm transition-transform transition-colors hover:-translate-y-1 hover:shadow-indigo-200/50">
+                  <p className="text-xs font-semibold tracking-[0.18em] text-indigo-600">0{index + 1}</p>
+                  <h3 className="mt-2 text-lg font-bold text-blue-900">{title}</h3>
+                  <p className="mt-1 text-sm leading-relaxed text-slate-700">{description}</p>
+                </article>
+              ))}
             </div>
           </div>
         </section>
@@ -393,7 +416,7 @@ export default function TemplatePage() {
 
 
         {/* ===============================  ABOUT  ============================= */}
-        <section id="about" className="bg-card py-16 md:py-24">
+        {false && <section id="about" className="bg-card py-16 md:py-24">
           <div
             className="container mx-auto max-w-6xl px-4 md:px-6"
             data-aos="fade-up"
@@ -436,10 +459,10 @@ export default function TemplatePage() {
               </div>
             </div>
           </div>
-        </section>
+        </section>}
 
         {/* =========  VALUES  ========= */}
-        <section
+        {false && <section
           id="values"
           className="relative overflow-hidden py-16 md:py-24 bg-gradient-to-b from-white/70 to-slate-100"
         >
@@ -488,7 +511,7 @@ export default function TemplatePage() {
               ))}
             </div>
           </div>
-        </section>
+        </section>}
 
         {/* =========  EXEC BOARD  =========  KEPT, COMMENTED OUT
 

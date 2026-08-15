@@ -1,10 +1,10 @@
 'use client'
 import Footer from '@/components/ui/footer'
-import Image from 'next/image'
 import Link from 'next/link'
+import PublicHeader from '@/components/PublicHeader'
 import CountdownTimer from '@/app/rush/countdownTimer'
 import { RUSH_EVENTS, RUSH_FAQ } from '@/app/rush/rush-content'
-import React, { useEffect, useState } from 'react'
+import React, { useState } from 'react'
 
 function FaqItem ({ question, answer, isOpen, onToggle }) {
   return (
@@ -48,7 +48,6 @@ function SectionHeading ({ label, title, description }) {
 }
 
 export default function Page () {
-  const [scrolled, setScrolled] = useState(false)
   const [openFaqId, setOpenFaqId] = useState(null)
 
   // The rush-open lookup that used to live here is gone with the signup button
@@ -56,23 +55,9 @@ export default function Page () {
   // own getPublicRushSignup() check — so this page no longer needs to know
   // whether rush is open, and makes one fewer request on load.
 
-  useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 10)
-    window.addEventListener('scroll', onScroll)
-    return () => window.removeEventListener('scroll', onScroll)
-  }, [])
-
   return (
     <div className='flex min-h-screen flex-col overflow-x-hidden font-sans bg-[#0a0a0a] text-white'>
-      <header className={`sticky top-0 z-50 flex h-14 shrink-0 items-center px-4 sm:h-16 lg:px-6 transition-all duration-300 border-b-2 bg-[#0a0a0a] border-[#6b1c2a] ${scrolled ? 'shadow-md' : ''}`}>
-        <Link href='/' className='flex min-w-0 items-center gap-2'>
-          <Image src="/KTP PHI CHAPTER.svg" alt="KTP Phi Chapter" width={100} height={40} className="h-7 w-auto shrink-0 sm:h-8" style={{filter: 'brightness(0) invert(1)'}} />
-        </Link>
-        <nav className='ml-auto flex shrink-0 gap-4 sm:gap-6'>
-          <Link href='/rush/how-it-works' className='text-sm font-medium text-white transition-colors hover:text-[#d4af37]'>How it works</Link>
-          <Link href='/' className='text-sm font-medium text-white transition-colors hover:text-[#d4af37]'>Home</Link>
-        </nav>
-      </header>
+      <PublicHeader tone="dark" />
 
       <main className='flex-1 border-b-4 border-[#6b1c2a] bg-[#111111]'>
         <div className="w-full px-4 py-10 sm:px-6 sm:py-16 lg:px-12 lg:py-20 xl:px-16">

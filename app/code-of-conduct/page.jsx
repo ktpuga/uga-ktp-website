@@ -2,27 +2,12 @@
 import Link from "next/link";
 import React from 'react';
 import Footer from '../../components/ui/footer';
+import PublicHeader from '@/components/PublicHeader';
 
 export default function Page() {
   return (
     <div className="min-h-screen flex flex-col font-sans bg-gradient-to-br from-gray-950 via-slate-900 to-black text-gray-100 scroll-smooth overflow-hidden">
-      <header className="sticky top-0 px-4 lg:px-6 h-16 flex items-center border-b border-indigo-900 bg-black/70 backdrop-blur-md z-50 shadow-lg">
-        <Link className="flex items-center justify-center" href="/">
-          <span className="font-bold text-2xl bg-gradient-to-tr from-indigo-400 via-fuchsia-500 to-cyan-400 bg-clip-text text-transparent drop-shadow-lg">ΚΘΠ</span>
-        </Link>
-        <nav className="ml-auto flex gap-4 sm:gap-6">
-          <Link className="text-sm font-medium hover:text-cyan-400 hover:underline transition-colors" href="/rush">Rush</Link>
-          <Link className="text-sm font-medium hover:text-cyan-400 hover:underline transition-colors" href="/#about">About</Link>
-          {/* Commented out with the Exec Board section in template-page.jsx,
-              which owns the #leadership anchor. With that section hidden this
-              link scrolls nowhere, which reads as a broken nav rather than as
-              a hidden section. Restore it when the section comes back.
-          <Link className="text-sm font-medium hover:text-cyan-400 hover:underline transition-colors" href="/#leadership">Leadership</Link>
-          */}
-          <Link className="text-sm font-medium hover:text-cyan-400 hover:underline transition-colors" href="/hackathon">Hackathon</Link>
-          <Link className="text-sm font-medium hover:text-cyan-400 hover:underline transition-colors" href="/#contact">Contact</Link>
-        </nav>
-      </header>
+      <PublicHeader tone="dark" />
 
       <main className="flex-1 min-h-screen relative overflow-hidden">
         <div className="pointer-events-none absolute inset-0 -z-10 animate-pulse [background-image:radial-gradient(#6366f1_1px,transparent_1px)] [background-size:6px_6px] opacity-10" />

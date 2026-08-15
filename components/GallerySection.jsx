@@ -30,22 +30,33 @@ export default function GallerySection() {
   if (loaded && withPhotos.length === 0) return null;
 
   return (
-    <section className="relative py-12 md:py-16 bg-white/70">
-      <div className="container mx-auto max-w-6xl px-4 md:px-6">
-        {withPhotos.map((collection) => (
-          <GalleryCollection key={collection.id} collection={collection} />
-        ))}
+    <section className="relative overflow-hidden border-y border-slate-200 bg-gradient-to-br from-slate-50 via-white to-blue-50 py-16 md:py-24">
+      <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
+        <div className="absolute -right-32 top-1/4 h-[34rem] w-[34rem] rounded-full bg-blue-300/20 blur-3xl" />
+        <div className="absolute -left-32 bottom-0 h-[28rem] w-[28rem] rounded-full bg-indigo-200/25 blur-3xl" />
+      </div>
 
-        {withPhotos.length > 0 && (
-          <div className="mt-2 flex justify-center">
-            <Link
-              href="/gallery"
-              className="rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:bg-slate-50"
-            >
-              Browse the full gallery →
-            </Link>
+      <div className="relative mx-auto max-w-[112rem] px-4 sm:px-6">
+        <div className="mb-12 flex flex-col gap-6 md:mb-16 md:flex-row md:items-end md:justify-between">
+          <div className="max-w-2xl">
+            <p className="text-sm font-semibold uppercase tracking-[0.18em] text-indigo-600">Chapter Gallery</p>
+            <h2 className="mt-2 text-4xl font-bold leading-tight tracking-tight text-blue-900 md:text-5xl">Life at Phi Chapter.</h2>
+            <p className="mt-4 text-lg leading-relaxed text-slate-700">The moments, people, and experiences that make Kappa Theta Pi more than a chapter.</p>
           </div>
-        )}
+
+          <Link
+            href="/gallery"
+            className="inline-flex w-fit rounded-full border border-blue-200 bg-white/80 px-5 py-2.5 text-sm font-semibold text-blue-900 shadow-sm transition-colors hover:bg-blue-900 hover:text-white"
+          >
+            Browse the full gallery
+          </Link>
+        </div>
+
+        <div className="no-scrollbar -mx-4 flex snap-x snap-mandatory gap-5 overflow-x-auto px-4 pb-3 sm:-mx-6 sm:px-6" aria-label="Featured gallery collections">
+          {withPhotos.map((collection) => (
+            <GalleryCollection key={collection.id} collection={collection} headingLevel="h3" layout="showcase" />
+          ))}
+        </div>
       </div>
     </section>
   );

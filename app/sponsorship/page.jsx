@@ -1,6 +1,5 @@
 import Card from '@/components/ui/card';
-import Image from 'next/image';
-import Link from 'next/link';
+import PublicHeader from '@/components/PublicHeader';
 import { pageMetadata } from '@/lib/seo';
 import manya from '../../public/leadership/manya.jpeg';
 import ryan from '../../public/leadership/ryan.jpeg';
@@ -16,16 +15,7 @@ export const metadata = pageMetadata({
 export default function SponsorshipPage() {
   return (
     <div className="flex min-h-screen flex-col font-sans bg-gradient-to-br from-gray-950 via-indigo-950 to-black text-gray-100 overflow-hidden">
-      {/* NAVBAR */}
-      <header className="sticky top-0 z-50 flex h-16 items-center border-b border-indigo-900 bg-black/70 backdrop-blur-md px-4 lg:px-6 shadow-lg">
-        <Link href="/" className="flex items-center font-bold text-cyan-400 drop-shadow-neon">
-          <Image src="/KTP PHI CHAPTER.svg" alt="KTP Phi Chapter" width={100} height={40} className="h-8 w-auto" style={{filter: 'brightness(0) invert(1)'}} />
-          <span className="ml-2 hidden text-sm font-semibold text-fuchsia-300 sm:inline">| Sponsorship</span>
-        </Link>
-        <nav className="ml-auto flex gap-4 sm:gap-6">
-          <Link href="/" className="text-sm font-medium transition-colors hover:text-fuchsia-400">Home</Link>
-        </nav>
-      </header>
+      <PublicHeader tone="dark" />
 
       <main className="relative flex-1 overflow-hidden">
         <div aria-hidden className="pointer-events-none absolute inset-0 -z-20 animate-pulse [background-image:radial-gradient(#00fff7_1px,transparent_1px)] [background-size:6px_6px] opacity-10" />

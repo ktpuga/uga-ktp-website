@@ -4,8 +4,8 @@ import imageUrlBuilder from '@sanity/image-url';
 import type { SanityImageSource } from '@sanity/image-url/lib/types/types';
 import type { Metadata } from 'next';
 import { groq } from 'next-sanity';
-import Image from 'next/image';
 import Link from 'next/link';
+import PublicHeader from '@/components/PublicHeader';
 import { client } from '../../../sanity/client';
 const META_QUERY = groq`
   *[_type=="post" && slug.current == $slug][0]{
@@ -133,8 +133,14 @@ export default async function PostPage(
     const { slug } = await params;                       // await once
     const post = await client.fetch(POST_QUERY, { slug });
     if (!post) {
-        /* optional: Next.js 404 */
-        return <h1 className="p-8 text-center text-2xl text-red-500">Post not found</h1>;
+        return (
+            <div className="flex min-h-screen flex-col bg-gradient-to-br from-gray-950 via-indigo-950 to-black text-gray-100">
+                <PublicHeader tone="dark" />
+                <main className="flex flex-1 items-center justify-center p-8 text-center">
+                    <h1 className="text-2xl text-red-300">Post not found</h1>
+                </main>
+            </div>
+        );
     }
 
     /* 3.  Build image URLs ------------------------------------------------ */
@@ -155,18 +161,7 @@ export default async function PostPage(
     /* 4.  Render ---------------------------------------------------------- */
     return (
         <div className="flex min-h-screen flex-col font-sans bg-gradient-to-br from-gray-950 via-indigo-950 to-black text-gray-100 overflow-hidden">
-            {/* ---------- NAV ---------- */}
-            <header className="sticky top-0 z-50 flex h-16 items-center border-b border-indigo-900 bg-black/70 backdrop-blur-md px-4 lg:px-6 shadow-lg">
-                <Link href="/" className="flex items-center font-bold text-cyan-400 drop-shadow-neon">
-                    <Image src="/KTP PHI CHAPTER.svg" alt="KTP Phi Chapter" width={100} height={40} className="h-8 w-auto" style={{filter: 'brightness(0) invert(1)'}} />
-                    <span className="ml-2 hidden text-sm font-semibold text-fuchsia-300 sm:inline">| Blog</span>
-                </Link>
-                <nav className="ml-auto flex gap-4 sm:gap-6">
-                    <Link href="/blog" className="text-sm font-medium transition-colors hover:text-fuchsia-400">
-                        Back to posts
-                    </Link>
-                </nav>
-            </header>
+            <PublicHeader tone="dark" />
 
             {/* ---------- MAIN ---------- */}
             <main className="relative flex-1 overflow-hidden">

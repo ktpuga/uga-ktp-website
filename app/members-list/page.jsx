@@ -1,25 +1,24 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import Image from 'next/image';
 import Link from 'next/link';
-import { useSession } from 'next-auth/react';
 import Card from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import Footer from '@/components/ui/footer';
+import PublicHeader from '@/components/PublicHeader';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { getRoster } from '@/lib/portal-api';
 import { linkedinHref } from '@/lib/portal-format';
 import { rosterPictureSrc } from '@/lib/avatar';
 
 const SECTIONS = [
-  // One fewer column at every breakpoint than this used to carry. A card now
-  // has room for a name, a role, eboard's caption pills and a row of the
-  // member's own link chips, which is a lot more than the five-up layout was
-  // designed around.
+  // Leadership cards keep more room for titles, traits, and link chips.
+  // Members and alumni have their own five-card canvas at desktop. It uses a
+  // wider minimum width so those cards stay the same size as leadership cards.
   { key: 'eboard', heading: 'Executive Board', title: 'E-Board', bg: 'bg-card', cols: 'md:grid-cols-3 xl:grid-cols-4' },
   { key: 'chair', heading: 'Cabinet', title: 'Chair', bg: 'bg-background', cols: 'md:grid-cols-3 xl:grid-cols-4' },
-  { key: 'active', heading: 'Members', title: 'Member', bg: 'bg-card', cols: 'md:grid-cols-3 xl:grid-cols-4' },
-  { key: 'alumni', heading: 'Alumni', title: 'Alumni', bg: 'bg-background', cols: 'md:grid-cols-3 xl:grid-cols-4' },
+  { key: 'active', heading: 'Members', title: 'Member', bg: 'bg-card', cols: 'md:grid-cols-3 xl:grid-cols-5' },
+  { key: 'alumni', heading: 'Alumni', title: 'Alumni', bg: 'bg-background', cols: 'md:grid-cols-3 xl:grid-cols-5' },
 ];
 
 // Deliberately First + Last name here, not the shared memberDisplayName()
@@ -88,16 +87,8 @@ function RosterCard({ person, title }) {
 }
 
 export default function MembersListPage() {
-  const { data: session } = useSession();
   const [roster, setRoster] = useState(null);
   const [error, setError] = useState(null);
-  const [scrolled, setScrolled] = useState(false);
-
-  useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 10);
-    window.addEventListener('scroll', onScroll);
-    return () => window.removeEventListener('scroll', onScroll);
-  }, []);
 
   useEffect(() => {
     getRoster()
@@ -107,34 +98,7 @@ export default function MembersListPage() {
 
   return (
     <div className="flex min-h-screen flex-col scroll-smooth font-sans bg-gradient-to-br from-slate-50 via-white to-slate-100 text-slate-900">
-      {/* ===============================  NAVBAR  ============================== */}
-      <header
-        className={`sticky top-0 z-50 flex h-16 items-center px-4 lg:px-6 transition-all duration-300 border-b ${scrolled ? 'bg-white/90 border-slate-200 shadow-sm backdrop-blur-md' : 'bg-transparent border-transparent'}`}
-      >
-        <Link href="/" className="flex items-center gap-2">
-          <Image
-            src="/KTP PHI CHAPTER.svg"
-            alt="KTP Phi Chapter"
-            width={100}
-            height={40}
-            className="h-8 w-auto"
-          />
-        </Link>
-        <nav className="ml-auto flex gap-4 sm:gap-6">
-          <Link href="/" className="text-sm font-medium transition-colors duration-300 hover:text-indigo-600">
-            Home
-          </Link>
-          <Link href="/rush" className="text-sm font-medium transition-colors duration-300 hover:text-indigo-600">
-            Rush
-          </Link>
-        </nav>
-        <Link
-          href={session ? '/auth/redirect' : '/login'}
-          className="ml-6 text-sm font-medium px-3 py-1.5 rounded-md bg-blue-900 text-white border border-blue-900 transition-colors duration-300 hover:bg-blue-800 hover:border-blue-800"
-        >
-          {session ? 'My Portal' : 'Portal Login'}
-        </Link>
-      </header>
+      <PublicHeader />
 
       <main className="flex-1">
         {/* ===============================  HERO  ============================== */}
@@ -165,7 +129,50 @@ export default function MembersListPage() {
           <div className="container mx-auto max-w-2xl px-4 pb-16 text-center text-sm text-slate-500">Loading roster...</div>
         )}
 
-        {roster && SECTIONS.map(({ key, heading, title, bg, cols }) => {
+        {roster && (
+          <>
+            <section className="bg-slate-50 py-16 md:py-20">
+              <div className="mx-auto w-full max-w-[88rem] px-4 md:px-6 xl:max-w-[112rem]">
+                <Tabs defaultValue="eboard">
+                  <div className="overflow-x-auto pb-2">
+                    <TabsList className="mx-auto flex h-auto w-max min-w-full justify-start gap-1 rounded-xl border border-slate-200 bg-white p-1.5 sm:min-w-0 sm:justify-center">
+                      {SECTIONS.map(({ key, heading }) => (
+                        <TabsTrigger key={key} value={key} className="rounded-lg px-4 py-2 text-sm data-[state=active]:bg-blue-900 data-[state=active]:text-white data-[state=active]:shadow-sm">
+                          {heading}
+                        </TabsTrigger>
+                      ))}
+                    </TabsList>
+                  </div>
+
+                  {SECTIONS.map(({ key, heading, title, cols }) => {
+                    const people = roster[key] ?? [];
+                    const isExpandedRoster = key === 'active' || key === 'alumni';
+                    const orderedPeople = key === 'eboard'
+                      ? [...people].sort((a, b) => Number(isPresident(b)) - Number(isPresident(a)))
+                      : people;
+
+                    return (
+                      <TabsContent key={key} value={key} className="mt-10">
+                        <h3 className="sr-only">{heading}</h3>
+                        {orderedPeople.length > 0 ? (
+                          <div className={isExpandedRoster ? '' : 'mx-auto max-w-[88rem]'}>
+                            <div className={`grid grid-cols-1 gap-8 text-sm sm:grid-cols-2 lg:gap-10 ${cols}`}>
+                              {orderedPeople.map((person) => <RosterCard key={person.id} person={person} title={title} />)}
+                            </div>
+                          </div>
+                        ) : (
+                          <p className="py-10 text-center text-slate-500">No {heading.toLowerCase()} to display yet.</p>
+                        )}
+                      </TabsContent>
+                    );
+                  })}
+                </Tabs>
+              </div>
+            </section>
+          </>
+        )}
+
+        {false && SECTIONS.map(({ key, heading, title, bg, cols }) => {
           const people = roster[key] ?? [];
           // Keep the API's order for every group, while making the chapter's
           // President the first card in the public executive-board roster.
