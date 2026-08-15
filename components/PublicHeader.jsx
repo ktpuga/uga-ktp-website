@@ -21,11 +21,11 @@ export default function PublicHeader({ tone = 'light' }) {
   const dark = tone === 'dark';
   const linkClass = dark
     ? 'text-gray-100 hover:text-cyan-300'
-    : 'text-slate-700 hover:text-indigo-600';
+    : 'text-white hover:text-blue-200';
 
   return (
     <>
-      <header className={`sticky top-0 z-50 flex h-16 items-center border-b px-4 shadow-sm backdrop-blur-md lg:px-6 ${dark ? 'border-indigo-900 bg-black/75' : 'border-slate-200 bg-white/90'}`}>
+      <header className={`sticky top-0 z-50 flex h-16 items-center border-b px-4 shadow-sm backdrop-blur-md lg:px-6 ${dark ? 'border-indigo-900 bg-black/75' : 'border-[#0f2758] bg-[#14326E]/95'}`}>
         <Link href="/" className="flex shrink-0 items-center gap-2">
           <Image
             src="/KTP PHI CHAPTER.svg"
@@ -33,7 +33,7 @@ export default function PublicHeader({ tone = 'light' }) {
             width={100}
             height={40}
             className="h-8 w-auto"
-            style={dark ? { filter: 'brightness(0) invert(1)' } : undefined}
+            style={{ filter: 'brightness(0) invert(1)' }}
           />
         </Link>
 
@@ -47,7 +47,7 @@ export default function PublicHeader({ tone = 'light' }) {
 
         <Link
           href={session ? '/auth/redirect' : '/login'}
-          className="ml-auto rounded-md border border-blue-900 bg-blue-900 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:border-blue-800 hover:bg-blue-800 lg:ml-6"
+          className={`ml-auto rounded-md px-3 py-1.5 text-sm font-medium transition-colors lg:ml-6 ${dark ? 'border border-blue-900 bg-blue-900 text-white hover:border-blue-800 hover:bg-blue-800' : 'border border-white bg-white text-[#14326E] hover:border-blue-100 hover:bg-blue-100'}`}
         >
           <span className="sm:hidden">Portal</span>
           <span className="hidden sm:inline">{session ? 'My Portal' : 'Portal Login'}</span>
@@ -55,7 +55,7 @@ export default function PublicHeader({ tone = 'light' }) {
 
         <button
           type="button"
-          className={`ml-3 rounded-md p-2 transition-colors lg:hidden ${dark ? 'text-white hover:bg-white/10' : 'text-slate-700 hover:bg-slate-100'}`}
+          className={`ml-3 rounded-md p-2 text-white transition-colors lg:hidden ${dark ? 'hover:bg-white/10' : 'hover:bg-white/15'}`}
           onClick={() => setMenuOpen((open) => !open)}
           aria-expanded={menuOpen}
           aria-controls="public-site-menu"
@@ -68,7 +68,7 @@ export default function PublicHeader({ tone = 'light' }) {
       {menuOpen && (
         <nav
           id="public-site-menu"
-          className={`sticky top-16 z-40 flex flex-col border-b px-4 py-2 shadow-sm backdrop-blur-md lg:hidden ${dark ? 'border-indigo-900 bg-black/95' : 'border-slate-200 bg-white/95'}`}
+          className={`sticky top-16 z-40 flex flex-col border-b px-4 py-2 shadow-sm backdrop-blur-md lg:hidden ${dark ? 'border-indigo-900 bg-black/95' : 'border-[#0f2758] bg-[#14326E]/95'}`}
           aria-label="Main navigation"
         >
           {PUBLIC_NAV_LINKS.map((link) => (
@@ -76,7 +76,7 @@ export default function PublicHeader({ tone = 'light' }) {
               key={link.label}
               href={link.href}
               onClick={() => setMenuOpen(false)}
-              className={`rounded-md px-2 py-2.5 text-sm font-medium transition-colors ${dark ? 'text-gray-100 hover:bg-white/10 hover:text-cyan-300' : 'text-slate-700 hover:bg-slate-100 hover:text-indigo-600'}`}
+              className={`rounded-md px-2 py-2.5 text-sm font-medium transition-colors ${dark ? 'text-gray-100 hover:bg-white/10 hover:text-cyan-300' : 'text-white hover:bg-white/10 hover:text-blue-200'}`}
             >
               {link.label}
             </Link>

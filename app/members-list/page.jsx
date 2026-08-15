@@ -217,21 +217,21 @@ export default function MembersListPage() {
 
       <main className="flex-1">
         {/* ===============================  HERO  ============================== */}
-        <section className="relative overflow-hidden py-12 md:py-20">
+        <section className="relative overflow-hidden border-b border-[#0f2758] bg-[#14326E] py-12 md:py-20">
           <div aria-hidden className="pointer-events-none absolute inset-0 -z-10">
-            <div className="absolute -left-20 top-0 h-[28rem] w-[28rem] rounded-full bg-gradient-to-br from-indigo-500 via-fuchsia-500 to-cyan-400 opacity-25 blur-[120px]" />
-            <div className="absolute -bottom-24 right-0 h-[26rem] w-[26rem] rounded-full bg-gradient-to-tr from-cyan-400 via-indigo-500 to-fuchsia-500 opacity-20 blur-[110px]" />
+            <div className="absolute -left-20 top-0 h-[28rem] w-[28rem] rounded-full bg-indigo-400/25 blur-[120px]" />
+            <div className="absolute -bottom-24 right-0 h-[26rem] w-[26rem] rounded-full bg-cyan-300/15 blur-[110px]" />
           </div>
 
           <div className="mx-auto grid w-full max-w-[120rem] grid-cols-2 items-center gap-4 px-4 sm:gap-6 sm:px-6 xl:grid-cols-[minmax(0,1.15fr)_minmax(0,1.15fr)_minmax(34rem,1.7fr)_minmax(0,1.15fr)_minmax(0,1.15fr)] xl:gap-3">
             <div className="col-span-2 py-4 text-center xl:col-span-1 xl:col-start-3 xl:row-start-1 xl:px-2">
-              <p className="mx-auto mb-6 inline-flex items-center gap-2 rounded-full border border-indigo-200 bg-white/75 px-3 py-1 text-xs font-semibold tracking-wider text-blue-900 shadow-sm backdrop-blur-sm">
+              <p className="mx-auto mb-6 inline-flex items-center gap-2 rounded-full border border-white/40 bg-white/10 px-3 py-1 text-xs font-semibold tracking-wider text-white shadow-sm backdrop-blur-sm">
                 Kappa Theta Pi &middot; Phi Chapter
               </p>
-              <h1 className="text-4xl font-extrabold leading-tight tracking-tight text-blue-900 drop-shadow-xl md:whitespace-nowrap md:text-6xl">
+              <h1 className="text-4xl font-extrabold leading-tight tracking-tight text-white drop-shadow-xl md:whitespace-nowrap md:text-6xl">
                 Meet the Chapter
               </h1>
-              <p className="mx-auto mt-4 max-w-2xl text-lg text-slate-700 md:text-xl">
+              <p className="mx-auto mt-4 max-w-2xl text-lg text-blue-100 md:text-xl">
                 The people behind Phi Chapter: leadership, chairs, members, and the alumni who came before us.
               </p>
             </div>
