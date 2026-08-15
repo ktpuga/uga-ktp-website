@@ -63,6 +63,16 @@ export default function TemplatePage() {
   );
   ------------------------------------------------------------------------- */
 
+  /* ------------------- Original hero collage layout ----------------- */
+  const rotation = [
+    "rotate-[3deg]",
+    "-rotate-[2deg]",
+    "rotate-[1deg]",
+    "-rotate-[3deg]",
+    "rotate-[2deg]",
+    "-rotate-[1deg]",
+  ];
+
   /* ------------------- Media for the hero collage ------------------ */
   const heroPics = [
     pcAlpha.src,
@@ -73,6 +83,7 @@ export default function TemplatePage() {
     tg.src,
   ].filter(Boolean);
 
+  /* Current redesigned hero positioning — restore with the JSX below.
   const heroPhotoPositions = [
     "left-[3%] top-[7%] z-10 w-[42%] -rotate-[8deg]",
     "right-[2%] top-[3%] z-20 w-[42%] rotate-[7deg]",
@@ -81,6 +92,7 @@ export default function TemplatePage() {
     "bottom-[2%] right-[1%] z-10 w-[40%] -rotate-[7deg]",
     "bottom-[4%] right-[35%] z-40 w-[29%] rotate-[4deg]",
   ];
+  */
 
   /* ------------------- Hackathon images for highlights --------------
      KEPT, COMMENTED OUT. Superseded by the eboard-managed gallery
@@ -208,35 +220,30 @@ export default function TemplatePage() {
 
       <main className="flex-1">
         {/* ===============================  HERO  ============================== */}
-        <section className="relative flex min-h-[74vh] items-center overflow-hidden py-20 md:py-28">
+        <section className="relative overflow-hidden py-20 md:py-28 flex items-center min-h-[70vh]">
           {/* Animated gradient blobs */}
           <div
             aria-hidden
             className="pointer-events-none absolute inset-0 -z-10"
           >
-            <div className="absolute -left-20 top-0 h-[30rem] w-[30rem] rounded-full bg-gradient-to-br from-indigo-500 via-fuchsia-500 to-cyan-400 opacity-25 blur-[120px]" />
-            <div className="absolute -bottom-24 right-0 h-[32rem] w-[32rem] rounded-full bg-gradient-to-tr from-cyan-400 via-indigo-500 to-fuchsia-500 opacity-20 blur-[110px]" />
-            <div className="absolute left-1/2 top-1/2 h-[34rem] w-[34rem] -translate-x-1/2 -translate-y-1/2 rounded-full border border-indigo-200/50" />
+            <div className="absolute -left-20 top-0 h-[28rem] w-[28rem] rounded-full bg-gradient-to-br from-indigo-500 via-fuchsia-500 to-cyan-400 opacity-25 blur-[120px]" />
+            <div className="absolute -bottom-24 right-0 h-[26rem] w-[26rem] rounded-full bg-gradient-to-tr from-cyan-400 via-indigo-500 to-fuchsia-500 opacity-20 blur-[110px]" />
           </div>
 
-          <div className="container mx-auto grid max-w-[112rem] grid-cols-1 items-center gap-14 px-4 md:grid-cols-[0.92fr_1.08fr] md:px-8 xl:gap-24">
+          <div className="container mx-auto grid max-w-6xl grid-cols-1 items-center gap-16 px-4 md:grid-cols-2 md:px-6">
             {/* Hero Copy */}
             <div
               className="space-y-8"
               data-aos="fade-up"
               data-aos-duration="600"
             >
-              <p className="inline-flex items-center gap-2 rounded-full border border-indigo-200 bg-white/70 px-3 py-1 text-xs font-semibold tracking-wider text-blue-900 shadow-sm backdrop-blur-sm">
+              <p className="inline-flex items-center gap-2 rounded-full border border-indigo-200 bg-white/60 px-3 py-1 text-xs font-semibold tracking-wider text-blue-900 shadow-sm">
                 UGA's Professional Technology Fraternity
               </p>
-              {/* Pending approval: the one-line responsive hero treatment.
-              <h1 className="max-w-2xl whitespace-nowrap text-[clamp(2.25rem,5vw,4rem)] font-extrabold leading-[0.95] tracking-tight text-blue-900 drop-shadow-xl">
-                Kappa Theta Pi
-              </h1> */}
-              <h1 className="max-w-2xl text-5xl font-extrabold leading-[0.95] tracking-tight text-blue-900 drop-shadow-xl md:text-7xl xl:text-8xl">
+              <h1 className="text-5xl md:text-7xl font-extrabold tracking-tight leading-tight bg-gradient-to-tr text-blue-900 bg-clip-text drop-shadow-xl">
                 Kappa Theta Pi
               </h1>
-              <p className="max-w-xl text-lg leading-relaxed text-slate-700 md:text-xl">
+              <p className="max-w-prose text-lg md:text-xl text-slate-700">
                 Empowering technologists through leadership, mentorship, and
                 community. On a mission to build what matters.
               </p>
@@ -255,19 +262,6 @@ export default function TemplatePage() {
                   </Button>
                 </Link>
               </div>
-
-              <dl className="grid max-w-xl grid-cols-3 gap-3 border-t border-indigo-100 pt-6 sm:gap-6">
-                {[
-                  ["Founded", "2024"],
-                  ["Based at", "UGA"],
-                  ["Built in", "Athens, GA"],
-                ].map(([label, value]) => (
-                  <div key={label}>
-                    <dt className="text-[0.65rem] font-bold uppercase tracking-[0.18em] text-slate-500">{label}</dt>
-                    <dd className="mt-1 text-sm font-bold text-blue-900 sm:text-base">{value}</dd>
-                  </div>
-                ))}
-              </dl>
 
               {/* Sponsor marquee */}
               {/* <div className="relative mt-6 overflow-hidden rounded-xl border border-slate-200 bg-white/60">
@@ -293,22 +287,70 @@ export default function TemplatePage() {
               data-aos="fade-up"
               data-aos-delay="150"
             >
+              <div className="relative w-full max-w-md sm:max-w-lg">
+                <div className="grid grid-cols-3 gap-4">
+                  {heroPics.slice(0, 6).map((src, i) => (
+                    <Image
+                      key={i}
+                      unoptimized
+                      src={src}
+                      alt={`KTP collage ${i + 1}`}
+                      width={400}
+                      height={300}
+                      className={`h-36 w-full rounded-xl object-cover shadow-2xl transition-transform duration-500 hover:scale-110 ${rotation[i % rotation.length]}`}
+                      style={{
+                        transform: `translateY(${(i % 2 === 0 ? -1 : 1) * 10}px)`,
+                      }}
+                    />
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* ===== CURRENT REDESIGNED HERO — KEPT, COMMENTED OUT =====
+            Restore this section together with `heroPhotoPositions` above.
+
+        <section className="relative flex min-h-[74vh] items-center overflow-hidden py-20 md:py-28">
+          <div aria-hidden className="pointer-events-none absolute inset-0 -z-10">
+            <div className="absolute -left-20 top-0 h-[30rem] w-[30rem] rounded-full bg-gradient-to-br from-indigo-500 via-fuchsia-500 to-cyan-400 opacity-25 blur-[120px]" />
+            <div className="absolute -bottom-24 right-0 h-[32rem] w-[32rem] rounded-full bg-gradient-to-tr from-cyan-400 via-indigo-500 to-fuchsia-500 opacity-20 blur-[110px]" />
+            <div className="absolute left-1/2 top-1/2 h-[34rem] w-[34rem] -translate-x-1/2 -translate-y-1/2 rounded-full border border-indigo-200/50" />
+          </div>
+
+          <div className="container mx-auto grid max-w-[112rem] grid-cols-1 items-center gap-14 px-4 md:grid-cols-[0.92fr_1.08fr] md:px-8 xl:gap-24">
+            <div className="space-y-8" data-aos="fade-up" data-aos-duration="600">
+              <p className="inline-flex items-center gap-2 rounded-full border border-indigo-200 bg-white/70 px-3 py-1 text-xs font-semibold tracking-wider text-blue-900 shadow-sm backdrop-blur-sm">
+                UGA's Professional Technology Fraternity
+              </p>
+              <h1 className="max-w-2xl text-5xl font-extrabold leading-[0.95] tracking-tight text-blue-900 drop-shadow-xl md:text-7xl xl:text-8xl">
+                Kappa Theta Pi
+              </h1>
+              <p className="max-w-xl text-lg leading-relaxed text-slate-700 md:text-xl">
+                Empowering technologists through leadership, mentorship, and community. On a mission to build what matters.
+              </p>
+              <div className="flex flex-col gap-4 sm:flex-row">
+                <Link href="/about"><Button className="rounded-full bg-blue-900 px-8 py-4 text-lg font-semibold text-white shadow-md transition-colors hover:bg-blue-800">About</Button></Link>
+                <Link href="/members-list"><Button variant="outline" className="rounded-full border-blue-900 bg-blue-900 px-8 py-4 text-lg text-white shadow-md hover:border-blue-800 hover:bg-blue-800 hover:text-white">Members</Button></Link>
+              </div>
+              <dl className="grid max-w-xl grid-cols-3 gap-3 border-t border-indigo-100 pt-6 sm:gap-6">
+                {[["Founded", "2024"], ["Based at", "UGA"], ["Built in", "Athens, GA"]].map(([label, value]) => (
+                  <div key={label}>
+                    <dt className="text-[0.65rem] font-bold uppercase tracking-[0.18em] text-slate-500">{label}</dt>
+                    <dd className="mt-1 text-sm font-bold text-blue-900 sm:text-base">{value}</dd>
+                  </div>
+                ))}
+              </dl>
+            </div>
+
+            <div className="flex items-center justify-center" data-aos="fade-up" data-aos-delay="150">
               <div className="relative aspect-[1.04/1] w-full max-w-3xl sm:aspect-[1.2/1]">
                 <div aria-hidden className="absolute -inset-5 -z-10 rounded-[2.5rem] bg-gradient-to-br from-indigo-300/60 via-white/60 to-cyan-200/70 blur-2xl" />
                 {heroPics.slice(0, 6).map((src, index) => (
-                  <figure
-                    key={src}
-                    className={`group absolute overflow-hidden rounded-[1.35rem] border-[5px] border-white bg-slate-200 shadow-[0_18px_35px_-18px_rgba(30,58,138,0.55)] transition-transform duration-500 hover:z-50 hover:scale-105 ${heroPhotoPositions[index]}`}
-                  >
+                  <figure key={src} className={`group absolute overflow-hidden rounded-[1.35rem] border-[5px] border-white bg-slate-200 shadow-[0_18px_35px_-18px_rgba(30,58,138,0.55)] transition-transform duration-500 hover:z-50 hover:scale-105 ${heroPhotoPositions[index]}`}>
                     <div className="relative aspect-[4/3]">
-                      <Image
-                        unoptimized
-                        src={src}
-                        alt={`KTP chapter moment ${index + 1}`}
-                        fill
-                        sizes="(max-width: 768px) 45vw, 24vw"
-                        className="object-cover transition-transform duration-700 group-hover:scale-110"
-                      />
+                      <Image unoptimized src={src} alt={`KTP chapter moment ${index + 1}`} fill sizes="(max-width: 768px) 45vw, 24vw" className="object-cover transition-transform duration-700 group-hover:scale-110" />
                     </div>
                   </figure>
                 ))}
@@ -316,6 +358,7 @@ export default function TemplatePage() {
             </div>
           </div>
         </section>
+        ================================================================ */}
 
         {/* ==============================  RUSH  ============================== */}
         <section className="relative overflow-hidden bg-white py-16 text-slate-900 md:py-20">
