@@ -39,7 +39,7 @@ export default function GallerySection() {
       <div className="relative mx-auto max-w-[112rem] px-4 sm:px-6">
         <div className="mb-12 flex flex-col gap-6 md:mb-16 lg:flex-row lg:items-end lg:justify-between">
           <div className="max-w-3xl">
-            <p className="text-sm font-semibold uppercase tracking-[0.18em] text-indigo-600">Chapter Gallery</p>
+            <p className="inline-flex rounded-full border border-indigo-200 bg-white/80 px-3 py-1 text-sm font-semibold uppercase tracking-[0.18em] text-indigo-600 shadow-sm">Chapter Gallery</p>
             <h2 className="mt-2 text-4xl font-bold leading-tight tracking-tight text-blue-900 md:text-5xl">Life at Phi Chapter.</h2>
             <p className="mt-4 text-[clamp(0.875rem,1.5vw,1.125rem)] leading-relaxed text-slate-700 md:whitespace-nowrap">The moments, people, and experiences that make Kappa Theta Pi more than a chapter.</p>
           </div>

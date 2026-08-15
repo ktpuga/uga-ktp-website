@@ -329,9 +329,11 @@ export default function TemplatePage() {
               <p className="max-w-xl text-lg leading-relaxed text-slate-700 md:text-xl">
                 Empowering technologists through leadership, mentorship, and community. On a mission to build what matters.
               </p>
-              <div className="flex flex-col gap-4 sm:flex-row">
+              <div className="flex flex-col gap-4 sm:flex-row sm:flex-wrap">
                 <Link href="/about"><Button className="rounded-full bg-blue-900 px-8 py-4 text-lg font-semibold text-white shadow-md transition-colors hover:bg-blue-800">About</Button></Link>
                 <Link href="/members-list"><Button variant="outline" className="rounded-full border-blue-900 bg-blue-900 px-8 py-4 text-lg text-white shadow-md hover:border-blue-800 hover:bg-blue-800 hover:text-white">Members</Button></Link>
+                <Link href="/gallery"><Button variant="outline" className="rounded-full border-blue-900 bg-blue-900 px-8 py-4 text-lg text-white shadow-md hover:border-blue-800 hover:bg-blue-800 hover:text-white">Gallery</Button></Link>
+                <Link href="/hackathon"><Button variant="outline" className="rounded-full border-blue-900 bg-blue-900 px-8 py-4 text-lg text-white shadow-md hover:border-blue-800 hover:bg-blue-800 hover:text-white">Hackathon</Button></Link>
               </div>
               <dl className="grid max-w-xl grid-cols-3 gap-3 border-t border-indigo-100 pt-6 sm:gap-6">
                 {[["Founded", "2024"], ["Based at", "UGA"], ["Built in", "Athens, GA"]].map(([label, value]) => (
