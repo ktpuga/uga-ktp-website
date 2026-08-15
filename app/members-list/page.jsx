@@ -49,7 +49,7 @@ function isPresident(person) {
 }
 
 const PLEDGE_CLASS_ORDER = [
-  'founder', 'alpha', 'beta', 'gamma', 'delta', 'epsilon', 'zeta', 'eta',
+  'founder', 'founding', 'founding class', 'alpha', 'beta', 'gamma', 'delta', 'epsilon', 'zeta', 'eta',
   'theta', 'iota', 'kappa', 'lambda', 'mu', 'nu', 'xi', 'omicron', 'pi',
   'rho', 'sigma', 'tau', 'upsilon', 'phi', 'chi', 'psi', 'omega',
 ];
@@ -68,6 +68,9 @@ function alumniByPledgeClass(people) {
   return [...classes.values()].sort((a, b) => {
     if (a.key === 'unlisted') return 1;
     if (b.key === 'unlisted') return -1;
+    const aFounding = a.key.startsWith('found');
+    const bFounding = b.key.startsWith('found');
+    if (aFounding !== bFounding) return aFounding ? -1 : 1;
     const aIndex = PLEDGE_CLASS_ORDER.indexOf(a.key);
     const bIndex = PLEDGE_CLASS_ORDER.indexOf(b.key);
     if (aIndex !== -1 || bIndex !== -1) {
@@ -92,13 +95,8 @@ function RosterCard({ person, title }) {
       // it is rendered for anyone who has one rather than gated on the section,
       // because the form is what decides who is asked.
       note={person.doingNow}
-      // Pledge class uses the same compact bordered-pill treatment as the
-      // chapter-authored traits. The public API only supplies it for alumni,
-      // so leadership and active-member cards remain unchanged.
-      traits={[
-        ...(person.pledgeClass ? [formatPledgeClass(person.pledgeClass)] : []),
-        ...(person.traits ?? []),
-      ]}
+      // Eboard-typed, unlike `note` above which the member writes themselves.
+      traits={person.traits}
       // The member's own links. Card re-checks every href with
       // safeExternalHref before rendering, because this page has no
       // authentication and write-time validation only covers rows written
@@ -123,24 +121,54 @@ function RosterCard({ person, title }) {
 }
 
 function AlumniRoster({ people, title, cols }) {
+  const [expandedClasses, setExpandedClasses] = useState(() => new Set());
+
+  function toggleClass(key) {
+    setExpandedClasses((current) => {
+      const next = new Set(current);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  }
+
   return (
-    <div className="space-y-14">
-      {alumniByPledgeClass(people).map((pledgeClass) => (
-        <section key={pledgeClass.key} aria-labelledby={`alumni-${pledgeClass.key.replace(/[^a-z0-9]+/g, '-')}`}>
-          <div className="mb-6 flex items-center gap-4">
-            <h4 id={`alumni-${pledgeClass.key.replace(/[^a-z0-9]+/g, '-')}`} className="shrink-0 text-xl font-bold tracking-tight text-blue-900 md:text-2xl">
-              {pledgeClass.label ? formatPledgeClass(pledgeClass.label) : 'Pledge class not listed'}
-            </h4>
-            <div aria-hidden className="h-px flex-1 bg-slate-200" />
-            <span className="text-sm text-slate-500">
-              {pledgeClass.people.length} {pledgeClass.people.length === 1 ? 'alumnus' : 'alumni'}
-            </span>
-          </div>
-          <div className={`grid grid-cols-1 gap-8 text-sm sm:grid-cols-2 lg:gap-10 ${cols}`}>
-            {pledgeClass.people.map((person) => <RosterCard key={person.id} person={person} title={title} />)}
-          </div>
-        </section>
-      ))}
+    <div className="space-y-5">
+      {alumniByPledgeClass(people).map((pledgeClass) => {
+        const sectionId = `alumni-${pledgeClass.key.replace(/[^a-z0-9]+/g, '-')}`;
+        const expanded = expandedClasses.has(pledgeClass.key);
+
+        return (
+          <section key={pledgeClass.key} aria-labelledby={`${sectionId}-trigger`}>
+            <div className="flex items-center gap-4">
+              <h4>
+                <button
+                  id={`${sectionId}-trigger`}
+                  type="button"
+                  aria-expanded={expanded}
+                  aria-controls={`${sectionId}-cards`}
+                  onClick={() => toggleClass(pledgeClass.key)}
+                  className="rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-blue-900 transition-colors hover:border-blue-900 hover:bg-blue-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-900 focus-visible:ring-offset-2"
+                >
+                  {pledgeClass.label ? formatPledgeClass(pledgeClass.label) : 'Pledge class not listed'}
+                </button>
+              </h4>
+              <div aria-hidden className="h-px flex-1 bg-slate-200" />
+              <span className="text-sm text-slate-500">
+                {pledgeClass.people.length} {pledgeClass.people.length === 1 ? 'alumnus' : 'alumni'}
+              </span>
+            </div>
+            {expanded && (
+              <div
+                id={`${sectionId}-cards`}
+                className={`mt-6 grid grid-cols-1 gap-8 text-sm sm:grid-cols-2 lg:gap-10 ${cols}`}
+              >
+                {pledgeClass.people.map((person) => <RosterCard key={person.id} person={person} title={title} />)}
+              </div>
+            )}
+          </section>
+        );
+      })}
     </div>
   );
 }
