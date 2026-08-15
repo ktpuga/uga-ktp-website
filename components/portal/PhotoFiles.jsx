@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useId, useMemo, useRef, useState } from 'react';
+import { Suspense, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { useSearchParams } from 'next/navigation';
 import { cn } from '@/lib/utils';
@@ -1815,5 +1815,9 @@ function RevampedPhotoFiles({ title, description, accentKey }) {
 // that nobody maintains — two copies is what let the CircleCheck/BlockButton
 // fix keep disappearing from one of them.
 export default function PhotoFiles({ title, description, accent }) {
-  return <RevampedPhotoFiles title={title} description={description} accentKey={accent} />;
+  return (
+    <Suspense fallback={<div className="min-h-48" aria-busy="true" />}>
+      <RevampedPhotoFiles title={title} description={description} accentKey={accent} />
+    </Suspense>
+  );
 }
