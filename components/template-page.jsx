@@ -2,7 +2,7 @@
 import { Button } from "@/components/ui/button";
 // Used only by the commented-out static executive board section below.
 // import Card from "@/components/ui/card";
-import { Menu, X } from "lucide-react";
+import { Link2, Menu, X } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
@@ -329,11 +329,11 @@ export default function TemplatePage() {
               <p className="max-w-xl text-lg leading-relaxed text-slate-700 md:text-xl">
                 Empowering technologists through leadership, mentorship, and community. On a mission to build what matters.
               </p>
-              <div className="flex flex-col gap-4 sm:flex-row sm:flex-wrap">
-                <Link href="/about"><Button className="rounded-full bg-blue-900 px-8 py-4 text-lg font-semibold text-white shadow-md transition-colors hover:bg-blue-800">About</Button></Link>
-                <Link href="/members-list"><Button variant="outline" className="rounded-full border-blue-900 bg-blue-900 px-8 py-4 text-lg text-white shadow-md hover:border-blue-800 hover:bg-blue-800 hover:text-white">Members</Button></Link>
-                <Link href="/gallery"><Button variant="outline" className="rounded-full border-blue-900 bg-blue-900 px-8 py-4 text-lg text-white shadow-md hover:border-blue-800 hover:bg-blue-800 hover:text-white">Gallery</Button></Link>
-                <Link href="/hackathon"><Button variant="outline" className="rounded-full border-blue-900 bg-blue-900 px-8 py-4 text-lg text-white shadow-md hover:border-blue-800 hover:bg-blue-800 hover:text-white">Hackathon</Button></Link>
+              <div className="flex flex-wrap items-center gap-4">
+                <SocialLink href="https://www.instagram.com/ugaktp/" label="Kappa Theta Pi on Instagram" text="Instagram"><InstagramIcon className="h-5 w-5" /></SocialLink>
+                <SocialLink href="https://www.linkedin.com/company/kappa-theta-pi-uga/" label="Kappa Theta Pi on LinkedIn" text="LinkedIn"><LinkedinIcon className="h-5 w-5" /></SocialLink>
+                <CopyEmailButton />
+                <SocialLink href="https://linktr.ee/uga.ktp" label="Kappa Theta Pi on Linktree" text="Linktree"><Link2 className="h-5 w-5" /></SocialLink>
               </div>
               <dl className="grid max-w-xl grid-cols-3 gap-3 border-t border-indigo-100 pt-6 sm:gap-6">
                 {[["Founded", "2024"], ["Based at", "UGA"], ["Built in", "Athens, GA"]].map(([label, value]) => (
@@ -713,15 +713,16 @@ export default function TemplatePage() {
               Join us for Rush and become part of the KTPhamily.
             </p>
 
-            <div className="mt-8 flex justify-center gap-4">
-              <SocialLink href="https://www.instagram.com/ugaktp/">
-                <InstagramIcon className="h-6 w-6" />
+            <div className="mt-8 flex flex-wrap justify-center gap-4">
+              <SocialLink href="https://www.instagram.com/ugaktp/" label="Kappa Theta Pi on Instagram" text="Instagram">
+                <InstagramIcon className="h-5 w-5" />
               </SocialLink>
-              <SocialLink href="https://www.linkedin.com/company/kappa-theta-pi-uga/">
-                <LinkedinIcon className="h-6 w-6" />
+              <SocialLink href="https://www.linkedin.com/company/kappa-theta-pi-uga/" label="Kappa Theta Pi on LinkedIn" text="LinkedIn">
+                <LinkedinIcon className="h-5 w-5" />
               </SocialLink>
-              <SocialLink href="mailto:uga.ktp@gmail.com">
-                <MailIcon className="h-6 w-6" />
+              <CopyEmailButton />
+              <SocialLink href="https://linktr.ee/uga.ktp" label="Kappa Theta Pi on Linktree" text="Linktree">
+                <Link2 className="h-5 w-5" />
               </SocialLink>
             </div>
           </div>
@@ -733,16 +734,46 @@ export default function TemplatePage() {
 }
 
 /* -----------------------------  Helpers  ----------------------------- */
-function SocialLink({ href, children }) {
+function SocialLink({ href, children, label, text }) {
   return (
     <Link
       href={href}
       target="_blank"
       prefetch={false}
-      className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-white text-slate-700 shadow-md transition-transform duration-300 hover:-translate-y-1 hover:text-indigo-600 hover:shadow-indigo-200/70"
+      aria-label={label}
+      className="inline-flex h-12 items-center justify-center gap-2 rounded-full bg-blue-900 px-5 text-sm font-semibold text-white shadow-md transition-transform duration-300 hover:-translate-y-1 hover:bg-blue-800 hover:shadow-indigo-200/70"
     >
       {children}
+      <span>{text}</span>
     </Link>
+  );
+}
+
+function CopyEmailButton() {
+  const [copied, setCopied] = useState(false);
+
+  async function copyEmail() {
+    try {
+      await navigator.clipboard.writeText('uga.ktp@gmail.com');
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 1800);
+    } catch {
+      // Clipboard access can be unavailable in a non-secure browser context.
+      window.prompt('Copy the KTP email address:', 'uga.ktp@gmail.com');
+    }
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={copyEmail}
+      className="inline-flex h-12 items-center justify-center gap-2 rounded-full bg-blue-900 px-5 text-sm font-semibold text-white shadow-md transition-transform duration-300 hover:-translate-y-1 hover:bg-blue-800 hover:shadow-indigo-200/70"
+      aria-label="Copy Kappa Theta Pi email address"
+      title={copied ? 'Email copied' : 'Copy email address'}
+    >
+      <MailIcon className="h-5 w-5" />
+      <span>{copied ? 'Copied' : 'Email'}</span>
+    </button>
   );
 }
 

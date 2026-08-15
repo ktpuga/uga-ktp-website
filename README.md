@@ -60,7 +60,7 @@ You need a real account in a real group to see anything past the login screen �
 | `/login` | SSO entry point |
 | `/checkin/[eventId]/[token]` | QR attendance check-in landing page |
 
-`/members-list` reads the public `GET /roster` endpoint, which deliberately exposes far less than the authenticated directory — no email, phone, major, or pledge class. It also excludes pledges, test accounts, and anyone without a profile picture.
+`/members-list` reads the public `GET /roster` endpoint, which deliberately exposes far less than the authenticated directory — no email, phone, or major. Alumni include the pledge-class label so they can be divided into class sections; the field is withheld from the other groups. The roster also excludes pledges, test accounts, and anyone without a profile picture.
 
 ### Portals
 

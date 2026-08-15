@@ -19,11 +19,12 @@ export default function CommunityGuidelinesPage() {
       <PublicHeader tone="dark" />
 
       <main className="mx-auto w-full max-w-3xl flex-1 px-6 py-16">
-        <p className="mb-1 text-xs font-medium uppercase tracking-wide text-fuchsia-400">Draft — pending leadership review</p>
+        <p className="mb-1 text-xs font-medium uppercase tracking-wide text-fuchsia-400">KTP Life and member portal</p>
         <h1 className="mb-2 text-3xl font-extrabold text-white sm:text-4xl">Community Guidelines</h1>
         <p className="mb-8 text-sm text-indigo-300">
-          These apply to everything you post or send in KTP Life — direct messages, group chats, photos, polls, and
-          the directory. They're about how we treat each other in the app; for the chapter's broader values, see the{' '}
+          These guidelines apply whenever you use KTP Life, the member portal, or another KTP digital community space,
+          including direct messages, group chats, photos, polls, shared files, and the directory. For the chapter&apos;s broader
+          values and conduct expectations, see the{' '}
           <Link href="/code-of-conduct" className="text-cyan-400 hover:underline">Code of Conduct</Link>.
         </p>
 
@@ -31,32 +32,31 @@ export default function CommunityGuidelinesPage() {
           <ul className="list-disc space-y-1 pl-5">
             <li>Treat other members with respect. No harassment, bullying, hate speech, or threats.</li>
             <li>Don't share someone else's messages, photos, or personal info without their OK.</li>
-            <li>No spam, and no using the app to promote something unrelated to the chapter without asking eboard first.</li>
-            <li>Keep photos and messages appropriate for a chapter-wide audience — assume anything you post could be seen by anyone in the app.</li>
+            <li>No spam, and no using KTP digital spaces to promote something unrelated to the chapter without asking eboard first.</li>
+            <li>Keep photos and messages appropriate for a chapter-wide audience. Assume anything you post could be seen by anyone in the app.</li>
             <li>Don't impersonate another member or eboard.</li>
           </ul>
         </Section>
 
         <Section title="If someone's bothering you">
           <p>
-            You can block anyone from your Settings or their profile — they won't be able to message you, and
-            you won't see their messages in shared group chats anymore. Blocking is immediate and doesn't require
+            You can block anyone from your Settings or their profile. They will not be able to message you, and
+            you will not see their messages in shared group chats. Blocking is immediate and does not require
             anyone's approval.
           </p>
         </Section>
 
         <Section title="Reporting">
           <p>
-            Every message, photo, and profile has a report option. Reporting sends it to eboard's review queue with
-            whatever reason and details you provide. Reports are reviewed by eboard, not by the person you're
-            reporting, and you'll never be identified to the person you reported.
+            Every message, photo, and profile has a report option. Reporting sends the item to eboard&apos;s review queue with
+            the reason and details you provide. Reports are reviewed by eboard, not by the person you report.
           </p>
         </Section>
 
         <Section title="What happens after a report">
           <p>
-            Eboard reviews each report and decides what to do based on what actually happened — that can range from
-            no action, to a conversation with the person involved, to removing content or restricting someone's
+            Eboard reviews each report and decides what to do based on the available information. Outcomes can range from
+            no action, to a conversation with the person involved, to removing content or restricting someone&apos;s
             access to the app. Consequences follow the chapter's normal standards process, not something this app
             automates on its own.
           </p>
@@ -64,10 +64,10 @@ export default function CommunityGuidelinesPage() {
 
         <Section title="Questions or something urgent">
           <p>
-            For anything that needs immediate attention rather than waiting on the report queue, contact chapter
+            For anything that needs immediate attention rather than waiting for the report queue, contact chapter
             leadership directly at{' '}
             <a href="mailto:uga.ktp@gmail.com" className="text-cyan-400 hover:underline">uga.ktp@gmail.com</a>
-            {' '}— confirm this is the right contact before publishing.
+            {'. If someone is in immediate danger, contact local emergency services.'}
           </p>
         </Section>
       </main>

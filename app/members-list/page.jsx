@@ -8,7 +8,7 @@ import Footer from '@/components/ui/footer';
 import PublicHeader from '@/components/PublicHeader';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { getRoster } from '@/lib/portal-api';
-import { linkedinHref } from '@/lib/portal-format';
+import { formatPledgeClass, linkedinHref } from '@/lib/portal-format';
 import { rosterPictureSrc } from '@/lib/avatar';
 
 const SECTIONS = [
@@ -48,6 +48,37 @@ function isPresident(person) {
   return /^president\b/i.test(person.execTitle?.trim() ?? '');
 }
 
+const PLEDGE_CLASS_ORDER = [
+  'founder', 'alpha', 'beta', 'gamma', 'delta', 'epsilon', 'zeta', 'eta',
+  'theta', 'iota', 'kappa', 'lambda', 'mu', 'nu', 'xi', 'omicron', 'pi',
+  'rho', 'sigma', 'tau', 'upsilon', 'phi', 'chi', 'psi', 'omega',
+];
+
+function alumniByPledgeClass(people) {
+  const classes = new Map();
+
+  for (const person of people) {
+    const label = String(person.pledgeClass ?? '').trim();
+    const key = label.toLocaleLowerCase() || 'unlisted';
+    const group = classes.get(key) ?? { key, label: label || null, people: [] };
+    group.people.push(person);
+    classes.set(key, group);
+  }
+
+  return [...classes.values()].sort((a, b) => {
+    if (a.key === 'unlisted') return 1;
+    if (b.key === 'unlisted') return -1;
+    const aIndex = PLEDGE_CLASS_ORDER.indexOf(a.key);
+    const bIndex = PLEDGE_CLASS_ORDER.indexOf(b.key);
+    if (aIndex !== -1 || bIndex !== -1) {
+      if (aIndex === -1) return 1;
+      if (bIndex === -1) return -1;
+      return aIndex - bIndex;
+    }
+    return a.label.localeCompare(b.label, undefined, { numeric: true, sensitivity: 'base' });
+  });
+}
+
 function RosterCard({ person, title }) {
   const name = formalName(person);
   const initials = formalInitials(person);
@@ -61,8 +92,13 @@ function RosterCard({ person, title }) {
       // it is rendered for anyone who has one rather than gated on the section,
       // because the form is what decides who is asked.
       note={person.doingNow}
-      // Eboard-typed, unlike `note` above which the member writes themselves.
-      traits={person.traits}
+      // Pledge class uses the same compact bordered-pill treatment as the
+      // chapter-authored traits. The public API only supplies it for alumni,
+      // so leadership and active-member cards remain unchanged.
+      traits={[
+        ...(person.pledgeClass ? [formatPledgeClass(person.pledgeClass)] : []),
+        ...(person.traits ?? []),
+      ]}
       // The member's own links. Card re-checks every href with
       // safeExternalHref before rendering, because this page has no
       // authentication and write-time validation only covers rows written
@@ -83,6 +119,29 @@ function RosterCard({ person, title }) {
       // across the row and the extra line grows downward.
       className="h-full justify-start"
     />
+  );
+}
+
+function AlumniRoster({ people, title, cols }) {
+  return (
+    <div className="space-y-14">
+      {alumniByPledgeClass(people).map((pledgeClass) => (
+        <section key={pledgeClass.key} aria-labelledby={`alumni-${pledgeClass.key.replace(/[^a-z0-9]+/g, '-')}`}>
+          <div className="mb-6 flex items-center gap-4">
+            <h4 id={`alumni-${pledgeClass.key.replace(/[^a-z0-9]+/g, '-')}`} className="shrink-0 text-xl font-bold tracking-tight text-blue-900 md:text-2xl">
+              {pledgeClass.label ? formatPledgeClass(pledgeClass.label) : 'Pledge class not listed'}
+            </h4>
+            <div aria-hidden className="h-px flex-1 bg-slate-200" />
+            <span className="text-sm text-slate-500">
+              {pledgeClass.people.length} {pledgeClass.people.length === 1 ? 'alumnus' : 'alumni'}
+            </span>
+          </div>
+          <div className={`grid grid-cols-1 gap-8 text-sm sm:grid-cols-2 lg:gap-10 ${cols}`}>
+            {pledgeClass.people.map((person) => <RosterCard key={person.id} person={person} title={title} />)}
+          </div>
+        </section>
+      ))}
+    </div>
   );
 }
 
@@ -156,9 +215,13 @@ export default function MembersListPage() {
                         <h3 className="sr-only">{heading}</h3>
                         {orderedPeople.length > 0 ? (
                           <div className={isExpandedRoster ? '' : 'mx-auto max-w-[88rem]'}>
-                            <div className={`grid grid-cols-1 gap-8 text-sm sm:grid-cols-2 lg:gap-10 ${cols}`}>
-                              {orderedPeople.map((person) => <RosterCard key={person.id} person={person} title={title} />)}
-                            </div>
+                            {key === 'alumni' ? (
+                              <AlumniRoster people={orderedPeople} title={title} cols={cols} />
+                            ) : (
+                              <div className={`grid grid-cols-1 gap-8 text-sm sm:grid-cols-2 lg:gap-10 ${cols}`}>
+                                {orderedPeople.map((person) => <RosterCard key={person.id} person={person} title={title} />)}
+                              </div>
+                            )}
                           </div>
                         ) : (
                           <p className="py-10 text-center text-slate-500">No {heading.toLowerCase()} to display yet.</p>

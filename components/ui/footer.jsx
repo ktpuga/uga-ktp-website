@@ -3,73 +3,65 @@ import React, { Component } from "react";
 export class footer extends Component {
   render() {
     return (
-      <footer className="bg-[#052039] py-6 w-full shrink-0 text-white">
-        <div className="container mx-auto px-4 md:px-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-xs font-['Source Sans Pro']">
-            &copy; {new Date().getFullYear()} KTP. All rights reserved.
-          </p>
-          {/* flex-wrap: six links in a non-wrapping row overflowed the page on
-              narrow phones (measured 361px of content in a 320px viewport, with
-              "LinkedIn" hanging off the right edge). They wrap onto a second
-              line instead now. This footer is on every page, so it was a
-              site-wide overflow, not just the homepage. */}
-          <nav className="flex flex-wrap gap-x-4 gap-y-2 sm:gap-x-6">
-            <Link
-              href="/code-of-conduct"
-              className="text-xs hover:underline underline-offset-4 font-['Source Sans Pro']"
-              prefetch={false}
-            >
-              Code of Conduct
-            </Link>
-            <Link
-              href="/community-guidelines"
-              className="text-xs hover:underline underline-offset-4 font-['Source Sans Pro']"
-              prefetch={false}
-            >
-              Community Guidelines
-            </Link>
-            <Link
-              href="/privacy"
-              className="text-xs hover:underline underline-offset-4 font-['Source Sans Pro']"
-              prefetch={false}
-            >
-              Privacy Policy
-            </Link>
-            <Link
-              href="/support"
-              className="text-xs hover:underline underline-offset-4 font-['Source Sans Pro']"
-              prefetch={false}
-            >
-              App Support
-            </Link>
-            <Link
-              href="/blog"
-              className="text-xs hover:underline underline-offset-4 font-['Source Sans Pro']"
-              prefetch={false}
-            >
-              Blog
-            </Link>
-            <Link
-              href="https://www.instagram.com/ugaktp/"
-              target="_Blank"
-              className="text-xs hover:underline underline-offset-4 font-['Source Sans Pro']"
-              prefetch={false}
-            >
-              Instagram
-            </Link>
-            <Link
-              href="https://www.linkedin.com/company/kappa-theta-pi-uga/"
-              target="_blank"
-              className="text-xs hover:underline underline-offset-4 font-['Source Sans Pro']"
-              prefetch={false}
-            >
-              LinkedIn
-            </Link>
+      <footer className="w-full shrink-0 bg-[#052039] py-8 text-white">
+        <div className="container mx-auto grid gap-8 px-4 md:px-6 lg:grid-cols-[minmax(14rem,0.85fr)_minmax(0,2.15fr)] lg:items-end">
+          <div>
+            <p className="text-sm font-semibold">Kappa Theta Pi · Phi Chapter</p>
+            <p className="mt-1 max-w-sm text-xs leading-relaxed text-slate-300">Technology, leadership, and community at the University of Georgia.</p>
+            <p className="mt-4 text-xs text-slate-400">&copy; {new Date().getFullYear()} KTP. All rights reserved.</p>
+          </div>
+
+          <nav className="grid w-full gap-6 sm:grid-cols-2 lg:grid-cols-4 lg:gap-8" aria-label="Footer navigation">
+            <div>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">Policies &amp; Community</p>
+              <div className="mt-3 flex flex-col gap-2">
+                <FooterLink href="/code-of-conduct">Code of Conduct</FooterLink>
+                <FooterLink href="/community-guidelines">Community Guidelines</FooterLink>
+                <FooterLink href="/privacy">Privacy Policy</FooterLink>
+                <FooterLink href="https://drive.google.com/file/d/17LkRqOsNCJVQUKkWTIOs_HaJhmTcSxmc/view" external>Constitution &amp; Governance</FooterLink>
+              </div>
+            </div>
+
+            <div>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">Support</p>
+              <div className="mt-3 flex flex-col gap-2">
+                <FooterLink href="/support">App Support</FooterLink>
+              </div>
+            </div>
+
+            <div>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">Explore</p>
+              <div className="mt-3 flex flex-col gap-2">
+                <FooterLink href="/blog">Blog</FooterLink>
+              </div>
+            </div>
+
+            <div>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">Connect</p>
+              <div className="mt-3 flex flex-col gap-2">
+                <FooterLink href="https://www.instagram.com/ugaktp/" external>Instagram</FooterLink>
+                <FooterLink href="https://www.linkedin.com/company/kappa-theta-pi-uga/" external>LinkedIn</FooterLink>
+              </div>
+            </div>
           </nav>
         </div>
       </footer>
     );
   }
+}
+
+function FooterLink({ href, children, external = false }) {
+  return (
+    <Link
+      href={href}
+      target={external ? '_blank' : undefined}
+      rel={external ? 'noreferrer' : undefined}
+      className="w-fit text-xs text-slate-200 transition-colors hover:text-white hover:underline hover:underline-offset-4"
+      prefetch={false}
+    >
+      {children}
+    </Link>
+  );
 }
 
 export default footer;
