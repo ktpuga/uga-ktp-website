@@ -633,27 +633,17 @@ export function CommitteeDetail({ committee, currentUserId, isEboard, accent, on
 
   useEffect(loadMembers, [committee.id]);
 
-  // Committee folders are already visibility-restricted server-side. Looking
-  // them up from the member's own visible root list means this button can never
-  // reveal a folder name or id to someone outside the committee.
+  // Folder responses already include the committee_ids used for their
+  // visibility rule. Use that relationship rather than a name convention: a
+  // folder may be renamed without breaking its committee's Shared Files link.
   useEffect(() => {
     let cancelled = false;
-    // Seeded folders are named either "Pledge Committee" (when the
-    // committee itself is Pledge) or "Pledge" (when the word Committee is
-    // already part of the committee name). Compare the meaningful name so
-    // both existing conventions land on the same workspace.
-    const folderKey = (value) => value
-      ?.toLocaleLowerCase()
-      .replace(/\bcommittee\b/g, '')
-      .replace(/[^a-z0-9]+/g, ' ')
-      .trim();
-    const expectedName = folderKey(committee.name);
 
     getDocumentFolders(null)
       .then((folders) => {
         if (cancelled) return;
         setSharedFolder((Array.isArray(folders) ? folders : []).find(
-          (folder) => folderKey(folder.name) === expectedName
+          (folder) => (folder.committee_ids ?? []).map(String).includes(String(committee.id))
         ) ?? null);
       })
       .catch((err) => {
@@ -662,7 +652,7 @@ export function CommitteeDetail({ committee, currentUserId, isEboard, accent, on
       });
 
     return () => { cancelled = true; };
-  }, [committee.name]);
+  }, [committee.id]);
 
   const loadUpcomingEvents = useCallback(async () => {
     setEventsLoading(true);
@@ -1134,7 +1124,7 @@ function RevampedCommitteesPage({ accentKey }) {
   const selected = committees.find((c) => c.id === selectedId) ?? null;
 
   return (
-    <div className="mx-auto max-w-5xl px-4 pb-16 pt-8 sm:px-6 lg:px-8">
+    <div className="mx-auto max-w-7xl px-4 pb-16 pt-8 sm:px-6 lg:px-8">
       <div className="mb-7">
         <p className="mb-1 text-[11px] font-semibold uppercase tracking-[0.22em]" style={{ color: accent.light }}>
           UGA Phi Chapter
