@@ -67,6 +67,13 @@ function normalizeGroup(raw) {
   return GROUP_ORDER.includes(raw) ? raw : 'unassigned';
 }
 
+function adminDisplayName(user) {
+  const first = user.preferredName ?? user.preferred_name ?? user.firstName ?? user.first_name;
+  const last = user.lastName ?? user.last_name;
+  const fullName = [first, last].filter(Boolean).join(' ');
+  return fullName || memberDisplayName(user);
+}
+
 function formatDate(iso) {
   if (!iso) return '';
   const d = new Date(iso);
@@ -93,7 +100,7 @@ function Avatar({ user, size = 40 }) {
         />
       ) : (
         <div className="flex h-full w-full select-none items-center justify-center font-semibold text-white" style={{ background: color, fontSize: size * 0.37 }}>
-          {memberInitials(user)}
+          {memberInitials({ preferredName: adminDisplayName(user) })}
         </div>
       )}
     </div>
@@ -243,7 +250,7 @@ function UserCard({ user, onChangeGroup, onSaveExecTitle, onEditProfile }) {
 
           <div className="min-w-0 flex-1">
             <div className="mb-0.5 flex flex-wrap items-center gap-1.5">
-              <span className="text-sm font-semibold leading-snug text-foreground">{memberDisplayName(user)}</span>
+              <span className="text-sm font-semibold leading-snug text-foreground">{adminDisplayName(user)}</span>
               <GroupBadge group={group} />
               {user.profile_complete ? (
                 <span className="inline-flex items-center gap-0.5 rounded-full border border-green-100 bg-green-50 px-2 py-0.5 text-[10px] font-semibold text-green-700">
@@ -329,7 +336,7 @@ function GroupPanel({ group, users, allUsers, onChangeGroup, onSaveExecTitle, on
     () =>
       allUsers
         .filter((u) => normalizeGroup(u.member_group) !== group)
-        .map((u) => ({ value: u.authentik_id, label: `${memberDisplayName(u)} (${formatMemberGroup(normalizeGroup(u.member_group))})` })),
+        .map((u) => ({ value: u.authentik_id, label: `${adminDisplayName(u)} (${formatMemberGroup(normalizeGroup(u.member_group))})` })),
     [allUsers, group]
   );
 
@@ -494,7 +501,7 @@ export default function UserManagementPage() {
       if (profileFilter === 'incomplete' && u.profile_complete) return false;
       if (!q) return true;
       return (
-        memberDisplayName(u).toLowerCase().includes(q)
+        adminDisplayName(u).toLowerCase().includes(q)
         || u.username.toLowerCase().includes(q)
         || (u.email?.toLowerCase().includes(q) ?? false)
         || (u.major?.toLowerCase().includes(q) ?? false)
