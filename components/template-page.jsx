@@ -362,22 +362,22 @@ export default function TemplatePage({ spotlightLinks = [] }) {
         </section>
 
         {/* ==============================  RUSH  ============================== */}
-        <section className="relative overflow-hidden bg-white py-16 text-slate-900 md:py-20">
+        <section className="relative overflow-hidden bg-[#14326E] py-16 text-white md:py-20">
           <div aria-hidden className="pointer-events-none absolute inset-0">
-            <div className="absolute -left-24 top-1/2 h-80 w-80 -translate-y-1/2 rounded-full bg-indigo-500/20 blur-[110px]" />
-            <div className="absolute -right-20 -top-20 h-80 w-80 rounded-full bg-fuchsia-500/15 blur-[110px]" />
-            <div className="absolute bottom-0 left-1/3 h-56 w-56 rounded-full bg-cyan-400/15 blur-[90px]" />
+            <div className="absolute -left-24 top-1/2 h-80 w-80 -translate-y-1/2 rounded-full bg-blue-400/20 blur-[110px]" />
+            <div className="absolute -right-20 -top-20 h-80 w-80 rounded-full bg-indigo-300/15 blur-[110px]" />
+            <div className="absolute bottom-0 left-1/3 h-56 w-56 rounded-full bg-cyan-300/15 blur-[90px]" />
           </div>
 
           <div className="relative container mx-auto grid max-w-[112rem] items-center gap-10 px-4 md:grid-cols-[1.15fr_0.85fr] md:gap-16 md:px-8">
             <div data-aos="fade-up" data-aos-duration="500">
-              <p className="inline-flex rounded-full border border-indigo-200 bg-white/80 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-blue-900 shadow-sm">
+              <p className="inline-flex rounded-full border border-white/35 bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-white shadow-sm">
                 Fall Rush 2026
               </p>
-              <h2 className="mt-5 text-4xl font-extrabold tracking-tight text-blue-900 sm:text-5xl md:text-6xl">
+              <h2 className="mt-5 text-4xl font-extrabold tracking-tight text-white sm:text-5xl md:text-6xl">
                 Find your people in tech.
               </h2>
-              <p className="mt-5 max-w-2xl text-lg leading-relaxed text-slate-700 md:text-xl">
+              <p className="mt-5 max-w-2xl text-lg leading-relaxed text-blue-100 md:text-xl">
                 Explore Kappa Theta Pi through info sessions, conversations with members, and experiences built around technology, growth, and community.
               </p>
               <Link href="/rush" className="mt-8 inline-block">
