@@ -55,7 +55,7 @@ export default async function AuthStart() {
             name={session.user?.name}
             email={session.user?.email}
             continueLabel="Continue to my portal"
-            note="If you just created a new account on this device, this isn't it — the account below was already signed in here."
+            note="If you just created a new account on this device, this isn't it. The account below was already signed in here."
           />
         ) : (
           <AutoSignIn slot="start" />

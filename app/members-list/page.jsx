@@ -203,7 +203,7 @@ export default function MembersListPage() {
               Meet the Chapter
             </h1>
             <p className="mx-auto mt-4 max-w-prose text-lg md:text-xl text-slate-700">
-              The people behind Phi Chapter — leadership, chairs, members, and the alumni who came before us.
+              The people behind Phi Chapter: leadership, chairs, members, and the alumni who came before us.
             </p>
           </div>
         </section>

@@ -47,7 +47,7 @@ export default function AlreadySignedIn({ name, email, continueLabel = 'Continue
           type="submit"
           className="mt-3 w-full rounded-md border border-white/25 py-3 text-sm font-semibold text-white transition-colors hover:bg-white/10"
         >
-          This isn&apos;t me — sign in as someone else
+          This isn&apos;t me: sign in as someone else
         </button>
       </form>
 

@@ -145,7 +145,7 @@ Build your profile and look around the portal before the first event. Have a rea
   {
     id: 'interviews',
     label: 'Sign Up for Interviews',
-    body: `Towards the end of rush, we hold short interviews. When signup opens, an Interviews tab shows up in your portal — pick whichever day and time works for you and that slot is yours.`,
+    body: `Towards the end of rush, we hold short interviews. When signup opens, an Interviews tab shows up in your portal. Pick whichever day and time works for you and that slot is yours.`,
     detail: 'Towards the end of rush',
   },
   {

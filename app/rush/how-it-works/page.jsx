@@ -146,7 +146,7 @@ export default function HowRushWorksPage () {
                 <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-[#c9b896] sm:text-base">
                   This browser is signed in to a KTP account
                   {session?.user?.name ? ` as ${session.user.name}` : ''}. Creating a new
-                  account on top of it mixes the two up, so sign out first — the sign-in
+                  account on top of it mixes the two up. Sign out first; the sign-in
                   page has a rush signup link waiting.
                 </p>
                 <button
@@ -157,7 +157,7 @@ export default function HowRushWorksPage () {
                   Sign out to sign up →
                 </button>
                 <p className="mx-auto mt-4 max-w-md text-xs leading-relaxed text-[#8f8676]">
-                  Already have a KTP account? You don&apos;t need a new one —{' '}
+                  Already have a KTP account? You don&apos;t need a new one.{' '}
                   <Link href="/login" className="font-semibold text-[#d4af37] underline underline-offset-2 hover:text-[#f0d060]">
                     go to your portal
                   </Link>

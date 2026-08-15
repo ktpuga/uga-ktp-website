@@ -224,7 +224,7 @@ export default async function PostPage(
 
                                 {/* ——— Disclaimer ——— */}
                                 <p className="mt-4 max-w-xl text-xs text-indigo-300">
-                                    Opinions are the author&apos;s and may not represent KTP Phi Chapter or UGA. Content is informational—not professional advice. External links are for convenience not endorsement unless explicitly mentioned.
+                                    Opinions are the author&apos;s and may not represent KTP Phi Chapter or UGA. Content is informational, not professional advice. External links are for convenience, not endorsement, unless explicitly mentioned.
                                 </p>
                             </div>
                         </section>

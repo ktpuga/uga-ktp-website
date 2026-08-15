@@ -93,7 +93,7 @@ export default function AutoSignIn({ slot, prompt }) {
           onClick={startSignIn}
           className="mt-2 rounded-md border border-white/25 px-4 py-2 text-sm font-medium text-white/90 transition-colors hover:bg-white/10"
         >
-          Taking a while — click to continue
+          Taking a while? Click to continue
         </button>
       )}
     </div>

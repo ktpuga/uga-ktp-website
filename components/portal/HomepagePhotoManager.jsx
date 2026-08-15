@@ -959,7 +959,7 @@ export default function HomepagePhotoManager() {
       total: photos.length,
       images: photos.filter((p) => p.media_type === 'image').length,
       videos: photos.filter((p) => p.media_type === 'video').length,
-      lastAdded: newest ? timeAgo(newest.created_at) : '—',
+          lastAdded: newest ? timeAgo(newest.created_at) : '—',
     };
   }, [photos]);
 

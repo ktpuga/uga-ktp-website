@@ -21,7 +21,7 @@ export default function Error({ error, reset }) {
         />
         <h1 className="text-2xl font-semibold text-slate-900 mb-2">Something went wrong</h1>
         <p className="text-slate-600 mb-8">
-          An unexpected error occurred. This sometimes happens if your session has ended — try signing in again.
+          An unexpected error occurred. This sometimes happens if your session has ended. Try signing in again.
         </p>
         <div className="flex flex-col sm:flex-row gap-3 justify-center">
           <button
