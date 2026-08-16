@@ -174,9 +174,9 @@
      screens keeps cards, spacing, and text in proportion without the visual
      and accessibility problems caused by CSS zoom. Large displays retain the
      current 16px scale; phones keep it too for comfortable reading. */
-  @media (min-width: 48rem) and (max-width: 96rem) {
+  @media (min-width: 48rem) and (max-width: 100rem) {
     html {
-      font-size: clamp(14.4px, calc(6.4px + 0.625vw), 16px);
+      font-size: clamp(13.6px, calc(4px + 0.75vw), 16px);
     }
   }
 
