@@ -30,7 +30,6 @@ import { signIn } from 'next-auth/react';
 import { clearProbeMark } from '@/lib/sso';
 import {
   HANDLED_COMPONENTS,
-  fallbackUrl,
   fieldErrors,
   formError,
   getChallenge,
@@ -66,15 +65,22 @@ export default function CredentialSignIn({ origin, slug = 'default-authenticatio
   // two navigations, and the second would race the first.
   const completing = useRef(false);
 
-  // Anything we can't draw goes to Authentik's own page rather than leaving
-  // someone stuck. Covers an unknown stage type, a CORS failure and a 5xx
-  // alike — in every one of those cases the page this replaced still works.
+  // Anything we can't draw falls back to the SSO button's behaviour: an
+  // ordinary next-auth sign-in. Covers an unknown stage type, a CORS failure
+  // and a 5xx alike.
+  //
+  // ⚠ DO NOT "simplify" this to window.location = origin + '/if/flow/<slug>/'.
+  // That was the first version and it is broken in a way that reads as a loop:
+  // a flow opened directly wasn't started by an authorize request, so Authentik
+  // finishes it by dropping the person on its own application library — signed
+  // in to Authentik, still signed out here, and back to square one on return.
+  // signIn() goes through /application/o/authorize/, which is the whole point.
   const handOff = useCallback(() => {
     if (completing.current) return;
     completing.current = true;
     setTerminal('handoff');
-    window.location.href = fallbackUrl(origin, slug);
-  }, [origin, slug]);
+    signIn('authentik', { callbackUrl: '/auth/redirect' });
+  }, []);
 
   // The flow is done and the browser now holds an Authentik session. Hand over
   // to next-auth, which will find it and complete silently.
@@ -211,16 +217,18 @@ export default function CredentialSignIn({ origin, slug = 'default-authenticatio
         {submitting ? 'Signing in…' : (challenge.primary_action ?? 'Log in')}
       </button>
 
-      {/* Authentik's own page, kept reachable on purpose. If this form ever
-          misbehaves for someone, the thing it replaced is one click away
-          rather than a support message. */}
+      {/* The SSO button this form replaced, kept reachable on purpose. Same
+          reasoning as handOff, and the same trap: this must be a signIn(), not
+          a link to Authentik's flow page, or it strands people on Authentik's
+          application library signed in to the wrong half of the system. */}
       <p className="text-center">
-        <a
-          href={fallbackUrl(origin, slug)}
+        <button
+          type="button"
+          onClick={handOff}
           className="text-xs text-white/50 underline hover:text-white/80"
         >
-          Having trouble? Use the standard sign-in page
-        </a>
+          Having trouble? Sign in the standard way
+        </button>
       </p>
     </form>
   );
