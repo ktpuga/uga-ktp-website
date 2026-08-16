@@ -252,7 +252,11 @@ export default function ProfileForm({
     // ".uga.edu" suffix) for the same reason the API does it that way: an
     // endsWith('uga.edu') check would accept "notuga.edu", and a substring
     // check would accept "uga.edu.example.com".
-    if (!isAlumni) {
+    // Gated on the field actually being rendered — see the JSX below. The
+    // builder no longer asks for a UGA address (enrollment collects it), and a
+    // required-field check on an input that does not exist would block every
+    // first save with a message pointing at nothing.
+    if (!isAlumni && mode === 'edit') {
       const raw = String(formData.get('email') ?? '').trim();
       const at = raw.lastIndexOf('@');
       const domain = at === -1 ? '' : raw.slice(at + 1).toLowerCase();
@@ -506,9 +510,22 @@ export default function ProfileForm({
           Alumni get only the personal one: see isAlumni above. Their row may
           still hold a UGA address, and omitting the input here means the save
           doesn't send one — which is exactly why the API preserves it rather
-          than taking NULL from the payload. */}
+          than taking NULL from the payload.
+
+          THE BUILDER DOESN'T ASK FOR IT AT ALL (mode === 'create'). The
+          Authentik enrollment prompt collects the UGA address now and
+          POST /users/sync seeds it onto the row at first login, so by the time
+          anyone reaches this form the address is already on file — asking again
+          is asking someone to retype something we have. The edit form keeps the
+          field so it stays correctable.
+
+          Omitting the input is what makes buildProfilePayload drop the key
+          (it uses formData.has for this one field), and an absent key is what
+          tells the API to defer to the stored address instead of demanding one.
+          Re-adding the input here without understanding that chain will 400
+          every first save. */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        {!isAlumni && (
+        {!isAlumni && mode === 'edit' && (
           <Field label="UGA Email" required variant={variant} name="email" error={fieldError('email')}>
             <Input
               type="email"

@@ -125,6 +125,10 @@ Two things that follow from it:
 
 Both forms therefore use `useProfileLinks` + `LinksField` + `LinksHiddenInput` from one file. **If you add a third profile-editing surface, wire all three or that surface will quietly delete links.**
 
+`email` is the one key that escapes this rule, and it escapes it on purpose. `buildProfilePayload` uses **`formData.has('email')`** rather than `get`, so a form that does not render the input omits the key entirely instead of sending `null`. The API distinguishes them: an **absent** key defers to the address already on file (the enrollment prompt collects it now, so the onboarding form no longer asks), while an **explicit null** is someone clearing the field on the Settings form and is still refused. Every other key keeps the always-send-it behaviour, because for those, absent and null really do mean the same thing.
+
+**Do not re-add the UGA Email input to the onboarding form without following that chain** — rendering it makes `has` true, which makes the payload carry `email: null` on a builder that has nothing to put in it, which 400s every first save.
+
 Two details inside it that are not obvious:
 
 - **Row keys are not indexes.** Deleting a middle row renumbers every index below it, so React reuses the wrong input for the wrong row and the text visibly jumps to a different link. Each row carries a generated key instead.
