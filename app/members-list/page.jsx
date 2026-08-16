@@ -101,9 +101,26 @@ function alumniByPledgeClass(people) {
   });
 }
 
+// The member's CURRENT chapter position: their exec title if they have one,
+// otherwise the committee(s) they chair. Deliberately NO generic fallback —
+// the old version fell back to the section's own heading, so every card in
+// "Members" was labelled "Member", which is the noise this roster dropped.
+// Returns null for anyone without a position, so their card simply has none.
+function currentRole(person) {
+  if (person.execTitle) return person.execTitle;
+  if (person.chairedCommittees?.length > 0) return person.chairedCommittees.map((c) => `${c} Committee`).join(' & ');
+  return null;
+}
+
 function RosterCard({ person }) {
   const name = formalName(person);
   const initials = formalInitials(person);
+  // Position first, then the eboard-typed traits, which in practice record
+  // past service. Both share one treatment because they are the same kind of
+  // fact: without this, eboard and cabinet cards lost their position entirely
+  // while alumni kept theirs, so leadership read as less identified than
+  // people who had left the chapter.
+  const traits = [currentRole(person), ...(person.traits ?? [])].filter(Boolean);
 
   return (
     <Card
@@ -113,9 +130,9 @@ function RosterCard({ person }) {
       // it is rendered for anyone who has one rather than gated on the section,
       // because the form is what decides who is asked.
       note={person.doingNow}
-      // Former chapter roles remain visible, while current positions are kept
-      // off the card for a cleaner roster.
-      traits={person.traits}
+      // Current position and past chapter roles, in that order. See the
+      // `traits` const above for why they share one list.
+      traits={traits}
       // The member's own links. Card re-checks every href with
       // safeExternalHref before rendering, because this page has no
       // authentication and write-time validation only covers rows written
