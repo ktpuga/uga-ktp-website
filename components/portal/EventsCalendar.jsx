@@ -194,14 +194,14 @@ function RsvpBadge({ myRsvp, accent }) {
   const answered = myRsvp === 'going' || myRsvp === 'not_going';
   return (
     <span
-      className="inline-flex items-center gap-1 rounded-sm px-1.5 py-0.5 text-[10px] font-semibold"
+      className="inline-flex items-center gap-1 rounded-md border px-2 py-1 text-[10px] font-semibold"
       style={answered
         ? { background: tint(accent.base, 0.12), color: accent.light }
-        : { background: 'color-mix(in srgb, var(--color-muted-foreground) 14%, transparent)', color: 'var(--color-muted-foreground)' }}
+        : { background: tint(accent.base, 0.10), borderColor: tint(accent.base, 0.28), color: accent.light }}
       title={answered ? undefined : 'You have not responded yet'}
     >
       <ClipboardCheck size={9} strokeWidth={2.5} />
-      {myRsvp === 'going' ? 'Going' : myRsvp === 'not_going' ? "Can't make it" : 'RSVP needed'}
+      {myRsvp === 'going' ? 'Going' : myRsvp === 'not_going' ? "Can't make it" : 'RSVP required'}
     </span>
   );
 }
@@ -241,8 +241,18 @@ function RsvpControl({ event, accent, onAnswer }) {
   }
 
   return (
-    <div className="flex flex-col gap-1.5 pl-1">
-      <div className="flex flex-wrap gap-1.5">
+    <div
+      className="flex flex-col gap-2 rounded-xl border p-3"
+      style={{ background: tint(accent.base, 0.055), borderColor: tint(accent.base, 0.20) }}
+    >
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className="text-xs font-bold text-foreground">Will you be attending?</p>
+          <p className="mt-0.5 text-[11px] text-muted-foreground">Let the organizer know your plans.</p>
+        </div>
+        <RsvpBadge myRsvp={event.myRsvp} accent={accent} />
+      </div>
+      <div className="grid grid-cols-2 gap-2">
         {[['going', 'Going'], ['not_going', "Can't make it"]].map(([status, label]) => {
           const selected = event.myRsvp === status;
           return (
@@ -253,8 +263,8 @@ function RsvpControl({ event, accent, onAnswer }) {
               aria-pressed={selected}
               onClick={() => answer(status)}
               className={cn(
-                'inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-xs font-medium transition-colors disabled:opacity-50',
-                selected ? 'text-white' : 'border-border text-muted-foreground hover:bg-muted hover:text-foreground',
+                'inline-flex items-center justify-center gap-1.5 rounded-lg border px-3 py-2 text-xs font-semibold transition-colors disabled:opacity-50',
+                selected ? 'text-white' : 'border-border bg-card text-muted-foreground hover:bg-muted hover:text-foreground',
               )}
               style={selected ? { background: accent.gradient, borderColor: 'transparent' } : undefined}
             >
