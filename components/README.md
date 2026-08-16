@@ -80,6 +80,11 @@ into one of them badges in some layouts and not others. That is exactly what
   marks it seen, and the tab currently being viewed never badges.
 - **Calendar, additionally** — `usePendingRsvpCount()`, upcoming events where
   `requiresRsvp && canRsvp && !myRsvp`.
+- **Meetings** comes through `useTabNotifications()` but is **not a cursor
+  count** — the API returns unanswered invitations there, so it is listed in
+  `CLEARS_ON_ACTION_NOT_VIEW` and skips the optimistic clear-on-view. Adding a
+  count that clears on an action rather than a glance means adding it there
+  too, or looking at the tab will blank a number the member still owes.
 
 The third exists because the cursor **cannot** express it: `markTabSeen` fires
 on visit, so an RSVP badge built on the cursor would clear for the very member
