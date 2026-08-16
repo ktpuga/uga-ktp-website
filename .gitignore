@@ -50,3 +50,8 @@ public/sitemap-0.xml
 
 # Local product-planning notes
 /SUGGESTIONS.md
+
+# Local planning notes — kept out of the repo on purpose.
+# The TRAPS that used to be Part 1 of TODO.md now live in components/README.md,
+# because a successor needs them and a local file is the wrong home for that.
+/TODO.md

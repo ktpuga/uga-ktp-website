@@ -6,7 +6,9 @@ The public marketing site **and** the member portal for Kappa Theta Pi, Phi Chap
 
 This repo is the frontend only. All chapter data lives behind [`ktp-api`](https://github.com/ktpuga/ktp-api); this app never talks to PostgreSQL or Immich directly.
 
-> **New here, or looking for something to pick up?** [**TODO.md**](./TODO.md) has the current task list plus the traps that have actually caused bugs in this codebase — the things you can't get from reading the code.
+> **New here?** [**components/README.md → Traps**](./components/README.md#traps--things-that-have-actually-bitten-us) collects the mistakes that have actually caused bugs in this codebase — the things you can't get from reading the code. Read it before your first change.
+>
+> (`TODO.md` is a local-only planning file and is not in the repo, so don't expect to find one.)
 
 ---
 
@@ -241,12 +243,19 @@ Also note that several components take an `accent` prop with **no default value*
 
 `PortalShell` renders its nav **four times** — desktop revamped, desktop legacy, and a mobile sheet for each. All four get their number from one `badgeFor(href)` helper, so a new badge is one edit. It used to be inlined as `href.endsWith('/messages')` in all four, which meant anything new either had to be added in four places or badged in some layouts and not others.
 
-Two sources feed it, and they are not interchangeable:
+**Three** sources feed it, and they are not interchangeable:
 
 - **Messages** uses `useUnreadCounts()` — genuine per-message read receipts.
-- **Everything else** uses `useTabNotifications()` — a per-tab cursor (`last_seen_at`) compared against each source table. Visiting a tab marks it seen; the tab you are currently on never shows a badge.
+- **Most tabs** use `useTabNotifications()` — a per-tab cursor (`last_seen_at`) compared against each source table. Visiting a tab marks it seen; the tab you are currently on never shows a badge.
+- **Calendar also uses `usePendingRsvpCount()`** (`lib/use-pending-rsvps.js`) — upcoming events where `requiresRsvp && canRsvp && !myRsvp`.
 
-Adding a tab means editing `NOTIFICATION_TABS` in `lib/use-tab-notifications.js` **and** `notificationCursorModel.TABS` plus the `CHECK` constraint in the API. A tab present in one and not the other doesn't error — it just never badges.
+The third one exists because the cursor **cannot** express it. `markTabSeen` fires on visit, so an RSVP badge routed through the cursor would clear for exactly the member who looked at the calendar and meant to answer later. A pending RSVP has to survive being looked at and clear only when the member answers.
+
+`badgeFor` returns the pending-RSVP count **when there is one** and falls back to the tab cursor otherwise. **They are not summed** — a brand-new RSVP event is one thing wanting one action, and adding both would count it twice, then drop from 2 to 1 on a mere visit, which reads as the badge losing track.
+
+Two things it must stay gated on: **`canRsvp`**, not `requiresRsvp` (badging someone for an answer the API refuses gives them a number they cannot clear), and **`endDate`**, matching the API's 409 cut-off for the same reason.
+
+Adding a *cursor* tab means editing `NOTIFICATION_TABS` in `lib/use-tab-notifications.js` **and** `notificationCursorModel.TABS` plus the `CHECK` constraint in the API. A tab present in one and not the other doesn't error — it just never badges.
 
 ### Profile pictures
 

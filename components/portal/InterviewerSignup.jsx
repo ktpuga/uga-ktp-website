@@ -18,7 +18,7 @@ import { useInterviewerRounds } from '@/lib/use-interviewer-rounds';
 // answer different questions — "run this round" versus "which of these am I
 // covering" — and every editing affordance would need its own guard. A shared
 // component with a read-only mode is how a member ends up one boolean away from
-// deleting a slot; see the portal-duplication notes in TODO.md for the reverse
+// deleting a slot; see the portal-duplication notes in ktp-docs for the reverse
 // mistake, and note that the genuinely shared part (the API, the rules) is
 // shared, while only the presentation is not.
 
