@@ -363,46 +363,36 @@ export default function TemplatePage({ spotlightLinks = [] }) {
           </div>
         </section>
 
-        {/* ==============================  RUSH  ============================== */}
-        <section className="relative overflow-hidden bg-white py-16 text-slate-900 md:py-20">
+        {/* =========================== RUSH FILM ============================ */}
+        <section className="relative z-10 -mt-8 overflow-hidden bg-[#111111] py-14 text-white md:-mt-12 md:py-20">
           <div aria-hidden className="pointer-events-none absolute inset-0">
-            <div className="absolute -left-24 top-1/2 h-80 w-80 -translate-y-1/2 rounded-full bg-indigo-500/20 blur-[110px]" />
-            <div className="absolute -right-20 -top-20 h-80 w-80 rounded-full bg-fuchsia-500/15 blur-[110px]" />
-            <div className="absolute bottom-0 left-1/3 h-56 w-56 rounded-full bg-cyan-400/15 blur-[90px]" />
+            <div className="absolute -left-24 top-1/2 h-72 w-72 -translate-y-1/2 rounded-full bg-[#6b1c2a]/30 blur-[100px]" />
+            <div className="absolute -right-20 -top-24 h-80 w-80 rounded-full bg-[#d4af37]/15 blur-[110px]" />
           </div>
 
-          <div className="relative container mx-auto grid max-w-[112rem] items-center gap-10 px-4 md:grid-cols-[1.15fr_0.85fr] md:gap-16 md:px-8">
+          <div className="relative container mx-auto grid max-w-[112rem] items-center gap-10 px-4 md:grid-cols-[0.8fr_1.2fr] md:gap-14 md:px-8">
             <div data-aos="fade-up" data-aos-duration="500">
-              <p className="inline-flex rounded-full border border-indigo-200 bg-white/80 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-blue-900 shadow-sm">
+              <p className="inline-flex items-center rounded-full border border-[#d4af37] bg-[#2a1219] px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-[#d4af37]">
                 Fall Rush 2026
               </p>
-              <h2 className="mt-5 text-4xl font-extrabold tracking-tight text-blue-900 sm:text-5xl md:text-6xl">
-                Find your people in tech.
+              <h2 className="mt-5 max-w-xl text-4xl font-extrabold tracking-tight sm:text-5xl">
+                Ante up for Fall Rush.
               </h2>
-              <p className="mt-5 max-w-2xl text-lg leading-relaxed text-slate-700 md:text-xl">
-                Explore Kappa Theta Pi through info sessions, conversations with members, and experiences built around technology, growth, and community.
+              <p className="mt-4 max-w-xl text-base leading-relaxed text-[#e8e0d5] md:text-lg">
+                Meet the people, energy, and ambition behind Kappa Theta Pi at UGA.
               </p>
-              <Link href="/rush" className="mt-8 inline-block">
-                <Button className="rounded-full border-2 border-[#d4af37] bg-[#1a1a1a] px-8 py-4 text-lg font-semibold text-white shadow-none transition-transform hover:scale-105 hover:border-[#f0d060] hover:bg-[#6b1c2a]">
-                  Explore Rush
-                </Button>
+              <Link href="/rush" className="mt-7 inline-flex rounded-full border-2 border-[#f0d060] bg-[#d4af37] px-5 py-2.5 text-sm font-bold text-[#1a1a1a] transition-colors hover:bg-[#f0d060]">
+                Explore Rush
               </Link>
             </div>
 
-            <div className="relative mx-auto w-full max-w-[24rem] pb-4 pt-3 md:max-w-[28rem] md:justify-self-end" data-aos="fade-up" data-aos-delay="120" data-aos-duration="500">
-              <div className="relative rounded-[1.7rem] border border-[#0f2758] bg-[#14326E] p-3 shadow-2xl shadow-blue-950/30">
-                <div className="relative aspect-[4/5] overflow-hidden rounded-[1.15rem] border border-white/30 bg-black">
-                  <Image
-                    src="/Fall%20Rush%20Poster.JPG"
-                    alt="Kappa Theta Pi Fall Rush registration poster"
-                    fill
-                    sizes="(max-width: 767px) min(100vw - 2rem, 24rem), 28rem"
-                    className="object-cover object-[center_52%]"
-                  />
-                </div>
-              </div>
-              <div className="absolute bottom-0 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full border border-[#d4af37] bg-white px-4 py-1.5 text-[10px] font-bold uppercase tracking-[0.18em] text-[#14326E] shadow-md">
-                Phi Chapter · UGA
+            <div className="relative" data-aos="fade-up" data-aos-delay="120" data-aos-duration="500">
+              <div className="absolute -inset-3 rounded-[1.75rem] border border-[#6b1c2a]" aria-hidden="true" />
+              <div className="relative aspect-video overflow-hidden rounded-[1.35rem] border-4 border-[#6b1c2a] bg-black shadow-2xl shadow-black/50">
+                <video controls playsInline preload="metadata" className="h-full w-full bg-black object-contain">
+                  <source src="/fall-rush-2026-promo.mp4" type="video/mp4" />
+                  Your browser does not support this video.
+                </video>
               </div>
             </div>
           </div>
