@@ -389,18 +389,21 @@ export default function TemplatePage({ spotlightLinks = [] }) {
               </Link>
             </div>
 
-            <div className="grid gap-3 sm:grid-cols-3 md:grid-cols-1" data-aos="fade-up" data-aos-delay="120" data-aos-duration="500">
-              {[
-                ['Meet the chapter', 'Get to know the people and community behind Phi Chapter.'],
-                ['Build your network', 'Connect with students, alumni, and professionals in technology.'],
-                ['Grow with purpose', 'Discover opportunities to learn, lead, and make an impact.'],
-              ].map(([title, description], index) => (
-                <article key={title} className="rounded-2xl border border-slate-100 bg-white/80 p-5 shadow-lg ring-1 ring-slate-100 backdrop-blur-sm transition-transform transition-colors hover:-translate-y-1 hover:shadow-indigo-200/50">
-                  <p className="text-xs font-semibold tracking-[0.18em] text-indigo-600">0{index + 1}</p>
-                  <h3 className="mt-2 text-lg font-bold text-blue-900">{title}</h3>
-                  <p className="mt-1 text-sm leading-relaxed text-slate-700">{description}</p>
-                </article>
-              ))}
+            <div className="relative mx-auto w-full max-w-[24rem] pb-4 pt-3 md:max-w-[28rem] md:justify-self-end" data-aos="fade-up" data-aos-delay="120" data-aos-duration="500">
+              <div className="relative rounded-[1.7rem] border border-[#0f2758] bg-[#14326E] p-3 shadow-2xl shadow-blue-950/30">
+                <div className="relative aspect-[4/5] overflow-hidden rounded-[1.15rem] border border-white/30 bg-black">
+                  <Image
+                    src="/Fall%20Rush%20Poster.JPG"
+                    alt="Kappa Theta Pi Fall Rush registration poster"
+                    fill
+                    sizes="(max-width: 767px) min(100vw - 2rem, 24rem), 28rem"
+                    className="object-cover object-[center_52%]"
+                  />
+                </div>
+              </div>
+              <div className="absolute bottom-0 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full border border-[#d4af37] bg-white px-4 py-1.5 text-[10px] font-bold uppercase tracking-[0.18em] text-[#14326E] shadow-md">
+                Phi Chapter · UGA
+              </div>
             </div>
           </div>
         </section>
