@@ -537,17 +537,7 @@ function ProfileModal({ member, accent, onClose }) {
 function MemberCard({ member, accent, onClick }) {
   const name = directoryDisplayName(member);
   const pledgeClass = formatPledgeClass(member.pledgeClass);
-  // The member's CURRENT position leads, then the eboard-typed traits, which
-  // in practice record past service. Both get the same treatment on purpose:
-  // "President" and "Former Treasurer" are the same kind of fact about a
-  // person, and giving the current one a different visual weight made eboard
-  // and cabinet cards look like they were missing something alumni had.
-  //
-  // Derived, not typed: specificRole reads execTitle, else the committees they
-  // chair. There is deliberately NO generic fallback ("Member", "Alumni") —
-  // labelling every card with its own section heading is the noise this
-  // roster dropped.
-  const traitLabels = [specificRole(member), ...(member.traits ?? []).map(traitText)].filter(Boolean);
+  const traitLabels = (member.traits ?? []).map(traitText).filter(Boolean);
 
   return (
     <div
