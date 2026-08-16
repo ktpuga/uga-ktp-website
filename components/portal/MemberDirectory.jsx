@@ -209,6 +209,39 @@ function GroupBadge({ group }) {
   );
 }
 
+// Chapter navy and gold, in one place so the two trait surfaces below cannot
+// drift apart.
+//
+// ⚠ THE NAVY GOES THROUGH readableGroupText, IT IS NEVER USED RAW. As a
+// literal `text-[#14326E]` it measured 1.39:1 against the dark card
+// (--color-dark-card: #1a1c21) — WCAG AA wants 4.5:1, so the traits were
+// effectively invisible in portal dark mode while the gold diamond beside them
+// still rendered. That is the identical defect GroupBadge above already
+// documents ("a dark swatch on a card... in dark mode it used to be
+// near-invisible"), which is why that helper exists. It keeps the hue and
+// re-derives only lightness, so this stays navy in light mode.
+//
+// The gold is left literal on purpose: it is a decorative, aria-hidden 6px
+// diamond, and it already clears 8:1 on the dark card.
+const TRAIT_NAVY = '#14326E';
+const TRAIT_GOLD = '#d4af37';
+
+function TraitLine({ children, compact = false }) {
+  const { theme } = usePortalTheme();
+  return (
+    <span
+      className={cn(
+        'inline-flex items-start justify-center font-semibold leading-snug',
+        compact ? 'gap-1.5 text-[11px]' : 'gap-2 text-xs',
+      )}
+      style={{ color: readableGroupText(TRAIT_NAVY, theme === 'dark') }}
+    >
+      <span aria-hidden="true" className="mt-1.5 h-1.5 w-1.5 shrink-0 rotate-45" style={{ background: TRAIT_GOLD }} />
+      <span className="text-balance">{children}</span>
+    </span>
+  );
+}
+
 // A member's own links, as chips.
 //
 // **Every URL goes through safeExternalHref even though the API already
@@ -305,6 +338,9 @@ function ProfileModal({ member, accent, onClose }) {
   const name = directoryDisplayName(member);
   const graduation = formatGraduationDate(member.graduationDate);
   const role = specificRole(member);
+  const traitLabels = (member.traits ?? []).map(traitText).filter(Boolean);
+  const alumniTrait = member.memberGroup === 'alumni' ? traitLabels[0] : null;
+  const remainingTraits = alumniTrait ? traitLabels.slice(1) : traitLabels;
 
   useEffect(() => {
     document.body.style.overflow = 'hidden';
@@ -368,15 +404,28 @@ function ProfileModal({ member, accent, onClose }) {
               Chair" typed as a trait should be indistinguishable from the
               caption a real chair gets, which is the whole point of them. */}
           <div className="mt-2 flex flex-wrap items-center justify-center gap-1.5">
-            <GroupBadge group={member.memberGroup} />
+            {alumniTrait ? (
+              <span className="w-full text-center">
+                <TraitLine>{alumniTrait}</TraitLine>
+              </span>
+            ) : (
+              <GroupBadge group={member.memberGroup} />
+            )}
             {role && <CaptionPill>{role}</CaptionPill>}
-            {/* traitText, not the raw value: React throws on an object child,
-                so a pre-migration {label, value} row would blank this modal
-                rather than look wrong. */}
-            {(member.traits ?? []).map(traitText).filter(Boolean).map((trait) => (
-              <CaptionPill key={trait}>{trait}</CaptionPill>
-            ))}
           </div>
+          {remainingTraits.length > 0 && (
+            <section className="mt-3 w-full max-w-sm space-y-1.5 text-center">
+                {remainingTraits.map((trait) => (
+                  <div
+                    key={trait}
+                    className="border-y px-3 py-1.5 text-xs font-semibold leading-snug text-foreground"
+                    style={{ borderColor: tint(accent.base, 0.24), background: tint(accent.base, 0.08) }}
+                  >
+                    {trait}
+                  </div>
+                ))}
+            </section>
+          )}
 
           {/* Directly under the badges rather than down in the info rows,
               because for an alumnus this is the single most useful line on the
@@ -487,7 +536,6 @@ function ProfileModal({ member, accent, onClose }) {
 // a photo-and-name-only card still read as composed.
 function MemberCard({ member, accent, onClick }) {
   const name = directoryDisplayName(member);
-  const role = specificRole(member);
   const pledgeClass = formatPledgeClass(member.pledgeClass);
   const traitLabels = (member.traits ?? []).map(traitText).filter(Boolean);
 
@@ -514,6 +562,16 @@ function MemberCard({ member, accent, onClick }) {
         {member.username && <p className="truncate text-xs text-muted-foreground">@{member.username}</p>}
       </div>
 
+      {traitLabels.length > 0 && (
+        <section className="w-full space-y-1 text-center">
+          {traitLabels.map((trait) => (
+            <div key={trait} className="flex justify-center">
+              <TraitLine compact>{trait}</TraitLine>
+            </div>
+          ))}
+        </section>
+      )}
+
       {(member.major || pledgeClass) && (
         <div className="flex w-full min-w-0 flex-col items-center gap-0.5 text-[11px] text-muted-foreground">
           {/* BookOpen for the major and Users for the pledge class, matching
@@ -535,35 +593,6 @@ function MemberCard({ member, accent, onClick }) {
         </div>
       )}
 
-      {/* The portal accent, not the member group's colour. Only 14 of ~94
-          people have a role at all, so colouring it by group would put a second
-          group marker on exactly the cards that least need one.
-
-          Traits sit in the same row and take the accent too, so the grid card
-          says the same thing the modal does. They wrap rather than truncate as
-          a group: six of them is eboard's choice, and silently hiding the sixth
-          would make the card disagree with the profile it opens. */}
-      {(role || traitLabels.length > 0) && (
-        <div className="mt-0.5 flex max-w-full flex-wrap items-center justify-center gap-1">
-          {role && (
-            <span
-              className="max-w-full truncate rounded-full px-2.5 py-0.5 text-[10px] font-semibold"
-              style={{ background: tint(accent.base, 0.12), color: accent.light }}
-            >
-              {role}
-            </span>
-          )}
-          {traitLabels.map((trait) => (
-            <span
-              key={trait}
-              className="max-w-full truncate rounded-full px-2.5 py-0.5 text-[10px] font-semibold"
-              style={{ background: tint(accent.base, 0.12), color: accent.light }}
-            >
-              {trait}
-            </span>
-          ))}
-        </div>
-      )}
     </div>
   );
 }

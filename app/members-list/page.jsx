@@ -16,10 +16,10 @@ const SECTIONS = [
   // Leadership cards keep more room for titles, traits, and link chips.
   // Members and alumni have their own five-card canvas at desktop. It uses a
   // wider minimum width so those cards stay the same size as leadership cards.
-  { key: 'eboard', heading: 'Executive Board', title: 'E-Board', bg: 'bg-card', cols: 'md:grid-cols-3 xl:grid-cols-4' },
-  { key: 'chair', heading: 'Cabinet', title: 'Chair', bg: 'bg-background', cols: 'md:grid-cols-3 xl:grid-cols-4' },
-  { key: 'active', heading: 'Members', title: 'Member', bg: 'bg-card', cols: 'md:grid-cols-3 xl:grid-cols-5' },
-  { key: 'alumni', heading: 'Alumni', title: 'Alumni', bg: 'bg-background', cols: 'md:grid-cols-3 xl:grid-cols-5' },
+  { key: 'eboard', heading: 'Executive Board', bg: 'bg-card', cols: 'md:grid-cols-3 xl:grid-cols-4' },
+  { key: 'chair', heading: 'Cabinet', bg: 'bg-background', cols: 'md:grid-cols-3 xl:grid-cols-4' },
+  { key: 'active', heading: 'Members', bg: 'bg-card', cols: 'md:grid-cols-3 xl:grid-cols-5' },
+  { key: 'alumni', heading: 'Alumni', bg: 'bg-background', cols: 'md:grid-cols-3 xl:grid-cols-5' },
 ];
 
 // Deliberately First + Last name here, not the shared memberDisplayName()
@@ -34,15 +34,6 @@ function formalName(person) {
 function formalInitials(person) {
   const initials = `${person.firstName?.[0] ?? ''}${person.lastName?.[0] ?? ''}`.toUpperCase();
   return initials || 'M';
-}
-
-// Prefer the real, specific title over the generic per-section fallback —
-// an eboard member's actual position ("President") if set, or which
-// committee(s) a chair runs, otherwise just the section's generic label.
-function personTitle(person, fallbackTitle) {
-  if (person.execTitle) return person.execTitle;
-  if (person.chairedCommittees?.length > 0) return person.chairedCommittees.map((c) => `${c} Committee`).join(' & ');
-  return fallbackTitle;
 }
 
 function isPresident(person) {
@@ -110,20 +101,20 @@ function alumniByPledgeClass(people) {
   });
 }
 
-function RosterCard({ person, title }) {
+function RosterCard({ person }) {
   const name = formalName(person);
   const initials = formalInitials(person);
 
   return (
     <Card
       name={name}
-      title={personTitle(person, title)}
       // What they're doing now, in their own words. Only alumni are asked for
       // it, so in practice this is blank on every other section's cards — but
       // it is rendered for anyone who has one rather than gated on the section,
       // because the form is what decides who is asked.
       note={person.doingNow}
-      // Eboard-typed, unlike `note` above which the member writes themselves.
+      // Former chapter roles remain visible, while current positions are kept
+      // off the card for a cleaner roster.
       traits={person.traits}
       // The member's own links. Card re-checks every href with
       // safeExternalHref before rendering, because this page has no
@@ -148,7 +139,7 @@ function RosterCard({ person, title }) {
   );
 }
 
-function AlumniRoster({ people, title, cols }) {
+function AlumniRoster({ people, cols }) {
   const [expandedClasses, setExpandedClasses] = useState(() => new Set());
 
   function toggleClass(key) {
@@ -191,7 +182,7 @@ function AlumniRoster({ people, title, cols }) {
                 id={`${sectionId}-cards`}
                 className={`mt-6 grid grid-cols-1 gap-8 text-sm sm:grid-cols-2 lg:gap-10 ${cols}`}
               >
-                {pledgeClass.people.map((person) => <RosterCard key={person.id} person={person} title={title} />)}
+                {pledgeClass.people.map((person) => <RosterCard key={person.id} person={person} />)}
               </div>
             )}
           </section>
@@ -278,7 +269,7 @@ export default function MembersListPage() {
                     </TabsList>
                   </div>
 
-                  {SECTIONS.map(({ key, heading, title, cols }) => {
+                  {SECTIONS.map(({ key, heading, cols }) => {
                     const people = roster[key] ?? [];
                     const isExpandedRoster = key === 'active' || key === 'alumni';
                     const orderedPeople = key === 'eboard'
@@ -291,10 +282,10 @@ export default function MembersListPage() {
                         {orderedPeople.length > 0 ? (
                           <div className={isExpandedRoster ? '' : 'mx-auto max-w-[88rem]'}>
                             {key === 'alumni' ? (
-                              <AlumniRoster people={orderedPeople} title={title} cols={cols} />
+                              <AlumniRoster people={orderedPeople} cols={cols} />
                             ) : (
                               <div className={`grid grid-cols-1 gap-8 text-sm sm:grid-cols-2 lg:gap-10 ${cols}`}>
-                                {orderedPeople.map((person) => <RosterCard key={person.id} person={person} title={title} />)}
+                                {orderedPeople.map((person) => <RosterCard key={person.id} person={person} />)}
                               </div>
                             )}
                           </div>
@@ -310,7 +301,7 @@ export default function MembersListPage() {
           </>
         )}
 
-        {false && SECTIONS.map(({ key, heading, title, bg, cols }) => {
+        {false && SECTIONS.map(({ key, heading, bg, cols }) => {
           const people = roster[key] ?? [];
           // Keep the API's order for every group, while making the chapter's
           // President the first card in the public executive-board roster.
@@ -332,7 +323,7 @@ export default function MembersListPage() {
                 </div>
                 <div className={`mt-12 grid grid-cols-1 gap-8 text-sm sm:grid-cols-2 lg:gap-10 ${cols}`}>
                   {orderedPeople.map((person) => (
-                    <RosterCard key={person.id} person={person} title={title} />
+                    <RosterCard key={person.id} person={person} />
                   ))}
                 </div>
               </div>
