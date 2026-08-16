@@ -6,7 +6,7 @@ import { usePathname } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { cn } from '@/lib/utils';
 import {
-  ChevronLeft, ChevronRight, Plus, Trash2, Search, X, Star, Users, MessageSquare, Calendar, CalendarPlus, QrCode, LogIn, LogOut, UserPlus, UserMinus, Clock, AlertTriangle, MapPin, CalendarDays, FolderOpen,
+  ChevronLeft, ChevronRight, Plus, Trash2, Search, X, Star, Users, MessageSquare, Calendar, CalendarPlus, QrCode, ClipboardCheck, LogIn, LogOut, UserPlus, UserMinus, Clock, AlertTriangle, MapPin, CalendarDays, FolderOpen,
 } from 'lucide-react';
 import {
   getCommittees,
@@ -252,7 +252,11 @@ function DeleteConfirmModal({ committeeName, accent, onClose, onConfirm }) {
 // instead, which creates a *meeting*: an RSVP request, no calendar entry, no
 // attendance. The two used to be one ambiguous "Schedule Meeting" button.
 
-const EMPTY_EVENT_FORM = { title: '', description: '', location: '', start: '', end: '', requiresAttendance: true };
+// requiresAttendance defaults ON here (unlike the eboard form) because a
+// committee scheduling its own meeting is nearly always taking attendance.
+// requiresRsvp defaults OFF: a small committee already knows who is coming,
+// and an unasked-for RSVP prompt on every meeting is noise.
+const EMPTY_EVENT_FORM = { title: '', description: '', location: '', start: '', end: '', requiresAttendance: true, requiresRsvp: false };
 
 function ScheduleEventModal({ committeeId, committeeName, accent, onClose, onScheduled }) {
   const [form, setForm] = useState(EMPTY_EVENT_FORM);
@@ -287,6 +291,7 @@ function ScheduleEventModal({ committeeId, committeeName, accent, onClose, onSch
         endDate: endDate.toISOString(),
         committeeIds: [committeeId],
         requiresAttendance: form.requiresAttendance,
+        requiresRsvp: form.requiresRsvp,
       });
 
       if (!result?.ok) {
@@ -383,6 +388,25 @@ function ScheduleEventModal({ committeeId, committeeName, accent, onClose, onSch
             </p>
             <p className="mt-0.5 text-[11px] text-muted-foreground">
               A check-in code appears under the Attendance tab once it&apos;s created.
+            </p>
+          </div>
+        </label>
+
+        <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-border bg-muted/40 p-3 transition-colors hover:bg-muted/60">
+          <input
+            type="checkbox"
+            checked={form.requiresRsvp}
+            onChange={(e) => set('requiresRsvp', e.target.checked)}
+            className="mt-0.5 h-4 w-4 shrink-0 rounded border-border"
+            style={{ accentColor: accent.base }}
+          />
+          <div>
+            <p className="flex items-center gap-1.5 text-sm font-medium text-foreground">
+              <ClipboardCheck size={13} style={{ color: accent.light }} />
+              Ask members to RSVP
+            </p>
+            <p className="mt-0.5 text-[11px] text-muted-foreground">
+              Committee members answer Going or Can&apos;t make it beforehand. Separate from attendance.
             </p>
           </div>
         </label>

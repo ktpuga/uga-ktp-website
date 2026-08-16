@@ -4,9 +4,9 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useSession } from 'next-auth/react';
 import {
   ChevronLeft, ChevronRight, Clock, MapPin, CalendarDays, Trash2, X,
-  CheckSquare, Loader2, AlertCircle, Users,
+  CheckSquare, Loader2, AlertCircle, Users, ClipboardCheck,
 } from 'lucide-react';
-import { getEvents, deleteEvent, getCalendarMeetings, getCalendarInterviews } from '@/lib/portal-api';
+import { getEvents, deleteEvent, setEventRsvp, getEventRsvps, getCalendarMeetings, getCalendarInterviews } from '@/lib/portal-api';
 import { formatEventTimeRange, getEventStartDate, getEventEndDate, formatAudience } from '@/lib/portal-format';
 import { isRedirectError } from '@/lib/is-redirect-error';
 import { useConfirm } from '@/components/ui/confirm-dialog';
@@ -73,6 +73,10 @@ function asCalendarEntry(meeting) {
     endDate: meeting.endDate,
     audience: null,
     requiresAttendance: false,
+    // Structurally false, not merely absent. Meetings and interviews live in
+    // their own tables, so an RSVP control here would PUT /events/:id with an
+    // id from a different table — the same trap the Delete button carries.
+    requiresRsvp: false,
     isMeeting: true,
     // Who it's with, from your point of view — the API knows who asked.
     participants: Array.isArray(meeting.participants) ? meeting.participants : [],
@@ -91,6 +95,10 @@ function asInterviewEntry(interview) {
     endDate: interview.endDate,
     audience: null,
     requiresAttendance: false,
+    // Structurally false, not merely absent. Meetings and interviews live in
+    // their own tables, so an RSVP control here would PUT /events/:id with an
+    // id from a different table — the same trap the Delete button carries.
+    requiresRsvp: false,
     isInterview: true,
     // Always empty. This calendar entry only ever belongs to the CANDIDATE, and
     // candidates aren't told who is conducting their interview — the API stopped
@@ -179,7 +187,193 @@ function AttendanceBadge({ accent }) {
   );
 }
 
-function EventCard({ event, accent, canDelete, onDelete, isFirst }) {
+function RsvpBadge({ myRsvp, accent }) {
+  // Three states, and "not answered yet" has to be one of them: a member
+  // scanning the calendar needs to see what they still owe an answer on, which
+  // a badge that only appears once you have replied cannot show.
+  const answered = myRsvp === 'going' || myRsvp === 'not_going';
+  return (
+    <span
+      className="inline-flex items-center gap-1 rounded-sm px-1.5 py-0.5 text-[10px] font-semibold"
+      style={answered
+        ? { background: tint(accent.base, 0.12), color: accent.light }
+        : { background: 'color-mix(in srgb, var(--color-muted-foreground) 14%, transparent)', color: 'var(--color-muted-foreground)' }}
+      title={answered ? undefined : 'You have not responded yet'}
+    >
+      <ClipboardCheck size={9} strokeWidth={2.5} />
+      {myRsvp === 'going' ? 'Going' : myRsvp === 'not_going' ? "Can't make it" : 'RSVP needed'}
+    </span>
+  );
+}
+
+// The member-facing control. Only rendered for real events (never meetings or
+// interviews) that asked for an RSVP.
+function RsvpControl({ event, accent, onAnswer }) {
+  const [saving, setSaving] = useState(null);
+  const [error, setError] = useState(null);
+
+  // Read once per mount rather than on every render: reading the clock during
+  // render is impure and the React Compiler rejects it (the file's other
+  // "now" reads sit inside useMemo for the same reason). Fixing it at mount
+  // also stops the control from vanishing mid-tap if the event ends while
+  // somebody has the panel open.
+  const [openedAt] = useState(() => Date.now());
+  const ended = new Date(getEventEndDate(event)).getTime() < openedAt;
+
+  async function answer(status) {
+    setSaving(status);
+    setError(null);
+    // setEventRsvp returns { error } rather than throwing: a 403 ("not sent to
+    // you") and a 409 ("already ended") are both sentences a member has to
+    // read, and a thrown server action would surface as React #441 instead.
+    const result = await onAnswer(event.id, status);
+    if (result?.error) setError(result.error);
+    setSaving(null);
+  }
+
+  if (ended) {
+    return (
+      <p className="pl-1 text-[11px] text-muted-foreground">
+        RSVP closed when this event ended
+        {event.myRsvp && ` · you said ${event.myRsvp === 'going' ? 'Going' : "Can't make it"}`}
+      </p>
+    );
+  }
+
+  return (
+    <div className="flex flex-col gap-1.5 pl-1">
+      <div className="flex flex-wrap gap-1.5">
+        {[['going', 'Going'], ['not_going', "Can't make it"]].map(([status, label]) => {
+          const selected = event.myRsvp === status;
+          return (
+            <button
+              key={status}
+              type="button"
+              disabled={saving !== null}
+              aria-pressed={selected}
+              onClick={() => answer(status)}
+              className={cn(
+                'inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-xs font-medium transition-colors disabled:opacity-50',
+                selected ? 'text-white' : 'border-border text-muted-foreground hover:bg-muted hover:text-foreground',
+              )}
+              style={selected ? { background: accent.gradient, borderColor: 'transparent' } : undefined}
+            >
+              {saving === status && <Loader2 size={11} className="animate-spin" />}
+              {label}
+            </button>
+          );
+        })}
+      </div>
+      {/* Answering again is an update, not a second row, so changing your mind
+          needs no separate affordance — tapping the other button is it. */}
+      {error && <p className="text-[11px] text-destructive">{error}</p>}
+    </div>
+  );
+}
+
+// Eboard/creator only. Fetches on open rather than reading a count off the
+// event: GET /events deliberately omits rsvpSummary, because computing one
+// costs a users-table scan per event and this list can be the whole calendar.
+// GET /events/:id/rsvps returns the summary and the rows together, so opening
+// this is one request and members who never open it pay nothing.
+function RsvpListModal({ event, accent, onClose }) {
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    getEventRsvps(event.id)
+      .then((result) => { if (!cancelled) setData(result); })
+      .catch((err) => { if (isRedirectError(err)) throw err; if (!cancelled) setError(err.message ?? 'Could not load RSVPs'); })
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
+  }, [event.id]);
+
+  useEffect(() => {
+    function handler(e) { if (e.key === 'Escape') onClose(); }
+    window.addEventListener('keydown', handler);
+    document.body.style.overflow = 'hidden';
+    return () => {
+      window.removeEventListener('keydown', handler);
+      document.body.style.overflow = '';
+    };
+  }, [onClose]);
+
+  const summary = data?.summary;
+  const going = (data?.responses ?? []).filter((r) => r.status === 'going');
+  const notGoing = (data?.responses ?? []).filter((r) => r.status === 'not_going');
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" role="dialog" aria-modal="true" aria-label={`RSVPs for ${event.title}`}>
+      {/* A backdrop button rather than an onClick on the overlay div: a plain
+          div with a handler is not reachable by keyboard and swallows the
+          click that should close the dialog. */}
+      <button type="button" className="absolute inset-0 cursor-default" aria-label="Close" onClick={onClose} />
+
+      <div className="relative flex max-h-[85vh] w-full max-w-lg flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-xl">
+        <div className="flex items-start justify-between gap-3 border-b border-border px-5 py-4" style={{ background: tint(accent.base, 0.03) }}>
+          <div className="min-w-0">
+            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">RSVPs</p>
+            <p className="truncate text-sm font-semibold text-foreground">{event.title}</p>
+          </div>
+          <button type="button" onClick={onClose} className="shrink-0 rounded-lg p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground" aria-label="Close">
+            <X size={14} />
+          </button>
+        </div>
+
+        <div className="min-h-0 flex-1 overflow-y-auto p-5">
+          {loading ? (
+            <p className="py-8 text-center text-sm text-muted-foreground">Loading…</p>
+          ) : error ? (
+            <p className="py-8 text-center text-sm text-destructive">{error}</p>
+          ) : (
+            <>
+              <div className="mb-5 grid grid-cols-4 gap-2">
+                {[
+                  ['Going', summary?.going],
+                  ["Can't", summary?.notGoing],
+                  ['No reply', summary?.pending],
+                  ['Invited', summary?.total],
+                ].map(([label, value]) => (
+                  <div key={label} className="rounded-xl border border-border bg-muted/40 px-2 py-2.5 text-center">
+                    <p className="text-lg font-semibold leading-none text-foreground">{value ?? 0}</p>
+                    <p className="mt-1 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">{label}</p>
+                  </div>
+                ))}
+              </div>
+
+              {/* "No reply" is a count and never a list. The people who have
+                  not answered have no rows to return — they exist only as the
+                  difference between the invited total and the answers. */}
+              {[['Going', going], ["Can't make it", notGoing]].map(([heading, rows]) => (
+                <div key={heading} className="mb-4 last:mb-0">
+                  <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                    {heading} <span className="font-normal">({rows.length})</span>
+                  </p>
+                  {rows.length === 0 ? (
+                    <p className="text-xs text-muted-foreground">Nobody yet.</p>
+                  ) : (
+                    <ul className="space-y-1.5" role="list">
+                      {rows.map((row) => (
+                        <li key={row.userId} className="flex items-center justify-between gap-3 rounded-lg border border-border px-3 py-2">
+                          <span className="min-w-0 truncate text-sm text-foreground">{row.displayName}</span>
+                          <span className="shrink-0 text-[11px] text-muted-foreground">@{row.username}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              ))}
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function EventCard({ event, accent, canDelete, onDelete, isFirst, onAnswerRsvp, canSeeRsvps, onViewRsvps }) {
   return (
     <div
       className={cn(
@@ -216,6 +410,7 @@ function EventCard({ event, accent, canDelete, onDelete, isFirst }) {
           <ParticipantBadge names={event.participants} isInterview={event.isInterview} accent={accent} />
         )}
         {event.requiresAttendance && <AttendanceBadge accent={accent} />}
+        {event.requiresRsvp && <RsvpBadge myRsvp={event.myRsvp} accent={accent} />}
       </div>
 
       <div className="flex flex-col gap-1 pl-1">
@@ -235,11 +430,24 @@ function EventCard({ event, accent, canDelete, onDelete, isFirst }) {
         <p className="pl-1 text-xs leading-relaxed text-muted-foreground line-clamp-2">{event.description}</p>
       )}
 
+      {event.requiresRsvp && <RsvpControl event={event} accent={accent} onAnswer={onAnswerRsvp} />}
+
+      {/* The organiser still answers for themselves above; this is the extra
+          affordance, not a replacement. */}
+      {canSeeRsvps && (
+        <button
+          type="button"
+          onClick={() => onViewRsvps(event)}
+          className="ml-1 mt-0.5 inline-flex w-fit items-center gap-1.5 rounded-lg border border-border px-2.5 py-1 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+        >
+          <Users size={11} /> View RSVPs
+        </button>
+      )}
     </div>
   );
 }
 
-function UpcomingEventsList({ events, accent, onSelect }) {
+function UpcomingEventsList({ events, accent, onSelect, canSeeRsvps, onViewRsvps }) {
   return (
     <aside className="flex min-h-0 flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-sm xl:h-[36.25rem]" aria-label="Upcoming events">
       <div className="flex items-center justify-between border-b border-border px-5 py-4" style={{ background: tint(accent.base, 0.03) }}>
@@ -264,10 +472,16 @@ function UpcomingEventsList({ events, accent, onSelect }) {
             const type = event.isInterview ? 'Interview' : event.isMeeting ? 'Meeting' : 'Event';
             return (
               <li key={event.id}>
+                {/* The border/background moved from the button to this
+                    wrapper so a second button ("View RSVPs") can sit beside
+                    the first as a SIBLING. It cannot go inside: nesting a
+                    button within a button is invalid HTML, and browsers
+                    recover from it by dropping the inner one. */}
+                <div className="overflow-hidden rounded-xl border border-border bg-card transition-shadow hover:shadow-sm">
                 <button
                   type="button"
                   onClick={() => onSelect(startsAt)}
-                  className="flex w-full items-start gap-3 rounded-xl border border-border bg-card p-3 text-left transition-colors hover:bg-muted/60 hover:shadow-sm"
+                  className="flex w-full items-start gap-3 p-3 text-left transition-colors hover:bg-muted/60"
                 >
                   <div className="w-11 shrink-0 rounded-lg bg-muted/60 py-1.5 text-center">
                     <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
@@ -291,11 +505,28 @@ function UpcomingEventsList({ events, accent, onSelect }) {
                         <ParticipantBadge names={event.participants ?? []} isInterview={event.isInterview} accent={accent} />
                       )}
                       {event.requiresAttendance && <AttendanceBadge accent={accent} />}
+                      {/* Badge only, no buttons: each row here is already a
+                          <button> that opens the day, and nesting a button
+                          inside one is invalid HTML. Answering happens on the
+                          card in the day panel. */}
+                      {event.requiresRsvp && <RsvpBadge myRsvp={event.myRsvp ?? null} accent={accent} />}
                       <span className="inline-flex items-center rounded-sm bg-muted px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">{type}</span>
                     </div>
                     {event.description && <p className="mt-2 line-clamp-2 text-xs leading-relaxed text-muted-foreground">{event.description}</p>}
                   </div>
                 </button>
+                {canSeeRsvps(event) && (
+                  <div className="border-t border-border px-3 py-2">
+                    <button
+                      type="button"
+                      onClick={() => onViewRsvps(event)}
+                      className="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
+                    >
+                      <Users size={11} /> View RSVPs
+                    </button>
+                  </div>
+                )}
+                </div>
               </li>
             );
           })}
@@ -335,6 +566,9 @@ function RevampedEventsCalendar({ title, description, accentKey }) {
   const [viewMonth, setViewMonth] = useState(today.getMonth());
   const [selectedDate, setSelectedDate] = useState(null);
   const [panelOpen, setPanelOpen] = useState(false);
+  // The event whose RSVP list is open, from either surface. Holds the whole
+  // object rather than an id so the modal can title itself without a lookup.
+  const [rsvpListEvent, setRsvpListEvent] = useState(null);
   const panelRef = useRef(null);
 
   useEffect(() => {
@@ -356,6 +590,30 @@ function RevampedEventsCalendar({ title, description, accentKey }) {
       if (isRedirectError(err)) throw err;
       window.alert(err.message ?? 'Failed to delete event');
     }
+  }
+
+  // Who may open the RSVP list. Mirrors the API's own rule (eboard OR the
+  // event's creator) — deliberately NARROWER than attendance, which also
+  // allows any chair, because these rows name individuals.
+  //
+  // Reads creatorId ?? createdBy because this runs against BOTH shapes: the
+  // day panel passes the mapped card object (creatorId) while the upcoming
+  // list passes the raw API event (createdBy). Excludes meetings and
+  // interviews for the same reason Delete does — their ids belong to other
+  // tables, so the request would hit the wrong row.
+  const canSeeRsvps = (ev) => Boolean(ev.requiresRsvp)
+    && !ev.isMeeting && !ev.isInterview
+    && (isEboard || (!!currentUserId && (ev.creatorId ?? ev.createdBy) === currentUserId));
+
+  // Returns { error } to the control rather than throwing, so a 403 or 409
+  // lands beside the buttons. Only writes local state on success, which means
+  // a rejected answer leaves the previous one showing instead of a button that
+  // looks selected but was never saved.
+  async function handleAnswerRsvp(id, status) {
+    const result = await setEventRsvp(id, status);
+    if (result?.error) return result;
+    setRawEvents((prev) => prev.map((e) => (String(e.id) === String(id) ? { ...e, myRsvp: result.status } : e)));
+    return result;
   }
 
   const todayIso = localDateKey(today);
@@ -439,6 +697,12 @@ function RevampedEventsCalendar({ title, description, accentKey }) {
           : eventAudienceLabel(event.audience, event.committeeIds),
         participants: Array.isArray(event.participants) ? event.participants : [],
         requiresAttendance: event.requiresAttendance,
+        requiresRsvp: Boolean(event.requiresRsvp),
+        myRsvp: event.myRsvp ?? null,
+        // The control needs the real end time to know RSVP has closed, and
+        // `timeRange` above is a formatted string, not a date.
+        startDate: event.startDate,
+        endDate: event.endDate,
         creatorId: event.createdBy,
         isMeeting: Boolean(event.isMeeting),
         isInterview: Boolean(event.isInterview),
@@ -643,7 +907,13 @@ function RevampedEventsCalendar({ title, description, accentKey }) {
         </div>
       </div>
 
-      <UpcomingEventsList events={upcomingEvents} accent={accent} onSelect={selectUpcomingEvent} />
+      <UpcomingEventsList
+        events={upcomingEvents}
+        accent={accent}
+        onSelect={selectUpcomingEvent}
+        canSeeRsvps={canSeeRsvps}
+        onViewRsvps={setRsvpListEvent}
+      />
       </div>
 
       <div
@@ -678,7 +948,17 @@ function RevampedEventsCalendar({ title, description, accentKey }) {
 
             <div className="grid grid-cols-1 gap-4 p-6 sm:grid-cols-2 lg:grid-cols-3">
               {selectedEvents.map((ev, i) => (
-                <EventCard key={ev.id} event={ev} accent={accent} canDelete={canDeleteEvent(ev)} onDelete={handleDelete} isFirst={i === 0} />
+                <EventCard
+                  key={ev.id}
+                  event={ev}
+                  accent={accent}
+                  canDelete={canDeleteEvent(ev)}
+                  onDelete={handleDelete}
+                  isFirst={i === 0}
+                  onAnswerRsvp={handleAnswerRsvp}
+                  canSeeRsvps={canSeeRsvps(ev)}
+                  onViewRsvps={setRsvpListEvent}
+                />
               ))}
             </div>
           </>
@@ -691,6 +971,10 @@ function RevampedEventsCalendar({ title, description, accentKey }) {
           {monthEventCount} event{monthEventCount !== 1 ? 's' : ''} in {MONTH_LABELS[viewMonth]}
         </p>
       </div>
+
+      {rsvpListEvent && (
+        <RsvpListModal event={rsvpListEvent} accent={accent} onClose={() => setRsvpListEvent(null)} />
+      )}
     </div>
   );
 }

@@ -135,36 +135,40 @@ const ProfileCard = ({ name, title, note, traits, links, bio, avatarSrc, fallbac
     // justify-start) actually overrides the default instead of losing to it on
     // stylesheet order.
     <div className={cn("relative rounded-2xl bg-card/80 backdrop-blur-lg border-2 border-transparent bg-clip-padding p-6 text-center shadow-xl flex flex-col items-center justify-center transition-transform duration-300 hover:scale-105 hover:border-gradient-to-tr hover:from-indigo-400 hover:via-fuchsia-400 hover:to-cyan-400 group min-h-[260px] h-full", className)}>
-      <Avatar className={cn(AVATAR_SIZES[avatarSize] ?? AVATAR_SIZES.default, "mb-4 shadow-lg ring-4 ring-indigo-200 group-hover:ring-fuchsia-300 transition-all duration-300", squareAvatar && "rounded-2xl")}>
+      <Avatar className={cn(AVATAR_SIZES[avatarSize] ?? AVATAR_SIZES.default, "mb-3 shadow-lg ring-4 ring-indigo-200 group-hover:ring-fuchsia-300 transition-all duration-300", squareAvatar && "rounded-2xl")}>
         <AvatarImage src={avatarSrc} alt={`${name} Avatar, bio: ${bio}`} />
         <AvatarFallback className={cn(squareAvatar && "rounded-2xl")}>{fallbackInitials}</AvatarFallback>
       </Avatar>
-      <h3 className="text-lg font-bold text-primary mb-1">{name}</h3>
-      <p className="text-sm text-foreground mb-2">{title}</p>
+      <h3 className="text-lg font-bold text-primary">{name}</h3>
       {/* Muted and a step smaller than the role above it, so a card with one
           reads as name → role → what they're up to rather than as two competing
           titles. text-balance keeps a two-line value from leaving one orphaned
           word, which is common at these widths: the grid goes to five columns
           on a large screen and this is free text up to 150 characters. */}
-      {note && (
-        <p className="text-xs text-muted-foreground mb-1 text-balance px-2">{note}</p>
-      )}
-      {/* Eboard-typed captions, rendered as pills rather than a definition
-          list. `title` above is already this card's "Infrastructure Chair" line,
-          and a trait is the same kind of thing, so it reads as more of those
-          instead of as a table bolted under the name. Wraps and centres so a
-          card with three still looks composed. */}
+      {/* Traits record prior executive service, so they read as chapter history
+          rather than another set of clickable-looking link chips.
+          ⚠ The literal #14326E below is only safe because every caller of this
+          component is a PUBLIC page, and the dark variant is scoped to
+          `.portal-dark` (see globals.css), which public pages never carry. On
+          the portal's dark card it measures 1.39:1 and disappears — the portal
+          directory hit exactly that and now derives the colour through
+          readableGroupText instead. If ProfileCard is ever rendered inside the
+          portal, this has to change with it. */}
       {traitLabels.length > 0 && (
-        <ul className="mt-1 mb-1 flex flex-wrap justify-center gap-1 px-2">
+        <section className="mt-1.5 w-full max-w-xs space-y-1.5 text-center">
           {traitLabels.map((trait) => (
-            <li
-              key={trait}
-              className="max-w-full truncate rounded-full border border-border px-2 py-0.5 text-[11px] font-medium text-muted-foreground"
-            >
-              {trait}
-            </li>
+            <div key={trait} className="flex justify-center">
+              <span className="inline-flex items-start justify-center gap-2 text-xs font-semibold leading-snug text-[#14326E]">
+                <span aria-hidden="true" className="mt-1.5 h-1.5 w-1.5 shrink-0 rotate-45 bg-[#d4af37]" />
+                <span className="text-balance">{trait}</span>
+              </span>
+            </div>
           ))}
-        </ul>
+        </section>
+      )}
+      {title && <p className="mt-1.5 text-sm text-foreground">{title}</p>}
+      {note && (
+        <p className="mt-1.5 text-balance px-2 text-xs text-muted-foreground">{note}</p>
       )}
       {/* The member's own links, below the eboard captions and above the icon
           row. Chips rather than icons because these are arbitrary destinations
@@ -193,7 +197,7 @@ const ProfileCard = ({ name, title, note, traits, links, bio, avatarSrc, fallbac
         </ul>
       )}
 
-      <div className="flex gap-2 mt-2 justify-center">
+      <div className="mt-2.5 flex justify-center gap-2">
         {otherUrl && (
           <a href={otherUrl} className="text-foreground hover:text-indigo-500 transition-colors" target="_blank" rel="noopener noreferrer">
             <HomeIcon className="h-5 w-5" />

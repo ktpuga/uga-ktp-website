@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { cn } from '@/lib/utils';
 import {
   CalendarDays, Plus, X, Pencil, Trash2, MapPin, Clock, Users,
-  AlertCircle, Loader2, ArrowRight, QrCode, Bell, Mail,
+  AlertCircle, Loader2, ArrowRight, QrCode, Bell, Mail, ClipboardCheck,
 } from 'lucide-react';
 import {
   getAnnouncements, createAnnouncement, updateAnnouncement, deleteAnnouncement,
@@ -506,7 +506,7 @@ function AnnouncementsTab({ committees }) {
 
 const EMPTY_EVENT_FORM = {
   title: '', description: '', location: '', start: '', end: '',
-  audience: [], committeeIds: [], requiresAttendance: false, sendEmail: false,
+  audience: [], committeeIds: [], requiresAttendance: false, requiresRsvp: false, sendEmail: false,
 };
 
 function EventForm({ initial, onSubmit, onCancel, isEdit, committees, formError }) {
@@ -571,6 +571,29 @@ function EventForm({ initial, onSubmit, onCancel, isEdit, committees, formError 
             </p>
             <p className="mt-0.5 text-[11px] text-muted-foreground">
               Members can scan a QR code to mark attendance at the door, and get an extra reminder a day ahead
+            </p>
+          </div>
+        </label>
+
+        {/* Deliberately its own control rather than a mode of the one above.
+            RSVP and attendance answer different questions ("are you coming?"
+            before, "did you turn up?" after) and an event may want either,
+            both or neither. Nothing here may make one imply the other. */}
+        <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-border bg-muted/40 p-3 transition-colors hover:bg-muted/60">
+          <input
+            type="checkbox"
+            checked={form.requiresRsvp}
+            onChange={(e) => setForm((f) => ({ ...f, requiresRsvp: e.target.checked }))}
+            className="mt-0.5 h-4 w-4 shrink-0 rounded border-border"
+            style={{ accentColor: MAROON.base }}
+          />
+          <div>
+            <p className="flex items-center gap-1.5 text-sm font-medium text-foreground">
+              <ClipboardCheck size={13} style={{ color: MAROON.light }} />
+              Ask members to RSVP
+            </p>
+            <p className="mt-0.5 text-[11px] text-muted-foreground">
+              Everyone this event is sent to can answer Going or Can&apos;t make it, and you see the counts. Separate from attendance
             </p>
           </div>
         </label>
@@ -710,6 +733,9 @@ function EventsTab({ committees }) {
         audience: form.audience,
         committeeIds: form.committeeIds,
         requiresAttendance: form.requiresAttendance,
+        // Always sent, including false. PUT /events/:id is a whole-row write,
+        // so omitting this on an edit turns RSVP off for the event.
+        requiresRsvp: form.requiresRsvp,
         sendEmail: form.sendEmail,
       };
 
@@ -783,6 +809,9 @@ function EventsTab({ committees }) {
                     audience: editingItem.audience ?? [],
                     committeeIds: editingItem.committeeIds ?? [],
                     requiresAttendance: editingItem.requiresAttendance ?? false,
+                    // Without this the checkbox renders unticked on an event
+                    // that HAS rsvp on, and saving the edit would turn it off.
+                    requiresRsvp: editingItem.requiresRsvp ?? false,
                   }}
                   onSubmit={handleSubmit}
                   onCancel={handleCancel}
