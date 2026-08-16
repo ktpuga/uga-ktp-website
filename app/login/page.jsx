@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { cookies } from 'next/headers';
 import { auth } from '@/auth';
 import SignInButton from '@/components/auth/SignInButton';
+import CredentialSignIn from '@/components/auth/CredentialSignIn';
 import SilentSignIn from '@/components/auth/SilentSignIn';
 import AutoSignIn from '@/components/auth/AutoSignIn';
 import AlreadySignedIn from '@/components/auth/AlreadySignedIn';
@@ -66,9 +67,24 @@ export default async function Login({ searchParams }) {
   // error. That's the single most common way to arrive here now.
   const probeCameBackEmpty = failed && cookieStore.get(SSO_PROBE_COOKIE)?.value === '1';
 
+  // Authentik's browser-facing origin, derived from the one URL that already
+  // has to be right rather than duplicated into a NEXT_PUBLIC_ variable. The
+  // issuer is server-only, so the origin is passed down as a prop — that keeps
+  // a single source of truth and means a wrong value fails at build, not in
+  // somebody's browser.
+  //
+  // Falls back to the SSO button if it isn't configured: a login page that
+  // renders no way to log in is worse than the button this replaced.
+  let authentikOrigin = null;
+  try {
+    authentikOrigin = new URL(process.env.AUTHENTIK_ISSUER).origin;
+  } catch {
+    authentikOrigin = null;
+  }
+
   const signInOptions = (
     <div>
-      <SignInButton />
+      {authentikOrigin ? <CredentialSignIn origin={authentikOrigin} /> : <SignInButton />}
 
       <div className="mt-6 border-t border-white/15 pt-6 text-center">
         <p className="text-sm text-white/60">Not a member yet?</p>
