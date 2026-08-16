@@ -444,7 +444,10 @@ function EventCard({ event, accent, canDelete, onDelete, isFirst, onAnswerRsvp, 
           <ParticipantBadge names={event.participants} isInterview={event.isInterview} accent={accent} />
         )}
         {event.requiresAttendance && <AttendanceBadge accent={accent} />}
-        {event.requiresRsvp && <RsvpBadge myRsvp={event.myRsvp} accent={accent} />}
+        {/* Gated on canRsvp too: "RSVP needed" is a demand, and telling
+            somebody an answer is needed from them when the API would refuse
+            it is worse than saying nothing. */}
+        {event.requiresRsvp && event.canRsvp && <RsvpBadge myRsvp={event.myRsvp} accent={accent} />}
       </div>
 
       <div className="flex flex-col gap-1 pl-1">
@@ -464,7 +467,7 @@ function EventCard({ event, accent, canDelete, onDelete, isFirst, onAnswerRsvp, 
         <p className="pl-1 text-xs leading-relaxed text-muted-foreground line-clamp-2">{event.description}</p>
       )}
 
-      {event.requiresRsvp && <RsvpControl event={event} accent={accent} onAnswer={onAnswerRsvp} />}
+      {event.requiresRsvp && event.canRsvp && <RsvpControl event={event} accent={accent} onAnswer={onAnswerRsvp} />}
 
       {/* The organiser still answers for themselves above; this is the extra
           affordance, not a replacement. */}
@@ -508,7 +511,11 @@ function UpcomingEventsList({ events, accent, onSelect, canSeeRsvps, onViewRsvps
             // panel version is one click behind a date nobody clicks unless
             // they already know something is there, so RSVPs went unanswered
             // simply because nothing asked.
-            const canAnswer = Boolean(event.requiresRsvp) && !event.isMeeting && !event.isInterview;
+            // canRsvp, not just requiresRsvp: an organiser outside their own
+            // event's audience is not a recipient, and drawing the button for
+            // them produced a 403 they could do nothing about.
+            const canAnswer = Boolean(event.requiresRsvp) && Boolean(event.canRsvp)
+              && !event.isMeeting && !event.isInterview;
             const needsAnswer = canAnswer && !event.myRsvp;
             return (
               <li key={event.id}>
@@ -525,7 +532,17 @@ function UpcomingEventsList({ events, accent, onSelect, canSeeRsvps, onViewRsvps
                     // looks different. Answered rows go back to the normal
                     // border rather than staying highlighted, or the list
                     // stops reading as a to-do.
-                    needsAnswer ? 'border-amber-500/40' : 'border-border',
+                    //
+                    // Two shades, measured rather than picked by eye: an
+                    // indicator carrying meaning needs 3:1 against its
+                    // background. amber-500/40 was 1.36:1 on the light card
+                    // and 2.33:1 on the dark one — visible to nobody. Solid
+                    // amber-600 is 3.19:1 on white, and amber-500 is 7.94:1
+                    // on the dark card, so each theme takes the shade that
+                    // works for it. (`dark:` only resolves inside
+                    // .portal-dark, which is fine: this component is
+                    // portal-only. The public site has no dark mode.)
+                    needsAnswer ? 'border-amber-600 dark:border-amber-500' : 'border-border',
                   )}
                 >
                 <button
@@ -559,7 +576,7 @@ function UpcomingEventsList({ events, accent, onSelect, canSeeRsvps, onViewRsvps
                           <button> that opens the day, and nesting a button
                           inside one is invalid HTML. Answering happens on the
                           card in the day panel. */}
-                      {event.requiresRsvp && <RsvpBadge myRsvp={event.myRsvp ?? null} accent={accent} />}
+                      {event.requiresRsvp && event.canRsvp && <RsvpBadge myRsvp={event.myRsvp ?? null} accent={accent} />}
                       <span className="inline-flex items-center rounded-sm bg-muted px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">{type}</span>
                     </div>
                     {event.description && <p className="mt-2 line-clamp-2 text-xs leading-relaxed text-muted-foreground">{event.description}</p>}
@@ -569,7 +586,10 @@ function UpcomingEventsList({ events, accent, onSelect, canSeeRsvps, onViewRsvps
                   <div
                     className={cn(
                       'space-y-2 border-t px-3 py-2.5',
-                      needsAnswer ? 'border-amber-500/40 bg-amber-500/[0.07]' : 'border-border',
+                      // The tint stays a low-contrast wash on purpose — it is
+                      // decoration, and the text on top of it is a theme token
+                      // (12.6:1 dark, 18.9:1 light), not amber.
+                      needsAnswer ? 'border-amber-600 bg-amber-500/[0.07] dark:border-amber-500' : 'border-border',
                     )}
                   >
                     {canAnswer && (
@@ -764,6 +784,12 @@ function RevampedEventsCalendar({ title, description, accentKey }) {
         participants: Array.isArray(event.participants) ? event.participants : [],
         requiresAttendance: event.requiresAttendance,
         requiresRsvp: Boolean(event.requiresRsvp),
+        // Whether the API will actually accept an RSVP from this viewer.
+        // Distinct from requiresRsvp: seeing an event and being sent one are
+        // different questions. An organiser who targets an event at a group
+        // they are not in can see it and is not a recipient, so the button
+        // must not be drawn for them — it used to be, and answered 403.
+        canRsvp: Boolean(event.canRsvp),
         myRsvp: event.myRsvp ?? null,
         // The control needs the real end time to know RSVP has closed, and
         // `timeRange` above is a formatted string, not a date.
