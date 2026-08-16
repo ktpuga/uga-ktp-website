@@ -23,6 +23,7 @@ import { getProfile } from '@/lib/portal-api';
 import { isRedirectError } from '@/lib/is-redirect-error';
 import { useUnreadCounts } from '@/lib/use-unread-counts';
 import { useTabNotifications, tabFromHref } from '@/lib/use-tab-notifications';
+import { usePendingRsvpCount } from '@/lib/use-pending-rsvps';
 import { cn } from '@/lib/utils';
 import { memberDisplayName, memberInitials, formatMemberGroup } from '@/lib/portal-format';
 import { profilePictureSrc, PROFILE_PICTURE_CHANGED_EVENT } from '@/lib/avatar';
@@ -348,6 +349,7 @@ export default function PortalShell({
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const { total: unreadTotal } = useUnreadCounts();
   const tabCounts = useTabNotifications();
+  const pendingRsvps = usePendingRsvpCount();
   const { data: session } = useSession();
 
   // The single place that decides what number a nav item shows. This shell
@@ -358,10 +360,20 @@ export default function PortalShell({
   //
   // Messages deliberately keeps its own source: it counts unread messages via
   // read receipts, not "things added since you last looked".
+  //
+  // Calendar has a THIRD source on top of that, and the precedence matters:
+  // an unanswered RSVP outranks "something new is here". tabCounts.calendar
+  // clears the moment you open the tab (markTabSeen), which is right for new
+  // content and wrong for an RSVP — that one has to persist until the member
+  // actually answers. They are not summed, because a brand-new RSVP event is
+  // one thing wanting one action, and adding both would count it twice and
+  // then drop to 1 on a mere visit, which reads as the badge losing track.
   const badgeFor = (href) => {
     if (href.endsWith('/messages')) return unreadTotal;
     const tab = tabFromHref(href);
-    return tab ? (tabCounts[tab] ?? 0) : 0;
+    if (!tab) return 0;
+    if (tab === 'calendar' && pendingRsvps > 0) return pendingRsvps;
+    return tabCounts[tab] ?? 0;
   };
 
   // The session carries authentik_id, groups and profile_complete — and no name

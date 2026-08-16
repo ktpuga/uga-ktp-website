@@ -12,6 +12,7 @@ import { isRedirectError } from '@/lib/is-redirect-error';
 import { useConfirm } from '@/components/ui/confirm-dialog';
 import { cn } from '@/lib/utils';
 import { PALETTES } from '@/components/portal/PortalAccentContext';
+import { announceRsvpChange } from '@/lib/use-pending-rsvps';
 
 // Palette comes from PortalAccentContext, the single source of truth. Each of
 // these files used to carry its own ACCENT_THEMES copy; they had already
@@ -208,7 +209,11 @@ function RsvpBadge({ myRsvp, accent }) {
 
 // The member-facing control. Only rendered for real events (never meetings or
 // interviews) that asked for an RSVP.
-function RsvpControl({ event, accent, onAnswer }) {
+// `compact` is the upcoming-events-list variant: no card of its own, because
+// the list row already supplies the border and the highlight. The answering
+// logic is shared rather than copied, so the two surfaces cannot disagree
+// about what a failed RSVP does.
+function RsvpControl({ event, accent, onAnswer, compact = false }) {
   const [saving, setSaving] = useState(null);
   const [error, setError] = useState(null);
 
@@ -233,10 +238,52 @@ function RsvpControl({ event, accent, onAnswer }) {
 
   if (ended) {
     return (
-      <p className="pl-1 text-[11px] text-muted-foreground">
+      <p className={cn('text-[11px] text-muted-foreground', !compact && 'pl-1')}>
         RSVP closed when this event ended
         {event.myRsvp && ` · you said ${event.myRsvp === 'going' ? 'Going' : "Can't make it"}`}
       </p>
+    );
+  }
+
+  // Built once and rendered by both variants. Answering again is an update,
+  // not a second row, so changing your mind needs no separate affordance —
+  // tapping the other button is it.
+  const buttons = (
+    <div className={cn('grid grid-cols-2', compact ? 'gap-1.5' : 'gap-2')}>
+      {[['going', 'Going'], ['not_going', "Can't make it"]].map(([status, label]) => {
+        const selected = event.myRsvp === status;
+        return (
+          <button
+            key={status}
+            type="button"
+            disabled={saving !== null}
+            aria-pressed={selected}
+            onClick={() => answer(status)}
+            className={cn(
+              'inline-flex items-center justify-center gap-1.5 rounded-lg border font-semibold transition-colors disabled:opacity-50',
+              compact ? 'px-2 py-1.5 text-[11px]' : 'px-3 py-2 text-xs',
+              selected ? 'text-white' : 'border-border bg-card text-muted-foreground hover:bg-muted hover:text-foreground',
+            )}
+            style={selected ? { background: accent.gradient, borderColor: 'transparent' } : undefined}
+          >
+            {saving === status && <Loader2 size={11} className="animate-spin" />}
+            {label}
+          </button>
+        );
+      })}
+    </div>
+  );
+
+  if (compact) {
+    return (
+      <div className="flex flex-col gap-1.5">
+        <div className="flex items-center justify-between gap-2">
+          <p className="text-[11px] font-semibold text-foreground">Will you be attending?</p>
+          <RsvpBadge myRsvp={event.myRsvp} accent={accent} />
+        </div>
+        {buttons}
+        {error && <p className="text-[11px] text-destructive">{error}</p>}
+      </div>
     );
   }
 
@@ -252,30 +299,7 @@ function RsvpControl({ event, accent, onAnswer }) {
         </div>
         <RsvpBadge myRsvp={event.myRsvp} accent={accent} />
       </div>
-      <div className="grid grid-cols-2 gap-2">
-        {[['going', 'Going'], ['not_going', "Can't make it"]].map(([status, label]) => {
-          const selected = event.myRsvp === status;
-          return (
-            <button
-              key={status}
-              type="button"
-              disabled={saving !== null}
-              aria-pressed={selected}
-              onClick={() => answer(status)}
-              className={cn(
-                'inline-flex items-center justify-center gap-1.5 rounded-lg border px-3 py-2 text-xs font-semibold transition-colors disabled:opacity-50',
-                selected ? 'text-white' : 'border-border bg-card text-muted-foreground hover:bg-muted hover:text-foreground',
-              )}
-              style={selected ? { background: accent.gradient, borderColor: 'transparent' } : undefined}
-            >
-              {saving === status && <Loader2 size={11} className="animate-spin" />}
-              {label}
-            </button>
-          );
-        })}
-      </div>
-      {/* Answering again is an update, not a second row, so changing your mind
-          needs no separate affordance — tapping the other button is it. */}
+      {buttons}
       {error && <p className="text-[11px] text-destructive">{error}</p>}
     </div>
   );
@@ -457,7 +481,7 @@ function EventCard({ event, accent, canDelete, onDelete, isFirst, onAnswerRsvp, 
   );
 }
 
-function UpcomingEventsList({ events, accent, onSelect, canSeeRsvps, onViewRsvps }) {
+function UpcomingEventsList({ events, accent, onSelect, canSeeRsvps, onViewRsvps, onAnswerRsvp }) {
   return (
     <aside className="flex min-h-0 flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-sm xl:h-[36.25rem]" aria-label="Upcoming events">
       <div className="flex items-center justify-between border-b border-border px-5 py-4" style={{ background: tint(accent.base, 0.03) }}>
@@ -480,6 +504,12 @@ function UpcomingEventsList({ events, accent, onSelect, canSeeRsvps, onViewRsvps
               ? null
               : eventAudienceLabel(event.audience, event.committeeIds);
             const type = event.isInterview ? 'Interview' : event.isMeeting ? 'Meeting' : 'Event';
+            // Answering lives HERE, not only in the calendar day panel. The
+            // panel version is one click behind a date nobody clicks unless
+            // they already know something is there, so RSVPs went unanswered
+            // simply because nothing asked.
+            const canAnswer = Boolean(event.requiresRsvp) && !event.isMeeting && !event.isInterview;
+            const needsAnswer = canAnswer && !event.myRsvp;
             return (
               <li key={event.id}>
                 {/* The border/background moved from the button to this
@@ -487,7 +517,17 @@ function UpcomingEventsList({ events, accent, onSelect, canSeeRsvps, onViewRsvps
                     the first as a SIBLING. It cannot go inside: nesting a
                     button within a button is invalid HTML, and browsers
                     recover from it by dropping the inner one. */}
-                <div className="overflow-hidden rounded-xl border border-border bg-card transition-shadow hover:shadow-sm">
+                <div
+                  className={cn(
+                    'overflow-hidden rounded-xl border bg-card transition-shadow hover:shadow-sm',
+                    // An unanswered RSVP is the one row here that wants
+                    // something FROM the reader, so it is the one row that
+                    // looks different. Answered rows go back to the normal
+                    // border rather than staying highlighted, or the list
+                    // stops reading as a to-do.
+                    needsAnswer ? 'border-amber-500/40' : 'border-border',
+                  )}
+                >
                 <button
                   type="button"
                   onClick={() => onSelect(startsAt)}
@@ -525,15 +565,25 @@ function UpcomingEventsList({ events, accent, onSelect, canSeeRsvps, onViewRsvps
                     {event.description && <p className="mt-2 line-clamp-2 text-xs leading-relaxed text-muted-foreground">{event.description}</p>}
                   </div>
                 </button>
-                {canSeeRsvps(event) && (
-                  <div className="border-t border-border px-3 py-2">
-                    <button
-                      type="button"
-                      onClick={() => onViewRsvps(event)}
-                      className="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
-                    >
-                      <Users size={11} /> View RSVPs
-                    </button>
+                {(canAnswer || canSeeRsvps(event)) && (
+                  <div
+                    className={cn(
+                      'space-y-2 border-t px-3 py-2.5',
+                      needsAnswer ? 'border-amber-500/40 bg-amber-500/[0.07]' : 'border-border',
+                    )}
+                  >
+                    {canAnswer && (
+                      <RsvpControl compact event={event} accent={accent} onAnswer={onAnswerRsvp} />
+                    )}
+                    {canSeeRsvps(event) && (
+                      <button
+                        type="button"
+                        onClick={() => onViewRsvps(event)}
+                        className="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
+                      >
+                        <Users size={11} /> View RSVPs
+                      </button>
+                    )}
                   </div>
                 )}
                 </div>
@@ -623,6 +673,12 @@ function RevampedEventsCalendar({ title, description, accentKey }) {
     const result = await setEventRsvp(id, status);
     if (result?.error) return result;
     setRawEvents((prev) => prev.map((e) => (String(e.id) === String(id) ? { ...e, myRsvp: result.status } : e)));
+    // The sidebar badge lives in PortalShell, a layout in a different React
+    // tree, so there is no shared state to update. Without this the count
+    // would sit stale for up to a poll interval after the member answered —
+    // and a badge that lingers after you have done the thing is worse than no
+    // badge at all.
+    announceRsvpChange();
     return result;
   }
 
@@ -923,6 +979,7 @@ function RevampedEventsCalendar({ title, description, accentKey }) {
         onSelect={selectUpcomingEvent}
         canSeeRsvps={canSeeRsvps}
         onViewRsvps={setRsvpListEvent}
+        onAnswerRsvp={handleAnswerRsvp}
       />
       </div>
 
