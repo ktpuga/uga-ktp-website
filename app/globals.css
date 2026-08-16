@@ -170,6 +170,16 @@
     scroll-behavior: smooth;
   }
 
+  /* Most layout and type utilities use rems, so scaling the root on medium
+     screens keeps cards, spacing, and text in proportion without the visual
+     and accessibility problems caused by CSS zoom. Large displays retain the
+     current 16px scale; phones keep it too for comfortable reading. */
+  @media (min-width: 48rem) and (max-width: 96rem) {
+    html {
+      font-size: clamp(14.4px, calc(6.4px + 0.625vw), 16px);
+    }
+  }
+
 @font-face {
     font-family: 'Game Of Squids'; /* Name for CSS usage */
     src: url('../public/Game\ Of\ Squids.ttf') format('truetype');
