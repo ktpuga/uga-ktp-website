@@ -65,7 +65,7 @@ export default function CredentialSignIn({ origin, slug = 'default-authenticatio
         <>
           <div>
             <label htmlFor="uid_field" className="mb-2 block text-xs font-semibold uppercase tracking-[0.12em] text-white/70">
-              Username or email
+              Username
             </label>
             <input
               id="uid_field"
