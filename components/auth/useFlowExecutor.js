@@ -25,11 +25,29 @@ import { HANDLED_COMPONENTS, getChallenge, submitChallenge } from '@/lib/authent
 
 /**
  * @param {object} opts
- * @param {string} opts.origin  Authentik's browser-facing origin
- * @param {string} opts.slug    flow slug, e.g. 'default-authentication-flow'
- * @param {string} [opts.query] querystring handed to the flow, e.g. 'itoken=…'
+ * @param {string} opts.origin       Authentik's browser-facing origin
+ * @param {string} opts.slug         flow slug, e.g. 'default-authentication-flow'
+ * @param {string} [opts.query]      querystring handed to the flow, e.g. 'itoken=…'
+ * @param {string} [opts.callbackUrl] where next-auth lands after the flow completes
+ * @param {string} [opts.handOffTo]  URL to hand off to instead of signIn()
  */
-export function useFlowExecutor({ origin, slug, query = '' }) {
+export function useFlowExecutor({
+  origin,
+  slug,
+  query = '',
+  // SIGN-UP MUST OVERRIDE THIS TO '/auth/start'. That page is the only place
+  // the "you enrolled on a browser already signed in as someone else" guard
+  // lives, and rush is exactly where that happens: invitations are non
+  // single-use and scanned off flyers, so one phone runs the flow repeatedly.
+  // Before that guard existed the new rushee was dropped into the previous
+  // member's portal and the member's session was later silently rewritten as
+  // the rushee. /auth/redirect has no such check.
+  callbackUrl = '/auth/redirect',
+  // Sign-in leaves this unset and falls back to signIn(). Sign-up must set it,
+  // because signIn() sends someone who has no account yet to a login form —
+  // the least useful answer to "the signup form failed to load".
+  handOffTo = null,
+}) {
   const [challenge, setChallenge] = useState(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -48,8 +66,18 @@ export function useFlowExecutor({ origin, slug, query = '' }) {
     if (completing.current) return;
     completing.current = true;
     setTerminal('handoff');
-    signIn('authentik', { callbackUrl: '/auth/redirect' });
-  }, []);
+
+    // Enrollment hands off to Authentik's own signup page, which is a
+    // different thing from the bare-flow trap described above: that URL
+    // carries `next=`, so the flow DOES return to the site when it finishes.
+    // It is exactly the link ktp-api generated before /signup existed, so the
+    // fallback is the behaviour that has been working all along.
+    if (handOffTo) {
+      window.location.href = handOffTo;
+      return;
+    }
+    signIn('authentik', { callbackUrl });
+  }, [callbackUrl, handOffTo]);
 
   // The flow is done and the browser now holds an Authentik session. next-auth
   // picks it up and completes ours.
@@ -64,8 +92,8 @@ export function useFlowExecutor({ origin, slug, query = '' }) {
     // A deliberate submit, so any later failure is real and must be reported
     // rather than suppressed as "the probe found nobody".
     clearProbeMark();
-    signIn('authentik', { callbackUrl: '/auth/redirect' });
-  }, []);
+    signIn('authentik', { callbackUrl });
+  }, [callbackUrl]);
 
   const apply = useCallback(
     (result) => {

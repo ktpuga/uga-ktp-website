@@ -21,6 +21,15 @@ import { fieldErrors, formError } from '@/lib/authentik-flow';
 import { useFlowExecutor } from './useFlowExecutor';
 import { buttonClass, FieldError, PromptFields } from './FlowFields';
 
+// Our own origin, for the `next=` on the Authentik fallback below. Read from
+// the browser rather than threaded down as a prop because it must match the
+// host the person is actually on — ugaktp.com and ktpgeorgia.com both serve
+// this page, and a hardcoded one would bounce them across domains mid-signup.
+// Guarded for the server pass, where `window` does not exist.
+function siteOrigin() {
+  return typeof window === 'undefined' ? '' : window.location.origin;
+}
+
 export default function CredentialSignUp({ origin, token, slug = 'ktp-enrollment' }) {
   // The flow reads its invitation from the querystring, exactly as it does
   // when Authentik's own page runs it — `itoken` is Authentik's parameter
@@ -30,6 +39,24 @@ export default function CredentialSignUp({ origin, token, slug = 'ktp-enrollment
     origin,
     slug,
     query: token ? `itoken=${encodeURIComponent(token)}` : '',
+
+    // NOT /auth/redirect. /auth/start is the only place the "you enrolled on a
+    // browser already signed in as someone else" chooser lives, and rush is
+    // precisely where that happens — invitations are non single-use and get
+    // scanned off flyers, so one phone runs this flow repeatedly. Before that
+    // guard existed the new rushee landed in the previous member's portal and
+    // the member's session was later silently rewritten as the rushee.
+    callbackUrl: '/auth/start',
+
+    // If this page can't drive the flow, fall back to Authentik's own signup
+    // page rather than to signIn() — somebody who has no account yet must not
+    // be sent to a login form. This is the exact URL ktp-api generated before
+    // /signup existed, `next=` included, so the fallback is the behaviour that
+    // was working all along.
+    handOffTo: token
+      ? `${origin}/if/flow/${encodeURIComponent(slug)}/?itoken=${encodeURIComponent(token)}`
+        + `&next=${encodeURIComponent(`${siteOrigin()}/auth/start`)}`
+      : null,
   });
 
   function onSubmit(event) {
