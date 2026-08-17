@@ -231,30 +231,35 @@ function TraitLine({ children, compact = false }) {
   return (
     <span
       className={cn(
-        'inline-flex items-start justify-center font-semibold leading-snug',
+        'inline-flex min-w-0 max-w-full items-center justify-center font-semibold leading-snug',
         compact ? 'gap-1.5 text-[11px]' : 'gap-2 text-xs',
       )}
       style={{ color: readableGroupText(TRAIT_NAVY, theme === 'dark') }}
     >
-      <span aria-hidden="true" className="mt-1.5 h-1.5 w-1.5 shrink-0 rotate-45" style={{ background: TRAIT_GOLD }} />
-      {/* ⚠ text-left is LOAD-BEARING — do not drop it to "inherit" the
-          centring from the section above.
+      <span aria-hidden="true" className="h-1.5 w-1.5 shrink-0 rotate-45" style={{ background: TRAIT_GOLD }} />
+      {/* ⚠ BOTH min-w-0s ARE LOAD-BEARING. Removing either makes `truncate`
+          silently do nothing and the text overflow the card instead.
 
-          This span is a flex item, and its parent section is text-center. On
-          one line the span shrinks to the text width, so the diamond sits
-          right against it. The moment the text wraps, the span widens to the
-          longest line and the inherited text-align centres the FIRST line
-          inside it — which slides the text away from the diamond and leaves
-          the diamond stranded on its own. The diamond never moved; the text
-          did.
+          A flex item's min-width defaults to `auto`, which resolves to its
+          min-content width — and for nowrap text that is the WHOLE string. So
+          the item refuses to shrink and there is never any overflow for
+          text-overflow to ellipsize. min-w-0 on the container lets it shrink
+          within the card; min-w-0 here lets the text shrink within it.
 
-          Left-aligning pins line one flush against the diamond at every width
-          and turns the wrap into a hanging indent. text-balance stays, so the
-          two lines still split evenly instead of orphaning one word.
+          One line is a deliberate constraint, not a side effect: traits are
+          capped at 80 characters (TEXT_LIMITS.TRAIT), so a long one WILL be
+          clipped on a narrow card. `title` is what makes the full text
+          recoverable — keep it in step with whatever is rendered.
 
-          The same markup and the same fix live in components/ui/card.jsx for
-          the public roster. Change both. */}
-      <span className="text-balance text-left">{children}</span>
+          This replaces an earlier hanging-indent fix for a wrap bug. Worth
+          knowing in case wrapping ever comes back: the text span is a flex
+          item inside a text-center parent, so once it wrapped, the inherited
+          centring pushed the first line away from the diamond and stranded
+          it. Single-line makes that unreachable rather than solved.
+
+          Same markup and same treatment in components/ui/card.jsx for the
+          public roster. Change both. */}
+      <span className="min-w-0 truncate" title={typeof children === 'string' ? children : undefined}>{children}</span>
     </span>
   );
 }

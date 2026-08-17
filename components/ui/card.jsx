@@ -158,19 +158,21 @@ const ProfileCard = ({ name, title, note, traits, links, bio, avatarSrc, fallbac
         <section className="mt-1.5 w-full max-w-xs space-y-1.5 text-center">
           {traitLabels.map((trait) => (
             <div key={trait} className="flex justify-center">
-              <span className="inline-flex items-start justify-center gap-2 text-xs font-semibold leading-snug text-[#14326E]">
-                <span aria-hidden="true" className="mt-1.5 h-1.5 w-1.5 shrink-0 rotate-45 bg-[#d4af37]" />
-                {/* ⚠ text-left is LOAD-BEARING — do not drop it to "inherit"
-                    the centring from the section above. This span is a flex
-                    item inside a text-center parent, so once the text wraps
-                    the span widens to its longest line and the inherited
-                    centring pushes the FIRST line away from the diamond,
-                    stranding it. Left-aligning pins line one against the
-                    diamond and makes the wrap a hanging indent.
+              <span className="inline-flex min-w-0 max-w-full items-center justify-center gap-2 text-xs font-semibold leading-snug text-[#14326E]">
+                <span aria-hidden="true" className="h-1.5 w-1.5 shrink-0 rotate-45 bg-[#d4af37]" />
+                {/* ⚠ BOTH min-w-0s ARE LOAD-BEARING. Drop either and
+                    `truncate` silently does nothing, because a flex item's
+                    min-width defaults to auto = its min-content width, which
+                    for nowrap text is the whole string — so it never overflows
+                    and there is nothing for text-overflow to ellipsize.
 
-                    Same markup and same fix in TraitLine in
+                    Traits are capped at 80 characters, so a long one WILL be
+                    clipped here; `title` is what keeps the full text
+                    recoverable.
+
+                    Same markup and same treatment in TraitLine in
                     components/portal/MemberDirectory.jsx. Change both. */}
-                <span className="text-balance text-left">{trait}</span>
+                <span className="min-w-0 truncate" title={trait}>{trait}</span>
               </span>
             </div>
           ))}
