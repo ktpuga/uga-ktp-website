@@ -85,7 +85,7 @@ export function LinksHiddenInput({ submittable }) {
 export function LinksField({ links, variant, inputClass, error, onAdd, onRemove, onEdit }) {
   const labelClass =
     variant === 'onboarding'
-      ? 'block text-sm font-medium text-white/80 mb-1'
+      ? 'mb-2 block text-xs font-semibold uppercase tracking-[0.12em] text-white/70'
       : 'block text-sm font-medium text-foreground mb-1';
   const helpClass = variant === 'onboarding' ? 'text-white/50' : 'text-muted-foreground';
   const full = links.length >= PROFILE_LIMITS.LINKS;
@@ -129,7 +129,9 @@ export function LinksField({ links, variant, inputClass, error, onAdd, onRemove,
               // The label names the row, so a screen reader hears which link is
               // about to go rather than five identical "Remove" buttons.
               aria-label={`Remove ${row.label.trim() || 'link'}`}
-              className="mt-1 shrink-0 rounded-lg p-2 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+              className={variant === 'onboarding'
+                ? 'mt-1 shrink-0 rounded-lg p-2 text-white/50 transition-colors hover:bg-white/10 hover:text-white'
+                : 'mt-1 shrink-0 rounded-lg p-2 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground'}
             >
               <X className="h-4 w-4" />
             </button>
@@ -141,14 +143,16 @@ export function LinksField({ links, variant, inputClass, error, onAdd, onRemove,
         type="button"
         onClick={onAdd}
         disabled={full}
-        className="mt-2 inline-flex items-center gap-1.5 text-sm font-medium underline disabled:cursor-not-allowed disabled:no-underline disabled:opacity-50"
+        className={variant === 'onboarding'
+          ? 'mt-3 inline-flex items-center gap-1.5 text-sm font-semibold text-[#f0d060] underline decoration-[#f0d060]/45 underline-offset-4 transition-colors hover:text-white disabled:cursor-not-allowed disabled:no-underline disabled:opacity-50'
+          : 'mt-2 inline-flex items-center gap-1.5 text-sm font-medium underline disabled:cursor-not-allowed disabled:no-underline disabled:opacity-50'}
       >
         <Plus className="h-3.5 w-3.5" />
         {full ? `That's all ${PROFILE_LIMITS.LINKS}` : 'Add a link'}
       </button>
 
       {error ? (
-        <p role="alert" className="mt-1 text-xs text-red-600 dark:text-red-400">{error}</p>
+        <p role="alert" className={variant === 'onboarding' ? 'mt-1.5 text-xs font-medium text-red-200' : 'mt-1 text-xs text-red-600 dark:text-red-400'}>{error}</p>
       ) : null}
     </div>
   );

@@ -66,11 +66,11 @@ function ProfilePictureField({ authentikId, assetId, variant }) {
     }
   }
 
-  const labelClass = variant === 'onboarding' ? 'text-white/80' : 'text-foreground';
+  const labelClass = variant === 'onboarding' ? 'text-white/75' : 'text-foreground';
 
   return (
-    <div className="flex items-center gap-4">
-      <Avatar className="h-16 w-16">
+    <div className={cn('flex items-center gap-4', variant === 'onboarding' && 'rounded-2xl border border-white/10 bg-black/10 p-4')}>
+      <Avatar className={cn('h-16 w-16', variant === 'onboarding' && 'ring-2 ring-[#d4af37]/70 ring-offset-2 ring-offset-[#14326E]')}>
         {authentikId && (
           <AvatarImage
             src={profilePictureSrc(authentikId, currentAssetId)}
@@ -82,7 +82,7 @@ function ProfilePictureField({ authentikId, assetId, variant }) {
         </AvatarFallback>
       </Avatar>
       <div>
-        <label className={`inline-block cursor-pointer text-sm font-medium underline ${labelClass}`}>
+        <label className={`inline-block cursor-pointer text-sm font-semibold underline decoration-white/30 underline-offset-4 transition-colors hover:text-[#f0d060] hover:decoration-[#f0d060] ${labelClass}`}>
           {uploading ? 'Uploading...' : 'Change photo'}
           {/* Keep in sync with PROFILE_PICTURE_MIMETYPES in ktp-api's
               middleware/upload.js. iOS reports HEIC inconsistently (sometimes
@@ -108,7 +108,7 @@ const ACCENT_BUTTON = {
   amber: 'bg-amber-800 hover:bg-amber-700 dark:bg-amber-700 dark:hover:bg-amber-600',
   red: 'bg-red-800 hover:bg-red-700 dark:bg-red-700 dark:hover:bg-red-600',
   teal: 'bg-teal-800 hover:bg-teal-700 dark:bg-teal-700 dark:hover:bg-teal-600',
-  onboarding: 'bg-[#2A5CCA] hover:bg-[#3570DB]',
+  onboarding: 'border border-[#f0d060] bg-[#d4af37] text-[#1a1a1a] hover:bg-[#f0d060]',
 };
 
 // `error` is the API's message for THIS field, placed here rather than in the
@@ -128,7 +128,7 @@ const ACCENT_BUTTON = {
 function Field({ label, required, variant, children, error, name }) {
   const labelClass =
     variant === 'onboarding'
-      ? 'block text-sm font-medium text-white/80 mb-1'
+      ? 'mb-2 block text-xs font-semibold uppercase tracking-[0.12em] text-white/70'
       : 'block text-sm font-medium text-foreground mb-1';
 
   return (
@@ -138,7 +138,7 @@ function Field({ label, required, variant, children, error, name }) {
       </label>
       {children}
       {error ? (
-        <p role="alert" className="mt-1 text-xs text-red-600 dark:text-red-400">{error}</p>
+        <p role="alert" className={cn('mt-1.5 text-xs font-medium text-red-600 dark:text-red-400', variant === 'onboarding' && 'text-red-200')}>{error}</p>
       ) : null}
     </div>
   );
@@ -209,12 +209,12 @@ export default function ProfileForm({
 
   const inputClass =
     variant === 'onboarding'
-      ? 'bg-white/10 border-white/20 text-white placeholder:text-white/30 focus-visible:ring-white/50'
+      ? 'rounded-xl border-white/15 bg-slate-950/30 px-4 text-white placeholder:text-white/35 shadow-inner shadow-black/10 focus-visible:border-[#d4af37]/80 focus-visible:bg-slate-950/45 focus-visible:ring-4 focus-visible:ring-[#d4af37]/15'
       : '';
 
   const selectClass =
     variant === 'onboarding'
-      ? `${inputClass} flex-1 h-10 rounded-md border px-3 py-2 text-sm`
+      ? `${inputClass} h-10 flex-1 border py-2 text-sm`
       : 'flex-1 h-10 rounded-md border border-input bg-background px-3 py-2 text-sm';
 
 
@@ -355,7 +355,7 @@ export default function ProfileForm({
           setServerFieldError(null);
         }
       }}
-      className="space-y-4"
+      className={cn('space-y-5', variant === 'onboarding' && 'space-y-6')}
     >
       <ProfilePictureField
         authentikId={authentikId}
@@ -602,13 +602,13 @@ export default function ProfileForm({
       )}
 
       {error && (
-        <p className="text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 rounded-md px-3 py-2">
+        <p className={cn('rounded-xl border px-4 py-3 text-sm', variant === 'onboarding' ? 'border-red-300/35 bg-red-500/15 text-red-50' : 'border-red-200 bg-red-50 text-red-600 dark:border-red-800 dark:bg-red-950/40 dark:text-red-400')}>
           {error}
         </p>
       )}
 
       {success && (
-        <p className="text-sm text-green-700 dark:text-green-400 bg-green-50 dark:bg-green-950/40 border border-green-200 dark:border-green-800 rounded-md px-3 py-2">
+        <p className={cn('rounded-xl border px-4 py-3 text-sm', variant === 'onboarding' ? 'border-emerald-300/35 bg-emerald-500/15 text-emerald-50' : 'border-green-200 bg-green-50 text-green-700 dark:border-green-800 dark:bg-green-950/40 dark:text-green-400')}>
           {success}
         </p>
       )}
@@ -616,7 +616,7 @@ export default function ProfileForm({
       <Button
         type="submit"
         disabled={loading}
-        className={`w-full text-white font-semibold tracking-wider py-3 uppercase ${ACCENT_BUTTON[buttonAccent]}`}
+        className={cn('w-full py-3.5 font-semibold uppercase tracking-wider shadow-lg transition-all disabled:hover:translate-y-0', variant === 'onboarding' ? 'text-[#1a1a1a] hover:-translate-y-0.5' : 'text-white', ACCENT_BUTTON[buttonAccent])}
       >
         {loading ? 'Saving...' : submitLabel}
       </Button>
