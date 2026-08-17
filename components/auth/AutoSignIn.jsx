@@ -70,7 +70,7 @@ export default function AutoSignIn({ slot, prompt }) {
         <button
           type="button"
           onClick={startSignIn}
-          className="w-full rounded-md bg-[#2A5CCA] py-3 text-sm font-semibold uppercase tracking-wider text-white shadow-lg transition-colors hover:bg-[#3570DB]"
+          className="w-full rounded-xl border border-[#f0d060] bg-[#d4af37] px-4 py-3.5 text-sm font-bold uppercase tracking-[0.14em] text-[#1a1a1a] shadow-lg shadow-black/20 transition-all hover:-translate-y-0.5 hover:bg-[#f0d060]"
         >
           Try signing in again
         </button>
@@ -79,9 +79,9 @@ export default function AutoSignIn({ slot, prompt }) {
   }
 
   return (
-    <div className="flex flex-col items-center gap-4" aria-live="polite">
+    <div className="flex flex-col items-center gap-4 rounded-2xl border border-white/10 bg-black/10 px-4 py-6" aria-live="polite">
       <div
-        className="h-6 w-6 animate-spin rounded-full border-2 border-white/25 border-t-white"
+        className="h-7 w-7 animate-spin rounded-full border-2 border-white/20 border-t-[#d4af37]"
         role="status"
         aria-label="Signing you in"
       />
@@ -91,7 +91,7 @@ export default function AutoSignIn({ slot, prompt }) {
         <button
           type="button"
           onClick={startSignIn}
-          className="mt-2 rounded-md border border-white/25 px-4 py-2 text-sm font-medium text-white/90 transition-colors hover:bg-white/10"
+          className="mt-2 rounded-xl border border-white/20 bg-white/[0.03] px-4 py-2.5 text-sm font-medium text-white/90 transition-colors hover:bg-white/10"
         >
           Taking a while? Click to continue
         </button>

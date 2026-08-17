@@ -50,9 +50,9 @@ export default function SilentSignIn({ children }) {
   if (!probing) return children;
 
   return (
-    <div className="flex flex-col items-center gap-4 py-2" aria-live="polite">
+    <div className="flex flex-col items-center gap-4 rounded-2xl border border-white/10 bg-black/10 px-4 py-6" aria-live="polite">
       <div
-        className="h-6 w-6 animate-spin rounded-full border-2 border-white/25 border-t-white"
+        className="h-7 w-7 animate-spin rounded-full border-2 border-white/20 border-t-[#d4af37]"
         role="status"
         aria-label="Checking your KTP account"
       />

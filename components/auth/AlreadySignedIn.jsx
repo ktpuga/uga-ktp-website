@@ -26,9 +26,9 @@ export default function AlreadySignedIn({ name, email, continueLabel = 'Continue
   const who = name || email || 'this account';
 
   return (
-    <div className="rounded-lg border border-white/15 bg-white/5 p-5">
-      <p className="text-sm text-white/70">You&apos;re already signed in as</p>
-      <p className="mt-1 truncate text-lg font-semibold text-white" title={who}>
+    <div className="rounded-2xl border border-white/15 bg-black/15 p-5 shadow-inner shadow-black/10 sm:p-6">
+      <p className="text-xs font-semibold uppercase tracking-[0.14em] text-white/60">You&apos;re already signed in as</p>
+      <p className="mt-2 truncate text-xl font-semibold text-white" title={who}>
         {who}
       </p>
       {name && email && <p className="truncate text-sm text-white/50">{email}</p>}
@@ -37,7 +37,7 @@ export default function AlreadySignedIn({ name, email, continueLabel = 'Continue
 
       <Link
         href="/auth/redirect"
-        className="mt-5 block w-full rounded-md bg-[#2A5CCA] py-3 text-center text-sm font-semibold uppercase tracking-wider text-white shadow-lg transition-colors hover:bg-[#3570DB]"
+        className="mt-6 block w-full rounded-xl border border-[#f0d060] bg-[#d4af37] px-4 py-3.5 text-center text-sm font-bold uppercase tracking-[0.14em] text-[#1a1a1a] shadow-lg shadow-black/20 transition-all hover:-translate-y-0.5 hover:bg-[#f0d060]"
       >
         {continueLabel}
       </Link>
@@ -45,13 +45,13 @@ export default function AlreadySignedIn({ name, email, continueLabel = 'Continue
       <form action={switchAccount}>
         <button
           type="submit"
-          className="mt-3 w-full rounded-md border border-white/25 py-3 text-sm font-semibold text-white transition-colors hover:bg-white/10"
+          className="mt-3 w-full rounded-xl border border-white/20 bg-white/[0.03] px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-white/10"
         >
           This isn&apos;t me: sign in as someone else
         </button>
       </form>
 
-      <p className="mt-3 text-center text-xs leading-relaxed text-white/45">
+      <p className="mt-4 text-center text-xs leading-relaxed text-white/50">
         Signing in as someone else asks for your KTP password again, so nobody
         can take over the account already open here.
       </p>

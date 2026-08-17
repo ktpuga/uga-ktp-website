@@ -86,11 +86,11 @@ export default async function Login({ searchParams }) {
     <div>
       {authentikOrigin ? <CredentialSignIn origin={authentikOrigin} /> : <SignInButton />}
 
-      <div className="mt-6 border-t border-white/15 pt-6 text-center">
-        <p className="text-sm text-white/60">Not a member yet?</p>
+      <div className="mt-7 border-t border-white/10 pt-6 text-center">
+        <p className="text-sm text-white/65">Not a member yet?</p>
         <Link
           href="/rush/how-it-works"
-          className="mt-3 block w-full rounded-md border border-white/25 py-3 text-sm font-semibold uppercase tracking-wider text-white transition-colors hover:bg-white/10"
+          className="mt-3 block w-full rounded-xl border border-white/20 bg-white/[0.03] px-4 py-3 text-sm font-semibold uppercase tracking-[0.12em] text-white transition-colors hover:bg-white/10"
         >
           Sign up for rush
         </Link>
@@ -100,13 +100,16 @@ export default async function Login({ searchParams }) {
 
   return (
     <div
-      className="min-h-screen flex items-center justify-center p-4"
-      style={{ backgroundColor: '#14326E' }}
+      className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[#081b42] p-4"
     >
-      <div className="w-full max-w-md">
+      <div aria-hidden="true" className="pointer-events-none absolute inset-0">
+        <div className="absolute -left-40 -top-28 h-[32rem] w-[32rem] rounded-full bg-[#2454a6]/35 blur-[120px]" />
+        <div className="absolute -bottom-44 -right-28 h-[34rem] w-[34rem] rounded-full bg-[#d4af37]/15 blur-[140px]" />
+      </div>
+      <div className="relative w-full max-w-lg py-8">
         {/* Logo */}
-        <div className="flex flex-col items-center mb-10">
-          <Link href="/" className="inline-flex items-center justify-center mb-6">
+        <div className="mb-8 flex flex-col items-center text-center">
+          <Link href="/" className="mb-5 inline-flex items-center justify-center transition-transform hover:scale-[1.02]">
             <Image
               src="/KTP PHI CHAPTER.svg"
               alt="Kappa Theta Pi - Phi Chapter"
@@ -114,11 +117,12 @@ export default async function Login({ searchParams }) {
               height={92}
               priority
               style={{
-                filter: 'brightness(0) invert(1) drop-shadow(0 0 18px rgba(255, 255, 255, 0.15))',
+                filter: 'brightness(0) invert(1) drop-shadow(0 0 22px rgba(255, 255, 255, 0.2))',
               }}
             />
           </Link>
-          <h1 className="text-2xl font-semibold text-white text-center">
+          <p className="mb-3 text-xs font-semibold uppercase tracking-[0.2em] text-[#f0d060]">Phi Chapter · UGA</p>
+          <h1 className="text-3xl font-bold tracking-tight text-white">
             {alreadySignedIn
               ? 'Who should we sign in?'
               : switching
@@ -127,7 +131,7 @@ export default async function Login({ searchParams }) {
                   ? 'Taking you to your portal'
                   : 'Sign in to your KTP Account'}
           </h1>
-          <p className="text-white/60 text-sm mt-2 text-center">
+          <p className="mt-3 max-w-md text-sm leading-relaxed text-white/65">
             {alreadySignedIn
               ? 'This browser already has a KTP account open.'
               : switching
@@ -138,14 +142,15 @@ export default async function Login({ searchParams }) {
           </p>
         </div>
 
+        <div className="rounded-[1.75rem] border border-white/15 bg-white/[0.07] p-5 shadow-2xl shadow-black/25 backdrop-blur-xl sm:p-7">
         {failed && !probeCameBackEmpty && (
-          <p className="mb-4 rounded-md border border-red-300/40 bg-red-500/15 px-4 py-3 text-center text-sm text-white">
+          <p className="mb-5 rounded-xl border border-red-300/35 bg-red-500/15 px-4 py-3 text-center text-sm text-red-50">
             We couldn&apos;t complete sign-in. Please try again, and let the tech
             committee know if it keeps happening.
           </p>
         )}
         {justSignedOut && !failed && (
-          <p className="mb-4 text-center text-sm text-white/70">You&apos;ve been signed out.</p>
+          <p className="mb-5 rounded-xl border border-white/10 bg-black/10 px-4 py-3 text-center text-sm text-white/70">You&apos;ve been signed out.</p>
         )}
 
         {alreadySignedIn ? (
@@ -166,9 +171,10 @@ export default async function Login({ searchParams }) {
         ) : (
           signInOptions
         )}
+        </div>
 
-        <div className="mt-8 text-center">
-          <Link href="/" className="text-sm text-white/70 hover:text-white hover:underline">
+        <div className="mt-6 text-center">
+          <Link href="/" className="text-sm font-medium text-white/65 underline decoration-white/25 underline-offset-4 transition-colors hover:text-[#f0d060] hover:decoration-[#f0d060]">
             ← Back to home
           </Link>
         </div>

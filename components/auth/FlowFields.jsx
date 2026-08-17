@@ -13,16 +13,16 @@
 // stage.
 
 export const inputClass =
-  'w-full rounded-md border border-white/25 bg-white/10 px-3 py-3 text-white placeholder-white/40 ' +
-  'focus:border-white/50 focus:outline-none focus:ring-2 focus:ring-white/30';
+  'w-full rounded-xl border border-white/15 bg-slate-950/30 px-4 py-3 text-white placeholder:text-white/35 ' +
+  'shadow-inner shadow-black/10 transition-colors focus:border-[#d4af37]/80 focus:bg-slate-950/45 focus:outline-none focus:ring-4 focus:ring-[#d4af37]/15';
 
 export const buttonClass =
-  'w-full rounded-md bg-[#2A5CCA] py-3 font-semibold uppercase tracking-wider text-white ' +
-  'shadow-lg transition-colors hover:bg-[#3570DB] disabled:cursor-not-allowed disabled:opacity-60';
+  'w-full rounded-xl border border-[#f0d060] bg-[#d4af37] px-4 py-3.5 text-sm font-bold uppercase tracking-[0.14em] text-[#1a1a1a] ' +
+  'shadow-lg shadow-black/20 transition-all hover:-translate-y-0.5 hover:bg-[#f0d060] disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0';
 
 export function FieldError({ message }) {
   if (!message) return null;
-  return <p className="mt-1 text-xs text-red-200">{message}</p>;
+  return <p className="mt-1.5 text-xs font-medium text-red-200">{message}</p>;
 }
 
 // Authentik prompt types that map onto a plain text-ish input, with the HTML
@@ -61,13 +61,13 @@ export function PromptFields({ fields = [], errors = {} }) {
     // Structural, not input. `static` is copy the stage wants shown.
     if (field.type === 'static') {
       return (
-        <p key={key} className="text-sm text-white/70">
+        <p key={key} className="rounded-xl border border-white/10 bg-black/10 px-4 py-3 text-sm leading-relaxed text-white/70">
           {field.initial_value || field.label}
         </p>
       );
     }
     if (field.type === 'separator') {
-      return <hr key={key} className="border-white/15" />;
+      return <hr key={key} className="border-white/10" />;
     }
     // Carried through untouched. Dropping it loses flow state.
     if (field.type === 'hidden') {
@@ -77,8 +77,8 @@ export function PromptFields({ fields = [], errors = {} }) {
     if (field.type === 'checkbox') {
       return (
         <div key={key}>
-          <label className="flex items-center gap-2 text-sm text-white/80">
-            <input type="checkbox" name={key} defaultChecked={Boolean(field.initial_value)} />
+          <label className="flex items-center gap-2.5 text-sm text-white/80">
+            <input className="h-4 w-4 rounded border-white/30 bg-slate-950/30 text-[#d4af37] focus:ring-[#d4af37]/40" type="checkbox" name={key} defaultChecked={Boolean(field.initial_value)} />
             {field.label}
           </label>
           <FieldError message={errors[key]} />
@@ -89,7 +89,7 @@ export function PromptFields({ fields = [], errors = {} }) {
     if (field.type === 'text_area') {
       return (
         <div key={key}>
-          <label htmlFor={key} className="mb-1 block text-sm text-white/70">
+          <label htmlFor={key} className="mb-2 block text-xs font-semibold uppercase tracking-[0.12em] text-white/70">
             {field.label}
           </label>
           <textarea
@@ -101,7 +101,7 @@ export function PromptFields({ fields = [], errors = {} }) {
             defaultValue={field.initial_value ?? ''}
             className={inputClass}
           />
-          {field.sub_text && <p className="mt-1 text-xs text-white/50">{field.sub_text}</p>}
+          {field.sub_text && <p className="mt-1.5 text-xs leading-relaxed text-white/50">{field.sub_text}</p>}
           <FieldError message={errors[key]} />
         </div>
       );
@@ -109,7 +109,7 @@ export function PromptFields({ fields = [], errors = {} }) {
 
     return (
       <div key={key}>
-        <label htmlFor={key} className="mb-1 block text-sm text-white/70">
+        <label htmlFor={key} className="mb-2 block text-xs font-semibold uppercase tracking-[0.12em] text-white/70">
           {field.label}
           {field.required && <span className="text-white/40"> *</span>}
         </label>
@@ -126,7 +126,7 @@ export function PromptFields({ fields = [], errors = {} }) {
         {/* Rendered as TEXT, not HTML. Authentik allows markup in sub_text and
             it is admin-authored, but this page is unauthenticated and there is
             no reason to open an injection path for a help line. */}
-        {field.sub_text && <p className="mt-1 text-xs text-white/50">{field.sub_text}</p>}
+        {field.sub_text && <p className="mt-1.5 text-xs leading-relaxed text-white/50">{field.sub_text}</p>}
         <FieldError message={errors[key]} />
       </div>
     );

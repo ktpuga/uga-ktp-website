@@ -42,7 +42,7 @@ export default function CredentialSignIn({ origin, slug = 'default-authenticatio
 
   if (loading || terminal) {
     return (
-      <p className="text-center text-sm text-white/60" role="status">
+      <p className="rounded-xl border border-white/10 bg-black/10 px-4 py-3 text-center text-sm text-white/70" role="status">
         {terminal === 'handoff' ? 'Taking you to the sign-in page…' : 'One moment…'}
       </p>
     );
@@ -54,9 +54,9 @@ export default function CredentialSignIn({ origin, slug = 'default-authenticatio
   const banner = formError(challenge);
 
   return (
-    <form onSubmit={onSubmit} className="space-y-4">
+    <form onSubmit={onSubmit} className="space-y-5">
       {banner && (
-        <p className="rounded-md border border-red-300/40 bg-red-500/15 px-4 py-3 text-sm text-white">
+        <p className="rounded-xl border border-red-300/35 bg-red-500/15 px-4 py-3 text-sm text-red-50">
           {banner}
         </p>
       )}
@@ -64,7 +64,7 @@ export default function CredentialSignIn({ origin, slug = 'default-authenticatio
       {challenge.component === 'ak-stage-identification' && (
         <>
           <div>
-            <label htmlFor="uid_field" className="mb-1 block text-sm text-white/70">
+            <label htmlFor="uid_field" className="mb-2 block text-xs font-semibold uppercase tracking-[0.12em] text-white/70">
               Username or email
             </label>
             <input
@@ -84,7 +84,7 @@ export default function CredentialSignIn({ origin, slug = 'default-authenticatio
               would post a password field the stage never asked for. */}
           {challenge.password_fields && (
             <div>
-              <label htmlFor="password" className="mb-1 block text-sm text-white/70">
+              <label htmlFor="password" className="mb-2 block text-xs font-semibold uppercase tracking-[0.12em] text-white/70">
                 Password
               </label>
               <input
@@ -103,7 +103,7 @@ export default function CredentialSignIn({ origin, slug = 'default-authenticatio
 
       {challenge.component === 'ak-stage-password' && (
         <div>
-          <label htmlFor="password" className="mb-1 block text-sm text-white/70">
+          <label htmlFor="password" className="mb-2 block text-xs font-semibold uppercase tracking-[0.12em] text-white/70">
             Password
           </label>
           <input
@@ -131,7 +131,7 @@ export default function CredentialSignIn({ origin, slug = 'default-authenticatio
         <button
           type="button"
           onClick={handOff}
-          className="text-xs text-white/50 underline hover:text-white/80"
+          className="text-xs font-medium text-white/55 underline decoration-white/30 underline-offset-4 transition-colors hover:text-[#f0d060] hover:decoration-[#f0d060]"
         >
           Having trouble? Sign in the standard way
         </button>

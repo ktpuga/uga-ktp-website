@@ -80,7 +80,7 @@ export default function CredentialSignUp({ origin, token, slug = 'ktp-enrollment
 
   if (loading || terminal) {
     return (
-      <p className="text-center text-sm text-white/60" role="status">
+      <p className="rounded-xl border border-white/10 bg-black/10 px-4 py-3 text-center text-sm text-white/70" role="status">
         {terminal === 'handoff' ? 'Taking you to the signup page…' : 'One moment…'}
       </p>
     );
@@ -94,7 +94,7 @@ export default function CredentialSignUp({ origin, token, slug = 'ktp-enrollment
   if (challenge.component === 'ak-stage-access-denied') {
     return (
       <div className="space-y-4 text-center">
-        <p className="rounded-md border border-red-300/40 bg-red-500/15 px-4 py-3 text-sm text-white">
+        <p className="rounded-xl border border-red-300/35 bg-red-500/15 px-4 py-3 text-sm text-red-50">
           {challenge.error_message || 'This invitation link is no longer valid.'}
         </p>
         <p className="text-sm text-white/60">
@@ -109,9 +109,9 @@ export default function CredentialSignUp({ origin, token, slug = 'ktp-enrollment
   const banner = formError(challenge);
 
   return (
-    <form onSubmit={onSubmit} className="space-y-4">
+    <form onSubmit={onSubmit} className="space-y-5">
       {banner && (
-        <p className="rounded-md border border-red-300/40 bg-red-500/15 px-4 py-3 text-sm text-white">
+        <p className="rounded-xl border border-red-300/35 bg-red-500/15 px-4 py-3 text-sm text-red-50">
           {banner}
         </p>
       )}
