@@ -34,6 +34,17 @@ import { PALETTES } from '@/components/portal/PortalAccentContext';
 
 const GENERAL_ALBUM = { id: null, name: 'Shared Album', description: 'General chapter photos, open to everyone', isShared: true };
 
+// Who may ADD to the document library: upload a file or add a link. Mirrors
+// DOCUMENT_CONTRIBUTOR_GROUPS in the API's constants.js — every member group
+// except `pledge`, who read the library without contributing to it. Rushees
+// never reach this page at all.
+//
+// Kept separate from the cabinet check below because they now answer different
+// questions. This one gates the two "add" buttons; canManageDocs still gates
+// the things that SHAPE the library (new folders, move, rename), and eboard
+// alone deletes other people's rows and sets visibility.
+const DOCUMENT_CONTRIBUTOR_GROUPS = ['eboard', 'chair', 'active', 'alumni'];
+
 function tint(hex, alpha) {
   const h = hex.replace('#', '');
   const n = parseInt(h, 16);
@@ -1275,7 +1286,7 @@ function RenameModal({ item, accent, onClose, onRename }) {
   );
 }
 
-function DocRow({ doc, isFolder, accent, isEboard, canManage, drag, onOpenFolder, onPreview, onDelete, onEditVisibility, onMove, onRename }) {
+function DocRow({ doc, isFolder, accent, isEboard, canManage, canRename, canDelete, drag, onOpenFolder, onPreview, onDelete, onEditVisibility, onMove, onRename }) {
   const isLink = doc.kind === 'link';
   const isFile = doc.kind !== 'link' && !isFolder;
 
@@ -1384,7 +1395,12 @@ function DocRow({ doc, isFolder, accent, isEboard, canManage, drag, onOpenFolder
               <Lock size={13} />
             </button>
           )}
-          {canManage && (
+          {/* Rename is the one row action with THREE answers: cabinet renames
+              anything, a member renames what they added, everyone else sees no
+              button. Hence its own flag rather than canManage — someone who
+              uploads "Scan_20260817.pdf" should be able to fix the name without
+              finding a chair. Move stays cabinet-only below. */}
+          {canRename && (
             <button
               type="button"
               onClick={onRename}
@@ -1394,12 +1410,11 @@ function DocRow({ doc, isFolder, accent, isEboard, canManage, drag, onOpenFolder
               <PencilLine size={13} />
             </button>
           )}
-          {/* Cabinet can move and rename as well as eboard, so these two are
-              the row actions on canManage rather than isEboard. Both stay
-              always visible instead of hover-revealed like the folder delete:
-              tidying is the reason someone opens this page on a phone, where
-              there is no hover to reveal them with, and where the drag path
-              does not work at all. */}
+          {/* Cabinet can move as well as eboard, so this is a canManage row
+              action rather than isEboard. It stays always visible instead of
+              hover-revealed like the folder delete: tidying is the reason
+              someone opens this page on a phone, where there is no hover to
+              reveal it with, and where the drag path does not work at all. */}
           {canManage && (
             <button
               type="button"
@@ -1420,7 +1435,11 @@ function DocRow({ doc, isFolder, accent, isEboard, canManage, drag, onOpenFolder
               <ExternalLink size={11} /> Open
             </a>
           )}
-          {isEboard && !isFolder && (
+          {/* canDelete, not isEboard: whoever added a file or link can remove
+              it again, the same rule the photos tab already uses. Folder delete
+              below stays eboard-only — it cascades the whole subtree, including
+              other people's files. */}
+          {canDelete && !isFolder && (
             <button type="button" onClick={onDelete} className="flex h-7 w-7 items-center justify-center rounded-lg border border-border bg-card text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive" aria-label="Delete">
               <Trash2 size={13} />
             </button>
@@ -1436,7 +1455,7 @@ function DocRow({ doc, isFolder, accent, isEboard, canManage, drag, onOpenFolder
   );
 }
 
-function DocumentsTab({ accent, isEboard, canManage, initialFolder }) {
+function DocumentsTab({ accent, isEboard, canManage, canContribute, currentUserId, initialFolder }) {
   const confirm = useConfirm();
   const [path, setPath] = useState(initialFolder ? [initialFolder] : []);
   const [folders, setFolders] = useState([]);
@@ -1610,7 +1629,11 @@ function DocumentsTab({ accent, isEboard, canManage, initialFolder }) {
       setDocuments((prev) => prev.filter((d) => d.id !== id));
     } catch (err) {
       if (isRedirectError(err)) throw err;
-      window.alert('Failed to delete document');
+      // The API's own sentence, when it sent one. The button is hidden on rows
+      // this member cannot delete, so a 403 here means their list is stale —
+      // "Only the person who added this file, or eboard, can delete it" says
+      // that, and the old generic string did not.
+      window.alert(err.message ?? 'Failed to delete document');
     }
   }
 
@@ -1659,18 +1682,28 @@ function DocumentsTab({ accent, isEboard, canManage, initialFolder }) {
           })}
         </nav>
 
-        {canManage && (
+        {/* New Folder shapes the library and stays with cabinet; the two "add"
+            buttons are open to every member but pledges. The wrapper is
+            deliberately gated on either, so a plain member still gets the row
+            rather than an empty flex container. */}
+        {(canManage || canContribute) && (
           <div className="flex flex-wrap items-center gap-2">
-            <button type="button" onClick={() => setShowNewFolder(true)} className="flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground">
-              <FolderIcon size={12} /> New Folder
-            </button>
-            <button type="button" onClick={() => fileUploadRef.current?.click()} className="flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground">
-              <Upload size={12} /> Upload File
-            </button>
-            <input ref={fileUploadRef} type="file" className="sr-only" onChange={(e) => { if (e.target.files?.[0]) handleUploadFile(e.target.files[0]); }} />
-            <button type="button" onClick={() => setShowAddLink(true)} className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold text-white transition-opacity hover:opacity-85" style={{ background: accent.gradient }}>
-              <Link2 size={12} /> Add Link
-            </button>
+            {canManage && (
+              <button type="button" onClick={() => setShowNewFolder(true)} className="flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground">
+                <FolderIcon size={12} /> New Folder
+              </button>
+            )}
+            {canContribute && (
+              <>
+                <button type="button" onClick={() => fileUploadRef.current?.click()} className="flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground">
+                  <Upload size={12} /> Upload File
+                </button>
+                <input ref={fileUploadRef} type="file" className="sr-only" onChange={(e) => { if (e.target.files?.[0]) handleUploadFile(e.target.files[0]); }} />
+                <button type="button" onClick={() => setShowAddLink(true)} className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold text-white transition-opacity hover:opacity-85" style={{ background: accent.gradient }}>
+                  <Link2 size={12} /> Add Link
+                </button>
+              </>
+            )}
           </div>
         )}
       </div>
@@ -1695,7 +1728,24 @@ function DocumentsTab({ accent, isEboard, canManage, initialFolder }) {
               </tr>
             </thead>
             <tbody>
-              {sorted.map((doc) => (
+              {sorted.map((doc) => {
+                // Computed once because two row actions now hang off it, and
+                // they must not drift apart. Three things it deliberately gets
+                // right:
+                //
+                // - `kind !== 'folder'`: a folder has no uploader. It carries
+                //   created_by, not uploaded_by, so this would already be
+                //   false — but stating it means adding uploaded_by to folders
+                //   later cannot silently hand members folder rename.
+                // - `!= null`: a row whose uploader was hard-deleted carries
+                //   uploaded_by null, and currentUserId is undefined when the
+                //   session has not loaded. Without the guard those compare
+                //   equal and every orphaned row grows buttons.
+                // - The API re-checks both, so this only decides what is worth
+                //   showing; it is not the access control.
+                const isOwnUpload =
+                  doc.kind !== 'folder' && doc.uploaded_by != null && doc.uploaded_by === currentUserId;
+                return (
                 <DocRow
                   key={doc.id}
                   doc={doc}
@@ -1703,6 +1753,10 @@ function DocumentsTab({ accent, isEboard, canManage, initialFolder }) {
                   accent={accent}
                   isEboard={isEboard}
                   canManage={canManage}
+                  // Cabinet renames anything; a member renames what they added.
+                  canRename={canManage || isOwnUpload}
+                  // Deleting is the stricter of the two: eboard, or your own.
+                  canDelete={isEboard || isOwnUpload}
                   drag={{
                     enabled: canManage,
                     isDragging: dragItem != null && rowKey(dragItem) === rowKey(doc),
@@ -1721,7 +1775,8 @@ function DocumentsTab({ accent, isEboard, canManage, initialFolder }) {
                   onMove={() => setMoveTarget(doc)}
                   onRename={() => setRenameTarget(doc)}
                 />
-              ))}
+                );
+              })}
             </tbody>
           </table>
         )}
@@ -1788,10 +1843,12 @@ function RevampedPhotoFiles({ title, description, accentKey }) {
   const { data: session } = useSession();
   const currentUserId = session?.user?.authentik_id;
   const isEboard = session?.user?.groups?.includes('eboard') ?? false;
-  // Two tiers, not one flag: cabinet (the `chair` group) may ADD to and MOVE
-  // things around the document library, but deleting and visibility stay with
-  // eboard. The API draws the same line in routes/documents.js.
+  // Three tiers, not one flag. Any member but a pledge may ADD to the document
+  // library; cabinet (the `chair` group) additionally SHAPES it by creating,
+  // moving and renaming folders; eboard alone deletes other people's rows and
+  // sets visibility. The API draws the same three lines in routes/documents.js.
   const canManageDocs = isEboard || (session?.user?.groups?.includes('chair') ?? false);
+  const canContributeDocs = session?.user?.groups?.some((g) => DOCUMENT_CONTRIBUTOR_GROUPS.includes(g)) ?? false;
   const searchParams = useSearchParams();
   const requestedFolderID = searchParams.get('folder');
   const requestedFolderName = searchParams.get('folderName') ?? 'Shared Files';
@@ -1803,7 +1860,7 @@ function RevampedPhotoFiles({ title, description, accentKey }) {
       <PageHeader title={title} description={description} accent={accent} />
       <TabBar active={activeTab} onChange={setActiveTab} accent={accent} />
       {activeTab === 'albums' && <AlbumsTab accent={accent} isEboard={isEboard} currentUserId={currentUserId} />}
-      {activeTab === 'documents' && <DocumentsTab key={requestedFolderID ?? 'root'} accent={accent} isEboard={isEboard} canManage={canManageDocs} initialFolder={initialFolder} />}
+      {activeTab === 'documents' && <DocumentsTab key={requestedFolderID ?? 'root'} accent={accent} isEboard={isEboard} canManage={canManageDocs} canContribute={canContributeDocs} currentUserId={currentUserId} initialFolder={initialFolder} />}
     </div>
   );
 }
