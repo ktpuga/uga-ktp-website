@@ -19,6 +19,8 @@ import {
   denyCommitteeJoinRequest,
   removeCommitteeMember,
   getCommitteeMembers,
+  getCommitteeActivity,
+  markCommitteeSeen,
   setCommitteeMemberRole,
   getMemberDirectory,
   createEvent,
@@ -495,7 +497,14 @@ function PromoteMemberModal({ committeeName, excludeIds, accent, onClose, onProm
 
 // ─── Committee card ───
 
-function CommitteeCard({ committee, isEboard, accent, onOpen, onDelete }) {
+function CommitteeCard({ committee, isEboard, accent, activity, onOpen, onDelete }) {
+  // Two counts, never summed here. "3 new" is reading material; "2 requests" is
+  // somebody blocked on you. Collapsing them into one number would make an
+  // approval queue look like news, and news look urgent. Only the sidebar badge
+  // adds them, because there the question is just "is there anything for me".
+  const newCount = activity?.new_count ?? 0;
+  const pendingCount = activity?.pending_count ?? 0;
+
   return (
     <div
       className="group relative flex cursor-pointer flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-sm transition-shadow hover:shadow-md"
@@ -538,6 +547,23 @@ function CommitteeCard({ committee, isEboard, accent, onOpen, onDelete }) {
           {committee.is_member && !committee.is_chair && (
             <span className="inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-semibold" style={{ background: tint(accent.base, 0.1), color: accent.light }}>
               Member
+            </span>
+          )}
+          {newCount > 0 && (
+            <span
+              className="inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-semibold text-white"
+              style={{ background: accent.gradient }}
+            >
+              {newCount > 99 ? '99+' : newCount} new
+            </span>
+          )}
+          {/* Deliberately NOT the accent colour the "new" pill uses: this one is
+              a queue of people waiting on this person, and it has to be
+              distinguishable at a glance from "there are things to read". */}
+          {pendingCount > 0 && (
+            <span className="inline-flex items-center gap-1 rounded-full border border-amber-500/40 bg-amber-500/10 px-2.5 py-0.5 text-[11px] font-semibold text-amber-600 dark:text-amber-400">
+              <Clock size={9} strokeWidth={2.5} />
+              {pendingCount > 99 ? '99+' : pendingCount} request{pendingCount === 1 ? '' : 's'}
             </span>
           )}
         </div>
@@ -1166,6 +1192,8 @@ function RevampedCommitteesPage({ accentKey }) {
   const [selectedId, setSelectedId] = useState(null);
   const [showNewCommittee, setShowNewCommittee] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState(null);
+  // Keyed by committee id so a card can look itself up without scanning.
+  const [activity, setActivity] = useState({});
 
   function loadCommittees() {
     setLoading(true);
@@ -1175,9 +1203,42 @@ function RevampedCommitteesPage({ accentKey }) {
       .finally(() => setLoading(false));
   }
 
+  // A separate request from getCommittees on purpose — see getCommitteeActivity
+  // in portal-api. Failure is swallowed rather than surfaced: a missing badge
+  // is a far better outcome than an error banner over a working page.
+  const loadActivity = useCallback(() => {
+    getCommitteeActivity()
+      .then((rows) => {
+        if (!Array.isArray(rows)) return;
+        setActivity(Object.fromEntries(rows.map((row) => [String(row.committee_id), row])));
+      })
+      .catch((err) => { if (isRedirectError(err)) throw err; });
+  }, []);
+
   useEffect(loadCommittees, []);
+  useEffect(loadActivity, [loadActivity]);
 
   const selected = committees.find((c) => c.id === selectedId) ?? null;
+
+  // Opening a committee is what marks it read — NOT opening this page. That is
+  // the whole reason the cursor is per-committee, so this is the one call that
+  // makes the feature behave as designed.
+  //
+  // The local count is cleared first so the pill disappears on click rather
+  // than after the next poll; the server write is what makes it stick. Note
+  // pending_count is deliberately left alone: an approval queue is not cleared
+  // by looking at it, only by deciding the requests.
+  function openCommittee(committee) {
+    setSelectedId(committee.id);
+    setActivity((previous) => {
+      const current = previous[String(committee.id)];
+      if (!current || current.new_count === 0) return previous;
+      return { ...previous, [String(committee.id)]: { ...current, new_count: 0 } };
+    });
+    markCommitteeSeen(committee.id).catch((err) => {
+      if (isRedirectError(err)) throw err;
+    });
+  }
 
   return (
     <div className="mx-auto max-w-7xl px-4 pb-16 pt-8 sm:px-6 lg:px-8">
@@ -1194,8 +1255,8 @@ function RevampedCommitteesPage({ accentKey }) {
           currentUserId={currentUserId}
           isEboard={isEboard}
           accent={accent}
-          onBack={() => setSelectedId(null)}
-          onChanged={loadCommittees}
+          onBack={() => { setSelectedId(null); loadActivity(); }}
+          onChanged={() => { loadCommittees(); loadActivity(); }}
           groupChatHref={`${portalRoot}/messages?groupChat=${selected.group_chat_id}`}
           filesHref={`${portalRoot}/files`}
         />
@@ -1233,7 +1294,8 @@ function RevampedCommitteesPage({ accentKey }) {
                   committee={committee}
                   isEboard={isEboard}
                   accent={accent}
-                  onOpen={() => setSelectedId(committee.id)}
+                  activity={activity[String(committee.id)]}
+                  onOpen={() => openCommittee(committee)}
                   onDelete={() => setDeleteTarget(committee)}
                 />
               ))}
