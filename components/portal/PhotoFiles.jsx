@@ -45,6 +45,74 @@ const GENERAL_ALBUM = { id: null, name: 'Shared Album', description: 'General ch
 // alone deletes other people's rows and sets visibility.
 const DOCUMENT_CONTRIBUTOR_GROUPS = ['eboard', 'chair', 'active', 'alumni'];
 
+// A folder upload is N sequential POSTs with no batch endpoint behind it and,
+// as of now, no rate limit on /documents. A cap keeps one careless pick of
+// ~/Downloads from being a self-inflicted outage. It is checked in the confirm
+// step, where the number can be shown, rather than silently truncating.
+const MAX_FOLDER_UPLOAD_FILES = 100;
+
+// Display only — `LIMITS_MB.document` in ktp-api/middleware/upload.js is the
+// enforcing copy, and nothing here checks a file against this. It is in the
+// confirm step because "3 files failed" reads as a bug, while "3 files were
+// over 50MB" reads as a fact the member can act on.
+const DOCUMENT_LIMIT_MB = 50;
+
+// Turns the flat FileList a `webkitdirectory` input produces into an ordered
+// plan: which folders to make, in what order, and which files land in each.
+//
+// `webkitRelativePath` is the ONLY thing carrying the structure. The File
+// objects are flat and `file.name` is just the basename, so dropping this
+// field means silently uploading a tree as a pile. Its first segment is the
+// picked folder's own name, which is why an upload creates a folder rather
+// than scattering files into the one already open.
+//
+// Empty directories are INVISIBLE to this: a directory input reports files,
+// not folders, so a directory with no files anywhere beneath it cannot be seen
+// and will not be recreated. The modal says so rather than leaving it to be
+// discovered.
+function planFolderUpload(fileList) {
+  const dirs = new Map();
+
+  // Every ANCESTOR gets registered, not just the deepest directory: a file at
+  // `a/b/c.pdf` needs both `a` and `a/b` to exist, and only `a/b` is named on
+  // the file itself. Without this, a tree whose first file sits three levels
+  // down would try to create the leaf under a parent that does not exist yet.
+  function registerAncestors(segments) {
+    for (let i = 1; i <= segments.length; i += 1) {
+      const path = segments.slice(0, i).join('/');
+      if (dirs.has(path)) continue;
+      dirs.set(path, {
+        path,
+        name: segments[i - 1],
+        parentPath: i === 1 ? null : segments.slice(0, i - 1).join('/'),
+        depth: i,
+      });
+    }
+  }
+
+  const files = Array.from(fileList).map((file) => {
+    // `|| file.name` is the graceful path for a browser that gives us no
+    // relative path: the file lands in the folder already open instead of
+    // throwing. Filter(Boolean) drops the empty segment a leading slash makes.
+    const segments = (file.webkitRelativePath || file.name).split('/').filter(Boolean);
+    const dirSegments = segments.slice(0, -1);
+    if (dirSegments.length) registerAncestors(dirSegments);
+    return { file, dirPath: dirSegments.length ? dirSegments.join('/') : null };
+  });
+
+  // Shallowest first, so a parent always has an id by the time its children
+  // are created. The path tiebreak only makes the order deterministic, which
+  // matters for the progress list reading sensibly.
+  const folders = [...dirs.values()].sort((a, b) => a.depth - b.depth || a.path.localeCompare(b.path));
+
+  return {
+    folders,
+    files,
+    rootName: folders[0]?.name ?? null,
+    totalBytes: files.reduce((sum, item) => sum + (item.file.size ?? 0), 0),
+  };
+}
+
 function tint(hex, alpha) {
   const h = hex.replace('#', '');
   const n = parseInt(h, 16);
@@ -1037,6 +1105,131 @@ function NewFolderModal({ accent, isEboard, onClose, onCreate }) {
   );
 }
 
+// Three phases in one modal: confirm what is about to happen, show it
+// happening, then say what actually landed.
+//
+// The confirm step is not ceremony. This is the only bulk write in the portal,
+// it is the one that can create dozens of rows, and folders can only be
+// deleted by eboard — so "I picked the wrong directory" is somebody else's
+// cleanup job. One screen naming the folder and the file count prevents that.
+//
+// The summary step exists because a partial failure is the NORMAL outcome
+// here, not an exceptional one: one file over the 50MB cap fails while the
+// other nineteen succeed. Reporting "done" would be a lie and reporting
+// "failed" would be worse, so it lists exactly what did not make it.
+function UploadFolderModal({ accent, plan, destinationName, onClose, onRun }) {
+  const [phase, setPhase] = useState('confirm');
+  const [progress, setProgress] = useState({ done: 0, total: plan.files.length, label: '' });
+  const [failures, setFailures] = useState([]);
+  const [error, setError] = useState('');
+
+  const tooMany = plan.files.length > MAX_FOLDER_UPLOAD_FILES;
+  const nothingToDo = plan.files.length === 0;
+  const running = phase === 'running';
+
+  // Closing mid-run would orphan the loop: it would keep uploading with
+  // nothing left to report into. The backdrop and Escape both route here.
+  const guardedClose = running ? () => {} : onClose;
+
+  async function start() {
+    setPhase('running');
+    setError('');
+    try {
+      const result = await onRun(setProgress);
+      setFailures(result.failures);
+      setPhase('done');
+    } catch (err) {
+      if (isRedirectError(err)) throw err;
+      setError(err.message ?? 'The upload stopped unexpectedly.');
+      setPhase('confirm');
+    }
+  }
+
+  const percent = progress.total ? Math.round((progress.done / progress.total) * 100) : 0;
+  const succeeded = plan.files.length - failures.length;
+
+  return (
+    <ModalWrapper onClose={guardedClose} label="Upload folder" maxWidth="max-w-md">
+      <ModalHeader accent={accent} title="Upload Folder" icon={<FolderOpen size={14} strokeWidth={1.75} />} onClose={guardedClose} />
+
+      <div className="max-h-[70vh] space-y-4 overflow-y-auto p-5">
+        {phase === 'confirm' && (
+          <>
+            <p className="text-sm text-foreground">
+              <span className="font-semibold">{plan.rootName ?? 'This folder'}</span> will be created inside{' '}
+              <span className="font-semibold">{destinationName}</span>.
+            </p>
+            <div className="rounded-lg border border-border px-3 py-2 text-xs text-muted-foreground">
+              <p>{plan.files.length} file{plan.files.length === 1 ? '' : 's'} · {plan.folders.length} folder{plan.folders.length === 1 ? '' : 's'} · {formatFileSize(plan.totalBytes)}</p>
+              <p className="mt-1">Empty folders are skipped, and each file is capped at {DOCUMENT_LIMIT_MB}MB.</p>
+            </div>
+            {tooMany && (
+              <ModalError message={`That is ${plan.files.length} files. Please upload ${MAX_FOLDER_UPLOAD_FILES} or fewer at a time.`} />
+            )}
+            {nothingToDo && <ModalError message="That folder has no files in it." />}
+            <ModalError message={error} />
+          </>
+        )}
+
+        {running && (
+          <>
+            <p className="text-sm font-medium text-foreground">
+              {progress.phase === 'folders' ? 'Creating folders…' : `Uploading ${progress.done} of ${progress.total}…`}
+            </p>
+            <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
+              <div className="h-full transition-all" style={{ width: `${percent}%`, background: accent.gradient }} />
+            </div>
+            <p className="truncate text-xs text-muted-foreground">{progress.label}</p>
+            <p className="text-xs text-muted-foreground">Leave this open until it finishes.</p>
+          </>
+        )}
+
+        {phase === 'done' && (
+          <>
+            <p className="text-sm text-foreground">
+              {succeeded} of {plan.files.length} file{plan.files.length === 1 ? '' : 's'} uploaded.
+            </p>
+            {failures.length > 0 && (
+              <div className="space-y-1.5 rounded-lg border border-border p-3">
+                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  Not uploaded ({failures.length})
+                </p>
+                {failures.map((failure, i) => (
+                  <p key={`${failure.name}-${i}`} className="text-xs text-muted-foreground">
+                    <span className="font-medium text-foreground">{failure.name}</span> — {failure.message}
+                  </p>
+                ))}
+              </div>
+            )}
+          </>
+        )}
+      </div>
+
+      {phase === 'done' ? (
+        <div className="flex items-center justify-end border-t border-border px-5 py-4">
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-lg px-4 py-2 text-sm font-semibold text-white transition-opacity hover:opacity-85"
+            style={{ background: accent.gradient }}
+          >
+            Done
+          </button>
+        </div>
+      ) : (
+        <ModalFooter
+          accent={accent}
+          onClose={guardedClose}
+          onConfirm={start}
+          confirmLabel={`Upload ${plan.files.length} File${plan.files.length === 1 ? '' : 's'}`}
+          disabled={tooMany || nothingToDo}
+          busy={running}
+        />
+      )}
+    </ModalWrapper>
+  );
+}
+
 function AddLinkModal({ accent, onClose, onAdd }) {
   const [name, setName] = useState('');
   const [url, setUrl] = useState('');
@@ -1474,6 +1667,10 @@ function DocumentsTab({ accent, isEboard, canManage, canContribute, currentUserI
   const [dragItem, setDragItem] = useState(null);
   const [dropTarget, setDropTarget] = useState(null);
   const fileUploadRef = useRef(null);
+  const folderUploadRef = useRef(null);
+  // The parsed plan doubles as "is the folder-upload modal open": there is no
+  // meaningful modal without one, so a second boolean could only disagree.
+  const [folderUploadPlan, setFolderUploadPlan] = useState(null);
 
   const currentFolderId = path.length ? path[path.length - 1].id : null;
 
@@ -1520,6 +1717,98 @@ function DocumentsTab({ accent, isEboard, canManage, canContribute, currentUserI
     const result = await uploadDocument(formData);
     if (result?.error) { window.alert(result.error); return; }
     setDocuments((prev) => [result, ...prev]);
+  }
+
+  // Walks the plan: folders first (shallowest to deepest, so a parent always
+  // has an id before its children), then every file.
+  //
+  // SEQUENTIAL ON PURPOSE. Parallel uploads would be faster and are the wrong
+  // trade here: /documents has no rate limit, files run to 50MB, and the
+  // progress count has to mean something. One at a time is also what makes a
+  // failure isolable to a named file.
+  //
+  // NOTHING ABORTS THE RUN except a redirect. A file over the cap, a name the
+  // API rejects, one bad folder — each is recorded and the walk continues,
+  // because stopping at the first problem would leave a half-made tree with no
+  // report of where it stopped. Only `redirect('/login')` propagates, since
+  // continuing to upload after the session is gone is pointless.
+  async function runFolderUpload(plan, onProgress) {
+    const idByPath = new Map();
+    const failures = [];
+    // One listing per parent we touch, rather than one per folder created.
+    // Safe to cache for the length of a run: dir paths in a plan are unique,
+    // so the same (parent, name) pair is never asked for twice.
+    const siblingCache = new Map();
+
+    async function siblingsOf(parentId) {
+      const key = parentId ?? 'root';
+      if (!siblingCache.has(key)) {
+        const list = await getDocumentFolders(parentId);
+        siblingCache.set(key, Array.isArray(list) ? list : []);
+      }
+      return siblingCache.get(key);
+    }
+
+    for (const dir of plan.folders) {
+      const parentId = dir.parentPath === null ? currentFolderId : idByPath.get(dir.parentPath);
+      // Its parent failed, so this one cannot even be attempted. No separate
+      // failure line: the parent already has one, and repeating it for every
+      // descendant would bury the actual cause.
+      if (dir.parentPath !== null && parentId === undefined) continue;
+
+      onProgress((prev) => ({ ...prev, phase: 'folders', label: dir.path }));
+      try {
+        // Reuse a folder that is already there instead of making a second one
+        // with the same name — uploading the same tree twice should merge, not
+        // duplicate. Only folders this member can SEE are candidates, which is
+        // the right answer rather than a limitation: merging into a restricted
+        // folder they cannot open would be writing somewhere invisible to them.
+        const existing = (await siblingsOf(parentId)).find((f) => f.name === dir.name);
+        const folder = existing ?? await createDocumentFolder(dir.name, parentId, [], []);
+        idByPath.set(dir.path, folder.id);
+      } catch (err) {
+        if (isRedirectError(err)) throw err;
+        failures.push({ name: `${dir.path}/`, message: err.message ?? 'Could not create this folder' });
+      }
+    }
+
+    let done = 0;
+    for (const item of plan.files) {
+      const folderId = item.dirPath === null ? currentFolderId : idByPath.get(item.dirPath);
+      done += 1;
+      onProgress({ phase: 'files', done, total: plan.files.length, label: item.file.name });
+
+      if (item.dirPath !== null && folderId === undefined) {
+        failures.push({ name: item.file.name, message: 'its folder could not be created' });
+        continue;
+      }
+
+      const formData = new FormData();
+      formData.append('file', item.file);
+      if (folderId) formData.append('folder_id', folderId);
+      // uploadDocument returns { error } rather than throwing, which is what
+      // lets one rejected file leave the loop running.
+      const result = await uploadDocument(formData);
+      if (result?.error) failures.push({ name: item.file.name, message: result.error });
+    }
+
+    // Re-read the level instead of splicing results in. The run creates rows
+    // at depths this table is not showing, and only some of the new rows are
+    // children of the open folder — reconciling that by hand is how a list
+    // ends up disagreeing with the database.
+    const [folderList, documentList] = await Promise.all([
+      getDocumentFolders(currentFolderId),
+      getDocuments(currentFolderId),
+    ]);
+    setFolders(folderList);
+    setDocuments(documentList);
+
+    return { failures };
+  }
+
+  function handleFolderPicked(fileList) {
+    if (!fileList?.length) return;
+    setFolderUploadPlan(planFolderUpload(fileList));
   }
 
   async function handleAddLink(name, url) {
@@ -1693,6 +1982,33 @@ function DocumentsTab({ accent, isEboard, canManage, canContribute, currentUserI
                 <FolderIcon size={12} /> New Folder
               </button>
             )}
+            {/* Folder upload sits on canManage, NOT canContribute, and that is
+                not an oversight: it creates folders as it walks, and creating
+                folders is cabinet-only. Putting it on canContribute would show
+                every member a button that 403s on its first step. If members
+                should get it, POST /documents/folders has to open up first. */}
+            {canManage && (
+              <>
+                <button type="button" onClick={() => folderUploadRef.current?.click()} className="flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground">
+                  <FolderOpen size={12} /> Upload Folder
+                </button>
+                {/* webkitdirectory is what turns this into a directory picker;
+                    `directory` is the standards-track spelling no browser
+                    ships yet. Both are lowercase so React passes them straight
+                    through as attributes. Resetting value on click is what
+                    makes picking the SAME folder twice fire onChange again. */}
+                <input
+                  ref={folderUploadRef}
+                  type="file"
+                  className="sr-only"
+                  webkitdirectory=""
+                  directory=""
+                  multiple
+                  onClick={(e) => { e.currentTarget.value = ''; }}
+                  onChange={(e) => handleFolderPicked(e.target.files)}
+                />
+              </>
+            )}
             {canContribute && (
               <>
                 <button type="button" onClick={() => fileUploadRef.current?.click()} className="flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground">
@@ -1795,6 +2111,15 @@ function DocumentsTab({ accent, isEboard, canManage, canContribute, currentUserI
       </div>
 
       {showNewFolder && <NewFolderModal accent={accent} isEboard={isEboard} onClose={() => setShowNewFolder(false)} onCreate={handleCreateFolder} />}
+      {folderUploadPlan && (
+        <UploadFolderModal
+          accent={accent}
+          plan={folderUploadPlan}
+          destinationName={path.length ? path[path.length - 1].name : 'Documents'}
+          onClose={() => setFolderUploadPlan(null)}
+          onRun={(onProgress) => runFolderUpload(folderUploadPlan, onProgress)}
+        />
+      )}
       {showAddLink && <AddLinkModal accent={accent} onClose={() => setShowAddLink(false)} onAdd={handleAddLink} />}
       {previewDoc && <FilePreviewModal doc={previewDoc} accent={accent} onClose={() => setPreviewDoc(null)} />}
       {renameTarget && (
