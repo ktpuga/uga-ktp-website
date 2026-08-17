@@ -289,6 +289,14 @@ try {
 
 Fixed across ~10 files already. Don't reintroduce it.
 
+### A filtered list must say that it is filtered
+
+`GET /interviews/bookings/:id/notes` returns `{ access, notes }`, where `access` is `all` or `own`. An interviewer who wrote a note and then withdrew from the slot keeps their own words and loses sight of everyone else's — so they get a **`200` carrying one note when three exist.**
+
+A component handed only the array renders "1 note" and is confidently wrong at the exact moment being wrong costs something. `InterviewNotes.jsx` renders an explicit warning for `access === 'own'`.
+
+The tempting shortcut is deriving it from `slot.i_am_interviewing`, which the component already has. Don't: that is a second copy of a server rule living in a component, free to drift the day the rule changes. Ask the API what the caller may see and render the answer.
+
 ### `/rush` is public, `/rushee` is the portal
 
 `/rush` and `/rush/how-it-works` are **public marketing pages** linked from the homepage. The rushee portal is `/rushee`. Putting a portal `layout.jsx` under `/rush` wraps the public page in the authenticated shell and breaks it for signed-out visitors. The `proxy.ts` matcher covers `/rushee` and deliberately not `/rush`.

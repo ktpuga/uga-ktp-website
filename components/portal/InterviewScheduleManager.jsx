@@ -3,18 +3,19 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   AlertTriangle, ArrowLeft, CalendarClock, Check, ChevronRight, Clock, Eye, EyeOff,
-  Loader2, MapPin, Pencil, Plus, Trash2, Users, X,
+  Loader2, MapPin, NotebookPen, Pencil, Plus, Trash2, Users, X,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
   getInterviewSchedules, getInterviewSchedule, createInterviewSchedule, updateInterviewSchedule,
   deleteInterviewSchedule, createInterviewSlot, updateInterviewSlot, deleteInterviewSlot,
-  cancelInterviewBooking, withdrawInterviewer, getCommittees,
+  cancelInterviewBooking, withdrawInterviewer, getCommittees, getRoundNotes,
 } from '@/lib/portal-api';
 import { memberDisplayName, memberInitials } from '@/lib/portal-format';
 import { isRedirectError } from '@/lib/is-redirect-error';
 import { useAccentPalette } from '@/components/portal/PortalAccentContext';
 import { useConfirm } from '@/components/ui/confirm-dialog';
+import InterviewNotes from '@/components/portal/InterviewNotes';
 
 function tint(hex, alpha) {
   const h = hex.replace('#', '');
@@ -573,6 +574,8 @@ function ScheduleDetail({ scheduleId, accent, committees, onBack }) {
             />
           </div>
 
+          <RoundNotes scheduleId={schedule.id} />
+
           <AddSlotForm
             accent={accent}
             defaultLocation={schedule.location}
@@ -622,11 +625,122 @@ function ScheduleDetail({ scheduleId, accent, committees, onBack }) {
   );
 }
 
+// Every note in the round, grouped by candidate. The decision-night view: the
+// per-slot panels above answer "what did we think of this person", and this one
+// answers "read them all side by side", which is the question actually being
+// asked in the room.
+//
+// Collapsed by default and fetched only when opened. Two reasons, and the second
+// is the real one: it is a whole round of evaluations on one screen, so it
+// should be something eboard chooses to put up rather than something that
+// appears behind them while they are showing the schedule to someone.
+function RoundNotes({ scheduleId }) {
+  const [open, setOpen] = useState(false);
+  const [candidates, setCandidates] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  async function toggle() {
+    if (open) {
+      setOpen(false);
+      return;
+    }
+    setOpen(true);
+    setLoading(true);
+    setError('');
+    try {
+      const result = await getRoundNotes(scheduleId);
+      // Returns { error } rather than throwing — see lib/portal-api.js.
+      if (result.error) setError(result.error);
+      else setCandidates(result.candidates);
+    } catch (err) {
+      if (isRedirectError(err)) throw err;
+      setError(err.message ?? 'Could not load notes for this round.');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  const total = candidates.reduce((n, c) => n + c.notes.length, 0);
+
+  return (
+    <div className="mb-6 overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
+      <button
+        type="button"
+        onClick={toggle}
+        aria-expanded={open}
+        className="flex w-full flex-wrap items-center justify-between gap-3 px-5 py-4 text-left hover:bg-muted/40"
+      >
+        <span className="flex items-center gap-2">
+          <NotebookPen size={14} className="text-muted-foreground" />
+          <span className="text-sm font-semibold text-foreground">Interview notes</span>
+          {open && !loading && !error && (
+            <span className="text-xs text-muted-foreground">
+              {total} {total === 1 ? 'note' : 'notes'} on {candidates.length}{' '}
+              {candidates.length === 1 ? 'candidate' : 'candidates'}
+            </span>
+          )}
+        </span>
+        <ChevronRight size={15} className={cn('text-muted-foreground transition-transform', open && 'rotate-90')} />
+      </button>
+
+      {open && (
+        <div className="border-t border-border px-5 py-4">
+          {error ? (
+            <div className="flex items-start gap-2 rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-xs text-destructive">
+              <AlertTriangle size={12} className="mt-0.5 shrink-0" /> {error}
+            </div>
+          ) : loading ? (
+            <div className="flex h-16 items-center justify-center gap-2 text-xs text-muted-foreground">
+              <Loader2 size={14} className="animate-spin" /> Loading notes…
+            </div>
+          ) : candidates.length === 0 ? (
+            <p className="text-xs text-muted-foreground">
+              Nobody has written a note in this round yet. Interviewers add them from
+              their own interviews page once they have signed up for a slot.
+            </p>
+          ) : (
+            <div className="space-y-5">
+              {candidates.map((candidate) => (
+                <div key={candidate.candidate_id}>
+                  <p className="mb-1.5 text-xs font-semibold text-foreground">
+                    {candidate.candidate_name}
+                    <span className="ml-2 font-normal text-muted-foreground">
+                      {candidate.notes.length} {candidate.notes.length === 1 ? 'note' : 'notes'}
+                    </span>
+                  </p>
+                  <ul className="space-y-2">
+                    {candidate.notes.map((note) => (
+                      <li key={note.id} className="rounded-lg border border-border bg-muted/20 px-3 py-2">
+                        <div className="mb-1 flex flex-wrap items-center justify-between gap-2">
+                          <span className="text-[11px] font-semibold text-foreground">{note.author_name}</span>
+                          <span className="text-[10px] text-muted-foreground">
+                            {new Date(note.updated_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                          </span>
+                        </div>
+                        <p className="whitespace-pre-line text-[12px] leading-relaxed text-foreground">{note.body}</p>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function SlotRow({
   slot, accent, defaultLocation, busy,
   editing, onEdit, onCancelEdit, onSave, onDelete, onRelease, onRemoveInterviewer,
 }) {
   const left = Math.max(0, slot.capacity - slot.booked_count);
+
+  // One candidate's notes open at a time, by booking id. The panel is tall and
+  // a night's worth of them open at once buries the schedule.
+  const [openNotesFor, setOpenNotesFor] = useState(null);
   const when = timeLabel(new Date(slot.startDate));
   const interviewers = slot.interviewers ?? [];
   const interviewerSpotsLeft = Math.max(0, slot.interviewer_capacity - interviewers.length);
@@ -716,6 +830,20 @@ function SlotRow({
                 {memberInitials(booking)}
               </span>
               <span className="text-[11px] font-medium text-foreground">{memberDisplayName(booking)}</span>
+              {/* Notes before Release, because the destructive control should
+                  not be the one nearest the name. */}
+              <button
+                type="button"
+                onClick={() => setOpenNotesFor(openNotesFor === booking.booking_id ? null : booking.booking_id)}
+                aria-expanded={openNotesFor === booking.booking_id}
+                className={cn(
+                  'hover:text-foreground',
+                  openNotesFor === booking.booking_id ? 'text-foreground' : 'text-muted-foreground',
+                )}
+                aria-label={`Notes on ${memberDisplayName(booking)}`}
+              >
+                <NotebookPen size={11} />
+              </button>
               <button
                 type="button"
                 onClick={() => onRelease(booking)}
@@ -728,6 +856,22 @@ function SlotRow({
             </span>
           ))}
         </div>
+      )}
+
+      {/* Keyed on the booking so switching candidates remounts and re-fetches
+          rather than showing the previous person's notes while the new load. */}
+      {openNotesFor && (
+        <InterviewNotes
+          key={openNotesFor}
+          bookingId={openNotesFor}
+          candidateName={memberDisplayName(
+            slot.bookings.find((b) => b.booking_id === openNotesFor) ?? {},
+          )}
+          accent={accent}
+          // Eboard removes anyone's note. They still cannot EDIT one — that
+          // asymmetry is deliberate and lives in the panel, not here.
+          canDeleteAny
+        />
       )}
     </div>
   );

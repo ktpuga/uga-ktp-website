@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import {
-  AlertTriangle, Calendar, Check, Clock, Loader2, MapPin, Users, X,
+  AlertTriangle, Calendar, Check, Clock, Loader2, MapPin, NotebookPen, Users, X,
 } from 'lucide-react';
 import { useSession } from 'next-auth/react';
 import { cn } from '@/lib/utils';
@@ -12,6 +12,7 @@ import { isRedirectError } from '@/lib/is-redirect-error';
 import { useAccentPalette } from '@/components/portal/PortalAccentContext';
 import { useConfirm } from '@/components/ui/confirm-dialog';
 import { useInterviewerRounds } from '@/lib/use-interviewer-rounds';
+import InterviewNotes from '@/components/portal/InterviewNotes';
 
 // Deliberately a DIFFERENT component from InterviewScheduleManager rather than
 // that one with an `isEboard` prop. The layouts look alike, but the two pages
@@ -229,6 +230,11 @@ function InterviewerSlotRow({ slot, accent, busy, canWithdraw, onClaim, onWithdr
   const spotsLeft = Math.max(0, slot.interviewer_capacity - interviewers.length);
   const mine = slot.i_am_interviewing;
 
+  // Which candidate's notes are open, by booking id. One at a time: the panel is
+  // tall, and several open at once turns a night's slot list into a wall of
+  // textareas with no way to see the schedule underneath.
+  const [openNotesFor, setOpenNotesFor] = useState(null);
+
   // The API is the authority on all of this; these only decide what to render.
   // A slot with nobody booked is still worth covering — rushees may book it
   // after you sign up — so an empty slot is claimable, not disabled.
@@ -300,21 +306,63 @@ function InterviewerSlotRow({ slot, accent, busy, canWithdraw, onClaim, onWithdr
       )}
 
       {/* The rushees this slot is for. Eboard chose to show these — an
-          interviewer needs to know who they're meeting. */}
+          interviewer needs to know who they're meeting.
+
+          Each chip is now the way into that candidate's notes. The button is
+          rendered only when this slot is MINE: the API would refuse anyone else
+          (the per-row check is "are you running THIS slot"), and a control that
+          exists in order to 403 is worse than no control. */}
       {(slot.bookings?.length ?? 0) > 0 && (
         <div className="mt-2 flex flex-wrap items-center gap-1.5 border-t border-border pt-2.5">
           <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
             Rushee{slot.bookings.length === 1 ? '' : 's'}
           </span>
-          {slot.bookings.map((booking) => (
-            <span key={booking.booking_id} className="flex items-center gap-1.5 rounded-full border border-border bg-muted/40 py-1 pl-1 pr-2">
-              <span className="flex h-5 w-5 items-center justify-center rounded-full text-[8px] font-semibold text-white" style={{ background: accent.gradient }}>
-                {memberInitials(booking)}
+          {slot.bookings.map((booking) => {
+            const open = openNotesFor === booking.booking_id;
+            const chip = (
+              <>
+                <span className="flex h-5 w-5 items-center justify-center rounded-full text-[8px] font-semibold text-white" style={{ background: accent.gradient }}>
+                  {memberInitials(booking)}
+                </span>
+                <span className="text-[11px] font-medium text-foreground">{memberDisplayName(booking)}</span>
+              </>
+            );
+
+            return mine ? (
+              <button
+                key={booking.booking_id}
+                type="button"
+                onClick={() => setOpenNotesFor(open ? null : booking.booking_id)}
+                aria-expanded={open}
+                className={cn(
+                  'flex items-center gap-1.5 rounded-full border py-1 pl-1 pr-2 transition-colors',
+                  open ? 'border-foreground/30 bg-muted' : 'border-border bg-muted/40 hover:bg-muted',
+                )}
+              >
+                {chip}
+                <NotebookPen size={10} className="text-muted-foreground" />
+              </button>
+            ) : (
+              <span key={booking.booking_id} className="flex items-center gap-1.5 rounded-full border border-border bg-muted/40 py-1 pl-1 pr-2">
+                {chip}
               </span>
-              <span className="text-[11px] font-medium text-foreground">{memberDisplayName(booking)}</span>
-            </span>
-          ))}
+            );
+          })}
         </div>
+      )}
+
+      {/* Keyed on the booking id so switching candidates remounts the panel and
+          re-fetches, rather than showing the previous person's notes while the
+          new ones load. */}
+      {mine && openNotesFor && (
+        <InterviewNotes
+          key={openNotesFor}
+          bookingId={openNotesFor}
+          candidateName={memberDisplayName(
+            slot.bookings.find((b) => b.booking_id === openNotesFor) ?? {},
+          )}
+          accent={accent}
+        />
       )}
 
       {slot.booked_count === 0 && (
