@@ -237,7 +237,24 @@ function TraitLine({ children, compact = false }) {
       style={{ color: readableGroupText(TRAIT_NAVY, theme === 'dark') }}
     >
       <span aria-hidden="true" className="mt-1.5 h-1.5 w-1.5 shrink-0 rotate-45" style={{ background: TRAIT_GOLD }} />
-      <span className="text-balance">{children}</span>
+      {/* ⚠ text-left is LOAD-BEARING — do not drop it to "inherit" the
+          centring from the section above.
+
+          This span is a flex item, and its parent section is text-center. On
+          one line the span shrinks to the text width, so the diamond sits
+          right against it. The moment the text wraps, the span widens to the
+          longest line and the inherited text-align centres the FIRST line
+          inside it — which slides the text away from the diamond and leaves
+          the diamond stranded on its own. The diamond never moved; the text
+          did.
+
+          Left-aligning pins line one flush against the diamond at every width
+          and turns the wrap into a hanging indent. text-balance stays, so the
+          two lines still split evenly instead of orphaning one word.
+
+          The same markup and the same fix live in components/ui/card.jsx for
+          the public roster. Change both. */}
+      <span className="text-balance text-left">{children}</span>
     </span>
   );
 }

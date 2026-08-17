@@ -160,7 +160,17 @@ const ProfileCard = ({ name, title, note, traits, links, bio, avatarSrc, fallbac
             <div key={trait} className="flex justify-center">
               <span className="inline-flex items-start justify-center gap-2 text-xs font-semibold leading-snug text-[#14326E]">
                 <span aria-hidden="true" className="mt-1.5 h-1.5 w-1.5 shrink-0 rotate-45 bg-[#d4af37]" />
-                <span className="text-balance">{trait}</span>
+                {/* ⚠ text-left is LOAD-BEARING — do not drop it to "inherit"
+                    the centring from the section above. This span is a flex
+                    item inside a text-center parent, so once the text wraps
+                    the span widens to its longest line and the inherited
+                    centring pushes the FIRST line away from the diamond,
+                    stranding it. Left-aligning pins line one against the
+                    diamond and makes the wrap a hanging indent.
+
+                    Same markup and same fix in TraitLine in
+                    components/portal/MemberDirectory.jsx. Change both. */}
+                <span className="text-balance text-left">{trait}</span>
               </span>
             </div>
           ))}
