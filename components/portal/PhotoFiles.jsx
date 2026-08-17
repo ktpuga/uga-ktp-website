@@ -1971,55 +1971,45 @@ function DocumentsTab({ accent, isEboard, canManage, canContribute, currentUserI
           })}
         </nav>
 
-        {/* New Folder shapes the library and stays with cabinet; the two "add"
-            buttons are open to every member but pledges. The wrapper is
-            deliberately gated on either, so a plain member still gets the row
-            rather than an empty flex container. */}
-        {(canManage || canContribute) && (
+        {/* Every control in this row is open to any member but a pledge, so one
+            gate covers the lot. Cabinet-only powers live on the ROWS (move) and
+            in the modals (visibility), not here. */}
+        {canContribute && (
           <div className="flex flex-wrap items-center gap-2">
-            {canManage && (
-              <button type="button" onClick={() => setShowNewFolder(true)} className="flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground">
-                <FolderIcon size={12} /> New Folder
-              </button>
-            )}
-            {/* Folder upload sits on canManage, NOT canContribute, and that is
-                not an oversight: it creates folders as it walks, and creating
-                folders is cabinet-only. Putting it on canContribute would show
-                every member a button that 403s on its first step. If members
-                should get it, POST /documents/folders has to open up first. */}
-            {canManage && (
-              <>
-                <button type="button" onClick={() => folderUploadRef.current?.click()} className="flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground">
-                  <FolderOpen size={12} /> Upload Folder
-                </button>
-                {/* webkitdirectory is what turns this into a directory picker;
-                    `directory` is the standards-track spelling no browser
-                    ships yet. Both are lowercase so React passes them straight
-                    through as attributes. Resetting value on click is what
-                    makes picking the SAME folder twice fire onChange again. */}
-                <input
-                  ref={folderUploadRef}
-                  type="file"
-                  className="sr-only"
-                  webkitdirectory=""
-                  directory=""
-                  multiple
-                  onClick={(e) => { e.currentTarget.value = ''; }}
-                  onChange={(e) => handleFolderPicked(e.target.files)}
-                />
-              </>
-            )}
-            {canContribute && (
-              <>
-                <button type="button" onClick={() => fileUploadRef.current?.click()} className="flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground">
-                  <Upload size={12} /> Upload File
-                </button>
-                <input ref={fileUploadRef} type="file" className="sr-only" onChange={(e) => { if (e.target.files?.[0]) handleUploadFile(e.target.files[0]); }} />
-                <button type="button" onClick={() => setShowAddLink(true)} className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold text-white transition-opacity hover:opacity-85" style={{ background: accent.gradient }}>
-                  <Link2 size={12} /> Add Link
-                </button>
-              </>
-            )}
+            <button type="button" onClick={() => setShowNewFolder(true)} className="flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground">
+              <FolderIcon size={12} /> New Folder
+            </button>
+            {/* Upload Folder and New Folder MUST share a gate: the upload walks
+                a picked directory and creates its structure as it goes, so it
+                is folder creation. Gating them differently shows one of them as
+                a button that 403s on its first step. The API draws the same
+                single line at POST /documents/folders. */}
+            <button type="button" onClick={() => folderUploadRef.current?.click()} className="flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground">
+              <FolderOpen size={12} /> Upload Folder
+            </button>
+            {/* webkitdirectory is what turns this into a directory picker;
+                `directory` is the standards-track spelling no browser ships
+                yet. Both are lowercase so React passes them straight through as
+                attributes — note React DROPS the {true} form, so the empty
+                string is load-bearing. Resetting value on click is what makes
+                picking the SAME folder twice fire onChange again. */}
+            <input
+              ref={folderUploadRef}
+              type="file"
+              className="sr-only"
+              webkitdirectory=""
+              directory=""
+              multiple
+              onClick={(e) => { e.currentTarget.value = ''; }}
+              onChange={(e) => handleFolderPicked(e.target.files)}
+            />
+            <button type="button" onClick={() => fileUploadRef.current?.click()} className="flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground">
+              <Upload size={12} /> Upload File
+            </button>
+            <input ref={fileUploadRef} type="file" className="sr-only" onChange={(e) => { if (e.target.files?.[0]) handleUploadFile(e.target.files[0]); }} />
+            <button type="button" onClick={() => setShowAddLink(true)} className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold text-white transition-opacity hover:opacity-85" style={{ background: accent.gradient }}>
+              <Link2 size={12} /> Add Link
+            </button>
           </div>
         )}
       </div>
@@ -2169,9 +2159,10 @@ function RevampedPhotoFiles({ title, description, accentKey }) {
   const currentUserId = session?.user?.authentik_id;
   const isEboard = session?.user?.groups?.includes('eboard') ?? false;
   // Three tiers, not one flag. Any member but a pledge may ADD to the document
-  // library; cabinet (the `chair` group) additionally SHAPES it by creating,
-  // moving and renaming folders; eboard alone deletes other people's rows and
-  // sets visibility. The API draws the same three lines in routes/documents.js.
+  // library — files, links AND folders, including the bulk folder upload;
+  // cabinet (the `chair` group) additionally MOVES things and renames anyone's
+  // row; eboard alone deletes other people's rows, deletes folders, and sets
+  // visibility. The API draws the same three lines in routes/documents.js.
   const canManageDocs = isEboard || (session?.user?.groups?.includes('chair') ?? false);
   const canContributeDocs = session?.user?.groups?.some((g) => DOCUMENT_CONTRIBUTOR_GROUPS.includes(g)) ?? false;
   const searchParams = useSearchParams();
