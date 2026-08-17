@@ -25,113 +25,19 @@
 // That is the same bug that shipped in the original probe; see
 // lib/sso.js and the /auth/start entry point.
 
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { signIn } from 'next-auth/react';
-import { clearProbeMark } from '@/lib/sso';
-import {
-  HANDLED_COMPONENTS,
-  fieldErrors,
-  formError,
-  getChallenge,
-  submitChallenge,
-} from '@/lib/authentik-flow';
-
-const inputClass =
-  'w-full rounded-md border border-white/25 bg-white/10 px-3 py-3 text-white placeholder-white/40 ' +
-  'focus:border-white/50 focus:outline-none focus:ring-2 focus:ring-white/30';
-
-const buttonClass =
-  'w-full rounded-md bg-[#2A5CCA] py-3 font-semibold uppercase tracking-wider text-white ' +
-  'shadow-lg transition-colors hover:bg-[#3570DB] disabled:cursor-not-allowed disabled:opacity-60';
-
-function FieldError({ message }) {
-  if (!message) return null;
-  return <p className="mt-1 text-xs text-red-200">{message}</p>;
-}
+import { fieldErrors, formError } from '@/lib/authentik-flow';
+import { useFlowExecutor } from './useFlowExecutor';
+import { buttonClass, FieldError, inputClass } from './FlowFields';
 
 export default function CredentialSignIn({ origin, slug = 'default-authentication-flow' }) {
-  const [challenge, setChallenge] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [submitting, setSubmitting] = useState(false);
+  const { challenge, loading, submitting, terminal, submit, handOff } = useFlowExecutor({
+    origin,
+    slug,
+  });
 
-  // The flow has finished and a navigation is in flight. STATE, not the ref
-  // below, because this drives what renders — a ref change doesn't re-render,
-  // so the form would stay on screen underneath the redirect.
-  const [terminal, setTerminal] = useState(null); // 'handoff' | 'finishing'
-
-  // Guards the terminal navigation, and is only ever touched inside callbacks.
-  // A ref rather than the state above because the guard has to be SYNCHRONOUS:
-  // two submits in the same tick would both read a stale `terminal` and fire
-  // two navigations, and the second would race the first.
-  const completing = useRef(false);
-
-  // Anything we can't draw falls back to the SSO button's behaviour: an
-  // ordinary next-auth sign-in. Covers an unknown stage type, a CORS failure
-  // and a 5xx alike.
-  //
-  // ⚠ DO NOT "simplify" this to window.location = origin + '/if/flow/<slug>/'.
-  // That was the first version and it is broken in a way that reads as a loop:
-  // a flow opened directly wasn't started by an authorize request, so Authentik
-  // finishes it by dropping the person on its own application library — signed
-  // in to Authentik, still signed out here, and back to square one on return.
-  // signIn() goes through /application/o/authorize/, which is the whole point.
-  const handOff = useCallback(() => {
-    if (completing.current) return;
-    completing.current = true;
-    setTerminal('handoff');
-    signIn('authentik', { callbackUrl: '/auth/redirect' });
-  }, []);
-
-  // The flow is done and the browser now holds an Authentik session. Hand over
-  // to next-auth, which will find it and complete silently.
-  const finish = useCallback(() => {
-    if (completing.current) return;
-    completing.current = true;
-    setTerminal('finishing');
-    // A deliberate credential submit, so any later failure is real and must be
-    // reported rather than suppressed as "the probe found nobody".
-    clearProbeMark();
-    signIn('authentik', { callbackUrl: '/auth/redirect' });
-  }, []);
-
-  const apply = useCallback(
-    (result) => {
-      if (result.handoff) return handOff();
-
-      const next = result.challenge;
-      if (!next?.component) return handOff();
-      if (next.component === 'xak-flow-redirect') return finish();
-      if (!HANDLED_COMPONENTS.has(next.component)) return handOff();
-
-      setChallenge(next);
-    },
-    [finish, handOff]
-  );
-
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      const result = await getChallenge(origin, slug);
-      if (cancelled) return;
-      setLoading(false);
-      apply(result);
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [apply, origin, slug]);
-
-  async function onSubmit(event) {
+  function onSubmit(event) {
     event.preventDefault();
-    if (submitting || completing.current) return;
-
-    const form = new FormData(event.currentTarget);
-    const body = Object.fromEntries(form.entries());
-
-    setSubmitting(true);
-    const result = await submitChallenge(origin, slug, body);
-    setSubmitting(false);
-    apply(result);
+    submit(Object.fromEntries(new FormData(event.currentTarget).entries()));
   }
 
   if (loading || terminal) {
