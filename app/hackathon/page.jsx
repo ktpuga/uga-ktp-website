@@ -143,7 +143,7 @@ export default function HackathonPage() {
                 View 2024 Devpost (Last Year)
               </Button>
             </Link>
-            <Link href="mailto:ryan.majd@uga.edu?subject=[KTPHacks Sponsor Inquiry]" target="_blank" className="p-0">
+            <Link href="mailto:ugaktp@gmail.com?subject=[KTPHacks Sponsor Inquiry]" target="_blank" className="p-0">
               <Button className="rounded-xl bg-gradient-to-r from-fuchsia-500 via-cyan-500 to-indigo-500 px-8 py-3 text-lg font-semibold text-white shadow-lg hover:from-cyan-500 hover:to-fuchsia-500 transition-all duration-300 drop-shadow-neon">
                 Sponsor Us
               </Button>
