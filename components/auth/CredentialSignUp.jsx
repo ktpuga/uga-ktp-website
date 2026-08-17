@@ -40,13 +40,27 @@ export default function CredentialSignUp({ origin, token, slug = 'ktp-enrollment
     slug,
     query: token ? `itoken=${encodeURIComponent(token)}` : '',
 
-    // NOT /auth/redirect. /auth/start is the only place the "you enrolled on a
-    // browser already signed in as someone else" chooser lives, and rush is
-    // precisely where that happens — invitations are non single-use and get
-    // scanned off flyers, so one phone runs this flow repeatedly. Before that
-    // guard existed the new rushee landed in the previous member's portal and
-    // the member's session was later silently rewritten as the rushee.
-    callbackUrl: '/auth/start',
+    // /auth/redirect, NOT /auth/start — and the reason is specific to this
+    // path, so read it before "fixing" it back.
+    //
+    // /auth/start's chooser exists for the OTHER route into enrollment:
+    // Authentik's own page with `next=`, where the browser arrives having just
+    // created an account at Authentik while our cookie may still hold a
+    // DIFFERENT member, and nothing has reconciled the two. Landing that
+    // browser straight in a portal put the new rushee into the previous
+    // member's account.
+    //
+    // This path has already reconciled them. When the flow completes, the hook
+    // performs a full next-auth sign-in against the Authentik session the
+    // enrollment stage just created, so the callback issues OUR session for the
+    // account that just enrolled — overwriting any previous one. By the time
+    // this callback runs, the session cannot be somebody else's.
+    //
+    // Sending it to /auth/start anyway produces a chooser asking "is this you?"
+    // about an account created two seconds ago, which is what shipped first and
+    // is a pure false positive. The fallback below still uses /auth/start,
+    // because that path genuinely has not reconciled anything.
+    callbackUrl: '/auth/redirect',
 
     // If this page can't drive the flow, fall back to Authentik's own signup
     // page rather than to signIn() — somebody who has no account yet must not

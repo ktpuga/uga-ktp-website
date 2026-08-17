@@ -35,13 +35,16 @@ export function useFlowExecutor({
   origin,
   slug,
   query = '',
-  // SIGN-UP MUST OVERRIDE THIS TO '/auth/start'. That page is the only place
-  // the "you enrolled on a browser already signed in as someone else" guard
-  // lives, and rush is exactly where that happens: invitations are non
-  // single-use and scanned off flyers, so one phone runs the flow repeatedly.
-  // Before that guard existed the new rushee was dropped into the previous
-  // member's portal and the member's session was later silently rewritten as
-  // the rushee. /auth/redirect has no such check.
+  // Where next-auth lands once the flow has completed.
+  //
+  // /auth/redirect is right for BOTH forms, and signup deliberately does not
+  // use /auth/start even though every enrollment historically came back
+  // through it. That chooser guards the case where a browser finished
+  // enrollment at Authentik while our cookie still held a different member and
+  // nothing had reconciled them. Both forms here reconcile explicitly — the
+  // sign-in below runs against whatever Authentik session now exists — so the
+  // chooser would only ever ask "is this you?" about the account the person
+  // just created. See CredentialSignUp.jsx, where that shipped and was wrong.
   callbackUrl = '/auth/redirect',
   // Sign-in leaves this unset and falls back to signIn(). Sign-up must set it,
   // because signIn() sends someone who has no account yet to a login form —
