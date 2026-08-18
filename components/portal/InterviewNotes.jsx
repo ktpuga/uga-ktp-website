@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { AlertTriangle, EyeOff, Loader2, Lock, Pencil, Save, Trash2, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
@@ -9,6 +9,8 @@ import {
 import { isRedirectError } from '@/lib/is-redirect-error';
 import { useConfirm } from '@/components/ui/confirm-dialog';
 import { TEXT_LIMITS } from '@/lib/text-limits';
+import { bulletKeyDown } from '@/lib/interview-note-format';
+import NoteBody from '@/components/portal/NoteBody';
 
 // The note panel for ONE candidate, shared by the member interviewer page and
 // eboard's schedule sheet.
@@ -44,6 +46,33 @@ export default function InterviewNotes({ bookingId, candidateName, accent, canDe
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [busyId, setBusyId] = useState(null);
+  const textareaRef = useRef(null);
+  // Where the caret belongs after a bullet keystroke rewrote the draft.
+  //
+  // A ref rather than state, and applied in an effect rather than in the
+  // handler: the textarea is controlled, so React has not painted the new value
+  // at the moment the key is handled, and setting selectionStart there puts the
+  // caret at a position in the OLD string. Every "the cursor jumps to the end
+  // when I press Enter" bug in a controlled editor is this.
+  const pendingCaret = useRef(null);
+
+  useEffect(() => {
+    if (pendingCaret.current == null || !textareaRef.current) return;
+    const caret = pendingCaret.current;
+    pendingCaret.current = null;
+    textareaRef.current.setSelectionRange(caret, caret);
+  }, [draft]);
+
+  const onDraftKeyDown = (e) => {
+    const result = bulletKeyDown(e, draft);
+    // Only swallow the key when the handler actually claimed it. Off a bullet
+    // line, Tab must still move focus out of the textarea.
+    if (!result) return;
+    e.preventDefault();
+    setDraft(result.value);
+    setFieldError('');
+    pendingCaret.current = result.caret;
+  };
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -192,7 +221,7 @@ export default function InterviewNotes({ bookingId, candidateName, accent, canDe
                       )}
                     </span>
                   </div>
-                  <p className="whitespace-pre-line text-[12px] leading-relaxed text-foreground">{note.body}</p>
+                  <NoteBody body={note.body} />
                 </li>
               ))}
             </ul>
@@ -225,23 +254,28 @@ export default function InterviewNotes({ bookingId, candidateName, accent, canDe
                   </button>
                 </span>
               </div>
-              <p className="whitespace-pre-line text-[12px] leading-relaxed text-foreground">{mine.body}</p>
+              <NoteBody body={mine.body} />
             </div>
           ) : (
             <div>
               <textarea
+                ref={textareaRef}
                 value={draft}
                 onChange={(e) => { setDraft(e.target.value); setFieldError(''); }}
+                onKeyDown={onDraftKeyDown}
                 // Mirrors the API cap so the limit is met while typing rather
                 // than as a rejection after clicking save.
                 maxLength={TEXT_LIMITS.INTERVIEW_NOTE}
-                rows={4}
-                placeholder="How did the interview go?"
+                rows={7}
+                placeholder="- What stood out about them?"
                 className={cn(
                   'w-full resize-y rounded-lg border bg-card px-3 py-2 text-[12px] text-foreground outline-none',
                   fieldError ? 'border-destructive' : 'border-border',
                 )}
               />
+              <p className="mt-1 text-[10px] text-muted-foreground/70">
+                Enter continues the list, Tab indents a sub-point.
+              </p>
               <div className="mt-1 flex flex-wrap items-center justify-between gap-2">
                 <span className={cn(
                   'text-[10px]',

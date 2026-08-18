@@ -297,6 +297,30 @@ A component handed only the array renders "1 note" and is confidently wrong at t
 
 The tempting shortcut is deriving it from `slot.i_am_interviewing`, which the component already has. Don't: that is a second copy of a server rule living in a component, free to drift the day the rule changes. Ask the API what the caller may see and render the answer.
 
+### There are TWO event forms, and a default added to one is a bug in the other
+
+Events are created from `/admin` announcements (`AnnouncementsContent.jsx`) and from a committee page (`CommitteesPage.jsx`). They are separate components with separate state, so any behaviour that feels like "how events work" has to be added to both or it becomes a difference nobody documented.
+
+Picking a start now fills the end an hour later, which is what almost every chapter event runs. The rule lives in `lib/event-times.js` and both forms call it.
+
+It is **stateless**: no ref tracks whether we auto-filled, because the previous form values already answer the question. The end is ours to overwrite exactly when it still equals what we would have suggested for the previous start, so an organiser who typed their own end keeps it, and the same form reused to *edit* an existing event never touches a stored one. A ref would have to be reset on mount, on cancel and on edit, and would be wrong in whichever of the three the next author forgets.
+
+`plusHoursLocal` builds and reads the value from date components and never through `toISOString()`. `datetime-local` is wall clock with no zone, so a UTC round trip shifts it by the machine's offset and a 6:00 PM event saves as 10:00 PM.
+
+### Setting a caret inside a controlled textarea's key handler puts it in the old string
+
+The interview note editor rewrites the draft on Enter and Tab to continue or indent a bullet. The obvious place to restore the caret is right there in `onKeyDown`, next to the rewrite. It is wrong: the textarea is controlled, so at that moment React has not painted the new value, and `setSelectionRange` measures against the string still on screen. The caret lands somewhere arbitrary, usually the end.
+
+`InterviewNotes.jsx` stashes the target offset in a ref and applies it in an effect keyed on the draft, after the paint. Every "my cursor jumps to the end when I press Enter" report in a controlled editor is this bug.
+
+The arithmetic itself lives in `lib/interview-note-format.js` as a **pure function returning `{ value, caret }`**, with no DOM access, precisely so the part that breaks can be tested without a React tree.
+
+### Only intercept Tab when you are certain you want it
+
+Same editor. Tab indents a bullet, so it is tempting to `preventDefault()` on Tab inside the textarea. Doing that unconditionally traps keyboard users in the control with no way to leave it, which is a real accessibility failure and not worth an indent shortcut.
+
+`bulletKeyDown` returns `null` for "not mine" and the component only calls `preventDefault()` when it returns a value, so off a bullet line Tab moves focus like it does everywhere else.
+
 ### `/rush` is public, `/rushee` is the portal
 
 `/rush` and `/rush/how-it-works` are **public marketing pages** linked from the homepage. The rushee portal is `/rushee`. Putting a portal `layout.jsx` under `/rush` wraps the public page in the authenticated shell and breaks it for signed-out visitors. The `proxy.ts` matcher covers `/rushee` and deliberately not `/rush`.

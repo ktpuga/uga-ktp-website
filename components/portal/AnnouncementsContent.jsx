@@ -16,6 +16,7 @@ import {
 } from '@/lib/portal-format';
 import { isRedirectError } from '@/lib/is-redirect-error';
 import { TEXT_LIMITS } from '@/lib/text-limits';
+import { nextEventTimes } from '@/lib/event-times';
 import { useConfirm } from '@/components/ui/confirm-dialog';
 import AudienceSelect from '@/components/portal/AudienceSelect';
 import { useAccentPalette } from '@/components/portal/PortalAccentContext';
@@ -539,7 +540,7 @@ function EventForm({ initial, onSubmit, onCancel, isEdit, committees, formError 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div>
             <FieldLabel>Start</FieldLabel>
-            <FieldInput type="datetime-local" value={form.start} onChange={(e) => setForm((f) => ({ ...f, start: e.target.value }))} />
+            <FieldInput type="datetime-local" value={form.start} onChange={(e) => setForm((f) => ({ ...f, ...nextEventTimes(f, e.target.value) }))} />
           </div>
           <div>
             <FieldLabel>End</FieldLabel>

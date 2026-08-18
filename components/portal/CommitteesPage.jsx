@@ -31,6 +31,7 @@ import { memberDisplayName, memberInitials, formatMemberGroup } from '@/lib/port
 import { profilePictureSrc, avatarAssetId } from '@/lib/avatar';
 import { isRedirectError } from '@/lib/is-redirect-error';
 import { TEXT_LIMITS } from '@/lib/text-limits';
+import { nextEventTimes } from '@/lib/event-times';
 import { NewMeetingModal } from './MeetingsPage';
 import { PALETTES } from '@/components/portal/PortalAccentContext';
 
@@ -366,7 +367,7 @@ function ScheduleEventModal({ committeeId, committeeName, accent, onClose, onSch
 
         <div className="grid grid-cols-2 gap-3">
           <FormField label="Start">
-            <input type="datetime-local" value={form.start} onChange={(e) => set('start', e.target.value)} className={fieldClass} onFocus={focusOn(accent)} onBlur={focusOff()} />
+            <input type="datetime-local" value={form.start} onChange={(e) => setForm((f) => ({ ...f, ...nextEventTimes(f, e.target.value) }))} className={fieldClass} onFocus={focusOn(accent)} onBlur={focusOff()} />
           </FormField>
           <FormField label="End">
             <input type="datetime-local" value={form.end} onChange={(e) => set('end', e.target.value)} className={fieldClass} onFocus={focusOn(accent)} onBlur={focusOff()} />

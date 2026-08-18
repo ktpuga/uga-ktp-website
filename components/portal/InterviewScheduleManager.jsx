@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   AlertTriangle, ArrowLeft, CalendarClock, Check, ChevronRight, Clock, Eye, EyeOff,
-  Loader2, MapPin, NotebookPen, Pencil, Plus, Trash2, Users, X,
+  Loader2, MapPin, NotebookPen, Pencil, Plus, Presentation, Trash2, Users, X,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
@@ -16,6 +16,8 @@ import { isRedirectError } from '@/lib/is-redirect-error';
 import { useAccentPalette } from '@/components/portal/PortalAccentContext';
 import { useConfirm } from '@/components/ui/confirm-dialog';
 import InterviewNotes from '@/components/portal/InterviewNotes';
+import NoteBody from '@/components/portal/NoteBody';
+import DecisionNight from '@/components/portal/DecisionNight';
 
 function tint(hex, alpha) {
   const h = hex.replace('#', '');
@@ -574,7 +576,7 @@ function ScheduleDetail({ scheduleId, accent, committees, onBack }) {
             />
           </div>
 
-          <RoundNotes scheduleId={schedule.id} />
+          <RoundNotes scheduleId={schedule.id} scheduleTitle={schedule.title} accent={accent} />
 
           <AddSlotForm
             accent={accent}
@@ -634,8 +636,9 @@ function ScheduleDetail({ scheduleId, accent, committees, onBack }) {
 // is the real one: it is a whole round of evaluations on one screen, so it
 // should be something eboard chooses to put up rather than something that
 // appears behind them while they are showing the schedule to someone.
-function RoundNotes({ scheduleId }) {
+function RoundNotes({ scheduleId, scheduleTitle, accent }) {
   const [open, setOpen] = useState(false);
+  const [presenting, setPresenting] = useState(false);
   const [candidates, setCandidates] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -665,11 +668,12 @@ function RoundNotes({ scheduleId }) {
 
   return (
     <div className="mb-6 overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
+      <div className="flex w-full flex-wrap items-center justify-between gap-3 px-5 py-4">
       <button
         type="button"
         onClick={toggle}
         aria-expanded={open}
-        className="flex w-full flex-wrap items-center justify-between gap-3 px-5 py-4 text-left hover:bg-muted/40"
+        className="flex min-w-0 flex-1 flex-wrap items-center justify-between gap-3 text-left"
       >
         <span className="flex items-center gap-2">
           <NotebookPen size={14} className="text-muted-foreground" />
@@ -683,6 +687,27 @@ function RoundNotes({ scheduleId }) {
         </span>
         <ChevronRight size={15} className={cn('text-muted-foreground transition-transform', open && 'rotate-90')} />
       </button>
+        {/* Deliberately outside the toggle: opening the deck should not depend
+            on having expanded the card first, because on decision night this is
+            the only control anyone wants. */}
+        <button
+          type="button"
+          onClick={() => setPresenting(true)}
+          className="flex shrink-0 items-center gap-1.5 rounded-lg px-3 py-1.5 text-[11px] font-semibold text-white"
+          style={{ background: accent.gradient }}
+        >
+          <Presentation size={12} /> Decision night
+        </button>
+      </div>
+
+      {presenting && (
+        <DecisionNight
+          scheduleId={scheduleId}
+          scheduleTitle={scheduleTitle}
+          accent={accent}
+          onClose={() => setPresenting(false)}
+        />
+      )}
 
       {open && (
         <div className="border-t border-border px-5 py-4">
@@ -718,7 +743,7 @@ function RoundNotes({ scheduleId }) {
                             {new Date(note.updated_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                           </span>
                         </div>
-                        <p className="whitespace-pre-line text-[12px] leading-relaxed text-foreground">{note.body}</p>
+                        <NoteBody body={note.body} />
                       </li>
                     ))}
                   </ul>
