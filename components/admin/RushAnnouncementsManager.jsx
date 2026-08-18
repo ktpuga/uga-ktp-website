@@ -6,12 +6,17 @@ import { cn } from '@/lib/utils';
 import { AlertTriangle, Info, Loader2, Megaphone, Pencil, Plus, Trash2, X } from 'lucide-react';
 import {
   createRushAnnouncement,
+  createRushAnnouncementWithMedia,
+  updateRushAnnouncementWithMedia,
+  deleteRushAnnouncementMedia,
   deleteRushAnnouncement,
   getRushAnnouncements,
   updateRushAnnouncement,
 } from '@/lib/portal-api';
 import { isRedirectError } from '@/lib/is-redirect-error';
 import { TEXT_LIMITS } from '@/lib/text-limits';
+import AnnouncementComposerAttachments from '@/components/portal/AnnouncementComposerAttachments';
+import { buildAnnouncementFormData, checkFiles, cleanLinks } from '@/lib/announcement-form';
 
 // Palette now comes from the portal accent context so the Admin red/blue
 // toggle reaches this page, not just the sidebar. Each component asks for it
@@ -34,6 +39,11 @@ function Editor({ announcement, onClose, onSaved }) {
   const [body, setBody] = useState(announcement?.body ?? '');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
+  const [links, setLinks] = useState(announcement?.links ?? []);
+  const [files, setFiles] = useState([]);
+  // Already-uploaded media, dropped from here the moment the API confirms the
+  // delete rather than on save — removal takes effect immediately.
+  const [existingMedia, setExistingMedia] = useState(announcement?.media ?? []);
 
   useEffect(() => {
     function onKey(e) { if (e.key === 'Escape') onClose(); }
@@ -47,12 +57,38 @@ function Editor({ announcement, onClose, onSaved }) {
       setError('Both a title and a message are required.');
       return;
     }
+    const fileError = checkFiles(files, existingMedia.length);
+    if (fileError) {
+      setError(fileError);
+      return;
+    }
+
     setSubmitting(true);
     setError('');
     try {
-      const saved = isEdit
-        ? await updateRushAnnouncement(announcement.id, { title: title.trim(), body: body.trim() })
-        : await createRushAnnouncement({ title: title.trim(), body: body.trim() });
+      // Multipart only when there is something to upload; the API answers both
+      // and the JSON path stays the readable one for a plain text post.
+      let saved;
+      if (files.length) {
+        const formData = buildAnnouncementFormData({
+          title: title.trim(), body: body.trim(), links, files,
+        });
+        saved = isEdit
+          ? await updateRushAnnouncementWithMedia(announcement.id, formData)
+          : await createRushAnnouncementWithMedia(formData);
+        // These return { error } rather than throwing: a thrown Server Action
+        // message is redacted to a digest in production, and "that file is over
+        // the 100 MB limit" is exactly what the person needs to read.
+        if (saved?.error) {
+          setError(saved.error);
+          return;
+        }
+      } else {
+        const payload = { title: title.trim(), body: body.trim(), links: cleanLinks(links) };
+        saved = isEdit
+          ? await updateRushAnnouncement(announcement.id, payload)
+          : await createRushAnnouncement(payload);
+      }
       onSaved(saved);
       onClose();
     } catch (err) {
@@ -99,6 +135,28 @@ function Editor({ announcement, onClose, onSaved }) {
               <label htmlFor="rush-body" className="mb-1 block text-xs font-semibold uppercase tracking-wider text-muted-foreground">Message</label>
               <textarea id="rush-body" rows={6} maxLength={TEXT_LIMITS.BODY} value={body} onChange={(e) => setBody(e.target.value)}
                 placeholder="7pm in Boyd 208. Come meet the chapter, no need to dress up." className={cn(INPUT, 'resize-y')} />
+            </div>
+
+            <div className="border-t border-border pt-4">
+              <AnnouncementComposerAttachments
+                links={links}
+                onLinksChange={setLinks}
+                files={files}
+                onFilesChange={setFiles}
+                existingMedia={existingMedia}
+                onRemoveExisting={async (media) => {
+                  try {
+                    await deleteRushAnnouncementMedia(media.id);
+                    setExistingMedia((prev) => prev.filter((m) => m.id !== media.id));
+                  } catch (err) {
+                    if (isRedirectError(err)) throw err;
+                    setError(err.message ?? 'Could not remove that attachment.');
+                  }
+                }}
+                board="rush"
+                accent={MAROON}
+                disabled={submitting}
+              />
             </div>
 
             {error && (

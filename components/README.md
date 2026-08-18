@@ -297,6 +297,18 @@ A component handed only the array renders "1 note" and is confidently wrong at t
 
 The tempting shortcut is deriving it from `slot.i_am_interviewing`, which the component already has. Don't: that is a second copy of a server rule living in a component, free to drift the day the rule changes. Ask the API what the caller may see and render the answer.
 
+### Announcement attachments: two boards, one behaviour, one media table
+
+The main board and the rush board are separate pages with separate permissions, but a photo grid or a link chip renders identically in both. `AnnouncementAttachments.jsx` is the reading side and `AnnouncementComposerAttachments.jsx` the writing side, and both are shared. The only thing that differs is one `board` prop, which picks which API endpoint the media proxy asks — it grants nothing, since ktp-api refuses ids belonging to the other board either way.
+
+Three things worth knowing before editing them:
+
+- **Tiles request `?size=thumbnail`, never the original.** A feed of twenty posts that loads full-size originals for every tile pulls tens of megabytes to render a grid nobody has clicked. Videos play in the lightbox, not in the grid, for the same reason.
+- **A multipart request is only sent when there are files.** The API answers both, and the JSON path stays the readable one. `lib/announcement-form.js` builds the body, because `audience` and `links` have to be JSON-encoded into it and forgetting that produces a confusing error about the audience rather than about the encoding.
+- **Object URLs for file previews must be revoked.** `useFilePreviews` keys them by the `File` itself so re-renders reuse one URL, and revokes on unmount. Minting a fresh `URL.createObjectURL` inline in the render leaks one blob per keystroke elsewhere in the form.
+
+⚠ **An edit form that does not seed `links` wipes them.** The composer sends the list it holds, so a form initialised without `links: item.links ?? []` posts an empty array. Same trap as `committeeIds` two lines above it in `AnnouncementsContent.jsx`, and it has now been made twice.
+
 ### There are TWO event forms, and a default added to one is a bug in the other
 
 Events are created from `/admin` announcements (`AnnouncementsContent.jsx`) and from a committee page (`CommitteesPage.jsx`). They are separate components with separate state, so any behaviour that feels like "how events work" has to be added to both or it becomes a difference nobody documented.

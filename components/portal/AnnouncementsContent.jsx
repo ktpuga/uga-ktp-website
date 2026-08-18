@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import {
   getAnnouncements, createAnnouncement, updateAnnouncement, deleteAnnouncement,
+  createAnnouncementWithMedia, updateAnnouncementWithMedia, deleteAnnouncementMedia,
   getEvents, createEvent, updateEvent, deleteEvent, getCommittees,
   getNotificationChannels,
 } from '@/lib/portal-api';
@@ -17,6 +18,8 @@ import {
 import { isRedirectError } from '@/lib/is-redirect-error';
 import { TEXT_LIMITS } from '@/lib/text-limits';
 import { nextEventTimes } from '@/lib/event-times';
+import { buildAnnouncementFormData, checkFiles, cleanLinks } from '@/lib/announcement-form';
+import AnnouncementComposerAttachments from '@/components/portal/AnnouncementComposerAttachments';
 import { useConfirm } from '@/components/ui/confirm-dialog';
 import AudienceSelect from '@/components/portal/AudienceSelect';
 import { useAccentPalette } from '@/components/portal/PortalAccentContext';
@@ -244,7 +247,7 @@ function EmptyState({ label }) {
 
 // ─── Announcements ───
 
-const EMPTY_ANNOUNCEMENT_FORM = { title: '', body: '', audience: [], committeeIds: [], sendEmail: false };
+const EMPTY_ANNOUNCEMENT_FORM = { title: '', body: '', audience: [], committeeIds: [], sendEmail: false, links: [] };
 
 // Opt-in per post, deliberately. An automatic rule ("important things get
 // emailed") means the sender can't tell what will happen until after it has
@@ -294,9 +297,12 @@ function EmailOptIn({ checked, onChange, accent, description }) {
   );
 }
 
-function AnnouncementForm({ initial, onSubmit, onCancel, isEdit, committees }) {
+function AnnouncementForm({ initial, onSubmit, onCancel, isEdit, committees, existingMedia = [], onRemoveMedia }) {
   const MAROON = useAccentPalette();
   const [form, setForm] = useState(initial ?? EMPTY_ANNOUNCEMENT_FORM);
+  // Newly picked files, kept out of `form` because they are not part of what an
+  // edit re-renders from: already-uploaded media arrives as `existingMedia`.
+  const [files, setFiles] = useState([]);
 
   return (
     <div className="border-b border-border p-6" style={{ background: tint(MAROON.base, 0.025) }}>
@@ -340,13 +346,25 @@ function AnnouncementForm({ initial, onSubmit, onCancel, isEdit, committees }) {
         )}
       </div>
 
+      <div className="mt-5 border-t border-border pt-4">
+        <AnnouncementComposerAttachments
+          links={form.links ?? []}
+          onLinksChange={(links) => setForm((f) => ({ ...f, links }))}
+          files={files}
+          onFilesChange={setFiles}
+          existingMedia={existingMedia}
+          onRemoveExisting={onRemoveMedia}
+          accent={MAROON}
+        />
+      </div>
+
       <div className="mt-5 flex items-center justify-end gap-2">
         <button type="button" onClick={onCancel} className="rounded-lg border border-border px-4 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground">
           Cancel
         </button>
         <button
           type="button"
-          onClick={() => onSubmit(form)}
+          onClick={() => onSubmit({ ...form, files })}
           disabled={!form.title.trim() || !form.body.trim()}
           className="rounded-lg px-4 py-2 text-sm font-semibold text-white transition-opacity disabled:opacity-40"
           style={{ background: MAROON.gradient }}
@@ -413,19 +431,74 @@ function AnnouncementsTab({ committees }) {
     // single scalar committee_id. Collapsing here rather than in the picker
     // keeps events (which really are multi-committee) on the same component.
     const payload = { ...form, committeeId: form.committeeIds?.[0] ?? null };
+    const files = form.files ?? [];
+
+    // Refused here, before the upload, so the person is told which file is the
+    // problem while it is still in front of them.
+    const fileError = checkFiles(files, editingItem?.media?.length ?? 0);
+    if (fileError) {
+      window.alert(fileError);
+      return;
+    }
+
     try {
+      // Multipart only when there is something to upload. The API answers both,
+      // and the JSON path stays the plain, readable one for the many
+      // announcements that carry no media at all.
+      let saved;
+      if (files.length) {
+        const formData = buildAnnouncementFormData({
+          title: payload.title,
+          body: payload.body,
+          audience: payload.audience,
+          committeeId: payload.committeeId,
+          sendEmail: editingId ? undefined : payload.sendEmail,
+          links: payload.links,
+          files,
+        });
+        saved = editingId
+          ? await updateAnnouncementWithMedia(editingId, formData)
+          : await createAnnouncementWithMedia(formData);
+        // sendMultipart returns { error } rather than throwing, because a
+        // thrown Server Action message is redacted in production.
+        if (saved?.error) {
+          window.alert(saved.error);
+          return;
+        }
+      } else {
+        const jsonPayload = { ...payload, links: cleanLinks(payload.links) };
+        saved = editingId
+          ? await updateAnnouncement(editingId, jsonPayload)
+          : await createAnnouncement(jsonPayload);
+      }
+
       if (editingId) {
-        const updated = await updateAnnouncement(editingId, payload);
-        setAnnouncements((prev) => prev.map((a) => (a.id === editingId ? updated : a)));
+        setAnnouncements((prev) => prev.map((a) => (a.id === editingId ? saved : a)));
         setEditingId(null);
       } else {
-        const created = await createAnnouncement(payload);
-        setAnnouncements((prev) => [created, ...prev]);
+        setAnnouncements((prev) => [saved, ...prev]);
         setFormOpen(false);
       }
     } catch (err) {
       if (isRedirectError(err)) throw err;
       window.alert(err.message ?? 'Failed to save announcement');
+    }
+  }
+
+  // Removing one photo from a post already made. New files APPEND on save, so
+  // this is the only way media comes off, and it takes effect immediately
+  // rather than waiting for the edit to be saved — the API deletes the row and
+  // the Immich asset together.
+  async function handleRemoveMedia(media) {
+    if (!(await confirm('Remove this attachment?'))) return;
+    try {
+      await deleteAnnouncementMedia(media.id);
+      setAnnouncements((prev) => prev.map((a) => (
+        a.id === editingId ? { ...a, media: (a.media ?? []).filter((m) => m.id !== media.id) } : a
+      )));
+    } catch (err) {
+      if (isRedirectError(err)) throw err;
+      window.alert(err.message ?? 'Failed to remove attachment');
     }
   }
 
@@ -481,11 +554,16 @@ function AnnouncementsTab({ committees }) {
                     // Without this, editing an announcement that had a
                     // committee silently cleared it on save.
                     committeeIds: editingItem.committee_id ? [String(editingItem.committee_id)] : [],
+                    // Same trap as committeeIds above: an edit form that does
+                    // not seed the links posts an empty list and wipes them.
+                    links: editingItem.links ?? [],
                   }}
                   onSubmit={handleSubmit}
                   onCancel={handleCancel}
                   isEdit
                   committees={committees}
+                  existingMedia={editingItem.media ?? []}
+                  onRemoveMedia={handleRemoveMedia}
                 />
               ) : (
                 <AnnouncementCard

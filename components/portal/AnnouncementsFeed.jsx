@@ -6,6 +6,7 @@ import { getAnnouncements } from '@/lib/portal-api';
 import { formatAudience } from '@/lib/portal-format';
 import { isRedirectError } from '@/lib/is-redirect-error';
 import { useAccentPalette } from '@/components/portal/PortalAccentContext';
+import AnnouncementAttachments from '@/components/portal/AnnouncementAttachments';
 
 // Read-only announcements tab for members, alumni and pledges.
 //
@@ -102,6 +103,12 @@ export default function AnnouncementsFeed({
                   <p className="mt-2 whitespace-pre-wrap break-words text-sm leading-relaxed text-muted-foreground">
                     {announcement.body}
                   </p>
+
+                  <AnnouncementAttachments
+                    links={announcement.links}
+                    media={announcement.media}
+                    board="main"
+                  />
 
                   {/* Both badges can show: an announcement may target roles AND
                       a committee, and whoever receives it is the union. */}

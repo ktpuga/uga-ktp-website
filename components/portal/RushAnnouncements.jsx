@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { AlertTriangle, Loader2, Megaphone } from 'lucide-react';
 import { getRushAnnouncements } from '@/lib/portal-api';
 import { isRedirectError } from '@/lib/is-redirect-error';
+import AnnouncementAttachments from '@/components/portal/AnnouncementAttachments';
 
 // Read-only list of announcements written for rushees. Backed by its own table
 // (`rush_announcements`), so nothing posted to the chapter internally can ever
@@ -84,6 +85,15 @@ export default function RushAnnouncements({ accent = 'violet', title = 'Announce
                 <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-muted-foreground">
                   {announcement.body}
                 </p>
+
+                {/* board="rush" is what points the media proxy at the rush
+                    endpoint. The API refuses ids from the other board either
+                    way, so this picks the right door rather than granting one. */}
+                <AnnouncementAttachments
+                  links={announcement.links}
+                  media={announcement.media}
+                  board="rush"
+                />
                 <div className="mt-3 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] text-muted-foreground/70">
                   {announcement.author_name && (
                     <span className="font-medium text-muted-foreground">
