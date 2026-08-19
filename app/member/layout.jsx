@@ -38,6 +38,20 @@ function buildNav(isChair, canInterview, canViewRushData) {
         // can_view_rush_data (the pledge committee). Same shape as Interviews
         // above and for the same reason: the API answers the question, so this
         // entry cannot appear for someone the endpoint would then 403.
+        //
+        // ⚠ This entry reaches everyone on that committee EXCEPT someone whose
+        // member group is `pledge`. They pass the API's own floor
+        // (SHARED_ALBUM_GROUPS includes pledge) and canViewRushData resolves
+        // true for them, but homePortal() routes `pledge` to /pledge and
+        // proxy.ts bounces them off /member — so they hold the grant with
+        // nowhere to spend it, and no error anywhere says so.
+        //
+        // Left as-is deliberately (confirmed 2026-08-18): the pledge committee
+        // is staffed by actives, chairs and eboard, so it never triggers. If a
+        // pledge-class member is ever put on that committee, the fix is a third
+        // thin page at app/pledge/rush-data/ rendering the same
+        // RushInterestTable plus a conditional entry in the pledge layout. No
+        // API change — the grant already resolves for them.
         ...(canViewRushData ? [{ href: '/member/rush-data', label: 'Rushee Data', icon: Table2 }] : []),
         { href: '/member/committees', label: 'Committees', icon: UsersRound },
         { href: '/member/polls', label: 'Polls', icon: Vote },
