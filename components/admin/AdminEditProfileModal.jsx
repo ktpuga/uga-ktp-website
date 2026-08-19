@@ -311,7 +311,7 @@ export default function AdminEditProfileModal({ user, onClose, onSaved }) {
           </div>
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <Field label="Major" name="major" error={fieldError('major')}>
+            <Field label="Major(s)" name="major" error={fieldError('major')}>
               <Input name="major" maxLength={120} defaultValue={user.major ?? ''} />
             </Field>
             <Field label="Graduation" name="graduation_date" error={fieldError('graduation_date')}>
@@ -376,6 +376,59 @@ export default function AdminEditProfileModal({ user, onClose, onSaved }) {
               className="flex w-full resize-y rounded-md border border-input bg-background px-3 py-2 text-sm"
             />
           </Field>
+
+          {/* Rush interest form. Rushee-only on the member's own form; shown to
+              eboard for EVERYONE here, and that is not a courtesy — it is the
+              same rule the links field below spells out.
+
+              This modal builds its payload with buildProfilePayload and the
+              admin write is a whole-row UPDATE, so a field this modal does not
+              render is a column this modal NULLs. Gate these on
+              `user.member_group === 'rush'` and eboard correcting a typo in a
+              new pledge's surname silently erases the GPA the pledge committee
+              chose them on.
+
+              (The member form gets away with hiding them because its route
+              honours which keys the request carried, and buildProfilePayload
+              omits the group entirely when the inputs are absent. The admin
+              route deliberately does not work that way — see
+              userModel.adminUpdateProfile.) */}
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+            <Field label="Minor(s) & Certificates" name="minors" error={fieldError('minors')}>
+              <Input
+                name="minors"
+                maxLength={PROFILE_LIMITS.MINORS}
+                defaultValue={user.minors ?? ''}
+              />
+            </Field>
+            <Field
+              label="GPA"
+              hint="Up to two decimal places."
+              name="gpa"
+              error={fieldError('gpa')}
+            >
+              {/* Text, not number — see the member form for why a number input
+                  silently eats a value it cannot parse. */}
+              <Input
+                name="gpa"
+                type="text"
+                inputMode="decimal"
+                maxLength={4}
+                defaultValue={user.gpa ?? ''}
+              />
+            </Field>
+            <Field
+              label="How they heard about KTP"
+              name="heard_from"
+              error={fieldError('heard_from')}
+            >
+              <Input
+                name="heard_from"
+                maxLength={PROFILE_LIMITS.HEARD_FROM}
+                defaultValue={user.heard_from ?? ''}
+              />
+            </Field>
+          </div>
 
           {/* Alumni-only on the member's own form; shown to eboard for everyone,
               because this modal exists to correct what somebody typed into the

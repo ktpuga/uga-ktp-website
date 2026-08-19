@@ -1,6 +1,6 @@
 'use client';
 
-import { LayoutDashboard, BarChart2, Megaphone, Calendar, MessageSquare, Users, UsersRound, Vote, FolderOpen, Image as ImageIcon, ShieldAlert, Settings, Images, QrCode, CalendarClock, CalendarCheck, BookUser, ScrollText } from 'lucide-react';
+import { LayoutDashboard, BarChart2, Megaphone, Calendar, MessageSquare, Users, UsersRound, Vote, FolderOpen, Image as ImageIcon, ShieldAlert, Settings, Images, QrCode, CalendarClock, CalendarCheck, BookUser, ScrollText, Table2 } from 'lucide-react';
 import PortalShell from '@/components/portal/PortalShell';
 
 // The sidebar renders exactly this, in this order.
@@ -58,6 +58,11 @@ function buildNav() {
     items: [
       { href: '/admin/rush-announcements', label: 'Rush Announcements', icon: Megaphone },
       { href: '/admin/rush-signup', label: 'Rush Signup', icon: QrCode },
+      // The interest form answers, replacing the Google Forms response sheet.
+      // Unconditional here because this whole portal is eboard-only; the
+      // pledge committee reaches the same table at /member/rush-data, where
+      // the entry IS conditional. One component behind both.
+      { href: '/admin/rush-data', label: 'Rushee Data', icon: Table2 },
       // In Rush rather than beside Meetings: it runs one week a year as part
       // of rush, and Meetings is the chapter-wide feature rushees can't touch.
       { href: '/admin/interviews', label: 'Interviews', icon: CalendarCheck },

@@ -160,14 +160,29 @@ The same applies to `profile/ProfileForm.jsx`, which is shared with the onboardi
 
 ## `ProfileForm` hides fields by group — don't re-add them
 
-Two fields are conditional, and both conditions are load-bearing:
+Four fields are conditional, and every condition is load-bearing:
 
 - **Pledge Class** is hidden from rushees (`isRushee`) — a pledge class is the thing they're rushing to get.
 - **UGA Email** is hidden from alumni (`isAlumni`), and the remaining input is relabelled from "Personal Email" to just "Email". A UGA address stops working at graduation, so the personal one is the only one that still reaches an alumnus.
+- **What you're doing now** is shown to alumni only.
+- **The three rush interest fields** — Minor(s) & Certificates, GPA, How did you hear about KTP — are shown to rushees only (`isRushee`). These are the ones to be careful with; see the next section.
 
 The alumni case has a trap worth knowing about before you touch it. `PUT /users/me/profile` is a **whole-row upsert**: every key absent from the payload is written as `NULL`. Because the form no longer renders a UGA Email input for alumni, an alumnus saving an unrelated change sends no `email` — which would erase whatever address is on file. The API guards this (`userModel.updateProfile`'s `preserveEmail`), so the value survives, but the same trap applies to **any** field you make conditional here. Hiding an input in this form is equivalent to clearing the column unless the API is taught otherwise.
 
 Both checks prefer the resolved `member_group` over the raw session `groups` list where one is available. Authentik doesn't remove someone's old group when they change status, so the raw list can still say `active` for an alumnus or `rush` for a new pledge.
+
+### The rush interest fields are the sharpest edge of that trap
+
+`minors`, `gpa` and `heard_from` are rushee-only inputs holding data the pledge committee votes on. Hiding them therefore had to mean "leave the columns alone", not "clear them" — and by default it means the second.
+
+`buildProfilePayload` keys the whole group off **`formData.has('gpa')`** and omits all three when the inputs are absent. `PUT /users/me/profile` writes only the keys a request carried, so omission preserves. This is the same `has`-not-`get` mechanism the UGA email uses, and here it is the difference between working and silent data loss: the day a rushee is given a pledge class the form stops rendering these fields, and without the omission their next unrelated save would write three nulls over the answers they were selected on.
+
+**Two things must stay true, or it breaks:**
+
+1. **Don't render them for everyone "so the payload is consistent."** That makes `has` true for a pledge with an empty box, which sends `null`, which clears.
+2. **Don't add a fourth rush field with `formData.get`.** The group is spread together on purpose — a partial omission would clear some and keep others.
+
+`AdminEditProfileModal` does the exact opposite and must keep doing so: it renders all three for **everyone**, because `PUT /admin/users/:id/profile` is a plain whole-row `UPDATE` that does not honour absent keys. Gating them there on `member_group === 'rush'` would mean eboard fixing a typo in a new pledge's surname erases the GPA the pledge committee chose them on. The two forms disagree deliberately.
 
 ## Don't point `ProfileForm` at another user
 
@@ -332,6 +347,22 @@ The arithmetic itself lives in `lib/interview-note-format.js` as a **pure functi
 Same editor. Tab indents a bullet, so it is tempting to `preventDefault()` on Tab inside the textarea. Doing that unconditionally traps keyboard users in the control with no way to leave it, which is a real accessibility failure and not worth an indent shortcut.
 
 `bulletKeyDown` returns `null` for "not mine" and the component only calls `preventDefault()` when it returns a value, so off a bullet line Tab moves focus like it does everywhere else.
+
+### A CSV export has three ways to be wrong and none of them throw
+
+`lib/csv.js` exists so these are solved once. Reach for it rather than joining strings.
+
+- **Formula injection.** A cell starting `=`, `+`, `-`, `@` or a control character is executed on open by both Google Sheets and Excel. Exported values here are typed by rushees — people outside the chapter — into a sheet eboard opens, so `=IMPORTXML(...)` in a free-text answer is a real exfiltration path. Each is prefixed with a single quote, which neither program displays. **Quoting is not neutralisation**: Excel strips the quotes and evaluates what is inside, so the prefix has to go on first.
+- **The UTF-8 BOM.** Excel does not sniff UTF-8 in a `.csv` and falls back to the system codepage, so without the BOM every accented name opens mangled. A name is exactly the value nobody re-checks before mailing the sheet around.
+- **CRLF and RFC 4180 quoting.** A comma inside a value silently becomes a column break, shifting every column after it on that row — the failure that looks fine until somebody sorts the sheet.
+
+`downloadCsv` also revokes its object URL; without that, a member exporting repeatedly leaks one copy of the sheet per click for the lifetime of the tab.
+
+### One table, two portal routes — that is the correct shape, not duplication
+
+`components/rush/RushInterestTable.jsx` is rendered by both `/admin/rush-data` and `/member/rush-data`. That is not an oversight to be cleaned up: `proxy.ts` hard-gates `/admin` to `eboard` and redirects an eboard-only account away from `/member`, so **no single route can serve eboard and the pledge committee at once**. Two thin pages over one component is the fix; two components is the failure this avoids (see the trait markup, which does exist twice).
+
+Neither route is the access boundary. Any member can type `/member/rush-data`; the API answers 403 and the component renders it. The nav entry is hidden by `useRushDataAccess`, which asks the API — the same shape as the Interviews tab, so an entry never appears for someone the endpoint would refuse. `proxy.ts` genuinely cannot help: the rule involves committee membership, which lives in Postgres and deliberately never in the JWT.
 
 ### `/rush` is public, `/rushee` is the portal
 

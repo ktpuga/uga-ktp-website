@@ -6,7 +6,7 @@ import { usePathname } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { cn } from '@/lib/utils';
 import {
-  ChevronLeft, ChevronRight, Plus, Trash2, Search, X, Star, Users, MessageSquare, Calendar, CalendarPlus, QrCode, ClipboardCheck, LogIn, LogOut, UserPlus, UserMinus, Clock, AlertTriangle, MapPin, CalendarDays, FolderOpen,
+  ChevronLeft, ChevronRight, Plus, Trash2, Search, X, Star, Users, MessageSquare, Calendar, CalendarPlus, QrCode, ClipboardCheck, LogIn, LogOut, UserPlus, UserMinus, Clock, AlertTriangle, MapPin, CalendarDays, FolderOpen, Table2,
 } from 'lucide-react';
 import {
   getCommittees,
@@ -22,6 +22,7 @@ import {
   getCommitteeActivity,
   markCommitteeSeen,
   setCommitteeMemberRole,
+  setCommitteeRushDataAccess,
   getMemberDirectory,
   createEvent,
   getDocumentFolders,
@@ -567,6 +568,17 @@ function CommitteeCard({ committee, isEboard, accent, activity, onOpen, onDelete
               {pendingCount > 99 ? '99+' : pendingCount} request{pendingCount === 1 ? '' : 's'}
             </span>
           )}
+          {/* Shown to everyone, not just eboard, and on purpose: this is an
+              access grant, and one nobody can see is one nobody audits. Any
+              member scanning the committee list can tell which committee reads
+              rushee GPAs. A third colour, because the two pills beside it both
+              mean "there is something for you to do" and this one does not. */}
+          {committee.can_view_rush_data && (
+            <span className="inline-flex items-center gap-1 rounded-full border border-sky-500/40 bg-sky-500/10 px-2.5 py-0.5 text-[11px] font-semibold text-sky-700 dark:text-sky-400">
+              <Table2 size={9} strokeWidth={2.5} />
+              Rushee data
+            </span>
+          )}
         </div>
       </div>
     </div>
@@ -607,6 +619,41 @@ export function CommitteeDetail({ committee, currentUserId, isEboard, accent, on
   const [requests, setRequests] = useState([]);
   const [requestsError, setRequestsError] = useState(null);
   const [requestBusyId, setRequestBusyId] = useState(null);
+
+  // Whether this committee's members may read the rushee interest form data.
+  //
+  // Held in local state seeded from the prop, so the switch responds on click
+  // instead of after a refetch. `onChanged` still fires, because the badge on
+  // the committee CARD reads the list's copy of the flag and the two must not
+  // disagree.
+  const [rushData, setRushData] = useState(committee.can_view_rush_data ?? false);
+  const [rushDataBusy, setRushDataBusy] = useState(false);
+  const [rushDataError, setRushDataError] = useState(null);
+
+  async function handleToggleRushData() {
+    const next = !rushData;
+    setRushDataBusy(true);
+    setRushDataError(null);
+    // Optimistic, then reverted on failure. A permission switch that appears to
+    // move and did not is the worst outcome here: somebody would walk away
+    // believing the pledge committee has access it does not.
+    setRushData(next);
+    try {
+      const result = await setCommitteeRushDataAccess(committee.id, next);
+      if (result?.error) {
+        setRushData(!next);
+        setRushDataError(result.error);
+        return;
+      }
+      onChanged?.();
+    } catch (err) {
+      if (isRedirectError(err)) throw err;
+      setRushData(!next);
+      setRushDataError(err.message ?? 'Could not change that');
+    } finally {
+      setRushDataBusy(false);
+    }
+  }
 
   const loadRequests = useCallback(async () => {
     if (!canAdminister) return;
@@ -928,6 +975,55 @@ export function CommitteeDetail({ committee, currentUserId, isEboard, accent, on
           </button>
         )}
       </div>
+
+      {/* Eboard-only, and NOT shown to this committee's chair, unlike the
+          approval queue below. A chair who could set this on their own
+          committee would be granting themselves every rushee's GPA, which is
+          the exact thing the flag controls. The API refuses a chair
+          independently — this only keeps a control off the screen that would
+          403 if pressed. */}
+      {isEboard && (
+        <div className="mb-5 rounded-xl border border-border bg-muted/40 px-4 py-3">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div className="flex items-start gap-2.5">
+              <Table2 size={16} className="mt-0.5 shrink-0" style={{ color: accent.light }} />
+              <div>
+                <p className="text-sm font-semibold text-foreground">Rushee interest form data</p>
+                <p className="mt-0.5 max-w-xl text-xs leading-relaxed text-muted-foreground">
+                  Lets everyone on this committee open the Rushee Data table, including GPAs.
+                  This is how the pledge committee gets access. Eboard always has it.
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={rushData}
+              onClick={handleToggleRushData}
+              disabled={rushDataBusy}
+              className={cn(
+                'relative h-6 w-11 shrink-0 rounded-full transition-colors disabled:opacity-50',
+                rushData ? '' : 'bg-muted-foreground/30',
+              )}
+              style={rushData ? { background: accent.base } : undefined}
+            >
+              <span className="sr-only">
+                {rushData ? 'Remove rushee data access' : 'Give rushee data access'}
+              </span>
+              <span
+                className={cn(
+                  'absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform',
+                  rushData ? 'translate-x-[22px]' : 'translate-x-0.5',
+                )}
+                aria-hidden="true"
+              />
+            </button>
+          </div>
+          {rushDataError && (
+            <p className="mt-2 text-xs font-medium text-red-600 dark:text-red-400">{rushDataError}</p>
+          )}
+        </div>
+      )}
 
       {canSchedule && (
         <div className="mb-5 rounded-xl border border-border bg-muted/40 px-4 py-3">

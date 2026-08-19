@@ -1,9 +1,10 @@
 'use client';
 
-import { LayoutDashboard, Megaphone, Calendar, FolderOpen, Users, Settings, MessageSquare, UsersRound, Vote, QrCode, CalendarClock, ClipboardList } from 'lucide-react';
+import { LayoutDashboard, Megaphone, Calendar, FolderOpen, Users, Settings, MessageSquare, UsersRound, Vote, QrCode, CalendarClock, ClipboardList, Table2 } from 'lucide-react';
 import { useSession } from 'next-auth/react';
 import PortalShell from '@/components/portal/PortalShell';
 import { useInterviewerRounds } from '@/lib/use-interviewer-rounds';
+import { useRushDataAccess } from '@/lib/use-rush-data-access';
 
 // The sidebar renders exactly this, in this order. It used to be a flat array
 // here plus a matching NAV_GROUPING entry in PortalShell keyed by accent —
@@ -11,7 +12,7 @@ import { useInterviewerRounds } from '@/lib/use-interviewer-rounds';
 // vanished from the sidebar. Now there is only this.
 const ATTENDANCE_ITEM = { href: '/member/attendance', label: 'Attendance', icon: QrCode };
 
-function buildNav(isChair, canInterview) {
+function buildNav(isChair, canInterview, canViewRushData) {
   return [
     {
       heading: 'Main',
@@ -33,6 +34,11 @@ function buildNav(isChair, canInterview) {
         // interview round. The API decides that — it returns no rounds to
         // anyone else — so this tab cannot appear for someone it would 403.
         ...(canInterview ? [{ href: '/member/interviews', label: 'Interviews', icon: ClipboardList }] : []),
+        // Only for members of a committee eboard flagged with
+        // can_view_rush_data (the pledge committee). Same shape as Interviews
+        // above and for the same reason: the API answers the question, so this
+        // entry cannot appear for someone the endpoint would then 403.
+        ...(canViewRushData ? [{ href: '/member/rush-data', label: 'Rushee Data', icon: Table2 }] : []),
         { href: '/member/committees', label: 'Committees', icon: UsersRound },
         { href: '/member/polls', label: 'Polls', icon: Vote },
         // Chairs manage attendance for their own events; plain active members
@@ -59,13 +65,14 @@ export default function MemberLayout({ children }) {
   const { data: session } = useSession();
   const isChair = session?.user?.groups?.includes('chair') ?? false;
   const { rounds } = useInterviewerRounds();
+  const { canView } = useRushDataAccess();
 
   return (
     <PortalShell
       portalName="Member Portal"
       accent="blue"
       homeHref="/member"
-      nav={buildNav(isChair, rounds.length > 0)}
+      nav={buildNav(isChair, rounds.length > 0, canView)}
     >
       {children}
     </PortalShell>

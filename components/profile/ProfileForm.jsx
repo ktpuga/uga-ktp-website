@@ -432,15 +432,96 @@ export default function ProfileForm({
         </Field>
       </div>
 
-      <Field label="Major" variant={variant} name="major" error={fieldError('major')}>
+      {/* "Your Major(s)" is how the interest form has always asked it, and the
+          answers have always been prose ("Computer Science and Finance"). The
+          label changed; the column did not. A plural array would mean touching
+          every directory card, the public roster and the decision-night slide
+          to render a list where they render a string, for no answer the box
+          cannot already hold. */}
+      <Field label="Major(s)" variant={variant} name="major" error={fieldError('major')}>
         <Input
           name="major"
-          placeholder="e.g. Computer Science"
+          placeholder="e.g. Computer Science, or Finance and MIS"
           maxLength={120}
           defaultValue={defaultValues.major}
           className={inputClass}
         />
       </Field>
+
+      {/* ── Rush interest form ──
+          The questions the chapter used to collect in Google Forms, asked here
+          instead so a rushee fills them in while building their profile rather
+          than in a second place that nobody links back to the account.
+
+          RUSHEE-ONLY, and gated the same way Pledge Class below is: on
+          `isRushee`, which is rush-and-nothing-else. The columns are on every
+          user and the API validates them for everyone -- only the form is
+          gated, matching `doing_now` and `about_me`.
+
+          ⚠ WHAT NOT TO DO HERE. These three inputs disappearing is load-bearing
+          for a rushee who becomes a pledge: `buildProfilePayload` keys off
+          `formData.has('gpa')` and OMITS all three when they are not rendered,
+          which tells the API to leave the stored values alone. Render them for
+          everyone "so the payload is consistent" and a pledge's next profile
+          save writes three nulls over the pledge committee's own record.
+          See lib/profile.js. */}
+      {isRushee && (
+        <>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <Field
+              label="Minor(s) and Certificates"
+              variant={variant}
+              name="minors"
+              error={fieldError('minors')}
+            >
+              <Input
+                name="minors"
+                placeholder="e.g. Spanish minor, New Media Certificate"
+                maxLength={PROFILE_LIMITS.MINORS}
+                defaultValue={defaultValues.minors}
+                className={inputClass}
+              />
+            </Field>
+            {/* type="text" with inputMode="decimal", not type="number".
+                A number input silently discards a value it cannot parse on some
+                browsers, so a rushee who typed "3.8/4.0" would watch the box
+                empty itself with no message -- and it renders spinner arrows on
+                a field where stepping by 1 is meaningless. The API's rule is
+                the real one either way; pattern only brings the phone keypad up
+                with a decimal point on it. */}
+            <Field label="GPA" variant={variant} name="gpa" error={fieldError('gpa')}>
+              <Input
+                name="gpa"
+                type="text"
+                inputMode="decimal"
+                placeholder="3.75"
+                maxLength={4}
+                defaultValue={defaultValues.gpa}
+                className={inputClass}
+              />
+              <p className="mt-1 text-xs text-muted-foreground">
+                Up to two decimal places. Use your high school GPA if you have not finished a
+                semester at UGA yet.
+              </p>
+            </Field>
+          </div>
+
+          <Field
+            label="How did you hear about KTP?"
+            variant={variant}
+            name="heard_from"
+            error={fieldError('heard_from')}
+          >
+            <Input
+              name="heard_from"
+              placeholder="e.g. Instagram, a current member, the involvement fair"
+              maxLength={PROFILE_LIMITS.HEARD_FROM}
+              defaultValue={defaultValues.heard_from}
+              className={inputClass}
+            />
+          </Field>
+        </>
+      )}
 
       {/* Shows in the directory. It matters most for rushees, whose card has
           no pledge class, graduation date or exec title to fill it out, but

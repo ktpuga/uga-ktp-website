@@ -187,6 +187,25 @@ export default function DecisionNight({ scheduleId, scheduleTitle, accent, onClo
                   {candidate.graduation_date && (
                     <p className="text-base text-muted-foreground">{candidate.graduation_date}</p>
                   )}
+                  {/* From the interest form. This is the one surface outside
+                      the restricted Rushee Data table that shows a GPA, and
+                      deliberately so: decision night is where the chapter
+                      votes, so the number belongs on the slide.
+
+                      Rendered as the string the API sent. `gpa` is a NUMERIC
+                      column and node-postgres reads NUMERIC back as text, so
+                      "3.75" arrives already formatted — a toFixed here would
+                      turn a missing value into "NaN" on a projector.
+
+                      A plain truthiness check is right even though "0" is
+                      falsy: a 0.00 GPA is not an answer anybody gives, and
+                      showing "GPA 0.00" for a rushee who left it blank would
+                      be worse than showing nothing. */}
+                  {candidate.gpa && (
+                    <p className="mt-1 text-base font-semibold tabular-nums text-foreground">
+                      {candidate.gpa} GPA
+                    </p>
+                  )}
                   <p className="mt-3 text-xs uppercase tracking-wider text-muted-foreground/70">
                     {candidate.notes.length} {candidate.notes.length === 1 ? 'note' : 'notes'}
                   </p>
