@@ -64,11 +64,21 @@ export default function RosterVisibility({ accent, initialVisible, onChange }) {
           <span className="block text-sm font-medium text-foreground">
             Show me on the public roster
           </span>
+          {/* ⚠ This list must match memberModel.findPublicRoster's projection.
+              It went stale once: doing_now and links were made public in
+              deliberate reversals (2026-08-10 and 08-11) and this copy still
+              said "name, photo, role and LinkedIn", so the one control in the
+              app about the open internet was under-describing what it exposes.
+              A member deciding whether to be on a page with no authentication
+              has to be told the truth about what is on it. If you add a column
+              to that query, add it here in the same commit. */}
           <span className="mt-0.5 block text-xs text-muted-foreground">
-            The chapter page at ugaktp.com/members-list is visible to anyone, and lists your
-            name, photo, role and LinkedIn. Turning this off removes you from it and stops your
-            photo being served there. Nothing changes inside the portal: you stay in the member
-            directory, and everything else you have filled in was never public.
+            The chapter page at ugaktp.com/members-list is visible to anyone, with no account
+            needed. It lists your name, photo, role, pledge class, LinkedIn, any links you have
+            added, what you have put as what you are doing now, and any traits the chapter has
+            given you. Turning this off removes you from it and stops your photo being served
+            there. Nothing changes inside the portal: you stay in the member directory, and
+            everything else you have filled in was never public.
           </span>
         </span>
       </label>

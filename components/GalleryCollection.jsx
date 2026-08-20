@@ -62,7 +62,16 @@ export function formatEventDate(value) {
   return `${MONTHS[index]} ${year}`;
 }
 
-export default function GalleryCollection({ collection, headingLevel = "h2", layout = "carousel" }) {
+// `scrollRef` and `onScroll` attach to the PHOTO strip, not to the wrapper, and
+// exist so an outer component can drive it — the homepage puts its prev/next
+// chevrons in the section header, well outside this markup, and they have to
+// move the photos rather than a container around them. Both are optional and
+// both are undefined on /gallery, which scrolls the page instead.
+//
+// Passed rather than looked up with a querySelector for the obvious reason: a
+// selector into a shared component's internals breaks silently the next time
+// somebody wraps this markup in another div.
+export default function GalleryCollection({ collection, headingLevel = "h2", layout = "carousel", scrollRef, onScroll }) {
   const Heading = headingLevel;
   const photos = Array.isArray(collection.photos) ? collection.photos : [];
   const isEditorial = layout === "editorial";
@@ -110,6 +119,8 @@ export default function GalleryCollection({ collection, headingLevel = "h2", lay
 
       <div className="relative">
         <div
+          ref={scrollRef}
+          onScroll={onScroll}
           className={isPacked
             ? packedLayoutClass
             : isMosaic

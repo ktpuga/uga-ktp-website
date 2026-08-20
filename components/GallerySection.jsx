@@ -6,13 +6,32 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import { getGalleryCollections } from "@/lib/portal-api";
 import GalleryCollection from "@/components/GalleryCollection";
 
-// The homepage's slice of the gallery: only the collections eboard marked as
-// featured, and the API caps how many come back.
+// The homepage's slice of the gallery: ONE album, scrolled horizontally.
 //
-// The cap is not cosmetic. `/api/homepage-photos/:id/media` serves the ORIGINAL
-// asset with no thumbnail variant, so every collection added to this page makes
-// the landing page slower forever. The full archive is /gallery, which someone
-// chooses to open.
+// It used to stack up to three featured collections side by side, each one a
+// card holding a little masonry of its own photos, and the chevrons moved
+// between the cards. Now the section shows a single album and the chevrons move
+// through that album's PHOTOS, which is what the controls looked like they did
+// anyway.
+//
+// Which album: the first featured one that actually has photos. "First" is the
+// API's own ordering — `display_order ASC, event_date DESC NULLS LAST` — so it
+// is whatever eboard dragged to the top of the collections list, not an
+// accident of insertion order.
+//
+// ⚠ The API is still asked for up to three (HOMEPAGE_COLLECTION_LIMIT) even
+// though one is rendered, and that is deliberate. Eboard creates a collection
+// and then uploads into it, so a featured collection with zero photos is a real
+// state that exists for as long as that takes. Asking for exactly one would
+// make the entire gallery section vanish from the public homepage during that
+// window; asking for three and taking the first non-empty one degrades to the
+// next album instead. The extra cost is metadata for two collections, not
+// images — the media endpoint is hit per rendered tile, and unrendered
+// collections render no tiles.
+//
+// That media endpoint serves the ORIGINAL asset with no thumbnail variant,
+// which is why the homepage shows a slice at all. The full archive is /gallery,
+// which someone chooses to open.
 export default function GallerySection() {
   const [collections, setCollections] = useState([]);
   const [loaded, setLoaded] = useState(false);
@@ -30,7 +49,11 @@ export default function GallerySection() {
   // Nothing configured yet — render nothing rather than an empty band. Also
   // covers the API being unreachable, which must not leave a broken section on
   // the public homepage.
-  const withPhotos = collections.filter((c) => (c.photos?.length ?? 0) > 0);
+  //
+  // An empty collection is skipped rather than shown, because GalleryCollection
+  // returns null for one and the section would otherwise be a heading and a set
+  // of dead chevrons above nothing.
+  const album = collections.find((c) => (c.photos?.length ?? 0) > 0) ?? null;
 
   function updateScrollButtons() {
     const carousel = carouselRef.current;
@@ -43,10 +66,16 @@ export default function GallerySection() {
     const carousel = carouselRef.current;
     const firstCard = carousel?.firstElementChild;
     if (!carousel || !firstCard) return;
+    // `columnGap` rather than `gap`: the strip is a flex row, and only the
+    // column axis separates the tiles. getComputedStyle returns "normal" for an
+    // unset gap, which Number.parseFloat gives NaN, hence the || 0.
     const gap = Number.parseFloat(getComputedStyle(carousel).columnGap) || 0;
     carousel.scrollBy({ left: direction * (firstCard.getBoundingClientRect().width + gap), behavior: "smooth" });
   }
 
+  // Keyed on the album's id, not on a count. The strip is remounted when the
+  // album changes, so the old scroll position and both button states are stale
+  // the moment it does.
   useEffect(() => {
     const frame = requestAnimationFrame(updateScrollButtons);
     window.addEventListener("resize", updateScrollButtons);
@@ -54,9 +83,9 @@ export default function GallerySection() {
       cancelAnimationFrame(frame);
       window.removeEventListener("resize", updateScrollButtons);
     };
-  }, [withPhotos.length]);
+  }, [album?.id]);
 
-  if (loaded && withPhotos.length === 0) return null;
+  if (loaded && !album) return null;
 
   return (
     <section className="relative overflow-hidden border-y border-slate-200 bg-gradient-to-br from-slate-50 via-white to-blue-50 py-16 text-slate-900 md:py-24">
@@ -103,11 +132,20 @@ export default function GallerySection() {
           </div>
         </div>
 
-        <div ref={carouselRef} onScroll={updateScrollButtons} className="no-scrollbar -mx-4 flex snap-x snap-mandatory gap-5 overflow-x-auto px-4 pb-3 sm:-mx-6 sm:px-6" aria-label="Featured gallery collections">
-          {withPhotos.map((collection) => (
-            <GalleryCollection key={collection.id} collection={collection} headingLevel="h3" layout="showcase" />
-          ))}
-        </div>
+        {/* One album, and the `carousel` layout is what makes it a horizontal
+            strip of photos rather than a masonry block. The ref and the scroll
+            handler go THROUGH the component onto the strip itself, because the
+            chevrons above live outside this markup. */}
+        {album && (
+          <GalleryCollection
+            key={album.id}
+            collection={album}
+            headingLevel="h3"
+            layout="carousel"
+            scrollRef={carouselRef}
+            onScroll={updateScrollButtons}
+          />
+        )}
       </div>
     </section>
   );

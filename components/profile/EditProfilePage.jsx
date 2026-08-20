@@ -224,10 +224,17 @@ function DeleteAccountModal({ accent, onClose, onConfirm }) {
         <div className="space-y-4 px-6 py-5">
           <div className="rounded-xl border border-destructive/20 bg-destructive/5 px-4 py-3">
             <p className="mb-1.5 text-xs font-semibold uppercase tracking-wider text-destructive">What will be removed</p>
+            {/* ⚠ Every line here is a promise, so it must match what
+                userModel.anonymize actually NULLs -- not what it ought to.
+                Three columns it does NOT clear (doing_now, links, traits) are
+                deliberately absent from this list rather than being claimed.
+                Add a column to anonymize and add it here in the same commit. */}
             <ul className="space-y-1 text-xs text-muted-foreground">
               <li className="flex items-start gap-1.5"><span className="mt-0.5 text-destructive">•</span> Your name, email, phone, major, and graduation year</li>
+              <li className="flex items-start gap-1.5"><span className="mt-0.5 text-destructive">•</span> Date of birth, pledge class, and personal email</li>
               <li className="flex items-start gap-1.5"><span className="mt-0.5 text-destructive">•</span> Profile photo and bio</li>
               <li className="flex items-start gap-1.5"><span className="mt-0.5 text-destructive">•</span> LinkedIn link</li>
+              <li className="flex items-start gap-1.5"><span className="mt-0.5 text-destructive">•</span> Rush interest form answers, including GPA</li>
               <li className="flex items-start gap-1.5"><span className="mt-0.5 text-destructive">•</span> Active sessions on all devices</li>
             </ul>
           </div>

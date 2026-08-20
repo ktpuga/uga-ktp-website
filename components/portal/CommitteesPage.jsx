@@ -1010,10 +1010,20 @@ export function CommitteeDetail({ committee, currentUserId, isEboard, accent, on
               <span className="sr-only">
                 {rushData ? 'Remove rushee data access' : 'Give rushee data access'}
               </span>
+              {/* `left-0.5` is REQUIRED, not decoration. Without a horizontal
+                  anchor an absolutely positioned box falls back to its static
+                  position, and the UA stylesheet centres text in a <button> —
+                  so the thumb started at the middle of the track (22px) and the
+                  translate stacked on top of that, putting it outside the track
+                  entirely when on. The identical markup in PollsPage works only
+                  because its track is a <div>, which is text-align: start.
+
+                  Travel is therefore a pure delta: 44px track - 20px thumb
+                  - 2px inset each side = 20px = translate-x-5. */}
               <span
                 className={cn(
-                  'absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform',
-                  rushData ? 'translate-x-[22px]' : 'translate-x-0.5',
+                  'absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform',
+                  rushData ? 'translate-x-5' : 'translate-x-0',
                 )}
                 aria-hidden="true"
               />
