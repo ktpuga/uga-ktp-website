@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { cn } from "@/lib/utils";
 
 // One collection's heading and carousel. Shared by the homepage
 // (GallerySection, featured only) and /gallery (all of them), so the two can't
@@ -143,14 +144,35 @@ export default function GalleryCollection({ collection, headingLevel = "h2", lay
             // `overscroll-contain` is what makes this "scroll by itself": once
             // this box hits its end, the scroll does NOT chain on to the page
             // behind it.
-            ? "sidebar-scroll grid max-h-[34rem] grid-cols-2 gap-3 overflow-y-auto overscroll-contain pr-1 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4"
+            // Height is `min(48rem, 75svh)`, not a bare rem: a flat 48rem is taller
+            // than a 13" laptop viewport, which would fill the screen with the
+            // wall and hide the section heading and the chevrons driving it.
+            // The svh half caps it against the real viewport, the rem half stops
+            // it becoming enormous on a tall monitor, and `min` takes whichever
+            // binds first.
+            ? "sidebar-scroll grid max-h-[min(48rem,75svh)] grid-cols-2 gap-3 overflow-y-auto overscroll-contain pr-1 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4"
             : isPacked
             ? packedLayoutClass
             : isMosaic
             ? "grid grid-cols-2 auto-rows-[9rem] gap-3 sm:auto-rows-[12rem] md:auto-rows-[14rem] lg:grid-cols-4"
             : layout === "grid"
             ? "grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4"
-            : "no-scrollbar flex snap-x snap-mandatory gap-4 overflow-x-auto rounded-2xl border border-slate-200 bg-white p-4"}
+            // TWO ROWS deep, scrolling sideways. `grid-flow-col` + a fixed row
+            // count fills top-to-bottom and then moves right, which is what
+            // makes a second row possible at all — a flex row (what this used
+            // to be) can only ever be one tile tall.
+            //
+            // `auto-cols-[300px]` replaces the per-tile `w-[300px]`: in a grid
+            // the track sets the width, and leaving the width on the figure as
+            // well would fight the track on any browser that rounds them
+            // differently.
+            //
+            // One row when there is a single photo, so a one-photo album is not
+            // a half-empty box with a reserved second row under it.
+            : cn(
+                "no-scrollbar grid grid-flow-col auto-cols-[300px] snap-x snap-mandatory gap-4 overflow-x-auto rounded-2xl border border-slate-200 bg-white p-4",
+                photos.length > 1 ? "grid-rows-2" : "grid-rows-1",
+              )}
         >
           {photos.map((photo, index) => (
             <figure
@@ -163,7 +185,7 @@ export default function GalleryCollection({ collection, headingLevel = "h2", lay
                 ? `group relative overflow-hidden rounded-2xl bg-slate-100 shadow-sm ring-1 ring-slate-200 ${index === 0 ? 'col-span-2 row-span-2' : ''}`
                 : layout === "grid"
                 ? "relative aspect-[4/3] overflow-hidden rounded-xl bg-slate-100 ring-1 ring-slate-200"
-                : "group relative h-56 w-[300px] shrink-0 snap-start overflow-hidden rounded-xl bg-slate-50 ring-1 ring-slate-100"}
+                : "group relative h-56 snap-start overflow-hidden rounded-xl bg-slate-50 ring-1 ring-slate-100"}
             >
               <GalleryMedia photo={photo} naturalSize={isPacked} cover={isColumn} />
 
