@@ -5,6 +5,8 @@ export const SPOTLIGHT_LINKS = [
   'https://www.linkedin.com/embed/feed/update/urn:li:share:7445488019756826624',
   'https://www.linkedin.com/embed/feed/update/urn:li:share:7463996269426860035',
   'https://www.linkedin.com/embed/feed/update/urn:li:ugcPost:7457960478128889856',
+  'https://www.linkedin.com/embed/feed/update/urn:li:ugcPost:7496296031312068608',
+  'https://www.linkedin.com/embed/feed/update/urn:li:ugcPost:7496242670785224704'
 ];
 
 const MILLISECONDS_PER_HOUR = 60 * 60 * 1000;
