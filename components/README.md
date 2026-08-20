@@ -399,7 +399,11 @@ If the failure is meant to be *read by a person*, **return `{ error }` instead o
 
 **Every export in `lib/portal-api.js` is a Server Action** — the `'use server'` is on line 1 and covers the whole file, which is easy to forget when a function looks like a plain fetch wrapper.
 
-This has now shipped wrong **twice**: first on the username feature, then on interview deletion, where the "N people have already booked this slot" warning — the only thing standing between a misclick and real cancelled interviews — read as the #441 digest in production for six days. Nobody reported it; it was found by reading the file while building something else.
+This has now shipped wrong **three times**: first on the username feature; then on interview deletion, where the "N people have already booked this slot" warning — the only thing standing between a misclick and real cancelled interviews — read as the #441 digest in production for six days; then on **group chats**, where eboard adding a group to a chat got #441 and no way to find out why.
+
+The group-chat one is the instructive failure, because the reasoning that caused it was written down in the code as a justification: *"The official path still throws on failure (createGroupChat is unchanged and eboard-only)."* **"It's eboard-only" is not a reason to throw.** Eboard has to read failures too, and the route they were hitting answers 409 with three different sentences depending on the chat. `createGroupChat` and `setGroupChatAudience` now return `{ chat }` / `{ error }`.
+
+Use the `resultOf` helper in `lib/portal-api.js` rather than hand-rolling a fourth copy of the try/catch — it wraps a throwing `apiRequest` call into `{ data }` / `{ error }` and rethrows the redirect, which must always propagate.
 
 **A useful smell: any endpoint that answers 409 is carrying a message somebody has to read.** `PUT /events/:id/rsvp` is one, and `setEventRsvp` returns `{ error }` for exactly this reason.
 

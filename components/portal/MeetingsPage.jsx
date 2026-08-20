@@ -159,16 +159,28 @@ function MeetingCard({ meeting, currentUserId, accent, onRespond, onCancel, onDe
         <div className="flex items-center justify-end gap-2 border-t border-border px-5 py-3">
           {canRsvp && (
             <>
+              {/* Your current answer is not pressable, the other one is —
+                  same rule as the event RSVP control in EventsCalendar, and
+                  the same reason. Re-pressing the answer you already gave sent
+                  a request per tap and looked like it did something, which is
+                  what made it seem you could RSVP more than once. Locking BOTH
+                  would strand anyone who mis-tapped, so changing your mind
+                  stays available.
+
+                  The opacity now keys on `busy` rather than on `disabled`:
+                  `disabled:opacity-40` would fade whichever answer you chose,
+                  making the most definite thing on the row look switched off. */}
               <button
                 type="button"
                 onClick={() => onRespond(meeting.id, 'not_going')}
-                disabled={busy}
+                disabled={busy || meeting.my_response === 'not_going'}
                 aria-pressed={meeting.my_response === 'not_going'}
                 className={cn(
-                  'flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-medium disabled:opacity-40',
+                  'flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-medium',
                   meeting.my_response === 'not_going'
-                    ? 'border-foreground/30 bg-muted text-foreground'
+                    ? 'cursor-default border-foreground/30 bg-muted text-foreground'
                     : 'border-border text-muted-foreground hover:bg-muted',
+                  busy && 'opacity-40',
                 )}
               >
                 <X size={11} /> Can&apos;t make it
@@ -176,11 +188,12 @@ function MeetingCard({ meeting, currentUserId, accent, onRespond, onCancel, onDe
               <button
                 type="button"
                 onClick={() => onRespond(meeting.id, 'going')}
-                disabled={busy}
+                disabled={busy || meeting.my_response === 'going'}
                 aria-pressed={meeting.my_response === 'going'}
                 className={cn(
-                  'flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold disabled:opacity-40',
-                  meeting.my_response === 'going' ? 'text-white' : 'border border-border text-muted-foreground hover:bg-muted',
+                  'flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold',
+                  meeting.my_response === 'going' ? 'cursor-default text-white' : 'border border-border text-muted-foreground hover:bg-muted',
+                  busy && 'opacity-40',
                 )}
                 style={meeting.my_response === 'going' ? { background: accent.gradient } : undefined}
               >

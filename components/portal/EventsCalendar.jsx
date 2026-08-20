@@ -226,6 +226,18 @@ function RsvpControl({ event, accent, onAnswer, compact = false }) {
   const ended = new Date(getEventEndDate(event)).getTime() < openedAt;
 
   async function answer(status) {
+    // Re-pressing the answer you already gave does nothing. The write is an
+    // upsert so a repeat was harmless in the database, but it still fired a
+    // request per tap and the button gave every appearance of doing something,
+    // which is what made it look like you could RSVP more than once.
+    //
+    // Guarded HERE as well as with `disabled` below, deliberately: the button
+    // is only one way in. A double-tap can land both events before React
+    // repaints, and this is also the shared entry point for the compact
+    // variant. Changing your mind still works — that is the OTHER button, which
+    // stays live.
+    if (status === event.myRsvp) return;
+
     setSaving(status);
     setError(null);
     // setEventRsvp returns { error } rather than throwing: a 403 ("not sent to
@@ -256,13 +268,23 @@ function RsvpControl({ event, accent, onAnswer, compact = false }) {
           <button
             key={status}
             type="button"
-            disabled={saving !== null}
+            // Your current answer is not pressable. The other one is, because
+            // that is how you change your mind — locking both would strand
+            // anyone who mis-tapped with no way back.
+            disabled={saving !== null || selected}
             aria-pressed={selected}
             onClick={() => answer(status)}
+            // Fades while SAVING only, never merely because it is selected.
+            // This used to be `disabled:opacity-50`, which was correct when the
+            // only reason to be disabled was an in-flight request. Now that
+            // your current answer is also disabled, that rule would render the
+            // answer you chose at half opacity — the one button on screen that
+            // should look most definite would look switched off.
             className={cn(
-              'inline-flex items-center justify-center gap-1.5 rounded-lg border font-semibold transition-colors disabled:opacity-50',
+              'inline-flex items-center justify-center gap-1.5 rounded-lg border font-semibold transition-colors',
               compact ? 'px-2 py-1.5 text-[11px]' : 'px-3 py-2 text-xs',
-              selected ? 'text-white' : 'border-border bg-card text-muted-foreground hover:bg-muted hover:text-foreground',
+              selected ? 'cursor-default text-white' : 'border-border bg-card text-muted-foreground hover:bg-muted hover:text-foreground',
+              saving !== null && 'opacity-50',
             )}
             style={selected ? { background: accent.gradient, borderColor: 'transparent' } : undefined}
           >
