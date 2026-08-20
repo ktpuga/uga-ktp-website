@@ -748,17 +748,6 @@ function ChatAudienceEditor({ chat, accent, onChatUpdated }) {
     getCommittees().then(setCommittees).catch((err) => { if (isRedirectError(err)) throw err; });
   }, []);
 
-  // The Eboard chat reconciles its own membership from Authentik on every
-  // login, so giving it an audience would create a second source of truth for
-  // the same question. The API returns 409; don't offer the control at all.
-  if (chat.is_eboard_chat) {
-    return (
-      <p className="rounded-lg border border-border bg-muted/30 px-3 py-2 text-[11px] text-muted-foreground">
-        Everyone in the <strong className="text-foreground">eboard</strong> group is in this chat automatically.
-      </p>
-    );
-  }
-
   const dirty =
     JSON.stringify([...audience].sort()) !== JSON.stringify([...(chat.audience ?? [])].sort())
     || JSON.stringify([...committeeIds].sort()) !== JSON.stringify([...(chat.committee_ids ?? []).map(String)].sort());
@@ -1295,13 +1284,14 @@ function GroupChatInfoModal({ chat, members, messages, isEboard, canAdminister, 
   //   readOnly           you're viewing this through eboard oversight, not in it
   //   my own row missing you belong via the audience, so there is no row to
   //                      delete and leaving would silently do nothing
-  //   is_eboard_chat     reconciled from Authentik on every login, so a leave
-  //                      would undo itself the next time you signed in
   //   creator            nobody else could administer the chat afterwards
+  //
+  // The auto-managed Eboard chat used to be a fourth condition here. It is
+  // gone: that chat is now an ordinary group chat, so it is left, renamed and
+  // deleted like any other. See migration 1788800000000.
   const myRow = members.find((m) => m.authentik_id === currentUserId);
   const isCreatorOfOwnChat = chat.is_member_created && chat.created_by === currentUserId;
-  const canLeave = !readOnly && Boolean(myRow) && !myRow?.is_auto
-    && !chat.is_eboard_chat && !isCreatorOfOwnChat;
+  const canLeave = !readOnly && Boolean(myRow) && !myRow?.is_auto && !isCreatorOfOwnChat;
 
   async function handleLeave() {
     setLeaving(true);

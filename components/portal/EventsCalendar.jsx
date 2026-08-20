@@ -225,6 +225,18 @@ function RsvpControl({ event, accent, onAnswer, compact = false }) {
   const [openedAt] = useState(() => Date.now());
   const ended = new Date(getEventEndDate(event)).getTime() < openedAt;
 
+  // Once you have answered, the buttons LOCK and a "Change RSVP" link unlocks
+  // them. Answering is a decision, and a pair of live buttons under a decision
+  // you already made invites the tap that made this look like you could RSVP
+  // twice. Unlocking is one deliberate click, so changing your mind is still
+  // two taps rather than impossible.
+  //
+  // Seeded from whether an answer exists rather than defaulting to false, so
+  // somebody who has never responded sees ordinary buttons with no extra step.
+  const [editing, setEditing] = useState(false);
+  const answered = event.myRsvp === 'going' || event.myRsvp === 'not_going';
+  const locked = answered && !editing;
+
   async function answer(status) {
     // Re-pressing the answer you already gave does nothing. The write is an
     // upsert so a repeat was harmless in the database, but it still fired a
@@ -245,6 +257,10 @@ function RsvpControl({ event, accent, onAnswer, compact = false }) {
     // read, and a thrown server action would surface as React #441 instead.
     const result = await onAnswer(event.id, status);
     if (result?.error) setError(result.error);
+    // Back to locked on success, so the buttons do not stay live after the
+    // change lands. On failure it stays unlocked -- the answer did not take, so
+    // taking the buttons away would leave the error with nothing to act on.
+    else setEditing(false);
     setSaving(null);
   }
 
@@ -257,9 +273,8 @@ function RsvpControl({ event, accent, onAnswer, compact = false }) {
     );
   }
 
-  // Built once and rendered by both variants. Answering again is an update,
-  // not a second row, so changing your mind needs no separate affordance —
-  // tapping the other button is it.
+  // Built once and rendered by both variants, so the two surfaces cannot
+  // disagree about how answering behaves.
   const buttons = (
     <div className={cn('grid grid-cols-2', compact ? 'gap-1.5' : 'gap-2')}>
       {[['going', 'Going'], ['not_going', "Can't make it"]].map(([status, label]) => {
@@ -268,10 +283,8 @@ function RsvpControl({ event, accent, onAnswer, compact = false }) {
           <button
             key={status}
             type="button"
-            // Your current answer is not pressable. The other one is, because
-            // that is how you change your mind — locking both would strand
-            // anyone who mis-tapped with no way back.
-            disabled={saving !== null || selected}
+            // BOTH lock once answered; "Change RSVP" below is the way back.
+            disabled={saving !== null || locked}
             aria-pressed={selected}
             onClick={() => answer(status)}
             // Fades while SAVING only, never merely because it is selected.
@@ -284,7 +297,11 @@ function RsvpControl({ event, accent, onAnswer, compact = false }) {
               'inline-flex items-center justify-center gap-1.5 rounded-lg border font-semibold transition-colors',
               compact ? 'px-2 py-1.5 text-[11px]' : 'px-3 py-2 text-xs',
               selected ? 'cursor-default text-white' : 'border-border bg-card text-muted-foreground hover:bg-muted hover:text-foreground',
-              saving !== null && 'opacity-50',
+              // Fade only what is genuinely inert. While locked, the answer you
+              // chose stays solid and only the OTHER button dims -- fading your
+              // own answer would make the most definite thing on screen look
+              // switched off.
+              (saving !== null || (locked && !selected)) && 'opacity-50',
             )}
             style={selected ? { background: accent.gradient, borderColor: 'transparent' } : undefined}
           >
@@ -296,6 +313,30 @@ function RsvpControl({ event, accent, onAnswer, compact = false }) {
     </div>
   );
 
+  // The way back out of the lock. Only rendered once an answer exists, so
+  // somebody responding for the first time never sees it.
+  //
+  // A button rather than a link, and it does not touch the network: unlocking
+  // is a UI state, and the RSVP is only rewritten when they actually pick an
+  // answer. Cancelling therefore costs nothing and changes nothing.
+  const changeControl = answered ? (
+    <div className={cn('flex items-center gap-3', compact ? 'text-[11px]' : 'text-xs')}>
+      <button
+        type="button"
+        onClick={() => setEditing((open) => !open)}
+        disabled={saving !== null}
+        className="font-semibold text-muted-foreground underline underline-offset-2 transition-colors hover:text-foreground disabled:opacity-50"
+      >
+        {editing ? 'Keep my answer' : 'Change RSVP'}
+      </button>
+      {editing && (
+        <span className="text-muted-foreground">
+          Pick again to update it.
+        </span>
+      )}
+    </div>
+  ) : null;
+
   if (compact) {
     return (
       <div className="flex flex-col gap-1.5">
@@ -304,6 +345,7 @@ function RsvpControl({ event, accent, onAnswer, compact = false }) {
           <RsvpBadge myRsvp={event.myRsvp} accent={accent} />
         </div>
         {buttons}
+        {changeControl}
         {error && <p className="text-[11px] text-destructive">{error}</p>}
       </div>
     );
@@ -322,6 +364,7 @@ function RsvpControl({ event, accent, onAnswer, compact = false }) {
         <RsvpBadge myRsvp={event.myRsvp} accent={accent} />
       </div>
       {buttons}
+      {changeControl}
       {error && <p className="text-[11px] text-destructive">{error}</p>}
     </div>
   );

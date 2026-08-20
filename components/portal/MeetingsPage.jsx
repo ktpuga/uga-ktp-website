@@ -104,10 +104,29 @@ function MeetingCard({ meeting, currentUserId, accent, onRespond, onCancel, onDe
   const canDelete = new Date(meeting.endDate).getTime() < Date.now() || meeting.status === 'cancelled';
   // my_response is null for the organizer — they have nothing to RSVP to,
   // which is what decides whether the buttons render at all.
-  // An RSVP can be changed, unlike the old one-shot accept — plans change, and
-  // the calendar should follow. So the buttons stay visible after answering,
-  // with the current choice highlighted.
   const canRsvp = !isOrganizer && meeting.my_response != null && meeting.status !== 'cancelled';
+
+  // An RSVP can still be changed — plans change and the calendar should follow
+  // — but not by leaving both buttons live under an answer you already gave.
+  // Once you have replied the pair LOCKS and "Change RSVP" unlocks it, matching
+  // RsvpControl in EventsCalendar. Keep the two in step; they are the same
+  // interaction on two different objects, and a member should not have to learn
+  // it twice.
+  //
+  // 'pending' is the not-yet-answered state here, not null — the invitee row
+  // exists from the moment they are invited. That is why this tests for the two
+  // real answers rather than for a value being present.
+  const [editing, setEditing] = useState(false);
+  const answered = meeting.my_response === 'going' || meeting.my_response === 'not_going';
+  const locked = answered && !editing;
+
+  // Re-lock once a change lands. `busy` going false again is the signal that
+  // the response round-tripped; onRespond owns the request itself.
+  const respond = (id, response) => {
+    if (response === meeting.my_response) return;
+    setEditing(false);
+    onRespond(id, response);
+  };
 
   return (
     <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
@@ -172,33 +191,43 @@ function MeetingCard({ meeting, currentUserId, accent, onRespond, onCancel, onDe
                   making the most definite thing on the row look switched off. */}
               <button
                 type="button"
-                onClick={() => onRespond(meeting.id, 'not_going')}
-                disabled={busy || meeting.my_response === 'not_going'}
+                onClick={() => respond(meeting.id, 'not_going')}
+                disabled={busy || locked}
                 aria-pressed={meeting.my_response === 'not_going'}
                 className={cn(
                   'flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-medium',
                   meeting.my_response === 'not_going'
                     ? 'cursor-default border-foreground/30 bg-muted text-foreground'
                     : 'border-border text-muted-foreground hover:bg-muted',
-                  busy && 'opacity-40',
+                  (busy || (locked && meeting.my_response !== 'not_going')) && 'opacity-40',
                 )}
               >
                 <X size={11} /> Can&apos;t make it
               </button>
               <button
                 type="button"
-                onClick={() => onRespond(meeting.id, 'going')}
-                disabled={busy || meeting.my_response === 'going'}
+                onClick={() => respond(meeting.id, 'going')}
+                disabled={busy || locked}
                 aria-pressed={meeting.my_response === 'going'}
                 className={cn(
                   'flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold',
                   meeting.my_response === 'going' ? 'cursor-default text-white' : 'border border-border text-muted-foreground hover:bg-muted',
-                  busy && 'opacity-40',
+                  (busy || (locked && meeting.my_response !== 'going')) && 'opacity-40',
                 )}
                 style={meeting.my_response === 'going' ? { background: accent.gradient } : undefined}
               >
                 <Check size={11} /> Going
               </button>
+              {answered && (
+                <button
+                  type="button"
+                  onClick={() => setEditing((open) => !open)}
+                  disabled={busy}
+                  className="text-xs font-semibold text-muted-foreground underline underline-offset-2 transition-colors hover:text-foreground disabled:opacity-40"
+                >
+                  {editing ? 'Keep my answer' : 'Change RSVP'}
+                </button>
+              )}
             </>
           )}
           {isOrganizer && meeting.status !== 'cancelled' && (
