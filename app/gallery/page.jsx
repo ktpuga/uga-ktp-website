@@ -70,7 +70,12 @@ export default function GalleryPage() {
               <p className="text-slate-600">No photos have been published yet. Check back soon.</p>
             ) : (
               withPhotos.map((collection) => (
-                <GalleryCollection key={collection.id} collection={collection} layout="archive" />
+                // `carousel`, so each album on this page is a horizontal
+                // strip you swipe through rather than a tall masonry block.
+                // The page itself still scrolls vertically between albums, so
+                // the two axes do different jobs: down moves between albums,
+                // sideways moves within one.
+                <GalleryCollection key={collection.id} collection={collection} layout="carousel" />
               ))
             )}
           </div>

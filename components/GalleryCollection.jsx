@@ -12,9 +12,17 @@ import Link from "next/link";
 // is what this generalises, so matching it means the page looks unchanged while
 // becoming eboard-editable.
 
-function GalleryMedia({ photo, naturalSize = false }) {
+function GalleryMedia({ photo, naturalSize = false, cover = false }) {
   const src = `/api/homepage-photos/${photo.id}/media`;
-  const mediaClass = naturalSize ? "block h-auto w-full" : "h-full w-full object-contain";
+  // `cover` fills a fixed-aspect cell edge to edge, which is what makes the
+  // homepage wall read as a wall rather than as rows of letterboxed pictures.
+  // The other layouts keep `contain`, where the tile is sized to the photo and
+  // cropping would lose part of the subject.
+  const mediaClass = naturalSize
+    ? "block h-auto w-full"
+    : cover
+    ? "h-full w-full object-cover"
+    : "h-full w-full object-contain";
 
   if (photo.media_type === "video") {
     return (
@@ -77,6 +85,9 @@ export default function GalleryCollection({ collection, headingLevel = "h2", lay
   const isEditorial = layout === "editorial";
   const isArchive = layout === "archive";
   const isShowcase = layout === "showcase";
+  // A photo wall with its own vertical scrollbar, used on the homepage so the
+  // gallery scrolls in place instead of moving the page.
+  const isColumn = layout === "column";
   const isMosaic = isEditorial;
   const isPacked = isArchive || isShowcase;
 
@@ -121,7 +132,19 @@ export default function GalleryCollection({ collection, headingLevel = "h2", lay
         <div
           ref={scrollRef}
           onScroll={onScroll}
-          className={isPacked
+          className={isColumn
+            // ⚠ A CSS GRID, deliberately NOT the `columns-*` multi-column used
+            // by the packed layouts. Multi-column with a constrained height
+            // does not scroll vertically at all — it keeps flowing content into
+            // NEW COLUMNS sideways, so `max-h` + `overflow-y-auto` on a
+            // `columns-3` produces a horizontal scrollbar and a wall nobody can
+            // read. A grid grows downward, which is the whole point here.
+            //
+            // `overscroll-contain` is what makes this "scroll by itself": once
+            // this box hits its end, the scroll does NOT chain on to the page
+            // behind it.
+            ? "sidebar-scroll grid max-h-[34rem] grid-cols-2 gap-3 overflow-y-auto overscroll-contain pr-1 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4"
+            : isPacked
             ? packedLayoutClass
             : isMosaic
             ? "grid grid-cols-2 auto-rows-[9rem] gap-3 sm:auto-rows-[12rem] md:auto-rows-[14rem] lg:grid-cols-4"
@@ -132,7 +155,9 @@ export default function GalleryCollection({ collection, headingLevel = "h2", lay
           {photos.map((photo, index) => (
             <figure
               key={photo.id}
-              className={isPacked
+              className={isColumn
+                ? "group relative aspect-[4/3] overflow-hidden rounded-xl bg-slate-100 shadow-sm ring-1 ring-slate-200"
+                : isPacked
                 ? "group relative mb-3 break-inside-avoid overflow-hidden rounded-2xl bg-slate-100 shadow-sm ring-1 ring-slate-200"
                 : isMosaic
                 ? `group relative overflow-hidden rounded-2xl bg-slate-100 shadow-sm ring-1 ring-slate-200 ${index === 0 ? 'col-span-2 row-span-2' : ''}`
@@ -140,7 +165,7 @@ export default function GalleryCollection({ collection, headingLevel = "h2", lay
                 ? "relative aspect-[4/3] overflow-hidden rounded-xl bg-slate-100 ring-1 ring-slate-200"
                 : "group relative h-56 w-[300px] shrink-0 snap-start overflow-hidden rounded-xl bg-slate-50 ring-1 ring-slate-100"}
             >
-              <GalleryMedia photo={photo} naturalSize={isPacked} />
+              <GalleryMedia photo={photo} naturalSize={isPacked} cover={isColumn} />
 
               {/* Title as the caption line, with the photo's own caption under
                   it when there is one. Both `truncate` with a `title`

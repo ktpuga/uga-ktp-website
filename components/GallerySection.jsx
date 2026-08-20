@@ -2,17 +2,23 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronUp, ChevronDown } from "lucide-react";
 import { getGalleryCollections } from "@/lib/portal-api";
 import GalleryCollection from "@/components/GalleryCollection";
 
-// The homepage's slice of the gallery: ONE album, scrolled horizontally.
+// The homepage's slice of the gallery: ONE album, as a photo wall with its OWN
+// vertical scrollbar.
 //
 // It used to stack up to three featured collections side by side, each one a
 // card holding a little masonry of its own photos, and the chevrons moved
-// between the cards. Now the section shows a single album and the chevrons move
-// through that album's PHOTOS, which is what the controls looked like they did
-// anyway.
+// between the cards. Then it became one album scrolled sideways. It is now one
+// album in a fixed-height grid that scrolls DOWN inside itself, with the
+// chevrons moving a row at a time.
+//
+// The point of the fixed height is `overscroll-contain` on that grid: reaching
+// the end of the wall does not hand the scroll on to the page, so a visitor
+// browsing photos stays where they are instead of being thrown down the
+// homepage. That is the behaviour being asked for by "scroll by itself".
 //
 // Which album: the first featured one that actually has photos. "First" is the
 // API's own ordering — `display_order ASC, event_date DESC NULLS LAST` — so it
@@ -35,8 +41,8 @@ import GalleryCollection from "@/components/GalleryCollection";
 export default function GallerySection() {
   const [collections, setCollections] = useState([]);
   const [loaded, setLoaded] = useState(false);
-  const [canScrollLeft, setCanScrollLeft] = useState(false);
-  const [canScrollRight, setCanScrollRight] = useState(false);
+  const [canScrollUp, setCanScrollUp] = useState(false);
+  const [canScrollDown, setCanScrollDown] = useState(false);
   const carouselRef = useRef(null);
 
   useEffect(() => {
@@ -56,21 +62,26 @@ export default function GallerySection() {
   const album = collections.find((c) => (c.photos?.length ?? 0) > 0) ?? null;
 
   function updateScrollButtons() {
-    const carousel = carouselRef.current;
-    if (!carousel) return;
-    setCanScrollLeft(carousel.scrollLeft > 2);
-    setCanScrollRight(carousel.scrollLeft + carousel.clientWidth < carousel.scrollWidth - 2);
+    const wall = carouselRef.current;
+    if (!wall) return;
+    // The 2px slack absorbs sub-pixel rounding: a box scrolled fully to the
+    // bottom can report scrollTop + clientHeight a fraction under scrollHeight
+    // on a fractional-DPI display, which would leave the down arrow enabled
+    // forever with nothing left to scroll to.
+    setCanScrollUp(wall.scrollTop > 2);
+    setCanScrollDown(wall.scrollTop + wall.clientHeight < wall.scrollHeight - 2);
   }
 
+  // One row of tiles per press. `rowGap` rather than `columnGap` now that the
+  // wall is a grid scrolled vertically — the row axis is what separates the
+  // tiles in the direction of travel. getComputedStyle returns "normal" for an
+  // unset gap, which Number.parseFloat gives NaN, hence the || 0.
   function shiftGallery(direction) {
-    const carousel = carouselRef.current;
-    const firstCard = carousel?.firstElementChild;
-    if (!carousel || !firstCard) return;
-    // `columnGap` rather than `gap`: the strip is a flex row, and only the
-    // column axis separates the tiles. getComputedStyle returns "normal" for an
-    // unset gap, which Number.parseFloat gives NaN, hence the || 0.
-    const gap = Number.parseFloat(getComputedStyle(carousel).columnGap) || 0;
-    carousel.scrollBy({ left: direction * (firstCard.getBoundingClientRect().width + gap), behavior: "smooth" });
+    const wall = carouselRef.current;
+    const firstTile = wall?.firstElementChild;
+    if (!wall || !firstTile) return;
+    const gap = Number.parseFloat(getComputedStyle(wall).rowGap) || 0;
+    wall.scrollBy({ top: direction * (firstTile.getBoundingClientRect().height + gap), behavior: "smooth" });
   }
 
   // Keyed on the album's id, not on a count. The strip is remounted when the
@@ -107,20 +118,20 @@ export default function GallerySection() {
               <button
                 type="button"
                 onClick={() => shiftGallery(-1)}
-                disabled={!canScrollLeft}
+                disabled={!canScrollUp}
                 className="grid h-11 w-11 place-items-center rounded-full border border-blue-200 bg-white text-blue-900 transition-colors hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-35"
-                aria-label="Previous gallery"
+                aria-label="Scroll gallery up"
               >
-                <ChevronLeft size={21} aria-hidden="true" />
+                <ChevronUp size={21} aria-hidden="true" />
               </button>
               <button
                 type="button"
                 onClick={() => shiftGallery(1)}
-                disabled={!canScrollRight}
+                disabled={!canScrollDown}
                 className="grid h-11 w-11 place-items-center rounded-full border border-blue-200 bg-white text-blue-900 transition-colors hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-35"
-                aria-label="Next gallery"
+                aria-label="Scroll gallery down"
               >
-                <ChevronRight size={21} aria-hidden="true" />
+                <ChevronDown size={21} aria-hidden="true" />
               </button>
             </div>
             <Link
@@ -132,16 +143,17 @@ export default function GallerySection() {
           </div>
         </div>
 
-        {/* One album, and the `carousel` layout is what makes it a horizontal
-            strip of photos rather than a masonry block. The ref and the scroll
-            handler go THROUGH the component onto the strip itself, because the
-            chevrons above live outside this markup. */}
+        {/* One album. The `column` layout is what makes it a fixed-height grid
+            with its own vertical scrollbar rather than a block that stretches
+            the page. The ref and the scroll handler go THROUGH the component
+            onto the scrolling grid itself, because the chevrons above live
+            outside this markup. */}
         {album && (
           <GalleryCollection
             key={album.id}
             collection={album}
             headingLevel="h3"
-            layout="carousel"
+            layout="column"
             scrollRef={carouselRef}
             onScroll={updateScrollButtons}
           />
