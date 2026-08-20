@@ -763,12 +763,24 @@ function ChatAudienceEditor({ chat, accent, onChatUpdated }) {
     JSON.stringify([...audience].sort()) !== JSON.stringify([...(chat.audience ?? [])].sort())
     || JSON.stringify([...committeeIds].sort()) !== JSON.stringify([...(chat.committee_ids ?? []).map(String)].sort());
 
+  // setGroupChatAudience returns { chat } / { error } rather than throwing, so
+  // the API's own sentence survives production. The 4xx messages on this route
+  // are all ones a person has to read to act on ("Chats you create are limited
+  // to the people you add", "The Eboard chat follows the eboard group
+  // automatically"), and every one of them used to arrive as React #441.
+  //
+  // The try/catch stays as a backstop for the redirect a 401 throws, which must
+  // propagate rather than be reported as a save failure.
   async function save() {
     setSaving(true);
     setError(null);
     try {
-      const updated = await setGroupChatAudience(chat.id, { audience, committeeIds });
-      onChatUpdated?.(updated);
+      const result = await setGroupChatAudience(chat.id, { audience, committeeIds });
+      if (result?.error) {
+        setError(result.error);
+        return;
+      }
+      onChatUpdated?.(result.chat);
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
     } catch (err) {
@@ -1927,20 +1939,19 @@ function GroupChatsTab({ currentUserId, isEboard, canCreate, accent, initialGrou
     setSelected(null);
   }
 
-  // Returns an error STRING for the modal to display, or nothing on success.
-  // The official path still throws on failure (createGroupChat is unchanged and
-  // eboard-only); the member path returns { error } because its messages have
-  // to survive production, where a thrown Server Action becomes React #441.
+  // Returns an error STRING for the modal to display, or null on success.
+  //
+  // BOTH paths return { chat } / { error } now. The official one used to throw
+  // "because it is eboard-only", which was not a reason: a thrown Server Action
+  // becomes React #441 in production regardless of who triggered it, and eboard
+  // creating an eboard-only chat got the digest instead of the API's message.
   async function handleCreate(name, memberIds, audience, committeeIds, official) {
-    if (!official) {
-      const result = await createMemberGroupChat({ name, memberIds });
-      if (result?.error) return result.error;
-      setChats((prev) => [result.chat, ...prev]);
-      setShowNewGC(false);
-      return null;
-    }
-    const chat = await createGroupChat({ name, memberIds, audience, committeeIds });
-    setChats((prev) => [chat, ...prev]);
+    const result = official
+      ? await createGroupChat({ name, memberIds, audience, committeeIds })
+      : await createMemberGroupChat({ name, memberIds });
+
+    if (result?.error) return result.error;
+    setChats((prev) => [result.chat, ...prev]);
     setShowNewGC(false);
     return null;
   }

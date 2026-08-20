@@ -757,7 +757,21 @@ export default function PortalShell({
               </div>
 
               {mobileNavOpen && (
-                <nav className="flex flex-col gap-1 border-b border-border bg-card px-2 py-2 md:hidden">
+                // ⚠ The cap and the scroll are both load-bearing, not styling.
+                // This <nav> is a flex child of a `h-screen overflow-hidden`
+                // container, so without a max-height it grows to its content
+                // and everything past the fold is CLIPPED — not scrolled past,
+                // unreachable. Eboard has 17 nav entries and lost the bottom of
+                // the list entirely; the shorter portals happened to fit, which
+                // is why this survived.
+                //
+                // `svh` rather than `vh`: on mobile `vh` measures the viewport
+                // WITH the browser chrome hidden, so 70vh can be taller than
+                // what is actually on screen — which is the same clipping bug
+                // in a smaller form. A browser without svh support drops the
+                // declaration and lands on today's behaviour, so it degrades to
+                // no worse than before.
+                <nav className="sidebar-scroll flex max-h-[70svh] flex-col gap-1 overflow-y-auto overscroll-contain border-b border-border bg-card px-2 py-2 md:hidden">
                   {flatNav.map(({ href, label, icon: Icon }) => {
                     const active = pathname === href;
                     const badgeCount = badgeFor(href);
@@ -880,7 +894,12 @@ export default function PortalShell({
         </div>
 
         {responsive && mobileNavOpen && (
-          <nav className="flex flex-col gap-1 border-b border-slate-200 bg-white px-2 py-2 md:hidden dark:border-border dark:bg-card">
+          // Same cap as the revamped drawer above, and the same reason. This
+          // one sits in a `min-h-screen` container rather than an
+          // `overflow-hidden` one, so a long list pushes the page instead of
+          // being clipped outright — but a 17-item drawer that buries the page
+          // content below it is its own problem. Keep the two in step.
+          <nav className="sidebar-scroll flex max-h-[70svh] flex-col gap-1 overflow-y-auto overscroll-contain border-b border-slate-200 bg-white px-2 py-2 md:hidden dark:border-border dark:bg-card">
             {flatNav.map(({ href, label, icon: Icon }) => {
               const active = pathname === href;
               const badgeCount = badgeFor(href);
