@@ -28,10 +28,14 @@ Media never reaches the browser from Immich directly. Routes under `app/api/**/m
 ## Getting started
 
 ```bash
-npm install
+npm install --legacy-peer-deps
 cp .env.example .env    # then fill it in — see the notes inside
 npm run dev
 ```
+
+`--legacy-peer-deps` is required, not optional. `lucide-react@0.344.0` declares a peer of React 16/17/18 against this project's React 19, so a plain `npm install` fails with `ERESOLVE`. The Dockerfile uses the same flag. Do not "fix" this by bumping `lucide-react` — icon names change between its versions.
+
+`package-lock.json` is the only lockfile. If `yarn.lock` or `bun.lock` reappears in a diff, delete it: they were removed in August 2026 because Dependabot scanned each one separately and they drifted out of sync. See [Dependency security](https://github.com/ktpuga/ktp-docs) in ktp-docs.
 
 Open [http://localhost:3000](http://localhost:3000) and sign in with a real Authentik account. `localhost:3000` is already registered as a redirect URI on the `ktpapp` provider, so no Authentik change is needed.
 
