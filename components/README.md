@@ -155,6 +155,16 @@ Two things that follow from it:
 
 **Initials are not a blank state, so don't paint them all one colour.** `MemberDirectory` seeds each member's initials gradient from their id with `seedValues` from `lib/seed.js`; `PhotoFiles` seeds an empty album's whole generated cover from the same helper. A directory tab during rush is 60 cards of initials, and in one accent colour that is 60 identical circles. Seeding on the id (never `Math.random()`, never a render counter) is what keeps a member's tile the same colour on their card and in the modal it opens. `lib/seed.js` is the only copy of that hash; import it rather than pasting djb2 a third time.
 
+### Pronouns: `profile/PronounsField.jsx` is shared for the same reason
+
+A select of presets plus a **Custom…** row that reveals a free-text box. Two inputs (`pronouns_preset`, `pronouns_custom`), one column — `buildProfilePayload` recombines them, the same shape `graduation_semester` + `graduation_year` already use.
+
+**The `pronouns` key is ALWAYS present in the payload**, and that is the point. The admin write is whole-row, so a profile-editing surface that renders no pronouns input still sends `pronouns: null` and wipes the member's answer. Both forms render this one component.
+
+The preset list and the `__custom__` sentinel live in `lib/profile.js`, not in either form, so the two cannot drift. `splitPronouns()` decides which way a stored value reopens the control: anything not in the preset list is a custom answer.
+
+**Pronouns are portal-only.** `toDirectoryMember` maps the field, but the API's public roster queries never select it, so on `/members-list` it is simply absent. Do not add it to `ProfileCard`.
+
 ### Profile links: `profile/LinksField.jsx` is shared, and that is a data guard
 
 `ProfileForm` (a member editing themselves) and `AdminEditProfileModal` (eboard editing anyone) both build their request body with `buildProfilePayload`, and the profile write is a **whole-row upsert**. So a form that renders no links input still sends `links: []`, and eboard fixing a typo in someone's major would erase all their links. Same shape as the `preserveEmail` trap in the API.

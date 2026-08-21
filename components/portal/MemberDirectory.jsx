@@ -456,6 +456,11 @@ function ProfileModal({ member, accent, onClose }) {
               <GroupBadge group={member.memberGroup} />
             )}
             {role && <CaptionPill>{role}</CaptionPill>}
+            {/* Same pill as a chair's committee caption. Pronouns are the same
+                KIND of fact as the role beside them — a short qualifier on how
+                to refer to this person — so giving them their own treatment
+                would make them louder than they should be. */}
+            {member.pronouns && <CaptionPill>{member.pronouns}</CaptionPill>}
           </div>
           {remainingTraits.length > 0 && (
             <section className="mt-3 w-full max-w-sm space-y-1.5 text-center">
@@ -613,7 +618,18 @@ function MemberCard({ member, accent, onClick }) {
 
       <div className="w-full min-w-0">
         <p className="truncate text-sm font-semibold text-foreground">{name}</p>
-        {member.username && <p className="truncate text-xs text-muted-foreground">@{member.username}</p>}
+        {/* Pronouns share the username's line rather than taking one of their
+            own: this card is narrow and already stacks a name, traits, a major
+            and a pledge class. The separator only appears when both sides do,
+            so a member with pronouns and no username does not get a leading
+            middot. */}
+        {(member.username || member.pronouns) && (
+          <p className="truncate text-xs text-muted-foreground">
+            {member.username ? `@${member.username}` : ''}
+            {member.username && member.pronouns ? ' · ' : ''}
+            {member.pronouns ?? ''}
+          </p>
+        )}
       </div>
 
       {traitLabels.length > 0 && (

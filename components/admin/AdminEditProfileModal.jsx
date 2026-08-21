@@ -16,6 +16,7 @@ import { memberDisplayName } from '@/lib/portal-format';
 import { PROFILE_LIMITS } from '@/lib/text-limits';
 import { LinksField, LinksHiddenInput, useProfileLinks } from '@/components/profile/LinksField';
 import TraitsField, { useTraitRows } from '@/components/profile/TraitsField';
+import PronounsField from '@/components/profile/PronounsField';
 import { useConfirm } from '@/components/ui/confirm-dialog';
 import { isRedirectError } from '@/lib/is-redirect-error';
 
@@ -309,6 +310,20 @@ export default function AdminEditProfileModal({ user, onClose, onSaved }) {
               <Input type="date" name="dob" defaultValue={(user.dob ?? '').split('T')[0]} />
             </Field>
           </div>
+
+          {/* ⚠ RENDERED HERE BECAUSE IT MUST BE, not because eboard needs to
+              set somebody's pronouns. adminUpdateProfile is a WHOLE-ROW write
+              and this modal builds its body with the shared
+              buildProfilePayload, so a modal without this input sends
+              `pronouns: null` and blanks the member's answer every time eboard
+              corrects their major. That is the same bug `links` had. */}
+          <Field label="Pronouns" name="pronouns" error={fieldError('pronouns')}>
+            <PronounsField
+              defaultValue={user.pronouns}
+              selectClass="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm"
+              inputClass="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm"
+            />
+          </Field>
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <Field label="Major(s)" name="major" error={fieldError('major')}>

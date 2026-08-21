@@ -16,6 +16,7 @@ import { Button } from '@/components/ui/button';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { User } from 'lucide-react';
 import { buildProfilePayload, parseGraduationDate } from '@/lib/profile';
+import PronounsField from '@/components/profile/PronounsField';
 import { updateProfile, uploadProfilePicture } from '@/lib/portal-api';
 import { saveProfile } from '@/app/complete-profile/actions';
 import { isRedirectError } from '@/lib/is-redirect-error';
@@ -212,9 +213,21 @@ export default function ProfileForm({
       ? 'rounded-xl border-white/15 bg-slate-950/30 px-4 text-white placeholder:text-white/35 shadow-inner shadow-black/10 focus-visible:border-[#d4af37]/80 focus-visible:bg-slate-950/45 focus-visible:ring-4 focus-visible:ring-[#d4af37]/15'
       : '';
 
+  // ⚠ The `[&>option]` rules are load-bearing, not decoration.
+  //
+  // `inputClass` sets `text-white`, which is right for the closed select sitting
+  // on the onboarding form's dark background. But the OPEN dropdown is drawn by
+  // the operating system on its own light popup, and the options inherit that
+  // white text -- so the choices were white on white and effectively invisible.
+  //
+  // Colour AND background are both set on purpose. A browser that honours
+  // neither renders its own readable default; one that honours only `color`
+  // still gives dark text on a light popup. Setting a DARK option background
+  // instead would look tidier here and fail the other way: ignored background
+  // plus honoured colour puts white text back on a white popup.
   const selectClass =
     variant === 'onboarding'
-      ? `${inputClass} h-10 flex-1 border py-2 text-sm`
+      ? `${inputClass} h-10 flex-1 border py-2 text-sm [&>option]:bg-white [&>option]:text-slate-900`
       : 'flex-1 h-10 rounded-md border border-input bg-background px-3 py-2 text-sm';
 
 
@@ -395,6 +408,17 @@ export default function ProfileForm({
           />
         </Field>
       </div>
+
+      {/* Beside Preferred Name on purpose: both answer "what do I call you",
+          and they are the two fields somebody scanning the form for that will
+          look for together. */}
+      <Field label="Pronouns" variant={variant} name="pronouns" error={fieldError('pronouns')}>
+        <PronounsField
+          defaultValue={defaultValues.pronouns}
+          selectClass={selectClass}
+          inputClass={inputClass}
+        />
+      </Field>
 
       <Field label="Preferred Name" variant={variant} name="preferred_name" error={fieldError('preferred_name')}>
         <Input
