@@ -326,12 +326,34 @@ export default function PortalShell({
   homeHref,
   children,
   responsive = true,
+  // Sections collapse to their headings, one open at a time. Off for Rush,
+  // whose 7 entries in 2 sections are shorter than the headings that would
+  // hide them — the point is to shrink a 21-item nav, not to add a click.
+  collapsibleNav = true,
 }) {
   const pathname = usePathname();
 
-  // `nav` is grouped. The mobile drawers render one flat list, so they read
-  // this instead of each re-flattening it.
+  // `nav` is grouped. The legacy (non-revamped) drawers render one flat list,
+  // so they read this instead of each re-flattening it.
   const flatNav = (nav ?? []).flatMap((group) => group.items ?? []);
+
+  // The section holding the page we're on. It is the one that starts open.
+  //
+  // Longest PREFIX match, not the exact `pathname === href` the active-item
+  // highlight uses. A nested route like /admin/files/folder/123 matches no
+  // href exactly, and an exact test would leave every section shut on those
+  // pages — strictly worse than the old always-open nav. Longest-match is what
+  // stops the portal root (/admin, a prefix of everything) from claiming them.
+  const activeHeading = (nav ?? []).reduce(
+    (best, group) =>
+      (group.items ?? []).reduce((inner, item) => {
+        const matches = pathname === item.href || pathname.startsWith(`${item.href}/`);
+        return matches && item.href.length > inner.len
+          ? { heading: group.heading, len: item.href.length }
+          : inner;
+      }, best),
+    { heading: null, len: -1 },
+  ).heading;
 
   // Admin only: 'red' (default) or 'blue'. Read after mount rather than during
   // render — localStorage doesn't exist on the server, and reading it in the
@@ -347,6 +369,27 @@ export default function PortalShell({
   const [collapsed, setCollapsed] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
+
+  // Exactly one section is open at a time, so the nav cannot grow back into the
+  // wall of entries this replaced. Navigating opens the destination's section;
+  // clicking a heading opens it and closes whatever was open.
+  //
+  // The pathname comparison runs DURING RENDER rather than in an effect. That
+  // is React's documented way to adjust state when an input changes: an effect
+  // would paint the stale section first and correct it on a second pass, and it
+  // would trip the react-hooks/set-state-in-effect rule this file already
+  // carries two warnings under.
+  const [openSection, setOpenSection] = useState(activeHeading);
+  const [lastActiveHeading, setLastActiveHeading] = useState(activeHeading);
+  if (activeHeading !== lastActiveHeading) {
+    setLastActiveHeading(activeHeading);
+    setOpenSection(activeHeading);
+  }
+  const toggleSection = (heading) =>
+    setOpenSection((current) => (current === heading ? null : heading));
+  // When the rail is icon-only there are no headings to click, so nothing may
+  // stay hidden behind one.
+  const sectionOpen = (heading) => !collapsibleNav || collapsed || openSection === heading;
   const { total: unreadTotal } = useUnreadCounts();
   const tabCounts = useTabNotifications();
   const pendingRsvps = usePendingRsvpCount();
@@ -375,6 +418,17 @@ export default function PortalShell({
     if (tab === 'calendar' && pendingRsvps > 0) return pendingRsvps;
     return tabCounts[tab] ?? 0;
   };
+
+  // A collapsed section would otherwise swallow its children's badges, so the
+  // unread count rolls up onto the heading. Only shown while shut — once the
+  // section is open the per-item badges say the same thing more precisely.
+  const sectionBadge = (group) =>
+    (group.items ?? []).reduce((sum, item) => sum + (badgeFor(item.href) || 0), 0);
+
+  // Desktop sidebar and mobile drawer both render every section, so the
+  // aria-controls target needs a per-surface prefix or the ids collide.
+  const sectionId = (surface, heading) =>
+    `nav-${surface}-${heading.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
 
   // The session carries authentik_id, groups and profile_complete — and no name
   // at all. Authentik's invitation flow only ever collects a username, so first
@@ -528,37 +582,66 @@ export default function PortalShell({
                 className="sidebar-scroll relative flex-1 overflow-y-auto overflow-x-hidden py-3"
                 aria-label="Main navigation"
               >
-                {groups.map((group) => (
-                  <div key={group.heading} className="mb-3 last:mb-0">
-                    {collapsed ? (
-                      <div aria-hidden="true" className="mx-auto mb-2 h-px w-6 bg-border" />
-                    ) : (
-                      <p className="mb-1.5 px-4 text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground/60">
-                        {group.heading}
-                      </p>
-                    )}
-                    <ul className="flex flex-col gap-0.5 px-2">
-                      {group.items.map(({ href, label, icon: Icon }) => {
-                        const active = pathname === href;
-                        const badge = badgeFor(href);
-                        return (
-                          <RevampedNavItem
-                            key={href}
-                            href={href}
-                            label={label}
-                            Icon={Icon}
-                            active={active}
-                            badge={badge}
-                            collapsed={collapsed}
-                            accentColor={revamped.light}
-                            accentMuted={revamped.muted}
-                            accentGradient={revamped.gradient}
+                {groups.map((group) => {
+                  const open = sectionOpen(group.heading);
+                  const rolledUp = open ? 0 : sectionBadge(group);
+                  const panelId = sectionId('desk', group.heading);
+                  return (
+                    <div key={group.heading} className="mb-3 last:mb-0">
+                      {collapsed ? (
+                        <div aria-hidden="true" className="mx-auto mb-2 h-px w-6 bg-border" />
+                      ) : collapsibleNav ? (
+                        <button
+                          type="button"
+                          onClick={() => toggleSection(group.heading)}
+                          aria-expanded={open}
+                          aria-controls={panelId}
+                          className="mb-1.5 flex w-full items-center gap-1.5 rounded-md px-4 py-1 text-left text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground/60 transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                        >
+                          <ChevronRight
+                            aria-hidden="true"
+                            className={cn(
+                              'h-3 w-3 shrink-0 transition-transform duration-200 motion-reduce:transition-none',
+                              open && 'rotate-90',
+                            )}
                           />
-                        );
-                      })}
-                    </ul>
-                  </div>
-                ))}
+                          <span className="min-w-0 truncate">{group.heading}</span>
+                          {rolledUp > 0 && (
+                            <span className="ml-auto flex h-4 min-w-4 shrink-0 items-center justify-center rounded-full bg-red-600 px-1 text-[9px] font-semibold leading-none text-white">
+                              {rolledUp > 99 ? '99+' : rolledUp}
+                            </span>
+                          )}
+                        </button>
+                      ) : (
+                        <p className="mb-1.5 px-4 text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground/60">
+                          {group.heading}
+                        </p>
+                      )}
+                      {open && (
+                        <ul id={panelId} className="flex flex-col gap-0.5 px-2">
+                          {group.items.map(({ href, label, icon: Icon }) => {
+                            const active = pathname === href;
+                            const badge = badgeFor(href);
+                            return (
+                              <RevampedNavItem
+                                key={href}
+                                href={href}
+                                label={label}
+                                Icon={Icon}
+                                active={active}
+                                badge={badge}
+                                collapsed={collapsed}
+                                accentColor={revamped.light}
+                                accentMuted={revamped.muted}
+                                accentGradient={revamped.gradient}
+                              />
+                            );
+                          })}
+                        </ul>
+                      )}
+                    </div>
+                  );
+                })}
               </nav>
 
               <div className="relative shrink-0 border-t border-border p-2">
@@ -771,32 +854,79 @@ export default function PortalShell({
                 // in a smaller form. A browser without svh support drops the
                 // declaration and lands on today's behaviour, so it degrades to
                 // no worse than before.
+                //
+                // This drawer used to render one flat list with no headings at
+                // all, so eboard got 21 undifferentiated rows on a phone. It
+                // now mirrors the desktop sidebar's sections exactly — same
+                // one-open-at-a-time rule, same rolled-up badges — because two
+                // navs that disagree about structure is how somebody ends up
+                // hunting for a page that is right there.
                 <nav className="sidebar-scroll flex max-h-[70svh] flex-col gap-1 overflow-y-auto overscroll-contain border-b border-border bg-card px-2 py-2 md:hidden">
-                  {flatNav.map(({ href, label, icon: Icon }) => {
-                    const active = pathname === href;
-                    const badgeCount = badgeFor(href);
+                  {groups.map((group) => {
+                    const open = sectionOpen(group.heading);
+                    const rolledUp = open ? 0 : sectionBadge(group);
+                    const panelId = sectionId('mob', group.heading);
                     return (
-                      <Link
-                        key={href}
-                        href={href}
-                        className={cn(
-                          'flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
-                          active
-                            ? 'text-foreground'
-                            : 'text-muted-foreground hover:text-foreground',
+                      <div key={group.heading} className="flex flex-col gap-1">
+                        {collapsibleNav ? (
+                          <button
+                            type="button"
+                            onClick={() => toggleSection(group.heading)}
+                            aria-expanded={open}
+                            aria-controls={panelId}
+                            className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                          >
+                            <ChevronRight
+                              aria-hidden="true"
+                              className={cn(
+                                'h-3.5 w-3.5 shrink-0 transition-transform duration-200 motion-reduce:transition-none',
+                                open && 'rotate-90',
+                              )}
+                            />
+                            <span className="min-w-0 truncate">{group.heading}</span>
+                            {rolledUp > 0 && (
+                              <span className="ml-auto flex h-4 min-w-4 shrink-0 items-center justify-center rounded-full bg-red-600 px-1 text-[9px] font-semibold leading-none text-white">
+                                {rolledUp > 99 ? '99+' : rolledUp}
+                              </span>
+                            )}
+                          </button>
+                        ) : (
+                          <p className="px-3 pt-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground/60">
+                            {group.heading}
+                          </p>
                         )}
-                        style={active ? { background: tint(revamped.light, 0.12) } : undefined}
-                      >
-                        <span className="relative shrink-0">
-                          <Icon className="h-4 w-4" />
-                          {badgeCount > 0 && (
-                            <span className="absolute -right-1.5 -top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-600 px-1 text-[9px] font-semibold leading-none text-white">
-                              {badgeCount > 99 ? '99+' : badgeCount}
-                            </span>
-                          )}
-                        </span>
-                        {label}
-                      </Link>
+                        {open && (
+                          <div id={panelId} className="flex flex-col gap-1">
+                            {group.items.map(({ href, label, icon: Icon }) => {
+                              const active = pathname === href;
+                              const badgeCount = badgeFor(href);
+                              return (
+                                <Link
+                                  key={href}
+                                  href={href}
+                                  className={cn(
+                                    'flex items-center gap-3 rounded-lg py-2 pl-8 pr-3 text-sm font-medium transition-colors',
+                                    active
+                                      ? 'text-foreground'
+                                      : 'text-muted-foreground hover:text-foreground',
+                                  )}
+                                  style={active ? { background: tint(revamped.light, 0.12) } : undefined}
+                                >
+                                  <span className="relative shrink-0">
+                                    <Icon className="h-4 w-4" />
+                                    {badgeCount > 0 && (
+                                      <span className="absolute -right-1.5 -top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-600 px-1 text-[9px] font-semibold leading-none text-white">
+                                        {badgeCount > 99 ? '99+' : badgeCount}
+                                      </span>
+                                    )}
+                                  </span>
+                                  {label}
+                                </Link>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
                     );
                   })}
                 </nav>

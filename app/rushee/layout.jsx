@@ -49,7 +49,17 @@ const NAV = [
 // in app/pledge/layout.jsx — this can now safely become 'blue'.
 export default function RusheeLayout({ children }) {
   return (
-    <PortalShell portalName="Rush Portal" accent="violet" homeHref="/rushee" nav={NAV}>
+    // Sections stay expanded here. Rush has 7 entries across 2 sections, which
+    // is already shorter than the other portals' collapsed state, so hiding
+    // them behind headings would add a click and save nothing. The other three
+    // portals collapse; this is the deliberate exception.
+    <PortalShell
+      portalName="Rush Portal"
+      accent="violet"
+      homeHref="/rushee"
+      nav={NAV}
+      collapsibleNav={false}
+    >
       {children}
     </PortalShell>
   );

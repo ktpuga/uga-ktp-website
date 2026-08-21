@@ -160,8 +160,11 @@ function directorySortLabel(member) {
 
 // ─── Directory (all portals) ───
 
+// `size` is either a number of pixels or any CSS length. The profile modal
+// passes a custom property so the avatar can shrink at mobile widths; the
+// fallback initials are sized off the same value so they track it either way.
 function DirectoryAvatar({ member, size }) {
-  const px = `${size}px`;
+  const px = typeof size === 'number' ? `${size}px` : size;
   return (
     <Avatar style={{ width: px, height: px }} className="shrink-0">
       {member.id && (
@@ -169,7 +172,7 @@ function DirectoryAvatar({ member, size }) {
       )}
       <AvatarFallback
         className="font-semibold text-white"
-        style={{ background: avatarGradient(member), fontSize: size * 0.36 }}
+        style={{ background: avatarGradient(member), fontSize: `calc(${px} * 0.36)` }}
       >
         {memberInitials(member)}
       </AvatarFallback>
@@ -384,35 +387,54 @@ function ProfileModal({ member, accent, onClose }) {
     >
       <div className="absolute inset-0 bg-background/80 backdrop-blur-sm" onClick={onClose} aria-hidden="true" />
 
-      <div className="relative z-10 w-full max-w-sm overflow-hidden rounded-2xl border border-border bg-card shadow-xl">
-        <div className="h-20 w-full" style={{ background: accent.gradient }} aria-hidden="true" />
+      {/* The card is capped at the viewport and scrolls internally. It used to
+          have no height limit at all, so a profile with traits, an About block
+          and both email rows ran off the top and bottom of a phone screen —
+          and because `document.body` is locked to `overflow: hidden` while
+          this is open, there was no way to scroll to the part that was cut off.
+          `dvh` rather than `vh` so the mobile browser's collapsing toolbar is
+          accounted for. `--avatar` drives both the avatar and the negative
+          margin that lifts it onto the header, so the two cannot drift apart. */}
+      <div className="relative z-10 flex max-h-[calc(100dvh-2rem)] w-full max-w-sm flex-col overflow-y-auto overflow-x-hidden overscroll-contain rounded-2xl border border-border bg-card shadow-xl [--avatar:5.5rem] sm:[--avatar:7rem]">
+        {/* Zero-height sticky strip: the card itself is the scroll container,
+            so an absolutely positioned close button would scroll out of reach
+            on a long profile — and at full height there is barely any backdrop
+            left to tap instead. */}
+        <div className="sticky top-0 z-20 h-0">
+          <button
+            type="button"
+            onClick={onClose}
+            className="absolute right-3 top-3 flex h-7 w-7 items-center justify-center rounded-full bg-white/20 text-white backdrop-blur-sm transition-colors hover:bg-white/30"
+            aria-label="Close profile"
+          >
+            <X size={13} strokeWidth={2.5} />
+          </button>
+        </div>
+
+        <div className="h-16 w-full shrink-0 sm:h-20" style={{ background: accent.gradient }} aria-hidden="true" />
 
         {/* Report and block, side by side. Block used to be a full-width
             button at the bottom of the card; it's here so the two safety
             actions read as one pair rather than living at opposite ends. */}
         {!isSelf && (
-          <div className="absolute left-4 top-[5.5rem] flex items-center gap-1">
+          <div className="absolute left-4 top-[4.5rem] flex items-center gap-1 sm:top-[5.5rem]">
             <ReportButton contentType="user" reportedUserId={member.id} />
             <BlockButton userId={member.id} iconOnly />
           </div>
         )}
 
-        <button
-          type="button"
-          onClick={onClose}
-          className="absolute right-3 top-3 flex h-7 w-7 items-center justify-center rounded-full bg-white/20 text-white transition-colors hover:bg-white/30"
-          aria-label="Close profile"
-        >
-          <X size={13} strokeWidth={2.5} />
-        </button>
-
-        <div className="flex flex-col items-center px-6 pb-6">
+        <div className="flex flex-col items-center px-5 pb-5 sm:px-6 sm:pb-6">
           {/* The ring's negative margin has to track the avatar size: it lifts
               the circle so it straddles the gradient header's bottom edge, and
-              a fixed value would leave a larger avatar sitting too low. Kept at
-              roughly half the ring's full height (avatar + p-1 on both sides). */}
-          <div className="-mt-14 mb-3 rounded-full p-1" style={{ background: 'var(--color-card)' }}>
-            <DirectoryAvatar member={member} size={112} />
+              a fixed value would leave a larger avatar sitting too low. Both
+              now derive from --avatar so the mobile and desktop sizes cannot
+              drift apart. Half the avatar reproduces the previous -mt-14
+              exactly at the 7rem desktop size. */}
+          <div
+            className="mb-3 rounded-full p-1"
+            style={{ marginTop: 'calc(var(--avatar) / -2)', background: 'var(--color-card)' }}
+          >
+            <DirectoryAvatar member={member} size="var(--avatar)" />
           </div>
 
           <h2 className="text-center text-xl font-bold tracking-tight text-foreground">{name}</h2>
