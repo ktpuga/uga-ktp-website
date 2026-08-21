@@ -110,6 +110,13 @@ const ADMIN_ACCENT_KEY = 'ktp-admin-accent';
 //
 // `nav` shape: [{ heading, pinned?, items: [{ href, label, icon }] }]
 //
+// Section headings are 12px desktop / 13px mobile against 14px `text-sm` nav
+// items -- close enough to read as headings rather than as fine print, still a
+// step below the links they label. They were 10px/11px at 60% opacity, which
+// the user reported as "very small compared to the actual tabs". Letter-spacing
+// came DOWN (.16em -> .12em) at the same time: wide tracking on small uppercase
+// text is what was making them read smaller than their pixel size.
+//
 // `pinned` groups render their items with no heading and never collapse. The
 // `heading` is still required on them -- it keys the group and builds the panel
 // id -- it is simply not displayed.
@@ -612,7 +619,7 @@ export default function PortalShell({
                           onClick={() => toggleSection(group.heading)}
                           aria-expanded={open}
                           aria-controls={panelId}
-                          className="mb-1.5 flex w-full items-center gap-1.5 rounded-md px-4 py-1 text-left text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground/60 transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                          className="mb-1.5 flex w-full items-center gap-1.5 rounded-md px-4 py-1 text-left text-[12px] font-semibold uppercase tracking-[0.12em] text-muted-foreground/80 transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                         >
                           <ChevronRight
                             aria-hidden="true"
@@ -629,7 +636,7 @@ export default function PortalShell({
                           )}
                         </button>
                       ) : (
-                        <p className="mb-1.5 px-4 text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground/60">
+                        <p className="mb-1.5 px-4 text-[12px] font-semibold uppercase tracking-[0.12em] text-muted-foreground/80">
                           {group.heading}
                         </p>
                       )}
@@ -893,7 +900,7 @@ export default function PortalShell({
                             onClick={() => toggleSection(group.heading)}
                             aria-expanded={open}
                             aria-controls={panelId}
-                            className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                            className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-[13px] font-semibold uppercase tracking-[0.12em] text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                           >
                             <ChevronRight
                               aria-hidden="true"
@@ -910,7 +917,7 @@ export default function PortalShell({
                             )}
                           </button>
                         ) : (
-                          <p className="px-3 pt-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground/60">
+                          <p className="px-3 pt-1 text-[13px] font-semibold uppercase tracking-[0.12em] text-muted-foreground/80">
                             {group.heading}
                           </p>
                         )}
