@@ -553,13 +553,30 @@ export default function ProfileForm({
           person describing themselves. 600 matches the cap in
           userController.updateProfile, which truncates rather than rejects. */}
       <Field label="About Me" variant={variant} name="about_me" error={fieldError('about_me')}>
+        {/* ⚠ This is a RAW <textarea>, not the <Input> component every other
+            field here uses, so it inherits none of Input's base classes -- and
+            `w-full` is one of them. Without it a textarea falls back to the
+            browser default of `cols=20`, which is why this rendered as a small
+            box in a full-width form. In the `portal` variant `inputClass` is the
+            empty string, so it had NO styling at all beyond resize-y.
+
+            The base below is Input's own class list minus `h-10` (rows sets the
+            height here). `inputClass` goes LAST because cn() is tailwind-merge:
+            later classes win, so the onboarding variant's rounded-xl, px-4 and
+            dark palette still override the base rather than fighting it.
+
+            AdminEditProfileModal's about_me textarea already spells out the same
+            treatment inline; keep the two in step. */}
         <textarea
           name="about_me"
           rows={4}
           maxLength={600}
           placeholder="A sentence or two about yourself. What you're studying, what you're into, what you're hoping to get out of KTP."
           defaultValue={defaultValues.about_me}
-          className={`${inputClass} resize-y`}
+          className={cn(
+            'w-full resize-y rounded-md border border-input bg-background px-3 py-2 text-sm text-gray-900 ring-offset-background placeholder:text-muted-foreground focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 dark:text-white',
+            inputClass,
+          )}
         />
       </Field>
 
