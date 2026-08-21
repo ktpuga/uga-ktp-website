@@ -54,7 +54,7 @@
     "sanity": "4.6.0",
     "tailwindcss": "^4.3.3",
     "tailwindcss-animate": "^1.0.7",
-    "typescript": "5.8.3"
+    "typescript": "7.0.2"
   },
   "overrides": {
     "nanoid@^3.0.0": "^3.3.18"
