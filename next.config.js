@@ -51,6 +51,16 @@ module.exports = {
             // to /member with no way to clear it short of a hard reset.
             { source: '/alumni', destination: '/member', permanent: false },
             { source: '/alumni/:path*', destination: '/member/:path*', permanent: false },
+
+            // Admin nav consolidation: pages that used to be their own sidebar
+            // entry are now tabs on a merged page. Non-permanent for the same
+            // reason as /alumni above — a 308 sticks in the browser forever, so
+            // splitting one back out later would strand whoever followed it.
+            //
+            // The slideshow keeps ?tab=ios so an existing bookmark opens the
+            // tab it named, rather than silently landing on the web gallery.
+            { source: '/admin/homepage-photos', destination: '/admin/homepage-media', permanent: false },
+            { source: '/admin/ios-homepage-slideshow', destination: '/admin/homepage-media?tab=ios', permanent: false },
         ];
     },
 

@@ -419,7 +419,7 @@ export default function TemplatePage({ spotlightLinks = [] }) {
         </section>
 
         {/* =========================== CHAPTER GALLERY ========================= */}
-        {/* Eboard-curated via /admin/homepage-photos. Renders nothing at all
+        {/* Eboard-curated via /admin/homepage-media. Renders nothing at all
             when no photos are configured, so it can't leave an empty band. */}
         <GallerySection />
 

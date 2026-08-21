@@ -835,7 +835,11 @@ function HomepagePreviewStrip({ photos }) {
   );
 }
 
-export default function HomepagePhotoManager() {
+// `embedded` is set when this renders as the Website tab of /admin/homepage-media
+// rather than as a page of its own. It drops only the title block -- the wrapper
+// shows one heading for both tabs -- and keeps the action buttons, which is why
+// the row switches to justify-end when the title beside them is gone.
+export default function HomepagePhotoManager({ embedded = false }) {
   const MAROON = useAccentPalette();
   const [photos, setPhotos] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -1089,15 +1093,17 @@ export default function HomepagePhotoManager() {
   const allSelected = visiblePhotos.length > 0 && selected.size === visiblePhotos.length;
 
   return (
-    <div className="mx-auto max-w-6xl px-4 pb-16 pt-8 sm:px-6 lg:px-8">
-      <div className="mb-7 flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <p className="mb-1 text-[11px] font-semibold uppercase tracking-[0.22em]" style={{ color: MAROON.light }}>
-            Admin Panel
-          </p>
-          <h1 className="font-serif text-3xl font-normal leading-tight tracking-tight text-foreground">Homepage Photos</h1>
-          <p className="mt-1 text-sm text-muted-foreground">Manage what appears in the public gallery on the chapter homepage</p>
-        </div>
+    <div className={cn('mx-auto max-w-6xl px-4 pb-16 sm:px-6 lg:px-8', embedded ? 'pt-6' : 'pt-8')}>
+      <div className={cn('mb-7 flex flex-wrap items-end gap-4', embedded ? 'justify-end' : 'justify-between')}>
+        {!embedded && (
+          <div>
+            <p className="mb-1 text-[11px] font-semibold uppercase tracking-[0.22em]" style={{ color: MAROON.light }}>
+              Admin Panel
+            </p>
+            <h1 className="font-serif text-3xl font-normal leading-tight tracking-tight text-foreground">Homepage Photos</h1>
+            <p className="mt-1 text-sm text-muted-foreground">Manage what appears in the public gallery on the chapter homepage</p>
+          </div>
+        )}
         <div className="flex items-center gap-2">
           <button
             type="button"

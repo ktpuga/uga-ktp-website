@@ -1,6 +1,6 @@
 'use client';
 
-import { LayoutDashboard, BarChart2, Megaphone, Calendar, MessageSquare, Users, UsersRound, Vote, FolderOpen, Image as ImageIcon, ShieldAlert, Settings, Images, QrCode, CalendarClock, CalendarCheck, BookUser, ScrollText, Table2 } from 'lucide-react';
+import { LayoutDashboard, BarChart2, Megaphone, Calendar, MessageSquare, Users, UsersRound, Vote, FolderOpen, Image as ImageIcon, ShieldAlert, Settings, QrCode, CalendarClock, CalendarCheck, BookUser, ScrollText, Table2 } from 'lucide-react';
 import PortalShell from '@/components/portal/PortalShell';
 
 // The sidebar renders exactly this, in this order.
@@ -92,8 +92,10 @@ function buildNav() {
     heading: 'Content',
     items: [
       { href: '/admin/files', label: 'Files & Photos', icon: FolderOpen },
-      { href: '/admin/homepage-photos', label: 'Homepage Photos', icon: ImageIcon },
-      { href: '/admin/ios-homepage-slideshow', label: 'Homepage Slideshow', icon: Images },
+      // Homepage Photos (web gallery) and Homepage Slideshow (iOS app) were two
+      // entries for one job: what a stranger sees when they open KTP. They are
+      // now Website / iOS App tabs on a single page.
+      { href: '/admin/homepage-media', label: 'Homepage Media', icon: ImageIcon },
     ],
   },
   {

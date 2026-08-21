@@ -981,7 +981,9 @@ function SlideRow({
   );
 }
 
-export default function IosHomepageSlideshowManager() {
+// `embedded` is set when this renders as the iOS App tab of /admin/homepage-media
+// rather than as a page of its own. Mirrors the same prop on HomepagePhotoManager.
+export default function IosHomepageSlideshowManager({ embedded = false }) {
   const MAROON = useAccentPalette();
   const [slides, setSlides] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -1158,13 +1160,15 @@ export default function IosHomepageSlideshowManager() {
   }
 
   return (
-    <div className="mx-auto max-w-6xl px-4 pb-16 pt-8 sm:px-6 lg:px-8">
-      <div className="mb-7 flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <p className="mb-1 text-[11px] font-semibold uppercase tracking-[0.22em]" style={{ color: MAROON.light }}>Admin Panel</p>
-          <h1 className="font-serif text-3xl font-normal leading-tight tracking-tight text-foreground">Homepage Slideshow</h1>
-          <p className="mt-1 text-sm text-muted-foreground">Controls the slideshow on the KTP Life app&apos;s home screen</p>
-        </div>
+    <div className={cn('mx-auto max-w-6xl px-4 pb-16 sm:px-6 lg:px-8', embedded ? 'pt-6' : 'pt-8')}>
+      <div className={cn('mb-7 flex flex-wrap items-end gap-4', embedded ? 'justify-end' : 'justify-between')}>
+        {!embedded && (
+          <div>
+            <p className="mb-1 text-[11px] font-semibold uppercase tracking-[0.22em]" style={{ color: MAROON.light }}>Admin Panel</p>
+            <h1 className="font-serif text-3xl font-normal leading-tight tracking-tight text-foreground">Homepage Slideshow</h1>
+            <p className="mt-1 text-sm text-muted-foreground">Controls the slideshow on the KTP Life app&apos;s home screen</p>
+          </div>
+        )}
         <div className="flex items-center gap-2">
           <button type="button" onClick={() => load()} disabled={refreshing || busy}
             className="flex items-center gap-1.5 rounded-xl border border-border bg-card px-4 py-2 text-sm font-medium text-muted-foreground shadow-sm hover:bg-muted hover:text-foreground disabled:opacity-40">
