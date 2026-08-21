@@ -123,7 +123,10 @@ function StatCard({ label, value, hint }) {
   );
 }
 
-export default function RushInterestTable() {
+// `embedded` is set only by the Rushee Data tab of /admin/rushees, where the
+// wrapper owns the heading. It defaults off so /member/rush-data -- the pledge
+// committee's copy of this same component -- keeps its own title untouched.
+export default function RushInterestTable({ embedded = false }) {
   const accent = useAccentPalette();
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -190,14 +193,16 @@ export default function RushInterestTable() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-foreground">Rushee Interest Forms</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            What every rushee filled in while building their profile. Export it to open in Google
-            Sheets or Excel.
-          </p>
-        </div>
+      <div className={cn('flex flex-wrap items-start gap-4', embedded ? 'justify-end' : 'justify-between')}>
+        {!embedded && (
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight text-foreground">Rushee Interest Forms</h1>
+            <p className="mt-1 text-sm text-muted-foreground">
+              What every rushee filled in while building their profile. Export it to open in Google
+              Sheets or Excel.
+            </p>
+          </div>
+        )}
         <div className="flex items-center gap-2">
           <button
             type="button"

@@ -108,7 +108,11 @@ const ADMIN_ACCENT_KEY = 'ktp-admin-accent';
 // failing. Both now come from the layout that owns them, via the `nav` and
 // `homeHref` props, so there is nothing left to keep in sync across files.
 //
-// `nav` shape: [{ heading, items: [{ href, label, icon }] }]
+// `nav` shape: [{ heading, pinned?, items: [{ href, label, icon }] }]
+//
+// `pinned` groups render their items with no heading and never collapse. The
+// `heading` is still required on them -- it keys the group and builds the panel
+// id -- it is simply not displayed.
 
 // "rush" last, matching ktp-api's constants/roleGroups.js — someone accepted
 // out of rush keeps that group until it's removed, so a higher-privilege group
@@ -389,7 +393,14 @@ export default function PortalShell({
     setOpenSection((current) => (current === heading ? null : heading));
   // When the rail is icon-only there are no headings to click, so nothing may
   // stay hidden behind one.
-  const sectionOpen = (heading) => !collapsibleNav || collapsed || openSection === heading;
+  //
+  // A `pinned` group is always open and renders no heading at all. It exists for
+  // the one-item sections -- Dashboard, Settings -- where an accordion heading
+  // costs a click to reveal a single link, which is worse than no grouping. Only
+  // the admin portal passes it today; the others are unchanged because a group
+  // without the flag behaves exactly as before.
+  const sectionOpen = (group) =>
+    group.pinned || !collapsibleNav || collapsed || openSection === group.heading;
   const { total: unreadTotal } = useUnreadCounts();
   const tabCounts = useTabNotifications();
   const pendingRsvps = usePendingRsvpCount();
@@ -582,13 +593,18 @@ export default function PortalShell({
                 className="sidebar-scroll relative flex-1 overflow-y-auto overflow-x-hidden py-3"
                 aria-label="Main navigation"
               >
-                {groups.map((group) => {
-                  const open = sectionOpen(group.heading);
+                {groups.map((group, groupIndex) => {
+                  const open = sectionOpen(group);
                   const rolledUp = open ? 0 : sectionBadge(group);
                   const panelId = sectionId('desk', group.heading);
+                  // A rule wherever pinned meets unpinned, so the always-visible
+                  // entries read as separate from the accordion rather than as a
+                  // section someone forgot to label.
+                  const nextGroup = groups[groupIndex + 1];
+                  const showRule = !collapsed && nextGroup && group.pinned !== nextGroup.pinned;
                   return (
-                    <div key={group.heading} className="mb-3 last:mb-0">
-                      {collapsed ? (
+                    <div key={group.heading} className={cn('mb-3 last:mb-0', group.pinned && 'mb-2')}>
+                      {group.pinned ? null : collapsed ? (
                         <div aria-hidden="true" className="mx-auto mb-2 h-px w-6 bg-border" />
                       ) : collapsibleNav ? (
                         <button
@@ -639,6 +655,7 @@ export default function PortalShell({
                           })}
                         </ul>
                       )}
+                      {showRule && <div aria-hidden="true" className="mx-4 mt-3 h-px bg-border" />}
                     </div>
                   );
                 })}
@@ -862,13 +879,15 @@ export default function PortalShell({
                 // navs that disagree about structure is how somebody ends up
                 // hunting for a page that is right there.
                 <nav className="sidebar-scroll flex max-h-[70svh] flex-col gap-1 overflow-y-auto overscroll-contain border-b border-border bg-card px-2 py-2 md:hidden">
-                  {groups.map((group) => {
-                    const open = sectionOpen(group.heading);
+                  {groups.map((group, groupIndex) => {
+                    const open = sectionOpen(group);
                     const rolledUp = open ? 0 : sectionBadge(group);
                     const panelId = sectionId('mob', group.heading);
+                    const nextGroup = groups[groupIndex + 1];
+                    const showRule = nextGroup && group.pinned !== nextGroup.pinned;
                     return (
                       <div key={group.heading} className="flex flex-col gap-1">
-                        {collapsibleNav ? (
+                        {group.pinned ? null : collapsibleNav ? (
                           <button
                             type="button"
                             onClick={() => toggleSection(group.heading)}
@@ -905,7 +924,10 @@ export default function PortalShell({
                                   key={href}
                                   href={href}
                                   className={cn(
-                                    'flex items-center gap-3 rounded-lg py-2 pl-8 pr-3 text-sm font-medium transition-colors',
+                                    'flex items-center gap-3 rounded-lg py-2 pr-3 text-sm font-medium transition-colors',
+                                    // Items sit indented under their heading; a
+                                    // pinned group has none to indent under.
+                                    group.pinned ? 'pl-3' : 'pl-8',
                                     active
                                       ? 'text-foreground'
                                       : 'text-muted-foreground hover:text-foreground',
@@ -926,6 +948,7 @@ export default function PortalShell({
                             })}
                           </div>
                         )}
+                        {showRule && <div aria-hidden="true" className="mx-3 mt-1 h-px bg-border" />}
                       </div>
                     );
                   })}

@@ -65,6 +65,42 @@ are now one, so neither failure mode exists.
 `accent` no longer selects nav structure or the portal's home href (that's the
 `homeHref` prop), so it means only "which palette".
 
+### Pinned nav groups
+
+A group may set `pinned: true`. Its items render with **no heading** and never
+collapse, and `PortalShell` draws a rule wherever pinned meets unpinned.
+
+```js
+{ heading: 'Account', pinned: true, items: [{ href: '/admin/settings', ... }] }
+```
+
+It exists for one-item sections. Dashboard and Settings were each a section
+holding a single link, so the accordion heading cost a click to reveal something
+that was already one click away — worse than no grouping at all.
+
+**`heading` is still required on a pinned group.** It is not displayed, but it
+keys the group and builds the panel id; omitting it throws in `sectionId`, which
+calls `.toLowerCase()` on it. Only `/admin` passes `pinned` today — a group
+without the flag behaves exactly as it always did, which is why the other three
+portals needed no change.
+
+### Page-level tabs vs component-level tabs
+
+`components/portal/PageTabs.jsx` is the **segmented control** used by pages that
+merge two former sidebar entries into tabs (`/admin`, `/admin/oversight`,
+`/admin/homepage-media`, `/admin/rushees`).
+
+It is deliberately not the underline treatment. `ModerationQueue` and
+`AnalyticsContent` render their own underline tab bars — down to the same
+padding and the same `inset-x-2 bottom-0 h-0.5` rule — so a second underline row
+above one of those gives two identical bars with nothing saying which is the
+page and which is the section.
+
+Components embedded this way take an **`embedded` prop that defaults to `false`**
+and suppresses only their own title block. The default matters: `RushInterestTable`
+is shared with `/member/rush-data` and `PortalDashboard` with three other
+portals, so the flag has to be opt-in per call site rather than a rewrite.
+
 ### Nav badges
 
 A nav item's badge number comes from `badgeFor(href)` in `PortalShell`, the one
@@ -360,7 +396,7 @@ Same editor. Tab indents a bullet, so it is tempting to `preventDefault()` on Ta
 
 ### One table, two portal routes — that is the correct shape, not duplication
 
-`components/rush/RushInterestTable.jsx` is rendered by both `/admin/rush-data` and `/member/rush-data`. That is not an oversight to be cleaned up: `proxy.ts` hard-gates `/admin` to `eboard` and redirects an eboard-only account away from `/member`, so **no single route can serve eboard and the pledge committee at once**. Two thin pages over one component is the fix; two components is the failure this avoids (see the trait markup, which does exist twice).
+`components/rush/RushInterestTable.jsx` is rendered by both `/admin/rushees` (its Rushee Data tab) and `/member/rush-data`. That is not an oversight to be cleaned up: `proxy.ts` hard-gates `/admin` to `eboard` and redirects an eboard-only account away from `/member`, so **no single route can serve eboard and the pledge committee at once**. Two thin pages over one component is the fix; two components is the failure this avoids (see the trait markup, which does exist twice).
 
 Neither route is the access boundary. Any member can type `/member/rush-data`; the API answers 403 and the component renders it. The nav entry is hidden by `useRushDataAccess`, which asks the API — the same shape as the Interviews tab, so an entry never appears for someone the endpoint would refuse. `proxy.ts` genuinely cannot help: the rule involves committee membership, which lives in Postgres and deliberately never in the JWT.
 

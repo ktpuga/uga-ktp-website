@@ -61,6 +61,20 @@ module.exports = {
             // tab it named, rather than silently landing on the web gallery.
             { source: '/admin/homepage-photos', destination: '/admin/homepage-media', permanent: false },
             { source: '/admin/ios-homepage-slideshow', destination: '/admin/homepage-media?tab=ios', permanent: false },
+
+            // Rush Signup + Rushee Data -> /admin/rushees. Note these are the
+            // PAGE routes only. `/api/admin/rush-signup` is a different path
+            // and an exact-match source cannot swallow it, but the two strings
+            // look alike enough to be worth saying so out loud.
+            { source: '/admin/rush-signup', destination: '/admin/rushees', permanent: false },
+            { source: '/admin/rush-data', destination: '/admin/rushees?tab=data', permanent: false },
+
+            // Reports + Activity Log -> /admin/oversight.
+            { source: '/admin/reports', destination: '/admin/oversight', permanent: false },
+            { source: '/admin/logs', destination: '/admin/oversight?tab=log', permanent: false },
+
+            // Analytics -> the second tab on the portal root.
+            { source: '/admin/analytics', destination: '/admin?tab=analytics', permanent: false },
         ];
     },
 

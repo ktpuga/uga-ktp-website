@@ -1,74 +1,70 @@
 'use client';
 
-import { LayoutDashboard, BarChart2, Megaphone, Calendar, MessageSquare, Users, UsersRound, Vote, FolderOpen, Image as ImageIcon, ShieldAlert, Settings, QrCode, CalendarClock, CalendarCheck, BookUser, ScrollText, Table2 } from 'lucide-react';
+import { LayoutDashboard, Megaphone, Calendar, MessageSquare, Users, UsersRound, Vote, FolderOpen, Image as ImageIcon, ShieldAlert, Settings, QrCode, CalendarClock, CalendarCheck, BookUser, Table2 } from 'lucide-react';
 import PortalShell from '@/components/portal/PortalShell';
 
 // The sidebar renders exactly this, in this order.
 //
-// Reorganised 2026-08-03. The previous grouping had three problems:
-//   - "Engagement" held 8 of the 16 items — half the nav in one bucket, which
-//     is the same as no grouping at all.
-//   - The two rush surfaces were in DIFFERENT sections (Rush Announcements
-//     under Engagement, Rush Signup under Moderation), so running rush meant
-//     hunting in two places. They are now one section.
+// Reorganised 2026-08-03, then again after the tab merges below cut 21 entries
+// to 17. The 2026-08-03 pass fixed three things worth not undoing:
+//   - "Engagement" held 8 of the 16 items, which is the same as no grouping.
+//   - The two rush surfaces sat in DIFFERENT sections, so running rush meant
+//     hunting in two places. They are one section.
 //   - "Moderation" contained User Management and Rush Signup, neither of which
-//     is moderation. Reports is the only genuine moderation surface, and it
-//     sits with the other people-management tools.
+//     is moderation.
 //
-// Nothing was added or removed by that reorganisation — all 16 items survived
-// it. The 17th, Dashboard, was added later when Analytics stopped being the
-// landing page (see Overview below).
+// This pass changed the shape rather than the membership:
+//   - Dashboard and Settings are `pinned`: each was a section holding a single
+//     item, so its heading cost a click to reveal one link. They now sit
+//     outside the accordion with a rule separating them.
+//   - "Programming" is now "Events". In a TECHNOLOGY fraternity that word reads
+//     as writing code, which is the one thing the section has nothing to do
+//     with.
+//   - Polls moved from there to Communication, which is what makes "Events" an
+//     honest name for what is left: a poll is asking the chapter something, not
+//     an event. Moving an item between sections is free -- notification badges
+//     key on the href's last segment, never on the section.
+//   - "Content" is now "Files & Media". It holds the INTERNAL document library
+//     alongside the public homepage surfaces, so "Website" would have been
+//     wrong for half of it.
+//
+// Five headings over 15 items, plus the 2 pinned: 3/3/4/3/2.
 function buildNav() {
   return [
   {
+    // Not a section. `pinned` renders the item with no heading; the heading is
+    // still required because it keys the group. See PortalShell's `nav` shape.
     heading: 'Overview',
+    pinned: true,
     items: [
       // The portal root is the same dashboard member/pledge/rushee land on.
-      // Analytics used to live here; it moved to its own route so eboard sees
-      // the chapter at a glance first, the way every other portal opens.
+      // Analytics is the second TAB on it rather than a route of its own, and
+      // Dashboard is first there so eboard still sees the chapter at a glance
+      // on arrival, the way every other portal opens.
       { href: '/admin', label: 'Dashboard', icon: LayoutDashboard },
-      { href: '/admin/analytics', label: 'Analytics', icon: BarChart2 },
     ],
   },
   {
-    // What's happening and who turned up.
-    heading: 'Programming',
-    items: [
-      { href: '/admin/calendar', label: 'Calendar', icon: Calendar },
-      { href: '/admin/meetings', label: 'Meetings', icon: CalendarClock },
-      { href: '/admin/attendance', label: 'Attendance', icon: QrCode },
-      { href: '/admin/polls', label: 'Polls', icon: Vote },
-    ],
-  },
-  {
-    // Talking TO the chapter, broadcast and direct.
+    // Talking TO the chapter: broadcast, direct, and asking.
     heading: 'Communication',
     items: [
       // Named for what the page actually holds: AnnouncementsContent has two
       // tabs, Announcements and Events, and events are created/edited here
-      // rather than on the Calendar tab. "&" matches "Files & Photos" below.
+      // rather than on the Calendar tab.
       { href: '/admin/announcements', label: 'Announcements & Events', icon: Megaphone },
       { href: '/admin/messages', label: 'Messages', icon: MessageSquare },
+      // Here rather than under Events: a poll asks the chapter something, which
+      // is the same job as an announcement, not a thing on the calendar.
+      { href: '/admin/polls', label: 'Polls', icon: Vote },
     ],
   },
   {
-    // Everything rush, in one place, because it's run as one job for a few
-    // weeks a year and then goes quiet.
-    heading: 'Rush',
+    // What's happening and who turned up.
+    heading: 'Events',
     items: [
-      { href: '/admin/rush-announcements', label: 'Rush Announcements', icon: Megaphone },
-      { href: '/admin/rush-signup', label: 'Rush Signup', icon: QrCode },
-      // The interest form answers, replacing the Google Forms response sheet.
-      // Unconditional here because this whole portal is eboard-only; the
-      // pledge committee reaches the same table at /member/rush-data, where
-      // the entry IS conditional. One component behind both.
-      { href: '/admin/rush-data', label: 'Rushee Data', icon: Table2 },
-      // In Rush rather than beside Meetings: it runs one week a year as part
-      // of rush, and Meetings is the chapter-wide feature rushees can't touch.
-      { href: '/admin/interviews', label: 'Interviews', icon: CalendarCheck },
-      // Rushees used to be a fourth entry here, appearing only during rush.
-      // They're a tab inside the Directory now (People, below), so looking
-      // somebody up is one destination whoever they are.
+      { href: '/admin/calendar', label: 'Calendar', icon: Calendar },
+      { href: '/admin/meetings', label: 'Meetings', icon: CalendarClock },
+      { href: '/admin/attendance', label: 'Attendance', icon: QrCode },
     ],
   },
   {
@@ -81,15 +77,40 @@ function buildNav() {
       { href: '/admin/directory', label: 'Directory', icon: BookUser },
       { href: '/admin/users', label: 'User Management', icon: Users },
       { href: '/admin/committees', label: 'Committees', icon: UsersRound },
-      { href: '/admin/reports', label: 'Reports', icon: ShieldAlert },
-      // Everything created, edited or deleted site-wide. Sits with the other
-      // people-oversight tools rather than under Overview: it answers "who
-      // did that", which is a question about people.
-      { href: '/admin/logs', label: 'Activity Log', icon: ScrollText },
+      // Reports (what members flagged) and the Activity Log (everything created,
+      // edited or deleted site-wide), merged: both answer "who did that", which
+      // is a question about people, so this sits with the other people-oversight
+      // tools rather than under Overview.
+      { href: '/admin/oversight', label: 'Oversight', icon: ShieldAlert },
     ],
   },
   {
-    heading: 'Content',
+    // Everything rush, in one place, because it's run as one job for a few
+    // weeks a year and then goes quiet.
+    heading: 'Rush',
+    items: [
+      { href: '/admin/rush-announcements', label: 'Rush Announcements', icon: Megaphone },
+      // Signup Links and Rushee Data, merged: one hands out the link, the other
+      // reads what came back through it. The interest form answers replace the
+      // Google Forms response sheet.
+      //
+      // Unconditional here because this whole portal is eboard-only; the pledge
+      // committee reaches the same table at /member/rush-data, where the entry
+      // IS conditional. One component behind both.
+      { href: '/admin/rushees', label: 'Rushees', icon: Table2 },
+      // In Rush rather than beside Meetings: it runs one week a year as part
+      // of rush, and Meetings is the chapter-wide feature rushees can't touch.
+      { href: '/admin/interviews', label: 'Interviews', icon: CalendarCheck },
+      // Rushees used to be a fourth entry here, appearing only during rush.
+      // They're a tab inside the Directory now (People, above), so looking
+      // somebody up is one destination whoever they are.
+    ],
+  },
+  {
+    // The internal document library and the two public-facing homepage
+    // surfaces. Not "Website": Files & Photos is the chapter's own library and
+    // never appears on the public site.
+    heading: 'Files & Media',
     items: [
       { href: '/admin/files', label: 'Files & Photos', icon: FolderOpen },
       // Homepage Photos (web gallery) and Homepage Slideshow (iOS app) were two
@@ -99,7 +120,9 @@ function buildNav() {
     ],
   },
   {
+    // Pinned, like Dashboard above: one item, no heading worth a click.
     heading: 'Account',
+    pinned: true,
     items: [{ href: '/admin/settings', label: 'Settings', icon: Settings }],
   },
   ];

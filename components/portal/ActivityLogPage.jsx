@@ -86,7 +86,9 @@ function LogRow({ entry, accent }) {
   );
 }
 
-export default function ActivityLogPage() {
+// `embedded` is set when this renders as the Activity Log tab of
+// /admin/oversight rather than as a page of its own.
+export default function ActivityLogPage({ embedded = false }) {
   const accent = useAccentPalette();
 
   const [entries, setEntries] = useState([]);
@@ -157,15 +159,17 @@ export default function ActivityLogPage() {
   const selectClass = 'rounded-lg border border-border bg-muted/40 px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-[var(--portal-ring)]';
 
   return (
-    <div className="mx-auto max-w-4xl px-4 pb-16 pt-8 sm:px-6 lg:px-8">
-      <div className="mb-6">
-        <p className="mb-1 text-[11px] font-semibold uppercase tracking-[0.22em]" style={{ color: accent.light }}>Admin</p>
-        <h1 className="text-2xl font-bold sm:text-3xl" style={{ color: accent.base }}>Activity Log</h1>
-        <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
-          Everything created, edited or deleted across the site, newest first. Direct messages and
-          group chat conversations are deliberately excluded.
-        </p>
-      </div>
+    <div className={cn('mx-auto max-w-4xl', !embedded && 'px-4 pb-16 pt-8 sm:px-6 lg:px-8')}>
+      {!embedded && (
+        <div className="mb-6">
+          <p className="mb-1 text-[11px] font-semibold uppercase tracking-[0.22em]" style={{ color: accent.light }}>Admin</p>
+          <h1 className="text-2xl font-bold sm:text-3xl" style={{ color: accent.base }}>Activity Log</h1>
+          <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
+            Everything created, edited or deleted across the site, newest first. Direct messages and
+            group chat conversations are deliberately excluded.
+          </p>
+        </div>
+      )}
 
       <div className="mb-4 flex flex-wrap items-center gap-2">
         <div className="relative min-w-[180px] flex-1">

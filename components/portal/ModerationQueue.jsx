@@ -225,7 +225,10 @@ function ReportCard({ report, onResolve, onDismiss }) {
 
 // ─── Main export ───
 
-export default function ModerationQueue() {
+// `embedded` is set when this renders as the Reports tab of /admin/oversight.
+// Its own Open/History TabBar stays -- that is the section level, and the page
+// level above it is a segmented control precisely so the two do not look alike.
+export default function ModerationQueue({ embedded = false }) {
   const MAROON = useAccentPalette();
   const [reports, setReports] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -263,13 +266,15 @@ export default function ModerationQueue() {
   const listed = activeTab === 'open' ? openReports : historyReports;
 
   return (
-    <div className="mx-auto max-w-3xl px-4 pb-16 pt-8 sm:px-6 lg:px-8">
-      <div className="mb-7">
-        <p className="mb-1 text-[11px] font-semibold uppercase tracking-[0.22em]" style={{ color: MAROON.light }}>
-          Admin Panel
-        </p>
-        <h1 className="font-serif text-3xl font-normal leading-tight tracking-tight text-foreground">Reports &amp; Moderation</h1>
-      </div>
+    <div className={cn('mx-auto max-w-3xl', !embedded && 'px-4 pb-16 pt-8 sm:px-6 lg:px-8')}>
+      {!embedded && (
+        <div className="mb-7">
+          <p className="mb-1 text-[11px] font-semibold uppercase tracking-[0.22em]" style={{ color: MAROON.light }}>
+            Admin Panel
+          </p>
+          <h1 className="font-serif text-3xl font-normal leading-tight tracking-tight text-foreground">Reports &amp; Moderation</h1>
+        </div>
+      )}
 
       {error && <p className="mb-4 text-sm text-red-600">{error}</p>}
 

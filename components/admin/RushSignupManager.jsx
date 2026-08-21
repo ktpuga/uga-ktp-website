@@ -59,7 +59,10 @@ function CopyButton({ value }) {
   );
 }
 
-export default function RushSignupManager() {
+// `embedded` is set when this renders as the Signup Links tab of /admin/rushees
+// rather than as a page of its own: the wrapper shows one heading for both tabs
+// and <main> already supplies the page padding this otherwise added itself.
+export default function RushSignupManager({ embedded = false }) {
   const MAROON = useAccentPalette();
   const [status, setStatus] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -117,14 +120,13 @@ export default function RushSignupManager() {
   const isOpen = Boolean(status?.is_open);
 
   return (
-    <div className="mx-auto max-w-4xl px-4 pb-16 pt-8 sm:px-6 lg:px-8">
-      <div className="mb-7">
-        <p className="mb-1 text-[11px] font-semibold uppercase tracking-[0.22em]" style={{ color: MAROON.light }}>Admin Panel</p>
-        <h1 className="font-serif text-3xl font-normal leading-tight tracking-tight text-foreground">Rush Signup</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          
-        </p>
-      </div>
+    <div className={cn('mx-auto max-w-4xl', !embedded && 'px-4 pb-16 pt-8 sm:px-6 lg:px-8')}>
+      {!embedded && (
+        <div className="mb-7">
+          <p className="mb-1 text-[11px] font-semibold uppercase tracking-[0.22em]" style={{ color: MAROON.light }}>Admin Panel</p>
+          <h1 className="font-serif text-3xl font-normal leading-tight tracking-tight text-foreground">Rush Signup</h1>
+        </div>
+      )}
 
       {error && (
         <div className="mb-5 flex items-start gap-2 rounded-2xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">

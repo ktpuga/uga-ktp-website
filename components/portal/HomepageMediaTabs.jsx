@@ -1,10 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { Suspense, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Image as ImageIcon, Images } from 'lucide-react';
-import { cn } from '@/lib/utils';
 import { useAccentPalette } from '@/components/portal/PortalAccentContext';
+import PageTabs from '@/components/portal/PageTabs';
 import HomepagePhotoManager from '@/components/portal/HomepagePhotoManager';
 import IosHomepageSlideshowManager from '@/components/portal/IosHomepageSlideshowManager';
 
@@ -33,7 +33,7 @@ const TABS = [
   },
 ];
 
-export default function HomepageMediaTabs() {
+function HomepageMediaTabsInner() {
   const accent = useAccentPalette();
   const searchParams = useSearchParams();
   // ?tab=ios is where the retired /admin/ios-homepage-slideshow route redirects,
@@ -51,39 +51,23 @@ export default function HomepageMediaTabs() {
         <h1 className="font-serif text-3xl font-normal leading-tight tracking-tight text-foreground">Homepage Media</h1>
         <p className="mt-1 text-sm text-muted-foreground">{current.subtitle}</p>
 
-        <div className="mt-6 flex items-center gap-1 border-b border-border" role="tablist">
-          {TABS.map((tab) => {
-            const isActive = activeTab === tab.id;
-            const Icon = tab.icon;
-            return (
-              <button
-                key={tab.id}
-                type="button"
-                onClick={() => setActiveTab(tab.id)}
-                className={cn(
-                  'relative flex items-center gap-2 px-4 pb-3 pt-1 text-sm font-medium transition-colors duration-150',
-                  isActive ? 'text-foreground' : 'text-muted-foreground hover:text-foreground',
-                )}
-                role="tab"
-                aria-selected={isActive}
-              >
-                <Icon size={14} />
-                {tab.label}
-                {isActive && (
-                  <span
-                    aria-hidden="true"
-                    className="absolute inset-x-2 bottom-0 h-0.5 rounded-full"
-                    style={{ background: accent.base }}
-                  />
-                )}
-              </button>
-            );
-          })}
-        </div>
+        <PageTabs tabs={TABS} active={activeTab} onChange={setActiveTab} className="mt-6" />
       </div>
 
       {activeTab === 'web' && <HomepagePhotoManager embedded />}
       {activeTab === 'ios' && <IosHomepageSlideshowManager embedded />}
     </div>
+  );
+}
+
+// useSearchParams needs a boundary or it opts the whole route out of
+// prerendering. This page happens to be dynamic anyway -- its auth() call sees
+// to that -- but the boundary is what makes that a choice rather than a
+// coincidence, and it matches PhotoFiles and RusheesTabs.
+export default function HomepageMediaTabs() {
+  return (
+    <Suspense fallback={<div className="min-h-48" aria-busy="true" />}>
+      <HomepageMediaTabsInner />
+    </Suspense>
   );
 }
