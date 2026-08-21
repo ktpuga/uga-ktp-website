@@ -49,7 +49,7 @@ function importAll(r) {
   return images;
 }
 
-export default function TemplatePage({ spotlightLinks = [] }) {
+export default function TemplatePage({ spotlightLinks = [], heroPhotos = [] }) {
   const { data: session } = useSession();
 
   /* ---------------------- Collect leadership head‑shots ---------------------
@@ -75,7 +75,10 @@ export default function TemplatePage({ spotlightLinks = [] }) {
   ];
 
   /* ------------------- Media for the hero collage ------------------ */
-  const heroPics = [
+  // The fallback set. Bundled and hashed at build time, so these render even
+  // with ktp-api unreachable -- which is the point: this is the public landing
+  // page, and an empty hero is worse than an out-of-date one.
+  const fallbackHeroPics = [
     pcAlpha.src,
     dnTTb.src,
     mtdspa.src,
@@ -83,6 +86,36 @@ export default function TemplatePage({ spotlightLinks = [] }) {
     retreat1.src,
     tg.src,
   ].filter(Boolean);
+
+  // `heroPhotos` is the 4-hour slice of the first featured gallery collection,
+  // chosen on the server in lib/hero-photos.js and passed down. It arrives
+  // either full (six photos) or empty; it is never partial, because a short
+  // album would leave holes in the fixed six-slot arrangement below.
+  //
+  // Gallery photos are NOT `unoptimized`. That endpoint streams the ORIGINAL
+  // asset with no thumbnail variant, and this is the first thing that paints,
+  // so Next resizes and re-encodes them to the size actually displayed. The
+  // bundled fallbacks stay unoptimized -- they are already build-time assets.
+  // The collage is DECORATIVE, so every tile renders `alt=""` and carries no
+  // caption. Two reasons, and neither is cosmetic only:
+  //   - A screen reader should skip six pictures that repeat what the heading
+  //     beside them already says. An empty alt is what marks that, not a
+  //     missing one.
+  //   - Alt text is what a browser paints inside the box while an image is
+  //     still loading. These are ~300KB originals being re-encoded on first
+  //     request, so a photo title here showed up as a caption on the way in.
+  // That is why no title or caption is carried through from the gallery row.
+  const heroSlots = heroPhotos.length
+    ? heroPhotos.map((photo) => ({
+        key: `gallery-${photo.id}`,
+        src: `/api/homepage-photos/${photo.id}/media`,
+        unoptimized: false,
+      }))
+    : fallbackHeroPics.map((src) => ({
+        key: src,
+        src,
+        unoptimized: true,
+      }));
 
   const heroPhotoPositions = [
     "left-[3%] top-[7%] z-10 w-[42%] -rotate-[8deg]",
@@ -292,12 +325,12 @@ export default function TemplatePage({ spotlightLinks = [] }) {
             >
               <div className="relative w-full max-w-md sm:max-w-lg">
                 <div className="grid grid-cols-3 gap-4">
-                  {heroPics.slice(0, 6).map((src, i) => (
+                  {heroSlots.slice(0, 6).map((slot, i) => (
                     <Image
-                      key={i}
-                      unoptimized
-                      src={src}
-                      alt={`KTP collage ${i + 1}`}
+                      key={slot.key}
+                      unoptimized={slot.unoptimized}
+                      src={slot.src}
+                      alt=""
                       width={400}
                       height={300}
                       className={`h-36 w-full rounded-xl object-cover shadow-2xl transition-transform duration-500 hover:scale-110 ${rotation[i % rotation.length]}`}
@@ -351,10 +384,10 @@ export default function TemplatePage({ spotlightLinks = [] }) {
             <div className="flex items-center justify-center" data-aos="fade-up" data-aos-delay="150">
               <div className="relative aspect-[1.04/1] w-full max-w-3xl sm:aspect-[1.2/1]">
                 <div aria-hidden className="absolute -inset-5 -z-10 rounded-[2.5rem] bg-gradient-to-br from-indigo-300/60 via-white/60 to-cyan-200/70 blur-2xl" />
-                {heroPics.slice(0, 6).map((src, index) => (
-                  <figure key={src} className={`group absolute overflow-hidden rounded-[1.35rem] border-[5px] border-white bg-slate-200 shadow-[0_18px_35px_-18px_rgba(30,58,138,0.55)] transition-transform duration-500 hover:z-50 hover:scale-105 ${heroPhotoPositions[index]}`}>
+                {heroSlots.slice(0, 6).map((slot, index) => (
+                  <figure key={slot.key} className={`group absolute overflow-hidden rounded-[1.35rem] border-[5px] border-white bg-slate-200 shadow-[0_18px_35px_-18px_rgba(30,58,138,0.55)] transition-transform duration-500 hover:z-50 hover:scale-105 ${heroPhotoPositions[index]}`}>
                     <div className="relative aspect-[4/3]">
-                      <Image unoptimized src={src} alt={`KTP chapter moment ${index + 1}`} fill sizes="(max-width: 768px) 45vw, 24vw" className="object-cover transition-transform duration-700 group-hover:scale-110" />
+                      <Image unoptimized={slot.unoptimized} src={slot.src} alt="" fill sizes="(max-width: 768px) 45vw, 24vw" className="object-cover transition-transform duration-700 group-hover:scale-110" />
                     </div>
                   </figure>
                 ))}
